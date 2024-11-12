@@ -4,3 +4,4 @@
 node_modules
 mise.local.toml
 dist/
+.DS_Store

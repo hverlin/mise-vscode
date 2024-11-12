@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
 import { MiseService } from "./miseService";
 import { MiseEnvsProvider } from "./providers/envProvider";
-import { MiseTasksProvider } from "./providers/tasksProvider";
+import {
+	MiseTasksProvider,
+	registerMiseCommands,
+} from "./providers/tasksProvider";
 import { MiseToolsProvider } from "./providers/toolsProvider";
 
 let statusBarItem: vscode.StatusBarItem;
@@ -20,6 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 	statusBarItem.show();
 	statusBarItem.text = "$(tools) Mise";
 	statusBarItem.tooltip = "Click to refresh Mise";
+	registerMiseCommands(context, tasksProvider);
 
 	vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 	vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);

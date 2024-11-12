@@ -6,10 +6,17 @@ import { logger } from "./utils/logger";
 const execAsync = promisify(exec);
 
 export class MiseService {
+	private terminal: vscode.Terminal | undefined;
+	private readonly workspaceRoot: string | undefined;
+
+	constructor() {
+		this.workspaceRoot = vscode.workspace.rootPath;
+	}
+
 	async getTasks(): Promise<MiseTask[]> {
 		try {
 			const { stdout } = await execAsync("mise tasks ls --json", {
-				cwd: vscode.workspace.rootPath,
+				cwd: this.workspaceRoot,
 			});
 			return JSON.parse(stdout).map((task: MiseTask) => ({
 				name: task.name,
@@ -27,7 +34,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await execAsync("mise ls --current --offline --json", {
-				cwd: vscode.workspace.rootPath,
+				cwd: this.workspaceRoot,
 			});
 			logger.info(`Got stdout from mise ls 4 command ${stdout}`);
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
@@ -51,7 +58,7 @@ export class MiseService {
 	async getEnvs(): Promise<MiseEnv[]> {
 		try {
 			const { stdout } = await execAsync("mise env --json", {
-				cwd: vscode.workspace.rootPath,
+				cwd: this.workspaceRoot,
 			});
 
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
@@ -61,6 +68,39 @@ export class MiseService {
 		} catch (error) {
 			logger.error("Error fetching mise environments:", error as Error);
 			return [];
+		}
+	}
+
+	async runTask(taskName: string): Promise<void> {
+		const terminal = this.getOrCreateTerminal();
+		terminal.show();
+		terminal.sendText(`mise run ${taskName}`);
+	}
+
+	private getOrCreateTerminal(): vscode.Terminal {
+		if (!this.terminal || this._isTerminalClosed(this.terminal)) {
+			this.terminal = vscode.window.createTerminal({
+				name: "Mise Tasks",
+				cwd: this.workspaceRoot,
+			});
+
+			vscode.window.onDidCloseTerminal((closedTerminal) => {
+				if (closedTerminal === this.terminal) {
+					this.terminal = undefined;
+				}
+			});
+		}
+		return this.terminal;
+	}
+
+	private _isTerminalClosed(terminal: vscode.Terminal): boolean {
+		return vscode.window.terminals.indexOf(terminal) === -1;
+	}
+
+	dispose() {
+		if (this.terminal) {
+			this.terminal.dispose();
+			this.terminal = undefined;
 		}
 	}
 }
