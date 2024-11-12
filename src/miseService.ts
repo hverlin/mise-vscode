@@ -22,7 +22,7 @@ export class MiseService {
 			.getConfiguration("mise")
 			.get("binPath");
 
-		let miseCommand = `"${miseBinaryPath}" ${command}`;
+		let miseCommand = `"${miseBinaryPath}"`;
 		const miseProfile = vscode.workspace
 			.getConfiguration("mise")
 			.get("profile");
@@ -30,7 +30,7 @@ export class MiseService {
 		if (miseProfile) {
 			miseCommand = `${miseCommand} --profile ${miseProfile}`;
 		}
-		return miseCommand;
+		return `${miseCommand} ${command}`;
 	}
 
 	async getTasks(): Promise<MiseTask[]> {
@@ -97,7 +97,16 @@ export class MiseService {
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal();
 		terminal.show();
-		const baseCommand = this.createMiseCommand(`run ${taskName}`);
+		const baseCommand = this.createMiseCommand(`run --timing ${taskName}`);
+		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
+	}
+
+	async watchTask(taskName: string, ...args: string[]): Promise<void> {
+		const terminal = this.getOrCreateTerminal();
+		terminal.show();
+		const baseCommand = this.createMiseCommand(
+			`watch -t "${taskName.replace(/"/g, '\\"')}"`,
+		);
 		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
 	}
 

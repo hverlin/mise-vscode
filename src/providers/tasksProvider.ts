@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
+import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
@@ -79,10 +80,8 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			}
 		}
 
-		// Collect flag/option values
 		for (const flag of spec.flags) {
 			if (flag.arg) {
-				// This is an option (flag with value)
 				const shouldProvide = await vscode.window.showQuickPick(["Yes", "No"], {
 					placeHolder: `Do you want to provide ${flag.name}?`,
 					ignoreFocusOut: true,
@@ -122,19 +121,51 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				throw new Error(`Task '${taskName}' not found`);
 			}
 
-			// If task has arguments/flags, collect them
 			if (
 				taskInfo.usageSpec.args.length > 0 ||
 				taskInfo.usageSpec.flags.length > 0
 			) {
 				const args = await this.collectArgumentValues(taskInfo);
 				await this.miseService.runTask(taskName, ...args);
-				vscode.window.showInformationMessage(
-					`Task '${taskName}' started with arguments: ${args.join(" ")}`,
-				);
 			} else {
 				await this.miseService.runTask(taskName);
-				vscode.window.showInformationMessage(`Task '${taskName}' started`);
+			}
+		} catch (error) {
+			vscode.window.showErrorMessage(
+				`Failed to run task '${taskName}': ${error}`,
+			);
+		}
+	}
+
+	async watchTask(taskName: string) {
+		const [res1, res2] = await Promise.allSettled([
+			this.miseService.getTools(),
+			execAsync("which watchexec"),
+		]);
+		const tools = res1.status === "fulfilled" ? res1.value : [];
+		const watchexecFromTools = tools.find((tool) => tool.name === "watchexec");
+		const watchexec = res2.status === "fulfilled" ? res2.value.stdout : "";
+		if (!watchexec && !watchexecFromTools) {
+			vscode.window.showErrorMessage(
+				"watchexec is required to run tasks in watch mode. Install it with `mise use -g watchexec`",
+			);
+			return;
+		}
+
+		try {
+			const taskInfo = await this.miseService.getTaskInfo(taskName);
+			if (!taskInfo) {
+				throw new Error(`Task '${taskName}' not found`);
+			}
+
+			if (
+				taskInfo.usageSpec.args.length > 0 ||
+				taskInfo.usageSpec.flags.length > 0
+			) {
+				const args = await this.collectArgumentValues(taskInfo);
+				await this.miseService.watchTask(taskName, ...args);
+			} else {
+				await this.miseService.watchTask(taskName);
 			}
 		} catch (error) {
 			vscode.window.showErrorMessage(
@@ -172,6 +203,7 @@ class TaskItem extends vscode.TreeItem {
 }
 
 export const RUN_TASK_COMMAND = "mise.runTask";
+export const WATCH_TASK_COMMAND = "mise.watchTask";
 
 export function registerMiseCommands(
 	context: vscode.ExtensionContext,
@@ -181,6 +213,11 @@ export function registerMiseCommands(
 		vscode.commands.registerCommand(RUN_TASK_COMMAND, (taskName: string) => {
 			taskProvider.runTask(taskName).catch((error) => {
 				logger.error(`Failed to run task '${taskName}':`, error);
+			});
+		}),
+		vscode.commands.registerCommand(WATCH_TASK_COMMAND, (taskName: string) => {
+			taskProvider.watchTask(taskName).catch((error) => {
+				logger.error(`Failed to run task (watch mode) '${taskName}':`, error);
 			});
 		}),
 	);

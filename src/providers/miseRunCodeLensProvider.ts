@@ -1,6 +1,6 @@
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
-import { RUN_TASK_COMMAND } from "./tasksProvider";
+import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseRunCodeLensProvider implements vscode.CodeLensProvider {
 	private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
@@ -46,6 +46,14 @@ export class MiseRunCodeLensProvider implements vscode.CodeLensProvider {
 							title: "$(play) Run",
 							tooltip: `Run task ${taskName}`,
 							command: RUN_TASK_COMMAND,
+							arguments: [taskName],
+						}),
+					);
+					codeLenses.push(
+						new vscode.CodeLens(range, {
+							title: "$(watch) Watch",
+							tooltip: `Watch task ${taskName}`,
+							command: WATCH_TASK_COMMAND,
 							arguments: [taskName],
 						}),
 					);
