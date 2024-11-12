@@ -12,6 +12,12 @@ export class MiseService {
 	}
 
 	async execMiseCommand(command: string) {
+		const miseCommand = this.createMiseCommand(command);
+		logger.info(`Executing mise command: ${miseCommand}`);
+		return execAsync(miseCommand, { cwd: this.workspaceRoot });
+	}
+
+	private createMiseCommand(command: string) {
 		const miseBinaryPath = vscode.workspace
 			.getConfiguration("mise")
 			.get("binPath");
@@ -24,8 +30,7 @@ export class MiseService {
 		if (miseProfile) {
 			miseCommand = `${miseCommand} --profile ${miseProfile}`;
 		}
-		logger.info(`Executing mise command: ${miseCommand}`);
-		return execAsync(miseCommand, { cwd: this.workspaceRoot });
+		return miseCommand;
 	}
 
 	async getTasks(): Promise<MiseTask[]> {
@@ -92,7 +97,8 @@ export class MiseService {
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal();
 		terminal.show();
-		terminal.sendText(`mise run ${taskName} ${args.join(" ")}`);
+		const baseCommand = this.createMiseCommand(`run ${taskName}`);
+		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
 	}
 
 	private getOrCreateTerminal(): vscode.Terminal {
