@@ -5,6 +5,8 @@ import type { MiseService } from "../miseService";
 type TreeItem = SourceItem | ToolItem;
 
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
+export const MISE_REMOVE_TOOL = "mise.removeTool";
+export const MISE_INSTALL_TOOL = "mise.installTool";
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -24,6 +26,10 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 
 	async getTools(): Promise<MiseTool[]> {
 		return this.miseService.getTools();
+	}
+
+	getMiseService(): MiseService {
+		return this.miseService;
 	}
 
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
@@ -81,9 +87,13 @@ Number of tools: ${tools.length}`;
 }
 
 class ToolItem extends vscode.TreeItem {
+	tool: MiseTool;
 	constructor(tool: MiseTool) {
-		super(`${tool.name} ${tool.version}`, vscode.TreeItemCollapsibleState.None);
-
+		super(
+			`${tool.name} ${tool.version} (${tool.requested_version})`,
+			vscode.TreeItemCollapsibleState.None,
+		);
+		this.tool = tool;
 		this.tooltip = `Tool: ${tool.name}
 Version: ${tool.version}
 Requested Version: ${tool.requested_version}
@@ -93,6 +103,7 @@ Installed: ${tool.installed}
 Install Path: ${tool.install_path}`;
 
 		this.iconPath = this.getToolIcon(tool);
+		this.contextValue = tool.installed ? "tool-installed" : "tool-notinstalled";
 
 		if (tool.source?.path) {
 			this.command = {
@@ -105,12 +116,47 @@ Install Path: ${tool.install_path}`;
 
 	private getToolIcon(tool: MiseTool): vscode.ThemeIcon {
 		if (!tool.installed) {
-			return new vscode.ThemeIcon("circle-outline");
+			return new vscode.ThemeIcon("alert");
 		}
 		if (tool.active) {
 			return new vscode.ThemeIcon("check");
 		}
 		return new vscode.ThemeIcon("circle-filled");
+	}
+}
+
+async function runMiseToolActionInConsole(
+	toolsProvider: MiseToolsProvider,
+	command: string,
+	taskName: string,
+): Promise<void> {
+	const outputChannel = vscode.window.createOutputChannel("mise");
+	outputChannel.show();
+
+	try {
+		const miseCommand = toolsProvider
+			.getMiseService()
+			.createMiseCommand(command);
+		outputChannel.appendLine(`> ${miseCommand}`);
+
+		const execution = new vscode.ShellExecution(miseCommand);
+		const task = new vscode.Task(
+			{ type: "mise" },
+			vscode.TaskScope.Workspace,
+			taskName,
+			"mise",
+			execution,
+		);
+
+		await vscode.tasks.executeTask(task);
+		const disposable = vscode.tasks.onDidEndTask((e) => {
+			if (e.execution.task === task) {
+				toolsProvider.refresh();
+				disposable.dispose();
+			}
+		});
+	} catch (error) {
+		vscode.window.showErrorMessage(`Failed to execute ${taskName}: ${error}`);
 	}
 }
 
@@ -170,6 +216,82 @@ export function registerCommands(
 						vscode.TextEditorRevealType.InCenter,
 					);
 				}
+			},
+		),
+
+		vscode.commands.registerCommand(
+			MISE_REMOVE_TOOL,
+			async (inputTool: undefined | MiseTool | ToolItem) => {
+				let tool = inputTool;
+				if (!tool) {
+					const tools = await toolsProvider.getTools();
+					const toolNames = tools
+						.filter((tool) => tool.installed)
+						.map((tool) => `${tool.name} ${tool.version}`);
+
+					const selectedToolName = await vscode.window.showQuickPick(
+						toolNames,
+						{ canPickMany: false, placeHolder: "Select a tool to remove" },
+					);
+
+					tool = tools.find(
+						(tool) => `${tool.name} ${tool.version}` === selectedToolName,
+					);
+				} else if (inputTool instanceof ToolItem) {
+					tool = inputTool.tool;
+				}
+
+				if (!tool) {
+					return;
+				}
+
+				tool = tool as MiseTool;
+				const confirmed = await vscode.window.showWarningMessage(
+					`Are you sure you want to remove ${tool.name} ${tool.version}?`,
+					{ modal: true },
+					"Remove",
+				);
+
+				if (confirmed === "Remove") {
+					await runMiseToolActionInConsole(
+						toolsProvider,
+						`rm ${tool.name}@${tool.version}`,
+						"Remove Tool",
+					);
+				}
+			},
+		),
+
+		vscode.commands.registerCommand(
+			MISE_INSTALL_TOOL,
+			async (inputTool: undefined | MiseTool | ToolItem) => {
+				let tool = inputTool;
+				if (!tool) {
+					const tools = await toolsProvider.getTools();
+					const toolNames = tools
+						.filter((tool) => !tool.installed)
+						.map((tool) => `${tool.name} ${tool.version}`);
+					const selectedToolName = await vscode.window.showQuickPick(
+						toolNames,
+						{ canPickMany: false, placeHolder: "Select a tool to install" },
+					);
+					tool = tools.find(
+						(tool) => `${tool.name} ${tool.version}` === selectedToolName,
+					);
+				} else if (inputTool instanceof ToolItem) {
+					tool = inputTool.tool;
+				}
+
+				if (!tool) {
+					return;
+				}
+
+				tool = tool as MiseTool;
+				await runMiseToolActionInConsole(
+					toolsProvider,
+					`install ${tool.name}@${tool.requested_version}`,
+					"Install Tool",
+				);
 			},
 		),
 	);
