@@ -1,0 +1,19 @@
+[tools]
+node = '22'
+
+[tasks.dev]
+run = 'pnpm dev'
+
+[tasks.ts-check]
+run = 'pnpm ts-check'
+sources = ['src/**/*.ts']
+
+[tasks.biome-lint]
+run = 'pnpm lint'
+sources = ['src/**/*.ts']
+
+[tasks.lint]
+depends = ['ts-check', 'biome-lint']
+
+[tasks.lint-fix]
+run = 'pnpm lint-fix'

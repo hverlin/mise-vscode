@@ -1,0 +1,91 @@
+{
+	"name": "mise-vscode",
+	"displayName": "Mise VSCode",
+	"publisher": "hverlin",
+	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
+	"version": "0.0.2",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/hverlin/mise-vscode"
+	},
+	"bugs": {
+		"url": "https://github.com/hverlin/mise-vscode/issues"
+	},
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": ["Other"],
+	"keywords": [
+		"mise",
+		"mise-en-place",
+		"rtx",
+		"devtools",
+		"tasks",
+		"envs",
+		"environment variables",
+		"scripts"
+	],
+	"icon": "resources/icon.png",
+	"main": "./dist/extension.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "mise-panel",
+					"title": "Mise panel",
+					"icon": "$(terminal)"
+				}
+			]
+		},
+		"views": {
+			"mise-panel": [
+				{
+					"id": "miseTasksView",
+					"name": "Mise Tasks"
+				},
+				{
+					"id": "miseToolsView",
+					"name": "Mise Tools"
+				},
+				{
+					"id": "miseEnvsView",
+					"name": "Environment Variables"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "mise.refreshEntry",
+				"title": "Refresh",
+				"icon": "$(refresh)"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "mise.refreshEntry",
+					"when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
+					"group": "navigation"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package --no-optional",
+		"compile": "rsbuild build",
+		"dev": "rsbuild dev",
+		"ts-check": "tsc --noEmit",
+		"lint-fix": "biome check --fix",
+		"lint": "biome ci",
+		"package": "rsbuild build"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@rsbuild/core": "^1.1.0",
+		"@types/node": "^22.9.0",
+		"@types/vscode": "^1.85.0",
+		"typescript": "^5.6.3"
+	},
+	"packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
+}

@@ -1,0 +1,6 @@
+.idea
+.vscode/**
+.vscode-test/**
+node_modules
+mise.local.toml
+dist/
