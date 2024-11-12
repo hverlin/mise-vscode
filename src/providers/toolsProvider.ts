@@ -7,6 +7,8 @@ type TreeItem = SourceItem | ToolItem;
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
 export const MISE_REMOVE_TOOL = "mise.removeTool";
 export const MISE_INSTALL_TOOL = "mise.installTool";
+export const MISE_INSTALL_ALL = "mise.installAll";
+export const MISE_USE = "mise.useTool";
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -290,6 +292,37 @@ export function registerCommands(
 				await runMiseToolActionInConsole(
 					toolsProvider,
 					`install ${tool.name}@${tool.requested_version}`,
+					"Install Tool",
+				);
+			},
+		),
+
+		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
+			await runMiseToolActionInConsole(
+				toolsProvider,
+				"install",
+				"Install Tool",
+			);
+		}),
+
+		vscode.commands.registerCommand(
+			MISE_USE,
+			async (path: string | SourceItem) => {
+				const pathShown = path instanceof SourceItem ? path.source : path;
+
+				const selectedToolName = await vscode.window.showInputBox({
+					placeHolder: "Enter the tool name to use (e.g. node@latest)",
+					validateInput: (input) => {
+						if (!input) {
+							return "Tool name is required";
+						}
+						return null;
+					},
+				});
+
+				await runMiseToolActionInConsole(
+					toolsProvider,
+					`use --path ${pathShown} ${selectedToolName}`,
 					"Install Tool",
 				);
 			},
