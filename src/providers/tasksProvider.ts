@@ -59,7 +59,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private groupTasksBySource(tasks: MiseTask[]): Record<string, MiseTask[]> {
 		return tasks.reduce(
 			(groups, task) => {
-				const source = task.source || "Unknown";
+				const source =
+					(task.source.endsWith(".toml")
+						? task.source
+						: task.source.split("/").slice(0, -1).join("/")) || "Unknown";
 				if (!groups[source]) {
 					groups[source] = [];
 				}
