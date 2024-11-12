@@ -6,7 +6,7 @@ import {
 	MiseTasksProvider,
 	registerMiseCommands,
 } from "./providers/tasksProvider";
-import { MiseToolsProvider } from "./providers/toolsProvider";
+import { MiseToolsProvider, registerCommands } from "./providers/toolsProvider";
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -25,6 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 	statusBarItem.text = "$(tools) Mise";
 	statusBarItem.tooltip = "Click to refresh Mise";
 	registerMiseCommands(context, tasksProvider);
+	registerCommands(context);
 
 	vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 	vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);

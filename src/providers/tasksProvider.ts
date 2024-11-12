@@ -84,7 +84,6 @@ class TaskItem extends vscode.TreeItem {
 		this.tooltip = `Task: ${task.name}\nSource: ${task.source}\nDescription: ${task.description}`;
 		this.iconPath = new vscode.ThemeIcon("play");
 
-		// Add command to run the task
 		this.command = {
 			title: "Run Task",
 			command: "mise.runTask",

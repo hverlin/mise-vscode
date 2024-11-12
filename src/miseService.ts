@@ -46,6 +46,7 @@ export class MiseService {
 						active: tool.active,
 						installed: tool.installed,
 						install_path: tool.install_path,
+						source: tool.source,
 					} satisfies MiseTool;
 				});
 			});

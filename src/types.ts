@@ -4,9 +4,15 @@ type MiseTask = {
 	description: string;
 };
 
+type MiseToolSource = {
+	type: string;
+	path: string;
+};
+
 type MiseTool = {
 	name: string;
 	version: string;
+	source?: MiseToolSource;
 	requested_version: string;
 	installed: boolean;
 	active: boolean;
