@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { window } from "vscode";
 import { MiseService } from "./miseService";
 import { MiseEnvsProvider } from "./providers/envProvider";
 import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
@@ -7,10 +8,41 @@ import {
 	registerMiseCommands,
 } from "./providers/tasksProvider";
 import { MiseToolsProvider, registerCommands } from "./providers/toolsProvider";
+import { logger } from "./utils/logger";
+import { resolveMisePath } from "./utils/miseBinLocator";
+import { showSettingsNotification } from "./utils/notify";
 
 let statusBarItem: vscode.StatusBarItem;
 
-export function activate(context: vscode.ExtensionContext) {
+async function initializeMisePath() {
+	let miseBinaryPath = "mise";
+	try {
+		miseBinaryPath = await resolveMisePath();
+		logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
+		const config = vscode.workspace.getConfiguration("mise");
+		const previousPath = config.get<string>("binPath");
+		if (previousPath !== miseBinaryPath) {
+			config.update(
+				"binPath",
+				miseBinaryPath,
+				vscode.ConfigurationTarget.Global,
+			);
+			void showSettingsNotification(
+				`Mise binary path has been updated to: ${miseBinaryPath}`,
+				{ settingsKey: "mise.binPath", type: "info" },
+			);
+		}
+	} catch (error) {
+		void showSettingsNotification(
+			"Mise binary not found. Please configure the binary path.",
+			{ settingsKey: "mise.binPath", type: "error" },
+		);
+		logger.error("Failed to resolve mise binary path:", error as Error);
+	}
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+	await initializeMisePath();
 	const miseService = new MiseService();
 
 	const tasksProvider = new MiseTasksProvider(miseService);
@@ -37,6 +69,15 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(statusBarItem);
 
 	const codelensProvider = new MiseRunCodeLensProvider();
+
+	vscode.workspace.onDidChangeConfiguration((e) => {
+		if (
+			e.affectsConfiguration("mise.binPath") ||
+			e.affectsConfiguration("mise.profile")
+		) {
+			vscode.commands.executeCommand("mise.refreshEntry");
+		}
+	});
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {

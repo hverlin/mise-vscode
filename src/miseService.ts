@@ -1,10 +1,7 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { logger } from "./utils/logger";
+import { execAsync } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
-
-const execAsync = promisify(exec);
 
 export class MiseService {
 	private terminal: vscode.Terminal | undefined;
@@ -15,7 +12,18 @@ export class MiseService {
 	}
 
 	async execMiseCommand(command: string) {
-		const miseCommand = `mise ${command}`;
+		const miseBinaryPath = vscode.workspace
+			.getConfiguration("mise")
+			.get("binPath");
+
+		let miseCommand = `"${miseBinaryPath}" ${command}`;
+		const miseProfile = vscode.workspace
+			.getConfiguration("mise")
+			.get("profile");
+
+		if (miseProfile) {
+			miseCommand = `${miseCommand} --profile ${miseProfile}`;
+		}
 		logger.info(`Executing mise command: ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
 	}
@@ -49,7 +57,6 @@ export class MiseService {
 			const { stdout } = await this.execMiseCommand(
 				"ls --current --offline --json",
 			);
-			logger.info(`Got stdout from mise ls 4 command ${stdout}`);
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
 					return {
