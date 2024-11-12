@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { logger } from "./utils/logger";
+import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
 
 const execAsync = promisify(exec);
 
@@ -13,11 +14,15 @@ export class MiseService {
 		this.workspaceRoot = vscode.workspace.rootPath;
 	}
 
+	async execMiseCommand(command: string) {
+		const miseCommand = `mise ${command}`;
+		logger.info(`Executing mise command: ${miseCommand}`);
+		return execAsync(miseCommand, { cwd: this.workspaceRoot });
+	}
+
 	async getTasks(): Promise<MiseTask[]> {
 		try {
-			const { stdout } = await execAsync("mise tasks ls --json", {
-				cwd: this.workspaceRoot,
-			});
+			const { stdout } = await this.execMiseCommand("tasks ls --json");
 			return JSON.parse(stdout).map((task: MiseTask) => ({
 				name: task.name,
 				source: task.source,
@@ -29,13 +34,21 @@ export class MiseService {
 		}
 	}
 
-	async getTools(): Promise<Array<MiseTool>> {
-		logger.info("Executing mise ls 4 command");
-
+	async getTaskInfo(taskName: string): Promise<MiseTaskInfo | undefined> {
 		try {
-			const { stdout } = await execAsync("mise ls --current --offline --json", {
-				cwd: this.workspaceRoot,
-			});
+			const { stdout } = await this.execMiseCommand(`tasks info ${taskName}`);
+			return parseTaskInfo(stdout);
+		} catch (error: unknown) {
+			logger.error("Error fetching mise task info:", error as Error);
+			return undefined;
+		}
+	}
+
+	async getTools(): Promise<Array<MiseTool>> {
+		try {
+			const { stdout } = await this.execMiseCommand(
+				"ls --current --offline --json",
+			);
 			logger.info(`Got stdout from mise ls 4 command ${stdout}`);
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
@@ -58,10 +71,7 @@ export class MiseService {
 
 	async getEnvs(): Promise<MiseEnv[]> {
 		try {
-			const { stdout } = await execAsync("mise env --json", {
-				cwd: this.workspaceRoot,
-			});
-
+			const { stdout } = await this.execMiseCommand("env --json");
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
 				name: key,
 				value: value as string,
@@ -72,10 +82,10 @@ export class MiseService {
 		}
 	}
 
-	async runTask(taskName: string): Promise<void> {
+	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal();
 		terminal.show();
-		terminal.sendText(`mise run ${taskName}`);
+		terminal.sendText(`mise run ${taskName} ${args.join(" ")}`);
 	}
 
 	private getOrCreateTerminal(): vscode.Terminal {

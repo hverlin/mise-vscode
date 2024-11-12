@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
+import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -53,10 +54,88 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		);
 	}
 
+	private async collectArgumentValues(info: MiseTaskInfo): Promise<string[]> {
+		const cmdArgs: string[] = [];
+		const spec = info.usageSpec;
+
+		// Collect positional arguments
+		for (const arg of spec.args) {
+			const value = await vscode.window.showInputBox({
+				prompt: `Enter value for ${arg.name}`,
+				placeHolder: arg.name,
+				ignoreFocusOut: true,
+				validateInput: (value) => {
+					if (arg.required && !value) {
+						return `${arg.name} is required`;
+					}
+					return null;
+				},
+			});
+
+			if (value) {
+				cmdArgs.push(value);
+			} else if (arg.required) {
+				throw new Error(`Required argument ${arg.name} was not provided`);
+			}
+		}
+
+		// Collect flag/option values
+		for (const flag of spec.flags) {
+			if (flag.arg) {
+				// This is an option (flag with value)
+				const shouldProvide = await vscode.window.showQuickPick(["Yes", "No"], {
+					placeHolder: `Do you want to provide ${flag.name}?`,
+					ignoreFocusOut: true,
+				});
+
+				if (shouldProvide === "Yes") {
+					const value = await vscode.window.showInputBox({
+						prompt: `Enter value for ${flag.name}`,
+						placeHolder: flag.arg,
+						ignoreFocusOut: true,
+					});
+
+					if (value) {
+						cmdArgs.push(flag.name, value);
+					}
+				}
+			} else {
+				// This is a boolean flag
+				const shouldEnable = await vscode.window.showQuickPick(["Yes", "No"], {
+					placeHolder: `Enable ${flag.name}?`,
+					ignoreFocusOut: true,
+				});
+
+				if (shouldEnable === "Yes") {
+					cmdArgs.push(flag.name);
+				}
+			}
+		}
+
+		return cmdArgs;
+	}
+
 	async runTask(taskName: string) {
 		try {
-			await this.miseService.runTask(taskName);
-			vscode.window.showInformationMessage(`Task '${taskName}' started`);
+			const taskInfo = await this.miseService.getTaskInfo(taskName);
+			if (!taskInfo) {
+				throw new Error(`Task '${taskName}' not found`);
+			}
+
+			// If task has arguments/flags, collect them
+			if (
+				taskInfo.usageSpec.args.length > 0 ||
+				taskInfo.usageSpec.flags.length > 0
+			) {
+				const args = await this.collectArgumentValues(taskInfo);
+				await this.miseService.runTask(taskName, ...args);
+				vscode.window.showInformationMessage(
+					`Task '${taskName}' started with arguments: ${args.join(" ")}`,
+				);
+			} else {
+				await this.miseService.runTask(taskName);
+				vscode.window.showInformationMessage(`Task '${taskName}' started`);
+			}
 		} catch (error) {
 			vscode.window.showErrorMessage(
 				`Failed to run task '${taskName}': ${error}`,
@@ -94,7 +173,6 @@ class TaskItem extends vscode.TreeItem {
 
 export const RUN_TASK_COMMAND = "mise.runTask";
 
-// Register the command in your extension's activate function:
 export function registerMiseCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,

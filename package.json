@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -86,6 +86,7 @@
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
+		"test": "npx bun test",
 		"package": "rsbuild build"
 	},
 	"devDependencies": {
