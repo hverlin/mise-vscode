@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -48,7 +48,7 @@
 			"activitybar": [
 				{
 					"id": "mise-panel",
-					"title": "Mise panel",
+					"title": "Mise",
 					"icon": "$(terminal)"
 				}
 			]
@@ -57,11 +57,11 @@
 			"mise-panel": [
 				{
 					"id": "miseTasksView",
-					"name": "Mise Tasks"
+					"name": "Tasks"
 				},
 				{
 					"id": "miseToolsView",
-					"name": "Mise Tools"
+					"name": "Tools"
 				},
 				{
 					"id": "miseEnvsView",
