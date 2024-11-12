@@ -9,6 +9,8 @@ export const MISE_REMOVE_TOOL = "mise.removeTool";
 export const MISE_INSTALL_TOOL = "mise.installTool";
 export const MISE_INSTALL_ALL = "mise.installAll";
 export const MISE_USE = "mise.useTool";
+export const MISE_COPY_TOOL_INSTALL_PATH = "mise.copyToolInstallPath";
+export const MISE_COPY_TOOL_BIN_PATH = "mise.copyToolBinPath";
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -324,6 +326,47 @@ export function registerCommands(
 					toolsProvider,
 					`use --path ${pathShown} ${selectedToolName}`,
 					"Install Tool",
+				);
+			},
+		),
+
+		vscode.commands.registerCommand(
+			MISE_COPY_TOOL_INSTALL_PATH,
+			async (providedTool: MiseTool | ToolItem) => {
+				let tool = providedTool;
+				if (tool instanceof ToolItem) {
+					tool = tool.tool;
+				}
+
+				if (!tool) {
+					return;
+				}
+
+				await vscode.env.clipboard.writeText(tool.install_path);
+				vscode.window.showInformationMessage(
+					`Copied install path to clipboard: ${tool.install_path}`,
+				);
+			},
+		),
+
+		vscode.commands.registerCommand(
+			MISE_COPY_TOOL_BIN_PATH,
+			async (providedTool: MiseTool | ToolItem) => {
+				let tool = providedTool;
+				if (tool instanceof ToolItem) {
+					tool = tool.tool;
+				}
+
+				if (!tool) {
+					return;
+				}
+
+				const binPath = await toolsProvider
+					.getMiseService()
+					.miseWhich(tool.name);
+				await vscode.env.clipboard.writeText(binPath);
+				vscode.window.showInformationMessage(
+					`Copied bin path to clipboard: ${binPath}`,
 				);
 			},
 		),

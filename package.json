@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.16",
+	"version": "0.0.17",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -96,6 +96,16 @@
 				"title": "Remove Tool"
 			},
 			{
+				"command": "mise.copyToolInstallPath",
+				"title": "Copy Tool Install Path",
+				"context": ["miseToolsView"]
+			},
+			{
+				"command": "mise.copyToolBinPath",
+				"title": "Copy Tool Bin Path",
+				"context": ["miseToolsView"]
+			},
+			{
 				"command": "mise.installTool",
 				"title": "Install Tool"
 			},
@@ -146,6 +156,16 @@
 				{
 					"command": "mise.installTool",
 					"when": "view == miseToolsView && viewItem == tool-notinstalled",
+					"group": "2_modification"
+				},
+				{
+					"command": "mise.copyToolInstallPath",
+					"when": "view == miseToolsView && viewItem == tool-installed",
+					"group": "2_modification"
+				},
+				{
+					"command": "mise.copyToolBinPath",
+					"when": "view == miseToolsView && viewItem == tool-installed",
 					"group": "2_modification"
 				},
 				{

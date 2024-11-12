@@ -183,4 +183,9 @@ export class MiseService {
 			this.terminal = undefined;
 		}
 	}
+
+	async miseWhich(name: string) {
+		const { stdout } = await this.execMiseCommand(`which ${name}`);
+		return stdout.trim();
+	}
 }
