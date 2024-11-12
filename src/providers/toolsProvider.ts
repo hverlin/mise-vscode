@@ -322,10 +322,14 @@ export function registerCommands(
 					},
 				});
 
+				if (!selectedToolName) {
+					return;
+				}
+
 				await runMiseToolActionInConsole(
 					toolsProvider,
 					`use --path ${pathShown} ${selectedToolName}`,
-					"Install Tool",
+					"Use Tool",
 				);
 			},
 		),

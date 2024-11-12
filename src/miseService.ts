@@ -27,7 +27,7 @@ export class MiseService {
 			.getConfiguration("mise")
 			.get("profile");
 
-		if (miseProfile) {
+		if (miseProfile && !command.includes("use --path")) {
 			miseCommand = `${miseCommand} --profile ${miseProfile}`;
 		}
 		return `${miseCommand} ${command}`;
