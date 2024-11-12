@@ -33,6 +33,38 @@ export class MiseService {
 		return `${miseCommand} ${command}`;
 	}
 
+	private async handleUntrustedFile(error: Error): Promise<void> {
+		const match = error.message.match(/file (.*?) is not trusted/);
+		if (!match) {
+			logger.error(
+				"Could not extract filename from trust error message:",
+				error,
+			);
+			throw new Error("Invalid trust error message format");
+		}
+
+		const filename = match[1];
+		const trustAction = "Trust File";
+		const selection = await vscode.window.showErrorMessage(
+			`The Mise configuration file "${filename}" is not trusted. Would you like to trust it?`,
+			{ modal: true },
+			trustAction,
+		);
+
+		if (selection !== trustAction) {
+			throw new Error("User declined to trust file");
+		}
+
+		try {
+			await this.execMiseCommand("trust");
+		} catch (trustError) {
+			logger.error("Error trusting mise configuration:", trustError as Error);
+			throw new Error(
+				`Failed to trust the Mise configuration file "${filename}". Please try again or trust it manually.`,
+			);
+		}
+	}
+
 	async getTasks(): Promise<MiseTask[]> {
 		try {
 			const { stdout } = await this.execMiseCommand("tasks ls --json");
@@ -42,6 +74,11 @@ export class MiseService {
 				description: task.description,
 			}));
 		} catch (error: unknown) {
+			if (error instanceof Error && error.message.includes("is not trusted")) {
+				await this.handleUntrustedFile(error);
+				return this.getTasks();
+			}
+
 			logger.error("Error fetching mise tasks:", error as Error);
 			return [];
 		}
@@ -76,6 +113,11 @@ export class MiseService {
 				});
 			});
 		} catch (error) {
+			if (error instanceof Error && error.message.includes("is not trusted")) {
+				await this.handleUntrustedFile(error);
+				return this.getTools();
+			}
+
 			logger.error("Error fetching mise tools:", error as Error);
 			return [];
 		}
@@ -89,6 +131,11 @@ export class MiseService {
 				value: value as string,
 			}));
 		} catch (error) {
+			if (error instanceof Error && error.message.includes("is not trusted")) {
+				await this.handleUntrustedFile(error);
+				return this.getEnvs();
+			}
+
 			logger.error("Error fetching mise environments:", error as Error);
 			return [];
 		}

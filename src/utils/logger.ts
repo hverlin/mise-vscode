@@ -59,12 +59,16 @@ export class Logger {
 
 		// Show in Problem panel for warnings and errors
 		if (level >= LogLevel.WARN) {
-			const severity =
+			const notify =
 				level === LogLevel.WARN
-					? vscode.DiagnosticSeverity.Warning
-					: vscode.DiagnosticSeverity.Error;
+					? vscode.window.showWarningMessage
+					: vscode.window.showErrorMessage;
 
-			vscode.window.showErrorMessage(`Mise: ${message}`);
+			let errorMessage = message;
+			if (error) {
+				errorMessage = `${message}: ${error.message}`;
+			}
+			void notify(`Mise: ${errorMessage}`);
 		}
 	}
 
