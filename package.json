@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.14",
+	"version": "0.0.15",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -113,6 +113,16 @@
 					"when": "view == miseTasksView && viewItem == miseTask",
 					"command": "mise.runTask",
 					"group": "inline"
+				},
+				{
+					"when": "view == miseTasksView && viewItem == miseTask",
+					"command": "mise.runTask",
+					"group": "2_modification"
+				},
+				{
+					"when": "view == miseTasksView && viewItem == miseTask",
+					"command": "mise.watchTask",
+					"group": "2_modification"
 				},
 				{
 					"command": "mise.removeTool",
