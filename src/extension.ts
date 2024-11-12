@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { MiseService } from "./miseService";
 import { MiseEnvsProvider } from "./providers/envProvider";
+import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
 import {
 	MiseTasksProvider,
 	registerMiseCommands,
@@ -34,6 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(statusBarItem);
 
+	const codelensProvider = new MiseRunCodeLensProvider();
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {
 			await vscode.commands.executeCommand(
@@ -54,6 +57,13 @@ export function activate(context: vscode.ExtensionContext) {
 				);
 			}
 		}),
+	);
+
+	context.subscriptions.push(
+		vscode.languages.registerCodeLensProvider(
+			{ language: "toml", pattern: "**/*mise*.toml" },
+			codelensProvider,
+		),
 	);
 }
 

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
+import { logger } from "../utils/logger";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -52,15 +53,13 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		);
 	}
 
-	async runTask(taskItem: TaskItem) {
+	async runTask(taskName: string) {
 		try {
-			await this.miseService.runTask(taskItem.task.name);
-			vscode.window.showInformationMessage(
-				`Task '${taskItem.task.name}' started`,
-			);
+			await this.miseService.runTask(taskName);
+			vscode.window.showInformationMessage(`Task '${taskName}' started`);
 		} catch (error) {
 			vscode.window.showErrorMessage(
-				`Failed to run task '${taskItem.task.name}': ${error}`,
+				`Failed to run task '${taskName}': ${error}`,
 			);
 		}
 	}
@@ -89,10 +88,12 @@ class TaskItem extends vscode.TreeItem {
 		this.command = {
 			title: "Run Task",
 			command: "mise.runTask",
-			arguments: [this],
+			arguments: [this.task.name],
 		};
 	}
 }
+
+export const RUN_TASK_COMMAND = "mise.runTask";
 
 // Register the command in your extension's activate function:
 export function registerMiseCommands(
@@ -100,8 +101,10 @@ export function registerMiseCommands(
 	taskProvider: MiseTasksProvider,
 ) {
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mise.runTask", (taskItem: TaskItem) => {
-			taskProvider.runTask(taskItem);
+		vscode.commands.registerCommand(RUN_TASK_COMMAND, (taskName: string) => {
+			taskProvider.runTask(taskName).catch((error) => {
+				logger.error(`Failed to run task '${taskName}':`, error);
+			});
 		}),
 	);
 }

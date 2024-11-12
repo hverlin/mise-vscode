@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@iarna/toml':
+        specifier: ^2.2.5
+        version: 2.2.5
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -78,6 +82,9 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
+
+  '@iarna/toml@2.2.5':
+    resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
 
   '@module-federation/runtime-tools@0.5.1':
     resolution: {integrity: sha512-nfBedkoZ3/SWyO0hnmaxuz0R0iGPSikHZOAZ0N/dVSQaIzlffUo35B5nlC2wgWIc0JdMZfkwkjZRrnuuDIJbzg==}
@@ -224,6 +231,8 @@ snapshots:
 
   '@biomejs/cli-win32-x64@1.9.4':
     optional: true
+
+  '@iarna/toml@2.2.5': {}
 
   '@module-federation/runtime-tools@0.5.1':
     dependencies:
