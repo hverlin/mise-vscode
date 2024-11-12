@@ -1,4 +1,4 @@
-import * as path from "node:path";
+import * as os from "node:os";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 
@@ -54,7 +54,16 @@ class SourceItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tools: MiseTool[],
 	) {
-		super(path.basename(source), vscode.TreeItemCollapsibleState.Expanded);
+		const pathShown = source
+			.replace(`${vscode.workspace.rootPath}/` || "", "")
+			.replace(os.homedir(), "~");
+
+		super(
+			pathShown,
+			pathShown.startsWith("/") || pathShown.startsWith("~")
+				? vscode.TreeItemCollapsibleState.Collapsed
+				: vscode.TreeItemCollapsibleState.Expanded,
+		);
 
 		this.tooltip = `Source: ${source}
 Number of tools: ${tools.length}`;

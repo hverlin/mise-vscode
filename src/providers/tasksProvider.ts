@@ -1,3 +1,5 @@
+import * as os from "node:os";
+import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
@@ -182,7 +184,11 @@ class SourceGroupItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 	) {
-		super(source, vscode.TreeItemCollapsibleState.Expanded);
+		const pathShown = source
+			.replace(/^~/, os.homedir())
+			.replace(`${vscode.workspace.rootPath}/` || "", "");
+
+		super(pathShown, vscode.TreeItemCollapsibleState.Expanded);
 		this.tooltip = `Source: ${source}\nTasks: ${tasks.length}`;
 		this.iconPath = new vscode.ThemeIcon("folder");
 	}
@@ -195,30 +201,122 @@ class TaskItem extends vscode.TreeItem {
 		this.iconPath = new vscode.ThemeIcon("play");
 
 		this.command = {
-			title: "Run Task",
-			command: "mise.runTask",
-			arguments: [this.task.name],
+			command: "mise.openTaskDefinition",
+			title: "Open Task Definition",
+			tooltip: `Open Task Definition ${task.name} in the editor`,
+			arguments: [task],
 		};
+
+		this.contextValue = "miseTask";
 	}
 }
 
 export const RUN_TASK_COMMAND = "mise.runTask";
 export const WATCH_TASK_COMMAND = "mise.watchTask";
 
+function findTaskPosition(
+	document: vscode.TextDocument,
+	taskName: string,
+): vscode.Position | undefined {
+	const text = document.getText();
+
+	try {
+		const parsed = toml.parse(text);
+		const lines = text.split("\n");
+
+		if (parsed.tasks) {
+			const sectionPattern = new RegExp(
+				`\\[tasks\\.${taskName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\]`,
+			);
+
+			const inlinePattern = new RegExp(
+				`^\\s*${taskName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`,
+			);
+
+			let inTasksSection = false;
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i].trim();
+
+				if (sectionPattern.test(line)) {
+					return new vscode.Position(i, lines[i].indexOf(taskName));
+				}
+				if (line === "[tasks]") {
+					inTasksSection = true;
+					continue;
+				}
+				if (inTasksSection && line.startsWith("[")) {
+					inTasksSection = false;
+				}
+				if (inTasksSection && inlinePattern.test(line)) {
+					return new vscode.Position(i, lines[i].indexOf(taskName));
+				}
+			}
+		}
+	} catch (error) {
+		logger.error("Error parsing TOML:", error as Error);
+	}
+
+	return undefined;
+}
+
 export function registerMiseCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,
 ) {
 	context.subscriptions.push(
-		vscode.commands.registerCommand(RUN_TASK_COMMAND, (taskName: string) => {
-			taskProvider.runTask(taskName).catch((error) => {
-				logger.error(`Failed to run task '${taskName}':`, error);
-			});
-		}),
+		vscode.commands.registerCommand(
+			RUN_TASK_COMMAND,
+			(taskName: string | MiseTask | TaskItem) => {
+				logger.info(`Running task ${JSON.stringify(taskName)}`);
+				let name = taskName;
+				if (typeof taskName !== "string") {
+					name =
+						taskName instanceof TaskItem ? taskName.task.name : taskName.name;
+				}
+				taskProvider.runTask(name as string).catch((error) => {
+					logger.error(`Failed to run task '${taskName}':`, error);
+				});
+			},
+		),
 		vscode.commands.registerCommand(WATCH_TASK_COMMAND, (taskName: string) => {
 			taskProvider.watchTask(taskName).catch((error) => {
 				logger.error(`Failed to run task (watch mode) '${taskName}':`, error);
 			});
 		}),
+		vscode.commands.registerCommand(
+			"mise.openTaskDefinition",
+			async (task: MiseTask) => {
+				if (!task.source) {
+					return;
+				}
+
+				const uri = vscode.Uri.file(task.source.replace(/^~/, os.homedir()));
+				const document = await vscode.workspace.openTextDocument(uri);
+				const editor = await vscode.window.showTextDocument(document);
+
+				if (!document.fileName.endsWith(".toml")) {
+					editor.revealRange(
+						new vscode.Range(0, 0, 0, 0),
+						vscode.TextEditorRevealType.InCenter,
+					);
+					editor.selection = new vscode.Selection(0, 0, 0, 0);
+					return;
+				}
+
+				const position = findTaskPosition(document, task.name);
+				if (position) {
+					const range = document.lineAt(position.line).range;
+					const startOfLine = new vscode.Position(position.line, 0);
+					const selection = new vscode.Selection(startOfLine, range.end);
+					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+					editor.selection = selection;
+				} else {
+					vscode.window.showWarningMessage(
+						`Could not locate task "${task.name}" in ${document.fileName}`,
+					);
+				}
+			},
+		),
 	);
 }

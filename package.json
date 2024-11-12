@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -86,6 +86,10 @@
 			{
 				"command": "mise.openToolDefinition",
 				"title": "Open Tool Definition"
+			},
+			{
+				"command": "mise.openTaskDefinition",
+				"title": "Open Mise Task Definition"
 			}
 		],
 		"menus": {
@@ -94,6 +98,13 @@
 					"command": "mise.refreshEntry",
 					"when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
 					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"when": "view == miseTasksView && viewItem == miseTask",
+					"command": "mise.runTask",
+					"group": "inline"
 				}
 			]
 		}
