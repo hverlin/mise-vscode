@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
 import { MiseEnvsProvider } from "./providers/envProvider";
 import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
@@ -132,6 +133,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(taskProvider);
+
+	const miseWatcher = new MiseFileWatcher(context, miseService, async (uri) => {
+		logger.info(`Mise configuration file changed: ${uri}`);
+		await vscode.commands.executeCommand("mise.refreshEntry");
+	});
+	context.subscriptions.push(miseWatcher);
 }
 
 export function deactivate() {
