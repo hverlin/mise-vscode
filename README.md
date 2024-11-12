@@ -13,16 +13,20 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 ## ✨ Features
 
 ### Task Management
-- 🔍 Automatic detection of `mise` tasks
+- 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
 - ⚡ Run tasks directly from:
     - `mise.toml` files
     - Command palette
     - Mise sidebar
+    - Arguments are supported!
+- 📝 View task definitions 
+- ➕Create new file tasks 
 
 ### Tool Management
 - 🧰 View all [mise tools](https://mise.jdx.dev/dev-tools/) (python, node, jq, etc.) in the sidebar
 - 📍 Quick navigation to tool definitions
 - 📱 Show tools which are not installed or active
+- 📦 Install/Remove/Use tools directly from the sidebar
 
 ### Environment Variables
 - 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)

@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.18",
+	"version": "0.0.19",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -84,6 +84,11 @@
 				"title": "Run Mise Task in Watch Mode"
 			},
 			{
+				"command": "mise.createFileTask",
+				"title": "Create Mise File Task",
+				"icon": "$(new-file)"
+			},
+			{
 				"command": "mise.openToolDefinition",
 				"title": "Open Tool Definition"
 			},
@@ -121,6 +126,11 @@
 		],
 		"menus": {
 			"view/title": [
+				{
+					"command": "mise.createFileTask",
+					"when": "view == miseTasksView",
+					"group": "navigation@1"
+				},
 				{
 					"command": "mise.installAll",
 					"when": "view == miseToolsView",

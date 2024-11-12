@@ -2,6 +2,7 @@ import * as os from "node:os";
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
+import { setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
@@ -9,6 +10,15 @@ import type { MiseTaskInfo } from "../utils/taskInfoParser";
 export const RUN_TASK_COMMAND = "mise.runTask";
 export const WATCH_TASK_COMMAND = "mise.watchTask";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
+export const MISE_CREATE_FILE_TASK = "mise.createFileTask";
+
+const allowedTaskDirs = [
+	"mise-tasks",
+	".mise-tasks",
+	"mise/tasks",
+	".mise/tasks",
+	".config/mise/tasks",
+];
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -363,5 +373,62 @@ export function registerMiseCommands(
 				}
 			},
 		),
+
+		vscode.commands.registerCommand(MISE_CREATE_FILE_TASK, async () => {
+			const taskName = await vscode.window.showInputBox({
+				prompt: "Enter the name of the task",
+				placeHolder: "task_name",
+				validateInput: (value) => {
+					if (!value) {
+						return "Task name is required";
+					}
+					return null;
+				},
+			});
+
+			if (!taskName) {
+				return;
+			}
+
+			const taskSource = await vscode.window.showQuickPick(allowedTaskDirs, {
+				title: "Select the task source directory",
+				placeHolder: "Select the task source directory",
+			});
+
+			if (!taskSource) {
+				return;
+			}
+			if (!allowedTaskDirs.includes(taskSource)) {
+				vscode.window.showErrorMessage(
+					`Invalid task source directory: ${taskSource}`,
+				);
+				return;
+			}
+
+			const rootPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+			const taskDir = `${rootPath}/${taskSource}`;
+			const taskFile = vscode.Uri.file(`${taskDir}/${taskName}`);
+
+			await setupTaskFile(taskFile.fsPath);
+
+			const document = await vscode.workspace.openTextDocument(taskFile);
+			const editor = await vscode.window.showTextDocument(document);
+
+			const taskDefinition = [
+				"#!/usr/bin/env bash",
+				`#MISE description="Run ${taskName}"`,
+				"",
+				`echo "Running ${taskName}"`,
+				"",
+				"# See https://mise.jdx.dev/tasks/file-tasks.html for more information",
+			].join("\n");
+
+			await editor.edit((edit) => {
+				edit.insert(new vscode.Position(0, 0), taskDefinition);
+			});
+			await editor.document.save();
+			await vscode.commands.executeCommand("workbench.action.files.save");
+			taskProvider.refresh();
+		}),
 	);
 }
