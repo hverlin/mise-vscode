@@ -4,6 +4,8 @@ import type { MiseService } from "../miseService";
 
 type TreeItem = SourceItem | ToolItem;
 
+export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
+
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
 		TreeItem | undefined | null | void
@@ -18,6 +20,10 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 
 	getTreeItem(element: TreeItem): vscode.TreeItem {
 		return element;
+	}
+
+	async getTools(): Promise<MiseTool[]> {
+		return this.miseService.getTools();
 	}
 
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
@@ -90,7 +96,7 @@ Install Path: ${tool.install_path}`;
 
 		if (tool.source?.path) {
 			this.command = {
-				command: "mise.openToolDefinition",
+				command: MISE_OPEN_TOOL_DEFINITION,
 				title: "Open Tool Definition",
 				arguments: [tool],
 			};
@@ -108,17 +114,35 @@ Install Path: ${tool.install_path}`;
 	}
 }
 
-export function registerCommands(context: vscode.ExtensionContext) {
+export function registerCommands(
+	context: vscode.ExtensionContext,
+	toolsProvider: MiseToolsProvider,
+) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
-			"mise.openToolDefinition",
-			async (tool: MiseTool) => {
-				if (!tool.source?.path) {
+			MISE_OPEN_TOOL_DEFINITION,
+			async (tool: MiseTool | undefined) => {
+				let selectedTool = tool;
+				if (!selectedTool) {
+					const tools = await toolsProvider.getTools();
+					const toolNames = tools.map(
+						(tool) => `${tool.name} | ${tool.version}`,
+					);
+					const selectedToolName = await vscode.window.showQuickPick(
+						toolNames,
+						{ canPickMany: false, placeHolder: "Select a tool to open" },
+					);
+					selectedTool = tools.find(
+						(tool) => `${tool.name} | ${tool.version}` === selectedToolName,
+					);
+				}
+
+				if (!selectedTool?.source?.path) {
 					return;
 				}
 
 				const document = await vscode.workspace.openTextDocument(
-					tool.source.path,
+					selectedTool.source.path,
 				);
 				const editor = await vscode.window.showTextDocument(document);
 
@@ -126,7 +150,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
 				for (let i = 0; i < editor.document.getText().split("\n").length; i++) {
 					const l = editor.document.getText().split("\n")[i];
 					const [firstWord] = l.replace(/\s/g, "").replace(/"/g, "").split("=");
-					if (firstWord === tool.name) {
+					if (firstWord === selectedTool.name) {
 						line = i + 1;
 						break;
 					}
@@ -136,7 +160,9 @@ export function registerCommands(context: vscode.ExtensionContext) {
 					const position = new vscode.Position(Math.max(0, line - 1), 0);
 					const position2 = new vscode.Position(
 						Math.max(0, line - 1),
-						tool.name.includes(":") ? tool.name.length + 2 : tool.name.length,
+						selectedTool.name.includes(":")
+							? selectedTool.name.length + 2
+							: selectedTool.name.length,
 					);
 					editor.selection = new vscode.Selection(position, position2);
 					editor.revealRange(

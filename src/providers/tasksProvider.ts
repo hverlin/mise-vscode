@@ -6,6 +6,10 @@ import { logger } from "../utils/logger";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
+export const RUN_TASK_COMMAND = "mise.runTask";
+export const WATCH_TASK_COMMAND = "mise.watchTask";
+export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
+
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
 		TreeNode | undefined | null | void
@@ -41,6 +45,15 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		}
 
 		return [];
+	}
+
+	async getTasksNames(): Promise<string[]> {
+		const tasks = await this.miseService.getTasks();
+		return tasks.map((task) => task.name);
+	}
+
+	async getTasks(): Promise<MiseTask[]> {
+		return this.miseService.getTasks();
 	}
 
 	private groupTasksBySource(tasks: MiseTask[]): Record<string, MiseTask[]> {
@@ -201,7 +214,7 @@ class TaskItem extends vscode.TreeItem {
 		this.iconPath = new vscode.ThemeIcon("play");
 
 		this.command = {
-			command: "mise.openTaskDefinition",
+			command: MISE_OPEN_TASK_DEFINITION,
 			title: "Open Task Definition",
 			tooltip: `Open Task Definition ${task.name} in the editor`,
 			arguments: [task],
@@ -210,9 +223,6 @@ class TaskItem extends vscode.TreeItem {
 		this.contextValue = "miseTask";
 	}
 }
-
-export const RUN_TASK_COMMAND = "mise.runTask";
-export const WATCH_TASK_COMMAND = "mise.watchTask";
 
 function findTaskPosition(
 	document: vscode.TextDocument,
@@ -267,31 +277,63 @@ export function registerMiseCommands(
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			RUN_TASK_COMMAND,
-			(taskName: string | MiseTask | TaskItem) => {
-				logger.info(`Running task ${JSON.stringify(taskName)}`);
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
 				let name = taskName;
-				if (typeof taskName !== "string") {
-					name =
-						taskName instanceof TaskItem ? taskName.task.name : taskName.name;
+				if (!name) {
+					name = await vscode.window.showQuickPick(
+						taskProvider.getTasksNames(),
+						{ placeHolder: "Select a task to run" },
+					);
 				}
-				taskProvider.runTask(name as string).catch((error) => {
+
+				if (typeof name !== "string") {
+					name = name instanceof TaskItem ? name.task.name : (name?.name ?? "");
+				}
+				taskProvider.runTask(name).catch((error) => {
 					logger.error(`Failed to run task '${taskName}':`, error);
 				});
 			},
 		),
-		vscode.commands.registerCommand(WATCH_TASK_COMMAND, (taskName: string) => {
-			taskProvider.watchTask(taskName).catch((error) => {
-				logger.error(`Failed to run task (watch mode) '${taskName}':`, error);
-			});
-		}),
 		vscode.commands.registerCommand(
-			"mise.openTaskDefinition",
-			async (task: MiseTask) => {
-				if (!task.source) {
+			WATCH_TASK_COMMAND,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				let name = taskName;
+				if (!name) {
+					name = await vscode.window.showQuickPick(
+						taskProvider.getTasksNames(),
+						{ placeHolder: "Select a task to watch" },
+					);
+				}
+
+				if (typeof name !== "string") {
+					name = name instanceof TaskItem ? name.task.name : (name?.name ?? "");
+				}
+				taskProvider.watchTask(name).catch((error) => {
+					logger.error(`Failed to run task (watch mode) '${taskName}':`, error);
+				});
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_OPEN_TASK_DEFINITION,
+			async (task: MiseTask | undefined) => {
+				let selectedTask = task;
+				if (!selectedTask) {
+					const tasks = await taskProvider.getTasksNames();
+					const taskName = await vscode.window.showQuickPick(tasks, {
+						placeHolder: "Select a task to open",
+					});
+					selectedTask = (await taskProvider.getTasks()).find(
+						(t) => t.name === taskName,
+					);
+				}
+
+				if (!selectedTask?.source) {
 					return;
 				}
 
-				const uri = vscode.Uri.file(task.source.replace(/^~/, os.homedir()));
+				const uri = vscode.Uri.file(
+					selectedTask.source.replace(/^~/, os.homedir()),
+				);
 				const document = await vscode.workspace.openTextDocument(uri);
 				const editor = await vscode.window.showTextDocument(document);
 
@@ -304,7 +346,7 @@ export function registerMiseCommands(
 					return;
 				}
 
-				const position = findTaskPosition(document, task.name);
+				const position = findTaskPosition(document, selectedTask.name);
 				if (position) {
 					const range = document.lineAt(position.line).range;
 					const startOfLine = new vscode.Position(position.line, 0);
@@ -313,7 +355,7 @@ export function registerMiseCommands(
 					editor.selection = selection;
 				} else {
 					vscode.window.showWarningMessage(
-						`Could not locate task "${task.name}" in ${document.fileName}`,
+						`Could not locate task "${selectedTask.name}" in ${document.fileName}`,
 					);
 				}
 			},

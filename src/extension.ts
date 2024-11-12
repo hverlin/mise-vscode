@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { window } from "vscode";
 import { MiseService } from "./miseService";
 import { MiseEnvsProvider } from "./providers/envProvider";
 import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
@@ -57,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	statusBarItem.text = "$(tools) Mise";
 	statusBarItem.tooltip = "Click to refresh Mise";
 	registerMiseCommands(context, tasksProvider);
-	registerCommands(context);
+	registerCommands(context, toolsProvider);
 
 	vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 	vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);
@@ -107,6 +106,32 @@ export async function activate(context: vscode.ExtensionContext) {
 			codelensProvider,
 		),
 	);
+
+	const taskProvider = vscode.tasks.registerTaskProvider("mise", {
+		provideTasks: async () => {
+			const tasks = await miseService.getTasks();
+			return tasks.map((task) => {
+				const taskDefinition: vscode.TaskDefinition = {
+					type: "mise",
+					task: task.name,
+				};
+				const baseCommand = miseService.createMiseCommand(`run ${task.name}`);
+				const execution = new vscode.ShellExecution(baseCommand);
+				return new vscode.Task(
+					taskDefinition,
+					vscode.TaskScope.Workspace,
+					task.name,
+					"mise",
+					execution,
+				);
+			});
+		},
+		resolveTask(_task: vscode.Task): vscode.Task | undefined {
+			return undefined;
+		},
+	});
+
+	context.subscriptions.push(taskProvider);
 }
 
 export function deactivate() {

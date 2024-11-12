@@ -17,7 +17,7 @@ export class MiseService {
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
 	}
 
-	private createMiseCommand(command: string) {
+	public createMiseCommand(command: string) {
 		const miseBinaryPath = vscode.workspace
 			.getConfiguration("mise")
 			.get("binPath");

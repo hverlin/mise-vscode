@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.11",
+	"version": "0.0.12",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -107,7 +107,19 @@
 					"group": "inline"
 				}
 			]
-		}
+		},
+		"taskDefinitions": [
+			{
+				"type": "mise",
+				"required": ["task"],
+				"properties": {
+					"task": {
+						"type": "string",
+						"description": "The mise task to run"
+					}
+				}
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package --no-optional",
