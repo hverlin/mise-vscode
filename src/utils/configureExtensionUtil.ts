@@ -18,6 +18,21 @@ type ConfigurableExtension = {
 
 export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
+		extensionName: "ms-python.python",
+		toolName: "python",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
+			return {
+				"python.defaultInterpreterPath": useShims
+					? path.join(miseConfig.dirs.shims, "python")
+					: path.join(tool.install_path, "bin", "python"),
+			};
+		},
+	},
+	{
 		extensionName: "denoland.vscode-deno",
 		toolName: "deno",
 		generateConfiguration: async (
@@ -27,7 +42,7 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 		) => {
 			return {
 				"deno.path": useShims
-					? path.join(miseConfig.dirs.shims, "bin", "deno")
+					? path.join(miseConfig.dirs.shims, "deno")
 					: path.join(tool.install_path, "bin", "deno"),
 			};
 		},
@@ -42,7 +57,7 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 		) => {
 			return {
 				"ruff.path": useShims
-					? [path.join(miseConfig.dirs.shims, "bin", "ruff")]
+					? [path.join(miseConfig.dirs.shims, "ruff")]
 					: [path.join(tool.install_path, "bin", "ruff")],
 			};
 		},
@@ -59,8 +74,8 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 				return {
 					"go.goroot": tool.install_path,
 					"go.alternateTools": {
-						go: path.join(miseConfig.dirs.shims, "bin", "go"),
-						dlv: path.join(miseConfig.dirs.shims, "bin", "dlv"),
+						go: path.join(miseConfig.dirs.shims, "go"),
+						dlv: path.join(miseConfig.dirs.shims, "dlv"),
 					},
 				};
 			}
@@ -84,7 +99,7 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 		) => {
 			return {
 				"bun.runtime": useShims
-					? path.join(miseConfig.dirs.shims, "bin", "bun")
+					? path.join(miseConfig.dirs.shims, "bun")
 					: path.join(tool.install_path, "bin", "bun"),
 			};
 		},
@@ -112,6 +127,16 @@ export async function configureExtension({
 	if (!extension) {
 		logger.error(
 			`Mise: Extension ${configurableExtension.extensionName} is not installed`,
+		);
+		return;
+	}
+
+	if (
+		vscode.workspace.workspaceFolders === undefined ||
+		vscode.workspace.workspaceFolders.length === 0
+	) {
+		logger.info(
+			`No workspace folders found, skipping extension configuration for: ${configurableExtension.extensionName}`,
 		);
 		return;
 	}

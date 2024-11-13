@@ -494,9 +494,6 @@ export function registerCommands(
 			});
 
 			if (!configurableTools.length) {
-				vscode.window.showErrorMessage(
-					"No configurable tools found. Please install a tool first.",
-				);
 				return;
 			}
 
