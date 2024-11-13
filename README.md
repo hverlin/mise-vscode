@@ -32,9 +32,12 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 <details>
 <summary>Supported extensions</summary>
 
-List of extensions that can be configured to use tools from `mise`. Search for `Mise: Configure ...` in the command palette.
+List of extensions that can be configured to use tools from `mise`. Search for `Mise: Configure extension sdk path...` in the command palette.
 
 - [Denoland](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
+- [Ruff](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff)
+- [Bun](https://marketplace.visualstudio.com/items?itemName=oven.bun-vscode)
+- [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
 
 </details>
 

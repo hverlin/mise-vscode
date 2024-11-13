@@ -130,8 +130,8 @@
 				"title": "Run Mise use"
 			},
 			{
-				"command": "mise.configureDenoPath",
-				"title": "Mise: Configure Deno path"
+				"command": "mise.configurePath",
+				"title": "Mise: Configure extension sdk path..."
 			}
 		],
 		"menus": {
