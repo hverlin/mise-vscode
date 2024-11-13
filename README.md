@@ -43,6 +43,8 @@ If you want to configure it manually, search for `Mise: Configure extension sdk 
 - [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
 - [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
 
+If you want to add one, you can open a PR that updates [src/utils/supportedExtensions.ts](https://github.com/hverlin/mise-vscode/blob/main/src/utils/supportedExtensions.ts)
+
 </details>
 
 ### Environment Variables
