@@ -19,8 +19,8 @@ VS Code extension for [mise](https://mise.jdx.dev/)
     - Command palette
     - Mise sidebar
     - Arguments are supported!
-- 📝 View task definitions 
-- ➕Create new file tasks 
+-  📝 View task definitions 
+-  ➕Create new file tasks 
 
 ### Tool Management
 - 🧰 View all [mise tools](https://mise.jdx.dev/dev-tools/) (python, node, jq, etc.) in the sidebar
