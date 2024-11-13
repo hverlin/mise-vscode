@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/hverlin/mise-vscode/compare/v0.3.0...v0.3.1) (2024-11-13)
+
+
+### Bug Fixes
+
+* fix paths to shims ([4b846a4](https://github.com/hverlin/mise-vscode/commit/4b846a47abf340fa2230427052f638fc8eccbfb6))
+
 ## [0.3.0](https://github.com/hverlin/mise-vscode/compare/v0.2.0...v0.3.0) (2024-11-13)
 
 
