@@ -23,6 +23,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - run: corepack enable && pnpm i --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm ts-check
-      - run: pnpm compile
+      - run: node --run lint
+      - run: node --run ts-check
+      - run: node --run test
+      - run: node --run compile
