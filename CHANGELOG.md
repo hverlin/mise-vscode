@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/hverlin/mise-vscode/compare/v0.1.3...v0.2.0) (2024-11-13)
+
+
+### Features
+
+* add option to configure Deno path automatically ([1c9e79b](https://github.com/hverlin/mise-vscode/commit/1c9e79b6a6491e5dfc23b52e6c1250578aeef744))
+* Allow configuring additional extensions (bun, ruff, go) ([22bb692](https://github.com/hverlin/mise-vscode/commit/22bb692f13f2ff51a61536c8f58f7de3a083b938))
+
+
+### Bug Fixes
+
+* improve error message if mise path is not set ([4e5423f](https://github.com/hverlin/mise-vscode/commit/4e5423f5345faf8c113d66974f4f50e13e632c0a))
+
 ## [0.1.3](https://github.com/hverlin/mise-vscode/compare/v0.1.2...v0.1.3) (2024-11-13)
 
 
