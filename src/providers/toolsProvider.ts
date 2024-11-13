@@ -1,6 +1,9 @@
 import * as os from "node:os";
+import * as path from "node:path";
 import * as vscode from "vscode";
+import { ConfigurationTarget } from "vscode";
 import type { MiseService } from "../miseService";
+import { logger } from "../utils/logger";
 
 type TreeItem = SourceItem | ToolItem;
 
@@ -11,6 +14,40 @@ export const MISE_INSTALL_ALL = "mise.installAll";
 export const MISE_USE = "mise.useTool";
 export const MISE_COPY_TOOL_INSTALL_PATH = "mise.copyToolInstallPath";
 export const MISE_COPY_TOOL_BIN_PATH = "mise.copyToolBinPath";
+
+async function configureExtension({
+	extensionName,
+	configKey,
+	configValue,
+}: {
+	extensionName: string;
+	configKey: string;
+	configValue: string;
+}) {
+	const extension = vscode.extensions.getExtension(extensionName);
+	if (!extension) {
+		logger.error(`Mise: Extension ${extensionName} is not installed`);
+		return;
+	}
+
+	const configuration = vscode.workspace.getConfiguration();
+
+	if (
+		JSON.stringify(configuration.get(configKey)) === JSON.stringify(configValue)
+	) {
+		return;
+	}
+
+	await configuration.update(
+		configKey,
+		configValue,
+		ConfigurationTarget.Workspace,
+	);
+
+	vscode.window.showInformationMessage(
+		`Mise: Extension ${extensionName} configured.\n${configKey}: ${configValue}`,
+	);
+}
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -374,5 +411,24 @@ export function registerCommands(
 				);
 			},
 		),
+
+		vscode.commands.registerCommand("mise.configureDenoPath", async () => {
+			const tools = await toolsProvider.getTools();
+			const denoTool = tools.find((tool) => tool.name === "deno");
+			if (!denoTool) {
+				vscode.window.showErrorMessage("Deno is not installed");
+				return;
+			}
+
+			configureExtension({
+				extensionName: "denoland.vscode-deno",
+				configKey: "deno.path",
+				configValue: path.join(denoTool.install_path, "bin", "deno"),
+			}).catch((error) => {
+				logger.error(
+					`Failed to configure the extension denoland.vscode-deno: ${error}`,
+				);
+			});
+		}),
 	);
 }

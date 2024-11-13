@@ -2,6 +2,13 @@
 
 Contributions are welcome! Please use the `discussions` tab before opening a PR.
 
+## Roadmap
+
+- [ ] Automatically setup SDKs based on mise tools
+- [ ] Suggest to install missing tools
+- [ ] UI to install tools
+- ...
+
 ## Running the extension locally
 Install `mise` (if you don't have it already): https://mise.jdx.dev/getting-started.html
 

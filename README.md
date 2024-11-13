@@ -27,6 +27,16 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 - 📍 Quick navigation to tool definitions
 - 📱 Show tools which are not installed or active
 - 📦 Install/Remove/Use tools directly from the sidebar
+- 🔧 Configure extensions to use tools from `mise`
+
+<details>
+<summary>Supported extensions</summary>
+
+List of extensions that can be configured to use tools from `mise`. Search for `Mise: Configure ...` in the command palette.
+
+- [Denoland](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
+
+</details>
 
 ### Environment Variables
 - 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)
@@ -44,13 +54,6 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 
 - Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
 - Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
-
-## Roadmap
-
-- [ ] Automatically setup SDKs based on mise tools
-- [ ] Suggest to install missing tools
-- [ ] UI to install tools
-- ...
 
 ## 📄 License
 

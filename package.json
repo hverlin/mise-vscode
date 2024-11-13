@@ -128,6 +128,10 @@
 			{
 				"command": "mise.useTool",
 				"title": "Run Mise use"
+			},
+			{
+				"command": "mise.configureDenoPath",
+				"title": "Mise: Configure Deno path"
 			}
 		],
 		"menus": {
