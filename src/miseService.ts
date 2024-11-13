@@ -3,6 +3,14 @@ import { logger } from "./utils/logger";
 import { execAsync } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
 
+function ensureMiseCommand(
+	miseCommand: string | undefined,
+): asserts miseCommand {
+	if (!miseCommand) {
+		throw new Error("Mise binary path is not configured");
+	}
+}
+
 export class MiseService {
 	private terminal: vscode.Terminal | undefined;
 	private readonly workspaceRoot: string | undefined;
@@ -13,14 +21,20 @@ export class MiseService {
 
 	async execMiseCommand(command: string) {
 		const miseCommand = this.createMiseCommand(command);
+		ensureMiseCommand(miseCommand);
 		logger.info(`Executing mise command: ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
 	}
 
+	public getMiseBinaryPath(): string | undefined {
+		return vscode.workspace.getConfiguration("mise").get("binPath");
+	}
+
 	public createMiseCommand(command: string) {
-		const miseBinaryPath = vscode.workspace
-			.getConfiguration("mise")
-			.get("binPath");
+		const miseBinaryPath = this.getMiseBinaryPath();
+		if (!miseBinaryPath) {
+			return undefined;
+		}
 
 		let miseCommand = `"${miseBinaryPath}"`;
 		const miseProfile = vscode.workspace
@@ -66,6 +80,10 @@ export class MiseService {
 	}
 
 	async getTasks(): Promise<MiseTask[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
 		try {
 			const { stdout } = await this.execMiseCommand("tasks ls --json");
 			return JSON.parse(stdout).map((task: MiseTask) => ({
@@ -85,6 +103,10 @@ export class MiseService {
 	}
 
 	async getTaskInfo(taskName: string): Promise<MiseTaskInfo | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined;
+		}
+
 		try {
 			const { stdout } = await this.execMiseCommand(`tasks info ${taskName}`);
 			return parseTaskInfo(stdout);
@@ -95,6 +117,10 @@ export class MiseService {
 	}
 
 	async getTools(): Promise<Array<MiseTool>> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
 		try {
 			const { stdout } = await this.execMiseCommand(
 				"ls --current --offline --json",
@@ -124,6 +150,10 @@ export class MiseService {
 	}
 
 	async getEnvs(): Promise<MiseEnv[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
 		try {
 			const { stdout } = await this.execMiseCommand("env --json");
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
@@ -145,6 +175,7 @@ export class MiseService {
 		const terminal = this.getOrCreateTerminal();
 		terminal.show();
 		const baseCommand = this.createMiseCommand(`run --timing ${taskName}`);
+		ensureMiseCommand(baseCommand);
 		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
 	}
 
@@ -154,6 +185,7 @@ export class MiseService {
 		const baseCommand = this.createMiseCommand(
 			`watch -t "${taskName.replace(/"/g, '\\"')}"`,
 		);
+		ensureMiseCommand(baseCommand);
 		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
 	}
 

@@ -180,6 +180,11 @@ async function runMiseToolActionInConsole(
 			.createMiseCommand(command);
 		outputChannel.appendLine(`> ${miseCommand}`);
 
+		if (!miseCommand) {
+			logger.warn("Could not find mise binary");
+			return;
+		}
+
 		const execution = new vscode.ShellExecution(miseCommand);
 		const task = new vscode.Task(
 			{ type: "mise" },

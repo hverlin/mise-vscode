@@ -43,7 +43,9 @@ export async function resolveMisePath(): Promise<string> {
 		}
 	}
 
-	throw new Error("Could not find mise binary in any standard location");
+	throw new Error(
+		"Could not find mise binary in any standard location (PATH, ~/.local/bin, ~/bin, /usr/local/bin, /opt/homebrew/bin...)",
+	);
 }
 
 export async function isValidBinary(filepath: string): Promise<boolean> {
@@ -55,9 +57,8 @@ export async function isValidBinary(filepath: string): Promise<boolean> {
 			return stdout.toLowerCase().includes("mise");
 		}
 	} catch (error) {
-		logger.error(
-			`Path ${filepath} is not a valid mise binary:`,
-			error as Error,
+		logger.info(
+			`Path ${filepath} is not a valid mise binary: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
 	return false;

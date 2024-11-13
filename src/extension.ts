@@ -37,7 +37,9 @@ async function initializeMisePath() {
 			"Mise binary not found. Please configure the binary path.",
 			{ settingsKey: "mise.binPath", type: "error" },
 		);
-		logger.error("Failed to resolve mise binary path:", error as Error);
+		logger.info(
+			`Failed to resolve mise binary path: ${error instanceof Error ? error?.message : String(error)}`,
+		);
 	}
 }
 
@@ -111,21 +113,28 @@ export async function activate(context: vscode.ExtensionContext) {
 	const taskProvider = vscode.tasks.registerTaskProvider("mise", {
 		provideTasks: async () => {
 			const tasks = await miseService.getTasks();
-			return tasks.map((task) => {
-				const taskDefinition: vscode.TaskDefinition = {
-					type: "mise",
-					task: task.name,
-				};
-				const baseCommand = miseService.createMiseCommand(`run ${task.name}`);
-				const execution = new vscode.ShellExecution(baseCommand);
-				return new vscode.Task(
-					taskDefinition,
-					vscode.TaskScope.Workspace,
-					task.name,
-					"mise",
-					execution,
-				);
-			});
+			return tasks
+				.map((task) => {
+					const taskDefinition: vscode.TaskDefinition = {
+						type: "mise",
+						task: task.name,
+					};
+
+					const baseCommand = miseService.createMiseCommand(`run ${task.name}`);
+					if (!baseCommand) {
+						return undefined;
+					}
+
+					const execution = new vscode.ShellExecution(baseCommand);
+					return new vscode.Task(
+						taskDefinition,
+						vscode.TaskScope.Workspace,
+						task.name,
+						"mise",
+						execution,
+					);
+				})
+				.filter((task) => task !== undefined);
 		},
 		resolveTask(_task: vscode.Task): vscode.Task | undefined {
 			return undefined;
