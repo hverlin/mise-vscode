@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/hverlin/mise-vscode/compare/v0.2.0...v0.3.0) (2024-11-13)
+
+
+### Features
+
+* automatically configure extensions on startup ([e898dba](https://github.com/hverlin/mise-vscode/commit/e898dba66fde1465f00cdd99d3fac3cf373c8d0c))
+* prompt the user if they want to use shims ([af4d41e](https://github.com/hverlin/mise-vscode/commit/af4d41eafae307540570fc842b73ac2102d3b7ad))
+
 ## [0.2.0](https://github.com/hverlin/mise-vscode/compare/v0.1.3...v0.2.0) (2024-11-13)
 
 
