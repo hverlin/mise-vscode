@@ -75,7 +75,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.workspace.onDidChangeConfiguration((e) => {
 		if (
 			e.affectsConfiguration("mise.binPath") ||
-			e.affectsConfiguration("mise.profile")
+			e.affectsConfiguration("mise.profile") ||
+			e.affectsConfiguration("mise.configureExtensionsAutomatically") ||
+			e.affectsConfiguration("mise.configureExtensionsUseShims")
 		) {
 			vscode.commands.executeCommand("mise.refreshEntry");
 		}
@@ -83,6 +85,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {
+			const miseProfile = vscode.workspace
+				.getConfiguration("mise")
+				.get("profile");
+
 			await vscode.commands.executeCommand(
 				"workbench.view.extension.mise-panel",
 			);
@@ -93,7 +99,16 @@ export async function activate(context: vscode.ExtensionContext) {
 				tasksProvider.refresh();
 				toolsProvider.refresh();
 				envsProvider.refresh();
+				const autoConfigureSdks = vscode.workspace
+					.getConfiguration("mise")
+					.get("configureExtensionsAutomatically");
+				if (autoConfigureSdks) {
+					await vscode.commands.executeCommand("mise.configureAllSdkPaths");
+				}
 				statusBarItem.text = "$(tools) Mise";
+				if (miseProfile) {
+					statusBarItem.text = `$(tools) Mise (${miseProfile})`;
+				}
 			} catch (error) {
 				statusBarItem.text = "$(error) Mise";
 				vscode.window.showErrorMessage(
@@ -148,6 +163,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		await vscode.commands.executeCommand("mise.refreshEntry");
 	});
 	context.subscriptions.push(miseWatcher);
+
+	await vscode.commands.executeCommand("mise.refreshEntry");
 }
 
 export function deactivate() {

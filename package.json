@@ -43,6 +43,18 @@
 					"type": "string",
 					"scope": "resource",
 					"markdownDescription": "Mise profile to use. (https://mise.jdx.dev/profiles.html)"
+				},
+				"mise.configureExtensionsAutomatically": {
+					"type": "boolean",
+					"default": true,
+					"scope": "resource",
+					"markdownDescription": "Automatically configure extensions for the current workspace."
+				},
+				"mise.configureExtensionsUseShims": {
+					"type": "boolean",
+					"scope": "resource",
+					"default": true,
+					"markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
 				}
 			}
 		},
@@ -130,8 +142,12 @@
 				"title": "Run Mise use"
 			},
 			{
-				"command": "mise.configurePath",
+				"command": "mise.configureSdkPath",
 				"title": "Mise: Configure extension sdk path..."
+			},
+			{
+				"command": "mise.configureAllSdkPaths",
+				"title": "Mise: Configure all extension sdk paths"
 			}
 		],
 		"menus": {

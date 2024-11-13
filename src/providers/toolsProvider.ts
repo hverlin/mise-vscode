@@ -7,6 +7,7 @@ import {
 	configureExtension,
 } from "../utils/configureExtensionUtil";
 import { logger } from "../utils/logger";
+import { MiseConfig } from "../utils/miseDoctorParser";
 
 type TreeItem = SourceItem | ToolItem;
 
@@ -387,8 +388,10 @@ export function registerCommands(
 		),
 
 		vscode.commands.registerCommand(
-			"mise.configurePath",
+			"mise.configureSdkPath",
 			async (toolName: string | undefined) => {
+				await toolsProvider.getMiseService().miseReshim();
+
 				let selectedToolName = toolName;
 
 				const tools = await toolsProvider.getTools();
@@ -442,16 +445,64 @@ export function registerCommands(
 					return;
 				}
 
-				configureExtension({
-					extensionName: configurableTool.extensionName,
-					configKey: configurableTool.configKey,
-					configValue: configurableTool.configValue(selectedTool),
-				}).catch((error) => {
-					logger.error(
-						`Failed to configure the extension denoland.vscode-deno: ${error}`,
-					);
-				});
+				const miseConfig = await toolsProvider
+					.getMiseService()
+					.getMiseConfiguration();
+				configureExtension(selectedTool, miseConfig, configurableTool).catch(
+					(error) => {
+						logger.error(
+							`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
+						);
+					},
+				);
 			},
 		),
+		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
+			await toolsProvider.getMiseService().miseReshim();
+
+			const tools = await toolsProvider.getTools();
+			const configurableTools = tools.filter((tool) => {
+				const configurableExtension = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
+					tool.name,
+				);
+				if (!configurableExtension) {
+					return false;
+				}
+
+				return vscode.extensions.getExtension(
+					configurableExtension.extensionName,
+				);
+			});
+
+			if (!configurableTools.length) {
+				vscode.window.showErrorMessage(
+					"No configurable tools found. Please install a tool first.",
+				);
+				return;
+			}
+
+			const miseConfig = await toolsProvider
+				.getMiseService()
+				.getMiseConfiguration();
+
+			await Promise.allSettled(
+				configurableTools.map(async (tool) => {
+					const configurableTool = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
+						tool.name,
+					);
+					if (!configurableTool) {
+						return;
+					}
+
+					try {
+						await configureExtension(tool, miseConfig, configurableTool);
+					} catch (error) {
+						logger.error(
+							`Failed to configure the extension ${configurableTool.extensionName} for ${tool.name}: ${error}`,
+						);
+					}
+				}),
+			);
+		}),
 	);
 }

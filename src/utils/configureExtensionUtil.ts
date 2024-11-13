@@ -2,41 +2,81 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { ConfigurationTarget } from "vscode";
 import { logger } from "./logger";
+import type { MiseConfig } from "./miseDoctorParser";
+
+type VSCodeConfigValue = string | Record<string, string> | Array<string>;
 
 type ConfigurableExtension = {
 	extensionName: string;
 	toolName: string;
-	configKey: string;
-	configValue: (tool: MiseTool) => string | string[];
+	generateConfiguration: (
+		tool: MiseTool,
+		miseConfig: MiseConfig,
+	) => Promise<Record<string, VSCodeConfigValue>>;
 };
+
+function shouldUseShims() {
+	return vscode.workspace
+		.getConfiguration("mise")
+		.get("configureExtensionsUseShims");
+}
 
 export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionName: "denoland.vscode-deno",
 		toolName: "deno",
-		configKey: "deno.path",
-		configValue: (tool: MiseTool) =>
-			path.join(tool.install_path, "bin", "deno"),
+		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+			return {
+				"deno.path": shouldUseShims()
+					? path.join(miseConfig.dirs.shims, "bin", "deno")
+					: path.join(tool.install_path, "bin", "deno"),
+			};
+		},
 	},
 	{
 		extensionName: "charliermarsh.ruff",
 		toolName: "ruff",
-		configKey: "ruff.path",
-		configValue: (tool: MiseTool) => [
-			path.join(tool.install_path, "bin", "ruff"),
-		],
+		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+			return {
+				"ruff.path": shouldUseShims()
+					? [path.join(miseConfig.dirs.shims, "bin", "ruff")]
+					: [path.join(tool.install_path, "bin", "ruff")],
+			};
+		},
 	},
 	{
 		extensionName: "golang.go",
 		toolName: "go",
-		configKey: "go.goroot",
-		configValue: (tool: MiseTool) => path.join(tool.install_path),
+		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+			if (shouldUseShims()) {
+				return {
+					"go.goroot": tool.install_path,
+					"go.alternateTools": {
+						go: path.join(miseConfig.dirs.shims, "bin", "go"),
+						dlv: path.join(miseConfig.dirs.shims, "bin", "dlv"),
+					},
+				};
+			}
+
+			return {
+				"go.goroot": tool.install_path,
+				"go.alternateTools": {
+					go: path.join(tool.install_path, "bin", "go"),
+					dlv: path.join(tool.install_path, "bin", "dlv"),
+				},
+			};
+		},
 	},
 	{
 		extensionName: "oven.bun-vscode",
 		toolName: "bun",
-		configKey: "bun.runtime",
-		configValue: (tool: MiseTool) => path.join(tool.install_path, "bin", "bun"),
+		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+			return {
+				"bun.runtime": shouldUseShims()
+					? path.join(miseConfig.dirs.shims, "bin", "bun")
+					: path.join(tool.install_path, "bin", "bun"),
+			};
+		},
 	},
 ];
 
@@ -44,36 +84,47 @@ export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
 	CONFIGURABLE_EXTENSIONS.map((item) => [item.toolName, item]),
 );
 
-export async function configureExtension({
-	extensionName,
-	configKey,
-	configValue,
-}: {
-	extensionName: string;
-	configKey: string;
-	configValue: string | string[];
-}) {
-	const extension = vscode.extensions.getExtension(extensionName);
+export async function configureExtension(
+	tool: MiseTool,
+	miseConfig: MiseConfig,
+	configurableExtension: ConfigurableExtension,
+) {
+	const extension = vscode.extensions.getExtension(
+		configurableExtension.extensionName,
+	);
 	if (!extension) {
-		logger.error(`Mise: Extension ${extensionName} is not installed`);
+		logger.error(
+			`Mise: Extension ${configurableExtension.extensionName} is not installed`,
+		);
 		return;
 	}
 
 	const configuration = vscode.workspace.getConfiguration();
-
-	if (
-		JSON.stringify(configuration.get(configKey)) === JSON.stringify(configValue)
-	) {
-		return;
-	}
-
-	await configuration.update(
-		configKey,
-		configValue,
-		ConfigurationTarget.Workspace,
+	const extConfig = await configurableExtension.generateConfiguration(
+		tool,
+		miseConfig,
 	);
 
+	const updatedKeys: string[] = [];
+	for (const [configKey, configValue] of Object.entries(extConfig)) {
+		const previousConfigValue = configuration.get(configKey);
+		const updatedValueStringified = JSON.stringify(configValue);
+		if (JSON.stringify(previousConfigValue) === updatedValueStringified) {
+			continue;
+		}
+
+		await configuration.update(
+			configKey,
+			configValue,
+			ConfigurationTarget.Workspace,
+		);
+		updatedKeys.push(`${configKey}: ${updatedValueStringified}`);
+	}
+
+	if (updatedKeys.length === 0) {
+		return;
+	}
 	vscode.window.showInformationMessage(
-		`Mise: Extension ${extensionName} configured.\n${configKey}: ${configValue}`,
+		`Mise: Extension ${configurableExtension.extensionName} configured.\n${updatedKeys.join("\n")}`,
 	);
 }

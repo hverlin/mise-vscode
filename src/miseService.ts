@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { logger } from "./utils/logger";
-import { execAsync } from "./utils/shell";
+import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
+import { execAsync, execAsyncMergeOutput } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
 
 function ensureMiseCommand(
@@ -19,8 +20,8 @@ export class MiseService {
 		this.workspaceRoot = vscode.workspace.rootPath;
 	}
 
-	async execMiseCommand(command: string) {
-		const miseCommand = this.createMiseCommand(command);
+	async execMiseCommand(command: string, { setProfile = true } = {}) {
+		const miseCommand = this.createMiseCommand(command, { setProfile });
 		ensureMiseCommand(miseCommand);
 		logger.info(`Executing mise command: ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
@@ -30,7 +31,10 @@ export class MiseService {
 		return vscode.workspace.getConfiguration("mise").get("binPath");
 	}
 
-	public createMiseCommand(command: string) {
+	public createMiseCommand(
+		command: string,
+		{ setProfile = true } = {},
+	): string | undefined {
 		const miseBinaryPath = this.getMiseBinaryPath();
 		if (!miseBinaryPath) {
 			return undefined;
@@ -41,7 +45,7 @@ export class MiseService {
 			.getConfiguration("mise")
 			.get("profile");
 
-		if (miseProfile && !command.includes("use --path")) {
+		if (miseProfile && setProfile && !command.includes("use --path")) {
 			miseCommand = `${miseCommand} --profile ${miseProfile}`;
 		}
 		return `${miseCommand} ${command}`;
@@ -219,5 +223,24 @@ export class MiseService {
 	async miseWhich(name: string) {
 		const { stdout } = await this.execMiseCommand(`which ${name}`);
 		return stdout.trim();
+	}
+
+	async getMiseConfiguration(): Promise<MiseConfig> {
+		const miseCmd = this.createMiseCommand("doctor", {
+			setProfile: false,
+		});
+
+		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "");
+		if (stderr) {
+			logger.warn(stderr);
+		}
+
+		const config = parseMiseConfig(stdout);
+		logger.info(`Config: ${JSON.stringify(config, null, 2)}`);
+		return config;
+	}
+
+	async miseReshim() {
+		await this.execMiseCommand("reshim", { setProfile: false });
 	}
 }
