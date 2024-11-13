@@ -209,7 +209,7 @@ async function runMiseToolActionInConsole(
 	}
 }
 
-export function registerCommands(
+export function registerToolsCommands(
 	context: vscode.ExtensionContext,
 	toolsProvider: MiseToolsProvider,
 ) {

@@ -135,6 +135,14 @@
 				]
 			},
 			{
+				"command": "mise.copyEnvVariableName",
+				"title": "Mise: Copy Environment Variable Name"
+			},
+			{
+				"command": "mise.copyEnvVariableValue",
+				"title": "Mise: Copy Environment Variable Value"
+			},
+			{
 				"command": "mise.installTool",
 				"title": "Mise: Install Tool"
 			},
@@ -230,6 +238,16 @@
 					"when": "view == miseToolsView && viewItem == source",
 					"command": "mise.useTool",
 					"group": "inline"
+				},
+				{
+					"command": "mise.copyEnvVariableName",
+					"when": "view == miseEnvsView && viewItem == envItem",
+					"group": "2_modification"
+				},
+				{
+					"when": "view == miseEnvsView && viewItem == envItem",
+					"command": "mise.copyEnvVariableValue",
+					"group": "2_modification"
 				}
 			]
 		},

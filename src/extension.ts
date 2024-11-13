@@ -1,13 +1,19 @@
 import * as vscode from "vscode";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
-import { MiseEnvsProvider } from "./providers/envProvider";
+import {
+	MiseEnvsProvider,
+	registerEnvsCommands,
+} from "./providers/envProvider";
 import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
 import {
 	MiseTasksProvider,
-	registerMiseCommands,
+	registerTasksCommands,
 } from "./providers/tasksProvider";
-import { MiseToolsProvider, registerCommands } from "./providers/toolsProvider";
+import {
+	MiseToolsProvider,
+	registerToolsCommands,
+} from "./providers/toolsProvider";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
 import { showSettingsNotification } from "./utils/notify";
@@ -58,8 +64,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	statusBarItem.show();
 	statusBarItem.text = "$(tools) Mise";
 	statusBarItem.tooltip = "Click to refresh Mise";
-	registerMiseCommands(context, tasksProvider);
-	registerCommands(context, toolsProvider);
+
+	registerTasksCommands(context, tasksProvider);
+	registerToolsCommands(context, toolsProvider);
+	registerEnvsCommands(context, miseService);
 
 	vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 	vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);

@@ -300,7 +300,7 @@ function findTaskPosition(
 	return undefined;
 }
 
-export function registerMiseCommands(
+export function registerTasksCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,
 ) {
