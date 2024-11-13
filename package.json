@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.20",
+	"version": "0.0.21",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"

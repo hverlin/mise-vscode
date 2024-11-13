@@ -42,13 +42,12 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 
 ## 🐛 Bug Reports / Feature Requests / Contributing
 
-- Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues) with:
-- Contributions are welcome! Please use the `discussions` tab before opening a PR.
+- Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
+- Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## Roadmap
 
 - [ ] Automatically setup SDKs based on mise tools
-- [ ] Improve mise task integration
 - [ ] Suggest to install missing tools
 - [ ] UI to install tools
 - ...
