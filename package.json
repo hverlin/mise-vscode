@@ -2,7 +2,7 @@
 	"name": "mise-vscode",
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
-	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
+	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
 	"version": "0.5.0",
 	"repository": {
 		"type": "git",
