@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "VSCode extension for mise (manged dev tools, tasks and environment variables)",
-	"version": "0.0.21",
+	"version": "0.1.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -15,7 +15,9 @@
 	"engines": {
 		"vscode": "^1.85.0"
 	},
-	"categories": ["Other"],
+	"categories": [
+		"Other"
+	],
 	"keywords": [
 		"mise",
 		"mise-en-place",
@@ -103,12 +105,16 @@
 			{
 				"command": "mise.copyToolInstallPath",
 				"title": "Copy Tool Install Path",
-				"context": ["miseToolsView"]
+				"context": [
+					"miseToolsView"
+				]
 			},
 			{
 				"command": "mise.copyToolBinPath",
 				"title": "Copy Tool Bin Path",
-				"context": ["miseToolsView"]
+				"context": [
+					"miseToolsView"
+				]
 			},
 			{
 				"command": "mise.installTool",
@@ -188,7 +194,9 @@
 		"taskDefinitions": [
 			{
 				"type": "mise",
-				"required": ["task"],
+				"required": [
+					"task"
+				],
 				"properties": {
 					"task": {
 						"type": "string",
