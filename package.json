@@ -31,6 +31,16 @@
 	"icon": "resources/icon.png",
 	"main": "./dist/extension.js",
 	"contributes": {
+		"snippets": [
+			{
+				"language": "toml",
+				"path": "./snippets/toml-tasks-snippets.json"
+			},
+			{
+				"language": "shellscript",
+				"path": "./snippets/file-tasks-snippets.json"
+			}
+		],
 		"configuration": {
 			"title": "Mise",
 			"properties": {

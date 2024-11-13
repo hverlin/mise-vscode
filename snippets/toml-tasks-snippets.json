@@ -1,0 +1,61 @@
+{
+	"tomlTask": {
+		"prefix": "task",
+		"description": "Create a new mise task with common options",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}${4:depends = [${5:'dependency'}]\n}run = \"echo 'running...'\"",
+			"$0"
+		]
+	},
+	"tomlTaskArray": {
+		"prefix": "taska",
+		"description": "Create a mise task with multiple commands",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}${4:depends = [${5:'dependency'}]\n}run = [",
+			"    \"echo 'running step 1...'\",",
+			"    \"echo 'running step 2...'\"",
+			"]",
+			"$0"
+		]
+	},
+	"tomlTaskSimple": {
+		"prefix": "tasks",
+		"description": "Create a simple mise task",
+		"body": ["[tasks.${1:taskname}]", "run = \"echo 'running...'\"", "$0"]
+	},
+	"tomlTaskScript": {
+		"prefix": "taskscript",
+		"description": "Create a mise task with multiline script",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = \"\"\"",
+			"#!/usr/bin/env ${4|bash,sh,python|}",
+			"${5:# your script here}",
+			"\"\"\"",
+			"$0"
+		]
+	},
+	"tomlTaskFull": {
+		"prefix": "taskfull",
+		"description": "Create a mise task with all possible options",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"description = '${2:Task description}'",
+			"depends = [${3:'dependency'}]",
+			"alias = '${4:shortname}'",
+			"dir = '${5:{{cwd}}}'",
+			"env = {${6:KEY = 'value'}}",
+			"hide = ${7|true,false|}",
+			"sources = [${8:'src/**/*'}]",
+			"outputs = [${9:'dist/**/*'}]",
+			"shell = '${10:bash -c}'",
+			"run = [",
+			"    \"echo 'running step 1...'\",",
+			"    \"echo 'running step 2...'\"",
+			"]",
+			"$0"
+		]
+	}
+}

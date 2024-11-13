@@ -1,0 +1,15 @@
+{
+	"mise File Task Configuration": {
+		"prefix": "mise-task",
+		"scope": "shellscript",
+		"description": "Insert a file task configuration block",
+		"body": [
+			"#MISE alias=\"${1:taskname}\"",
+			"#MISE sources=[${2:\"src/**/*\"}]",
+			"#MISE outputs=[${3:\"target/output\"}]",
+			"#MISE env={${4:VARIABLE = \"value\"}}",
+			"#MISE depends=[${5:\"dependency\"}]",
+			"$0"
+		]
+	}
+}

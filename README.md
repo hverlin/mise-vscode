@@ -50,6 +50,9 @@ If you want to add one, you can open a PR that updates [src/utils/supportedExten
 ### Environment Variables
 - 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)
 
+### Snippets
+- 📝 Snippets to create tasks in `mise.toml` and task files
+
 ## 🚀 Getting Started
 
 1. Install the extension from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview) or [Open VSX](https://open-vsx.org/extension/hverlin/mise-vscode)
