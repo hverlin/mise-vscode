@@ -86,60 +86,67 @@
 		"commands": [
 			{
 				"command": "mise.refreshEntry",
-				"title": "Refresh",
+				"title": "Mise: reload configuration",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "mise.runTask",
-				"title": "Run Mise Task"
+				"title": "Mise: run task",
+				"icon": "$(play)"
 			},
 			{
 				"command": "mise.watchTask",
-				"title": "Run Mise Task in Watch Mode"
+				"title": "Mise: Run Task in Watch Mode"
 			},
 			{
 				"command": "mise.createFileTask",
-				"title": "Create Mise File Task",
+				"title": "Mise: Create File Task",
 				"icon": "$(new-file)"
 			},
 			{
+				"command": "mise.createTomlTask",
+				"title": "Mise: Create Toml Task",
+				"icon": "$(add)"
+			},
+			{
 				"command": "mise.openToolDefinition",
-				"title": "Open Tool Definition"
+				"title": "Mise: Open Tool Definition"
 			},
 			{
 				"command": "mise.openTaskDefinition",
-				"title": "Open Mise Task Definition"
+				"title": "Mise: Open Task Definition"
 			},
 			{
 				"command": "mise.removeTool",
-				"title": "Remove Tool"
+				"title": "Mise: Remove Tool"
 			},
 			{
 				"command": "mise.copyToolInstallPath",
-				"title": "Copy Tool Install Path",
+				"title": "Mise: Copy Tool Install Path",
 				"context": [
 					"miseToolsView"
 				]
 			},
 			{
 				"command": "mise.copyToolBinPath",
-				"title": "Copy Tool Bin Path",
+				"title": "Mise: Copy Tool Bin Path",
 				"context": [
 					"miseToolsView"
 				]
 			},
 			{
 				"command": "mise.installTool",
-				"title": "Install Tool"
+				"title": "Mise: Install Tool"
 			},
 			{
 				"command": "mise.installAll",
-				"title": "Run mise install",
+				"title": "Mise: run mise install",
 				"icon": "$(cloud-download)"
 			},
 			{
 				"command": "mise.useTool",
-				"title": "Run Mise use"
+				"title": "Mise: Run mise use",
+				"icon": "$(add)"
 			},
 			{
 				"command": "mise.configureSdkPath",
@@ -153,25 +160,40 @@
 		"menus": {
 			"view/title": [
 				{
+					"command": "mise.createTomlTask",
+					"when": "view == miseTasksView",
+					"group": "navigation@1"
+				},
+				{
 					"command": "mise.createFileTask",
 					"when": "view == miseTasksView",
+					"group": "navigation@2"
+				},
+				{
+					"command": "mise.useTool",
+					"when": "view == miseToolsView",
 					"group": "navigation@1"
 				},
 				{
 					"command": "mise.installAll",
 					"when": "view == miseToolsView",
-					"group": "navigation@1"
+					"group": "navigation@2"
 				},
 				{
 					"command": "mise.refreshEntry",
 					"when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
-					"group": "navigation@2"
+					"group": "navigation@3"
 				}
 			],
 			"view/item/context": [
 				{
 					"when": "view == miseTasksView && viewItem == miseTask",
 					"command": "mise.runTask",
+					"group": "inline"
+				},
+				{
+					"when": "view == miseTasksView && viewItem == miseTaskGroup",
+					"command": "mise.createTomlTask",
 					"group": "inline"
 				},
 				{

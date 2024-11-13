@@ -240,6 +240,18 @@ export class MiseService {
 		return config;
 	}
 
+	async getMiseConfigFiles() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.execMiseCommand("config ls --json");
+		return JSON.parse(stdout) as Array<{
+			path: string;
+			tools: string[];
+		}>;
+	}
+
 	async miseReshim() {
 		await this.execMiseCommand("reshim", { setProfile: false });
 	}

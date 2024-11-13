@@ -2,6 +2,10 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 
+export function expandPath(filePath: string): string {
+	return path.normalize(filePath).replace("~/", `${os.homedir()}/`);
+}
+
 async function makeDirectory(dirPath: string): Promise<void> {
 	try {
 		await fs.mkdir(dirPath, { recursive: true });

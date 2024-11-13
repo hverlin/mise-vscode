@@ -2,7 +2,7 @@ import * as os from "node:os";
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
-import { setupTaskFile } from "../utils/fileUtils";
+import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
@@ -11,6 +11,7 @@ export const RUN_TASK_COMMAND = "mise.runTask";
 export const WATCH_TASK_COMMAND = "mise.watchTask";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_CREATE_FILE_TASK = "mise.createFileTask";
+export const MISE_CREATE_TOML_TASK = "mise.createTomlTask";
 
 const allowedTaskDirs = [
 	"mise-tasks",
@@ -38,11 +39,24 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return element;
 	}
 
+	getMiseService(): MiseService {
+		return this.miseService;
+	}
+
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (!element) {
-			// Root level - return source groups
 			const tasks = await this.miseService.getTasks();
+			const configFiles = await this.miseService.getMiseConfigFiles();
 			const groupedTasks = this.groupTasksBySource(tasks);
+			for (const configFile of configFiles) {
+				const expandedPath = expandPath(configFile.path);
+				const isRelativeToWorkspace = expandedPath.startsWith(
+					vscode.workspace.rootPath || "",
+				);
+				if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
+					groupedTasks[expandedPath] = [];
+				}
+			}
 
 			return Object.entries(groupedTasks).map(
 				([source, tasks]) => new SourceGroupItem(source, tasks),
@@ -67,20 +81,19 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 
 	private groupTasksBySource(tasks: MiseTask[]): Record<string, MiseTask[]> {
-		return tasks.reduce(
-			(groups, task) => {
-				const source =
-					(task.source.endsWith(".toml")
-						? task.source
-						: task.source.split("/").slice(0, -1).join("/")) || "Unknown";
-				if (!groups[source]) {
-					groups[source] = [];
-				}
-				groups[source].push(task);
-				return groups;
-			},
-			{} as Record<string, MiseTask[]>,
-		);
+		const groupedTasks: Record<string, MiseTask[]> = {};
+
+		for (const task of tasks) {
+			const source =
+				(task.source.endsWith(".toml")
+					? expandPath(task.source)
+					: task.source.split("/").slice(0, -1).join("/")) || "Unknown";
+			if (!groupedTasks[source]) {
+				groupedTasks[source] = [];
+			}
+			groupedTasks[source].push(task);
+		}
+		return groupedTasks;
 	}
 
 	private async collectArgumentValues(info: MiseTaskInfo): Promise<string[]> {
@@ -209,13 +222,18 @@ class SourceGroupItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 	) {
-		const pathShown = source
-			.replace(/^~/, os.homedir())
-			.replace(`${vscode.workspace.rootPath}/` || "", "");
+		const pathShown = expandPath(source).replace(
+			`${vscode.workspace.rootPath}/` || "",
+			"",
+		);
 
-		super(pathShown, vscode.TreeItemCollapsibleState.Expanded);
-		this.tooltip = `Source: ${source}\nTasks: ${tasks.length}`;
+		super(
+			`${pathShown} (${tasks.length} tasks)`,
+			vscode.TreeItemCollapsibleState.Expanded,
+		);
+		this.tooltip = `Source: ${source}`;
 		this.iconPath = new vscode.ThemeIcon("folder");
+		this.contextValue = "miseTaskGroup";
 	}
 }
 
@@ -223,7 +241,7 @@ class TaskItem extends vscode.TreeItem {
 	constructor(public readonly task: MiseTask) {
 		super(task.name, vscode.TreeItemCollapsibleState.None);
 		this.tooltip = `Task: ${task.name}\nSource: ${task.source}\nDescription: ${task.description}`;
-		this.iconPath = new vscode.ThemeIcon("play");
+		this.iconPath = new vscode.ThemeIcon("tasklist");
 
 		this.command = {
 			command: MISE_OPEN_TASK_DEFINITION,
@@ -429,5 +447,53 @@ export function registerMiseCommands(
 			await vscode.commands.executeCommand("workbench.action.files.save");
 			taskProvider.refresh();
 		}),
+
+		vscode.commands.registerCommand(
+			MISE_CREATE_TOML_TASK,
+			async (path: string | SourceGroupItem | undefined) => {
+				let selectedPath = path;
+				if (!selectedPath) {
+					const miseConfigFiles = await taskProvider
+						.getMiseService()
+						.getMiseConfigFiles();
+					selectedPath = await vscode.window.showQuickPick(
+						miseConfigFiles.map((file) => file.path),
+						{ placeHolder: "Select a configuration file" },
+					);
+				} else if (selectedPath instanceof SourceGroupItem) {
+					selectedPath = selectedPath.source;
+				}
+
+				if (!selectedPath) {
+					return;
+				}
+
+				const uri = vscode.Uri.file(selectedPath);
+				const document = await vscode.workspace.openTextDocument(uri);
+				const editor = await vscode.window.showTextDocument(document);
+
+				const taskName = await vscode.window.showInputBox({
+					prompt: "Enter the name of the task",
+					placeHolder: "task_name",
+					validateInput: (value) => {
+						if (!value) {
+							return "Task name is required";
+						}
+						return null;
+					},
+				});
+
+				if (!taskName) {
+					return;
+				}
+
+				editor.edit((edit) => {
+					edit.insert(
+						new vscode.Position(document.lineCount, 0),
+						`\n[tasks.${taskName}]\n`,
+					);
+				});
+			},
+		),
 	);
 }

@@ -1,5 +1,4 @@
 import * as os from "node:os";
-import * as path from "node:path";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import {
@@ -7,7 +6,6 @@ import {
 	configureExtension,
 } from "../utils/configureExtensionUtil";
 import { logger } from "../utils/logger";
-import { MiseConfig } from "../utils/miseDoctorParser";
 
 type TreeItem = SourceItem | ToolItem;
 
@@ -15,7 +13,7 @@ export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
 export const MISE_REMOVE_TOOL = "mise.removeTool";
 export const MISE_INSTALL_TOOL = "mise.installTool";
 export const MISE_INSTALL_ALL = "mise.installAll";
-export const MISE_USE = "mise.useTool";
+export const MISE_USE_TOOL = "mise.useTool";
 export const MISE_COPY_TOOL_INSTALL_PATH = "mise.copyToolInstallPath";
 export const MISE_COPY_TOOL_BIN_PATH = "mise.copyToolBinPath";
 
@@ -46,7 +44,31 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
 		if (!element) {
 			const tools = await this.miseService.getTools();
+			const configFiles = await this.miseService.getMiseConfigFiles();
 			const toolsBySource = this.groupToolsBySource(tools);
+			for (const configFile of configFiles) {
+				if (!toolsBySource[configFile.path]) {
+					toolsBySource[configFile.path] = [];
+				}
+				toolsBySource[configFile.path].push(
+					...configFile.tools
+						.filter(
+							(tool) =>
+								!tools.find(
+									(t) => t.name === tool && t.source?.path === configFile.path,
+								),
+						)
+						.map((tool) => ({
+							name: tool,
+							version: "",
+							source: { type: "file", path: configFile.path },
+							requested_version: "",
+							installed: true,
+							active: false,
+							install_path: "-",
+						})),
+				);
+			}
 
 			return Object.entries(toolsBySource).map(
 				([source, tools]) => new SourceItem(source, tools),
@@ -61,14 +83,15 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	private groupToolsBySource(tools: MiseTool[]): Record<string, MiseTool[]> {
-		return tools.reduce((acc: Record<string, MiseTool[]>, tool: MiseTool) => {
+		const groupedTools: Record<string, MiseTool[]> = {};
+		for (const tool of tools) {
 			const source = tool.source?.path || "Unknown";
-			if (!acc[source]) {
-				acc[source] = [];
+			if (!groupedTools[source]) {
+				groupedTools[source] = [];
 			}
-			acc[source].push(tool);
-			return acc;
-		}, {});
+			groupedTools[source].push(tool);
+		}
+		return groupedTools;
 	}
 }
 
@@ -101,7 +124,13 @@ class ToolItem extends vscode.TreeItem {
 	tool: MiseTool;
 	constructor(tool: MiseTool) {
 		super(
-			`${tool.name} ${tool.version} (${tool.requested_version})`,
+			[
+				tool.name,
+				tool.version,
+				tool.requested_version ? `(${tool.requested_version})` : "",
+			]
+				.filter(Boolean)
+				.join(" "),
 			vscode.TreeItemCollapsibleState.None,
 		);
 		this.tool = tool;
@@ -114,7 +143,11 @@ Installed: ${tool.installed}
 Install Path: ${tool.install_path}`;
 
 		this.iconPath = this.getToolIcon(tool);
-		this.contextValue = tool.installed ? "tool-installed" : "tool-notinstalled";
+		this.contextValue = !tool.version
+			? ""
+			: tool.installed
+				? "tool-installed"
+				: "tool-notinstalled";
 
 		if (tool.source?.path) {
 			this.command = {
@@ -320,9 +353,24 @@ export function registerCommands(
 		}),
 
 		vscode.commands.registerCommand(
-			MISE_USE,
-			async (path: string | SourceItem) => {
-				const pathShown = path instanceof SourceItem ? path.source : path;
+			MISE_USE_TOOL,
+			async (path: string | SourceItem | undefined) => {
+				let selectedPath = path;
+				if (!selectedPath) {
+					const miseConfigFiles = await toolsProvider
+						.getMiseService()
+						.getMiseConfigFiles();
+					selectedPath = await vscode.window.showQuickPick(
+						miseConfigFiles.map((file) => file.path),
+						{ placeHolder: "Select a configuration file" },
+					);
+				} else if (selectedPath instanceof SourceItem) {
+					selectedPath = path instanceof SourceItem ? path.source : path;
+				}
+
+				if (!selectedPath) {
+					return;
+				}
 
 				const selectedToolName = await vscode.window.showInputBox({
 					placeHolder: "Enter the tool name to use (e.g. node@latest)",
@@ -340,7 +388,7 @@ export function registerCommands(
 
 				await runMiseToolActionInConsole(
 					toolsProvider,
-					`use --path ${pathShown} ${selectedToolName}`,
+					`use --path ${selectedPath} ${selectedToolName}`,
 					"Use Tool",
 				);
 			},

@@ -37,10 +37,11 @@ Extensions are automatically configured to use `mise shims`. You can disable thi
 
 If you want to configure it manually, search for `Mise: Configure extension sdk path...` in the command palette.
 
-- [Denoland](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
+- [Deno](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
 - [Ruff](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff)
 - [Bun](https://marketplace.visualstudio.com/items?itemName=oven.bun-vscode)
 - [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
+- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
 
 </details>
 
