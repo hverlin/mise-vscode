@@ -127,7 +127,6 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 					}
 				}
 			} else {
-				// This is a boolean flag
 				const shouldEnable = await vscode.window.showQuickPick(["Yes", "No"], {
 					placeHolder: `Enable ${flag.name}?`,
 					ignoreFocusOut: true,

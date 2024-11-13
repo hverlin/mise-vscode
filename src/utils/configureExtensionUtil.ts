@@ -12,22 +12,21 @@ type ConfigurableExtension = {
 	generateConfiguration: (
 		tool: MiseTool,
 		miseConfig: MiseConfig,
+		{ useShims }: { useShims: boolean },
 	) => Promise<Record<string, VSCodeConfigValue>>;
 };
-
-function shouldUseShims() {
-	return vscode.workspace
-		.getConfiguration("mise")
-		.get("configureExtensionsUseShims");
-}
 
 export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionName: "denoland.vscode-deno",
 		toolName: "deno",
-		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
 			return {
-				"deno.path": shouldUseShims()
+				"deno.path": useShims
 					? path.join(miseConfig.dirs.shims, "bin", "deno")
 					: path.join(tool.install_path, "bin", "deno"),
 			};
@@ -36,9 +35,13 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionName: "charliermarsh.ruff",
 		toolName: "ruff",
-		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
 			return {
-				"ruff.path": shouldUseShims()
+				"ruff.path": useShims
 					? [path.join(miseConfig.dirs.shims, "bin", "ruff")]
 					: [path.join(tool.install_path, "bin", "ruff")],
 			};
@@ -47,8 +50,12 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionName: "golang.go",
 		toolName: "go",
-		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
-			if (shouldUseShims()) {
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
+			if (useShims) {
 				return {
 					"go.goroot": tool.install_path,
 					"go.alternateTools": {
@@ -70,9 +77,13 @@ export const CONFIGURABLE_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionName: "oven.bun-vscode",
 		toolName: "bun",
-		generateConfiguration: async (tool: MiseTool, miseConfig: MiseConfig) => {
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
 			return {
-				"bun.runtime": shouldUseShims()
+				"bun.runtime": useShims
 					? path.join(miseConfig.dirs.shims, "bin", "bun")
 					: path.join(tool.install_path, "bin", "bun"),
 			};
@@ -84,11 +95,17 @@ export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
 	CONFIGURABLE_EXTENSIONS.map((item) => [item.toolName, item]),
 );
 
-export async function configureExtension(
-	tool: MiseTool,
-	miseConfig: MiseConfig,
-	configurableExtension: ConfigurableExtension,
-) {
+export async function configureExtension({
+	tool,
+	miseConfig,
+	configurableExtension,
+	useShims = true,
+}: {
+	tool: MiseTool;
+	miseConfig: MiseConfig;
+	configurableExtension: ConfigurableExtension;
+	useShims?: boolean;
+}) {
 	const extension = vscode.extensions.getExtension(
 		configurableExtension.extensionName,
 	);
@@ -103,6 +120,7 @@ export async function configureExtension(
 	const extConfig = await configurableExtension.generateConfiguration(
 		tool,
 		miseConfig,
+		{ useShims },
 	);
 
 	const updatedKeys: string[] = [];

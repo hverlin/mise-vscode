@@ -435,6 +435,22 @@ export function registerCommands(
 					return;
 				}
 
+				const useShimsDefault = vscode.workspace
+					.getConfiguration("mise")
+					.get("configureExtensionsUseShims");
+
+				const useMiseShims = await vscode.window.showQuickPick(
+					useShimsDefault ? ["Yes", "No"] : ["No", "Yes"],
+					{
+						placeHolder: `Use mise shims for ${selectedToolName}? (recommended as it will automatically load environment variables)`,
+						ignoreFocusOut: true,
+					},
+				);
+
+				if (!useMiseShims) {
+					return;
+				}
+
 				const selectedTool = configurableTools.find(
 					(tool) => tool.name === selectedToolName,
 				);
@@ -448,13 +464,16 @@ export function registerCommands(
 				const miseConfig = await toolsProvider
 					.getMiseService()
 					.getMiseConfiguration();
-				configureExtension(selectedTool, miseConfig, configurableTool).catch(
-					(error) => {
-						logger.error(
-							`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
-						);
-					},
-				);
+				configureExtension({
+					tool: selectedTool,
+					miseConfig: miseConfig,
+					configurableExtension: configurableTool,
+					useShims: useMiseShims === "Yes",
+				}).catch((error) => {
+					logger.error(
+						`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
+					);
+				});
 			},
 		),
 		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
@@ -495,7 +514,14 @@ export function registerCommands(
 					}
 
 					try {
-						await configureExtension(tool, miseConfig, configurableTool);
+						await configureExtension({
+							tool: tool,
+							miseConfig: miseConfig,
+							configurableExtension: configurableTool,
+							useShims: vscode.workspace
+								.getConfiguration("mise")
+								.get("configureExtensionsUseShims"),
+						});
 					} catch (error) {
 						logger.error(
 							`Failed to configure the extension ${configurableTool.extensionName} for ${tool.name}: ${error}`,
