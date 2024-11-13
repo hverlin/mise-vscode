@@ -174,14 +174,11 @@ async function runMiseToolActionInConsole(
 	command: string,
 	taskName: string,
 ): Promise<void> {
-	const outputChannel = vscode.window.createOutputChannel("mise");
-	outputChannel.show();
-
 	try {
 		const miseCommand = toolsProvider
 			.getMiseService()
 			.createMiseCommand(command);
-		outputChannel.appendLine(`> ${miseCommand}`);
+		logger.info(`> ${miseCommand}`);
 
 		if (!miseCommand) {
 			logger.warn("Could not find mise binary");

@@ -23,7 +23,7 @@ export class MiseService {
 	async execMiseCommand(command: string, { setProfile = true } = {}) {
 		const miseCommand = this.createMiseCommand(command, { setProfile });
 		ensureMiseCommand(miseCommand);
-		logger.info(`Executing mise command: ${miseCommand}`);
+		logger.info(`> ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
 	}
 
