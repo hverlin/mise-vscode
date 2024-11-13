@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/hverlin/mise-vscode/compare/v0.3.1...v0.4.0) (2024-11-13)
+
+
+### Features
+
+* allow adding toml tasks ([1d5eef9](https://github.com/hverlin/mise-vscode/commit/1d5eef97740d6b7478cba1c9ecfe2f0264c457d6))
+* allow copying an environment variable name or value ([105dfb0](https://github.com/hverlin/mise-vscode/commit/105dfb05c3ce625c53225668dab30bc2fa8d39bc))
+
 ## [0.3.1](https://github.com/hverlin/mise-vscode/compare/v0.3.0...v0.3.1) (2024-11-13)
 
 
