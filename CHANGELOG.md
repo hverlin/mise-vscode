@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/hverlin/mise-vscode/compare/v0.4.0...v0.5.0) (2024-11-13)
+
+
+### Features
+
+* Add code lens for file tasks ([ff9f267](https://github.com/hverlin/mise-vscode/commit/ff9f2679754ec68782f7bf1721db36b135a30d53))
+* Add snippets ([68e186a](https://github.com/hverlin/mise-vscode/commit/68e186ae9cb23d71a65926bbd140777e48df4613))
+
 ## [0.4.0](https://github.com/hverlin/mise-vscode/compare/v0.3.1...v0.4.0) (2024-11-13)
 
 
