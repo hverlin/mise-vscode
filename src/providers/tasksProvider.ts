@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
+import { allowedFileTaskDirs } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
@@ -12,14 +13,6 @@ export const WATCH_TASK_COMMAND = "mise.watchTask";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_CREATE_FILE_TASK = "mise.createFileTask";
 export const MISE_CREATE_TOML_TASK = "mise.createTomlTask";
-
-const allowedTaskDirs = [
-	"mise-tasks",
-	".mise-tasks",
-	"mise/tasks",
-	".mise/tasks",
-	".config/mise/tasks",
-];
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -407,15 +400,18 @@ export function registerTasksCommands(
 				return;
 			}
 
-			const taskSource = await vscode.window.showQuickPick(allowedTaskDirs, {
-				title: "Select the task source directory",
-				placeHolder: "Select the task source directory",
-			});
+			const taskSource = await vscode.window.showQuickPick(
+				allowedFileTaskDirs,
+				{
+					title: "Select the task source directory",
+					placeHolder: "Select the task source directory",
+				},
+			);
 
 			if (!taskSource) {
 				return;
 			}
-			if (!allowedTaskDirs.includes(taskSource)) {
+			if (!allowedFileTaskDirs.includes(taskSource)) {
 				vscode.window.showErrorMessage(
 					`Invalid task source directory: ${taskSource}`,
 				);

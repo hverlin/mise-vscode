@@ -1,28 +1,7 @@
 import * as vscode from "vscode";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
-
-const misePatterns = [
-	".config/mise/config.toml",
-	"mise/config.toml",
-	"mise.toml",
-	".mise/config.toml",
-	".mise.toml",
-	".config/mise/config.local.toml",
-	"mise/config.local.toml",
-	"mise.local.toml",
-	".mise/config.local.toml",
-	".mise.local.toml",
-	".config/mise/config.*.toml",
-	"mise/config.*.toml",
-	"mise.*.toml",
-	".mise/config.*.toml",
-	".mise.*.toml",
-	".config/mise/config.*.local.toml",
-	"mise/config.*.local.toml",
-	".mise/config.*.local.toml",
-	".mise.*.local.toml",
-].join(",");
+import { misePatterns } from "./utils/miseUtilts";
 
 export class MiseFileWatcher {
 	private fileWatcher: vscode.FileSystemWatcher | undefined;

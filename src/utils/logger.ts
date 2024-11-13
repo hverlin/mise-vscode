@@ -1,3 +1,4 @@
+import * as util from "node:util";
 import * as vscode from "vscode";
 
 export enum LogLevel {
@@ -76,8 +77,11 @@ export class Logger {
 		this.log(LogLevel.DEBUG, message);
 	}
 
-	public info(message: string) {
-		this.log(LogLevel.INFO, message);
+	public info(message: unknown) {
+		this.log(
+			LogLevel.INFO,
+			typeof message === "string" ? message : util.inspect(message),
+		);
 	}
 
 	public warn(message: string) {

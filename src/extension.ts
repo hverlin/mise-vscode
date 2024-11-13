@@ -5,7 +5,8 @@ import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
 } from "./providers/envProvider";
-import { MiseRunCodeLensProvider } from "./providers/miseRunCodeLensProvider";
+import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
+import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
 import {
 	MiseTasksProvider,
 	registerTasksCommands,
@@ -16,6 +17,7 @@ import {
 } from "./providers/toolsProvider";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
+import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 
 let statusBarItem: vscode.StatusBarItem;
@@ -78,8 +80,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(statusBarItem);
 
-	const codelensProvider = new MiseRunCodeLensProvider();
-
 	vscode.workspace.onDidChangeConfiguration((e) => {
 		if (
 			e.affectsConfiguration("mise.binPath") ||
@@ -129,9 +129,24 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerCodeLensProvider(
 			{ language: "toml", pattern: "**/*mise*.toml" },
-			codelensProvider,
+			new MiseTomlCodeLensProvider(),
 		),
 	);
+
+	const rootFolder = vscode.workspace.workspaceFolders?.[0];
+	if (rootFolder) {
+		context.subscriptions.push(
+			vscode.languages.registerCodeLensProvider(
+				{
+					pattern: new vscode.RelativePattern(
+						rootFolder,
+						`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
+					),
+				},
+				new MiseFileTaskCodeLensProvider(),
+			),
+		);
+	}
 
 	const taskProvider = vscode.tasks.registerTaskProvider("mise", {
 		provideTasks: async () => {

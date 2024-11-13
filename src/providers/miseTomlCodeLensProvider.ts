@@ -2,7 +2,7 @@ import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
-export class MiseRunCodeLensProvider implements vscode.CodeLensProvider {
+export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
 		new vscode.EventEmitter<void>();
 	public readonly onDidChangeCodeLenses: vscode.Event<void> =

@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { logger } from "./logger";
 
 export function expandPath(filePath: string): string {
 	return path.normalize(filePath).replace("~/", `${os.homedir()}/`);
@@ -57,6 +58,20 @@ async function setFilePermissions(filePath: string): Promise<void> {
 			`Failed to set permissions on ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
+}
+
+export async function isExecutable(filePath: string): Promise<boolean> {
+	if (os.platform() === "win32") {
+		return true;
+	}
+
+	try {
+		const stats = await fs.stat(filePath);
+		return !!(stats.mode & 0o111);
+	} catch (error) {
+		logger.info(`${filePath} is not executable: ${error}`);
+	}
+	return false;
 }
 
 export async function setupTaskFile(taskFilePath: string) {
