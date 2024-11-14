@@ -93,6 +93,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {
+			await initializeMisePath();
+
 			const miseProfile = vscode.workspace
 				.getConfiguration("mise")
 				.get("profile");

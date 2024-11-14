@@ -6,6 +6,8 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 
 > [mise](https://mise.jdx.dev/) is a development environment setup tool that manages your project's tools, runtimes, environment variables, and tasks all in one place.
 
+![mise-extension.png](screenshots/mise-extension.png)
+
 ## 📥 Installation
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
@@ -15,10 +17,10 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 ### Task Management
 - 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
 - ⚡ Run tasks directly from:
-    - `mise.toml` files
+    - `mise.toml` files or file tasks
     - Command palette
     - Mise sidebar
-    - Arguments are supported!
+- Arguments are supported!
 - 📝 View task definitions 
 - ➕ Create new file tasks 
 

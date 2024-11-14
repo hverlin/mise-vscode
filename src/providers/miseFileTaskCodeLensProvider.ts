@@ -1,7 +1,6 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { isExecutable } from "../utils/fileUtils";
-import { logger } from "../utils/logger";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
@@ -9,7 +8,6 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
 		const codeLenses: vscode.CodeLens[] = [];
-		logger.info(`provideCodeLenses: ${document.fileName}`);
 		if (!(await isExecutable(document.fileName))) {
 			return [];
 		}

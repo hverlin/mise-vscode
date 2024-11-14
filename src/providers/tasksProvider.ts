@@ -301,6 +301,8 @@ export function registerTasksCommands(
 		vscode.commands.registerCommand(
 			RUN_TASK_COMMAND,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				await vscode.workspace.saveAll(false);
+
 				let name = taskName;
 				if (!name) {
 					name = await vscode.window.showQuickPick(
@@ -320,6 +322,8 @@ export function registerTasksCommands(
 		vscode.commands.registerCommand(
 			WATCH_TASK_COMMAND,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				await vscode.workspace.saveAll(false);
+
 				let name = taskName;
 				if (!name) {
 					name = await vscode.window.showQuickPick(
