@@ -57,25 +57,37 @@
 		"configuration": {
 			"title": "Mise",
 			"properties": {
+				"mise.enable": {
+					"order": 1,
+					"type": "boolean",
+					"default": true,
+					"scope": "resource",
+					"markdownDescription": "Enable/disable mise extension."
+				},
 				"mise.binPath": {
+					"order": 2,
 					"type": "string",
 					"scope": "resource",
 					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nSee https://mise.jdx.dev/getting-started.html to install mise."
 				},
 				"mise.profile": {
+					"order": 3,
 					"type": "string",
 					"scope": "resource",
 					"markdownDescription": "Mise profile to use. (https://mise.jdx.dev/profiles.html)"
 				},
 				"mise.configureExtensionsAutomatically": {
+					"order": 4,
 					"type": "boolean",
 					"default": true,
 					"scope": "resource",
-					"markdownDescription": "Automatically configure extensions for the current workspace."
+					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))"
 				},
 				"mise.configureExtensionsUseShims": {
+					"order": 5,
 					"type": "boolean",
 					"scope": "resource",
+					"title": "Configure extensions to use shims",
 					"default": true,
 					"markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
 				}
@@ -94,7 +106,7 @@
 			{
 				"view": "miseTasksView",
 				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here.\n[Refresh](command:mise.refreshEntry)",
-				"when": "config.mise.binPath"
+				"when": "config.mise.binPath && config.mise.enable"
 			},
 			{
 				"view": "miseTasksView",
@@ -103,11 +115,28 @@
 			},
 			{
 				"view": "miseToolsView",
-				"contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here."
+				"contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here.",
+				"when": "config.mise.enable"
 			},
 			{
 				"view": "miseEnvsView",
-				"contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here."
+				"contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here.",
+				"when": "config.mise.binPath && config.mise.enable"
+			},
+			{
+				"view": "miseTasksView",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"when": "!config.mise.enable"
+			},
+			{
+				"view": "miseToolsView",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"when": "!config.mise.enable"
+			},
+			{
+				"view": "miseEnvsView",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"when": "!config.mise.enable"
 			}
 		],
 		"views": {

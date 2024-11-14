@@ -2,6 +2,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
@@ -38,6 +39,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
+		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
 		if (!element) {
 			const tasks = await this.miseService.getTasks();
 			const configFiles = await this.miseService.getMiseConfigFiles();

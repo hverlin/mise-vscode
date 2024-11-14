@@ -1,5 +1,6 @@
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
@@ -10,6 +11,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 
 	constructor() {
 		vscode.workspace.onDidChangeTextDocument((e) => {
+			if (!isMiseExtensionEnabled()) {
+				return;
+			}
+
 			if (e.document.fileName.endsWith(".toml")) {
 				this._onDidChangeCodeLenses.fire();
 			}
@@ -19,6 +24,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
+		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
 		if (
 			!document.fileName.includes("mise") ||
 			!document.fileName.endsWith(".toml")

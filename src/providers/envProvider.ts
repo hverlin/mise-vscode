@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 
 export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
@@ -20,6 +21,10 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 	}
 
 	async getChildren(): Promise<EnvItem[]> {
+		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
 		const envs = await this.miseService.getEnvs();
 		return envs.map((env) => new EnvItem(env));
 	}

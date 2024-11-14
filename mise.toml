@@ -4,6 +4,8 @@ node = '22'
 [tasks.install]
 description = 'Installs dependencies with pnpm'
 run = 'corepack enable && pnpm install'
+sources = ['package.json', 'pnpm-lock.yaml', 'mise.toml']
+outputs = ['node_modules/.pnpm/lock.yaml']
 
 [tasks.start-vscode]
 description = 'Starts VSCode with the extension loaded'

@@ -1,5 +1,6 @@
 import * as os from "node:os";
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
 	CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME,
@@ -42,6 +43,10 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
+		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
 		if (!element) {
 			const tools = await this.miseService.getTools();
 			const configFiles = await this.miseService.getMiseConfigFiles();

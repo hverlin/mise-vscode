@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 import { misePatterns } from "./utils/miseUtilts";
@@ -25,6 +26,7 @@ export class MiseFileWatcher {
 		if (!rootFolder) {
 			return;
 		}
+
 		const pattern = new vscode.RelativePattern(rootFolder, `{${misePatterns}}`);
 		this.fileWatcher = vscode.workspace.createFileSystemWatcher(pattern);
 
@@ -36,6 +38,10 @@ export class MiseFileWatcher {
 	}
 
 	private async handleFileChange(uri: vscode.Uri) {
+		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
 		try {
 			const { stdout } = await this.miseService.execMiseCommand("tasks ls");
 

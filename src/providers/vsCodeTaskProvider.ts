@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 
 // this allows to run VSCode tasks from the command palette
@@ -8,6 +9,10 @@ export class VsCodeTaskProvider {
 	constructor(private readonly miseService: MiseService) {
 		this.provider = vscode.tasks.registerTaskProvider("mise", {
 			provideTasks: async () => {
+				if (!isMiseExtensionEnabled()) {
+					return;
+				}
+
 				const tasks = await miseService.getTasks();
 				return tasks
 					.map((task) => {

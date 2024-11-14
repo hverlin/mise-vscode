@@ -1,4 +1,9 @@
 import * as vscode from "vscode";
+import {
+	CONFIGURATION_FLAGS,
+	getMiseProfile,
+	isMiseExtensionEnabled,
+} from "./configuration";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
 import {
@@ -24,6 +29,10 @@ import { showSettingsNotification } from "./utils/notify";
 let statusBarItem: vscode.StatusBarItem;
 
 async function initializeMisePath() {
+	if (!isMiseExtensionEnabled()) {
+		return;
+	}
+
 	let miseBinaryPath = "mise";
 	try {
 		miseBinaryPath = await resolveMisePath();
@@ -97,6 +106,13 @@ export async function activate(context: vscode.ExtensionContext) {
 						iconPath: new vscode.ThemeIcon("info"),
 						label: "About vscode-mise",
 					},
+					{ label: "", kind: vscode.QuickPickItemKind.Separator },
+					isMiseExtensionEnabled()
+						? { label: "Disable the mise extension for this workspace" }
+						: {
+								label: "Enable extension",
+								detail: "Enable the mise extension for this workspace",
+							},
 				],
 				{ title: "Mise - Command menu" },
 			);
@@ -113,6 +129,16 @@ export async function activate(context: vscode.ExtensionContext) {
 						vscode.Uri.parse("https://github.com/hverlin/mise-vscode"),
 					);
 					break;
+				case "Disable extension":
+					await vscode.workspace
+						.getConfiguration("mise")
+						.update("enable", false, vscode.ConfigurationTarget.Workspace);
+					break;
+				case "Enable extension":
+					await vscode.workspace
+						.getConfiguration("mise")
+						.update("enable", true, vscode.ConfigurationTarget.Workspace);
+					break;
 				default:
 					break;
 			}
@@ -125,12 +151,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(statusBarItem);
 
 	vscode.workspace.onDidChangeConfiguration((e) => {
-		if (
-			e.affectsConfiguration("mise.binPath") ||
-			e.affectsConfiguration("mise.profile") ||
-			e.affectsConfiguration("mise.configureExtensionsAutomatically") ||
-			e.affectsConfiguration("mise.configureExtensionsUseShims")
-		) {
+		const miseConfigUpdated = Object.values(CONFIGURATION_FLAGS).some((flag) =>
+			e.affectsConfiguration(flag),
+		);
+
+		if (miseConfigUpdated) {
 			vscode.commands.executeCommand("mise.refreshEntry");
 		}
 	});
@@ -139,45 +164,47 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {
 			await initializeMisePath();
 
-			const miseProfile = vscode.workspace
-				.getConfiguration("mise")
-				.get("profile");
-
 			await vscode.commands.executeCommand(
 				"workbench.view.extension.mise-panel",
 			);
 
 			statusBarItem.text = "$(sync~spin) Mise";
 			try {
-				miseService.getTools().then(async (tools) => {
-					const missingTools = tools.filter((tool) => !tool.installed);
-					if (missingTools.length > 0) {
-						const selection = await vscode.window.showWarningMessage(
-							`Mise: Missing tools: ${missingTools
-								.map(
-									(tool) =>
-										tool.name + (tool.version ? ` (${tool.version})` : ""),
-								)
-								.join(", ")}`,
-							{ title: "Install missing tools", command: "mise.installAll" },
-						);
-						if (selection?.command) {
-							await vscode.commands.executeCommand(selection.command);
+				if (isMiseExtensionEnabled()) {
+					miseService.getTools().then(async (tools) => {
+						const missingTools = tools.filter((tool) => !tool.installed);
+						if (missingTools.length > 0) {
+							const selection = await vscode.window.showWarningMessage(
+								`Mise: Missing tools: ${missingTools
+									.map(
+										(tool) =>
+											tool.name + (tool.version ? ` (${tool.version})` : ""),
+									)
+									.join(", ")}`,
+								{ title: "Install missing tools", command: "mise.installAll" },
+							);
+							if (selection?.command) {
+								await vscode.commands.executeCommand(selection.command);
+							}
 						}
-					}
-				});
+					});
+				}
 
 				statusBarItem.text = "$(check) Mise";
 				tasksProvider.refresh();
 				toolsProvider.refresh();
 				envsProvider.refresh();
+
 				const autoConfigureSdks = vscode.workspace
 					.getConfiguration("mise")
 					.get("configureExtensionsAutomatically");
-				if (autoConfigureSdks) {
+				if (autoConfigureSdks && isMiseExtensionEnabled()) {
 					await vscode.commands.executeCommand("mise.configureAllSdkPaths");
 				}
+
 				statusBarItem.text = "$(tools) Mise";
+
+				const miseProfile = getMiseProfile();
 				if (miseProfile) {
 					statusBarItem.text = `$(tools) Mise (${miseProfile})`;
 				}

@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import { isExecutable } from "../utils/fileUtils";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
@@ -7,6 +8,10 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
+		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
 		const codeLenses: vscode.CodeLens[] = [];
 		if (!(await isExecutable(document.fileName))) {
 			return [];
