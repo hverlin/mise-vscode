@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0](https://github.com/hverlin/mise-vscode/compare/v0.5.1...v0.6.0) (2024-11-14)
+
+
+### Features
+
+* add mise command menu ([cb3908a](https://github.com/hverlin/mise-vscode/commit/cb3908a0289bcc347e33a48733c7d564ce0db89c))
+* add welcome views if mise is not installed/configured ([1731150](https://github.com/hverlin/mise-vscode/commit/17311502959203b56eede9a064fc3e3eff696d08))
+* improve integration with vscode tasks ([f2612d5](https://github.com/hverlin/mise-vscode/commit/f2612d55e48c1d66297aa8ba4cf079a596390d23))
+
 ## [0.5.1](https://github.com/hverlin/mise-vscode/compare/v0.5.0...v0.5.1) (2024-11-14)
 
 
