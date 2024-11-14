@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/hverlin/mise-vscode/compare/v0.5.0...v0.5.1) (2024-11-14)
+
+
+### Bug Fixes
+
+* auto-save before running a task ([8104fc2](https://github.com/hverlin/mise-vscode/commit/8104fc254f48c8f1cb37c46148073de95e867d4c))
+* update description ([caf68aa](https://github.com/hverlin/mise-vscode/commit/caf68aa215a9b3099137f4eb66cd9bb6aa469fdc))
+
 ## [0.5.0](https://github.com/hverlin/mise-vscode/compare/v0.4.0...v0.5.0) (2024-11-13)
 
 
