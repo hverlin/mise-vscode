@@ -6,22 +6,22 @@ describe("mise-parser", () => {
 	test("should parse dirs section correctly", () => {
 		const input = `version: 2024.11.8
 dirs:
-  data: ~/.local/share/mise
-  config: ~/.config/mise
-  cache: ~/Library/Caches/mise
-  state: ~/.local/state/mise
-  shims: ~/.local/share/mise/shims
+  data: /dev/home/.local/share/mise
+  config: /dev/home/.config/mise
+  cache: /dev/home/Library/Caches/mise
+  state: /dev/home/.local/state/mise
+  shims: /dev/home/.local/share/mise/shims
 
 shell:
   /bin/zsh`;
 
 		const expected: MiseConfig = {
 			dirs: {
-				data: "~/.local/share/mise",
-				config: "~/.config/mise",
-				cache: "~/Library/Caches/mise",
-				state: "~/.local/state/mise",
-				shims: "~/.local/share/mise/shims",
+				data: "/dev/home/.local/share/mise",
+				config: "/dev/home/.config/mise",
+				cache: "/dev/home/Library/Caches/mise",
+				state: "/dev/home/.local/state/mise",
+				shims: "/dev/home/.local/share/mise/shims",
 			},
 		};
 
@@ -55,19 +55,19 @@ shell:
 	test("should handle different indentation levels", () => {
 		const input = `version: 2024.11.8
 dirs:
-    data: ~/.local/share/mise
-        config: ~/.config/mise
-  cache: ~/Library/Caches/mise
- state: ~/.local/state/mise
-   shims: ~/.local/share/mise/shims`;
+    data: /dev/home/.local/share/mise
+        config: /dev/home/.config/mise
+  cache: /dev/home/Library/Caches/mise
+ state: /dev/home/.local/state/mise
+   shims: /dev/home/.local/share/mise/shims`;
 
 		const expected: MiseConfig = {
 			dirs: {
-				data: "~/.local/share/mise",
-				config: "~/.config/mise",
-				cache: "~/Library/Caches/mise",
-				state: "~/.local/state/mise",
-				shims: "~/.local/share/mise/shims",
+				data: "/dev/home/.local/share/mise",
+				config: "/dev/home/.config/mise",
+				cache: "/dev/home/Library/Caches/mise",
+				state: "/dev/home/.local/state/mise",
+				shims: "/dev/home/.local/share/mise/shims",
 			},
 		};
 
@@ -77,16 +77,16 @@ dirs:
 
 	test("should handle malformed lines in dirs section", () => {
 		const input = `dirs:
-  data: ~/.local/share/mise
+  data: /dev/home/.local/share/mise
   invalid line
   : missing key
   missing_value:
-  config: ~/.config/mise`;
+  config: /dev/home/.config/mise`;
 
 		const expected: MiseConfig = {
 			dirs: {
-				data: "~/.local/share/mise",
-				config: "~/.config/mise",
+				data: "/dev/home/.local/share/mise",
+				config: "/dev/home/.config/mise",
 				shims: "",
 			},
 		};
@@ -105,23 +105,23 @@ build_info:
   Features: DEFAULT, NATIVE_TLS, OPENSSL
 
 dirs:
-  data: ~/.local/share/mise
-  config: ~/.config/mise
-  cache: ~/Library/Caches/mise
-  state: ~/.local/state/mise
-  shims: ~/.local/share/mise/shims
+  data: /dev/home/.local/share/mise
+  config: /dev/home/.config/mise
+  cache: /dev/home/Library/Caches/mise
+  state: /dev/home/.local/state/mise
+  shims: /dev/home/.local/share/mise/shims
 
 config_files:
-  ~/.config/mise/config.toml
-  ~/Projects/mise-vscode/mise.toml`;
+  /dev/home/.config/mise/config.toml
+  /dev/home/Projects/mise-vscode/mise.toml`;
 
 		const expected: MiseConfig = {
 			dirs: {
-				data: "~/.local/share/mise",
-				config: "~/.config/mise",
-				cache: "~/Library/Caches/mise",
-				state: "~/.local/state/mise",
-				shims: "~/.local/share/mise/shims",
+				data: "/dev/home/.local/share/mise",
+				config: "/dev/home/.config/mise",
+				cache: "/dev/home/Library/Caches/mise",
+				state: "/dev/home/.local/state/mise",
+				shims: "/dev/home/.local/share/mise/shims",
 			},
 		};
 

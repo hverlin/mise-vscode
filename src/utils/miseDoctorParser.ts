@@ -1,3 +1,5 @@
+import { expandPath } from "./fileUtils";
+
 type MiseDirs = {
 	data?: string;
 	config?: string;
@@ -48,6 +50,14 @@ function parseMiseConfig(content: string): MiseConfig {
 		if (currentSection === "dirs" && trimmedLine === "") {
 			currentSection = null;
 		}
+	}
+
+	for (const [key, value] of Object.entries(result.dirs)) {
+		if (!value) {
+			continue;
+		}
+
+		result.dirs[key] = expandPath(value);
 	}
 
 	return result;

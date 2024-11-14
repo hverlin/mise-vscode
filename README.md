@@ -39,11 +39,14 @@ Extensions are automatically configured to use `mise shims`. You can disable thi
 
 If you want to configure it manually, search for `Mise: Configure extension sdk path...` in the command palette.
 
-- [Deno](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
-- [Ruff](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff)
-- [Bun](https://marketplace.visualstudio.com/items?itemName=oven.bun-vscode)
-- [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
 - [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+- [Go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
+- [Java](https://marketplace.visualstudio.com/items?itemName=oracle.oracle-java)
+- [Shellcheck](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)
+- [NodeJS](https://marketplace.visualstudio.com/items?itemName=ms-vscode.js-debug)
+- [Deno](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno)
+- [Bun](https://marketplace.visualstudio.com/items?itemName=oven.bun-vscode)
+- [Ruff](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff)
 
 If you want to add one, you can open a PR that updates [src/utils/supportedExtensions.ts](https://github.com/hverlin/mise-vscode/blob/main/src/utils/supportedExtensions.ts)
 

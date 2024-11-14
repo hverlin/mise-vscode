@@ -124,4 +124,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		toolName: "node",
+		extensionName: "ms-vscode.js-debug",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims },
+		) => {
+			return {
+				"debug.javascript.defaultRuntimeExecutable": useShims
+					? { "pwa-node": path.join(miseConfig.dirs.shims, "node") }
+					: { "pwa-node": path.join(tool.install_path, "bin", "node") },
+			};
+		},
+	},
 ];
