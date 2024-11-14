@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/hverlin/mise-vscode/compare/v0.8.0...v0.9.0) (2024-11-14)
+
+
+### Features
+
+* allow disabling mise extension for a workspace ([4ac18b6](https://github.com/hverlin/mise-vscode/commit/4ac18b6e2680b5a3e418045faf5bf1510a1e684a))
+
 ## [0.8.0](https://github.com/hverlin/mise-vscode/compare/v0.7.0...v0.8.0) (2024-11-14)
 
 
