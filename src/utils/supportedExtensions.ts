@@ -101,4 +101,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		extensionName: "oracle.oracle-java",
+		toolName: "java",
+		generateConfiguration: async (tool: MiseTool) => {
+			return {
+				"jdk.jdkhome": tool.install_path,
+			};
+		},
+	},
 ];
