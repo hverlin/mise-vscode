@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0](https://github.com/hverlin/mise-vscode/compare/v0.6.0...v0.7.0) (2024-11-14)
+
+
+### Features
+
+* Add support for ms-vscode.js-debug ([ae72c82](https://github.com/hverlin/mise-vscode/commit/ae72c8237fe22067f2c6a19ac898bf966897f80b))
+* Add support for oracle.oracle-java ([f4f8ec5](https://github.com/hverlin/mise-vscode/commit/f4f8ec59d917b43f55835b2c5dc0d54f55b48c15))
+* Add support for timonwong.shellcheck ([93ae149](https://github.com/hverlin/mise-vscode/commit/93ae1497cdaea0c83e0800a96b17bd2d3a8ee667))
+
 ## [0.6.0](https://github.com/hverlin/mise-vscode/compare/v0.5.1...v0.6.0) (2024-11-14)
 
 
