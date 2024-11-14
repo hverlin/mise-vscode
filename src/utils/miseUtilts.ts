@@ -27,3 +27,21 @@ export const misePatterns = [
 	".mise/config.*.local.toml",
 	".mise.*.local.toml",
 ].join(",");
+
+export const legacyFiles = new Set([
+	".crystal-version",
+	".exenv-version",
+	".go-version",
+	"go.mod",
+	".java-version",
+	".sdkmanrc",
+	".nvmrc",
+	".node-version",
+	".python-version",
+	".ruby-version",
+	"Gemfile",
+	".terraform-version",
+	".packer-version",
+	"main.tf",
+	".yarnrc",
+]);

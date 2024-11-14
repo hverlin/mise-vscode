@@ -114,7 +114,6 @@ class SourceItem extends vscode.TreeItem {
 		this.tooltip = `Source: ${source}
 Number of tools: ${tools.length}`;
 
-		this.iconPath = new vscode.ThemeIcon("folder");
 		this.contextValue = "source";
 		this.description = `(${tools.length} tools)`;
 	}

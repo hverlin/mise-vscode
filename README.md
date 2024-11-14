@@ -55,6 +55,37 @@ If you want to add one, you can open a PR that updates [src/utils/supportedExten
 ### Snippets
 - 📝 Snippets to create tasks in `mise.toml` and task files
 
+### Integration with VSCode tasks (`launch.json`)
+This extension lets [VSCode tasks](https://code.visualstudio.com/docs/editor/tasks) use `mise` tasks. You can use `mise` tasks in your `launch.json` file.
+
+Example `launch.json` file:
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "mise",
+            "task": "build-my-app",
+            "label": "Build my app",
+            "watch": true
+        }
+    ]
+}
+```
+
+<details>
+<summary>Supported parameters for mise tasks</summary>
+
+- `task`: The mise task to execute
+- `watch`: Re-run the task when files change
+- `profile`: The mise profile to use (optional, will use the default profile if not provided)
+- `glob`: Glob pattern to watch for changes. Defaults to sources from the tasks
+- `runArgs`: Arguments to pass to the task. Not used when watch is true
+- `watchexecArgs`: Arguments to pass to watchexec. (example: --clear) | use watchexec --help for more information
+
+</details>
+
+
 ## 🚀 Getting Started
 
 1. Install the extension from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview) or [Open VSX](https://open-vsx.org/extension/hverlin/mise-vscode)

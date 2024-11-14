@@ -1,10 +1,11 @@
 import * as os from "node:os";
+import * as path from "node:path";
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
-import { allowedFileTaskDirs } from "../utils/miseUtilts";
+import { allowedFileTaskDirs, legacyFiles } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
@@ -42,6 +43,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			const configFiles = await this.miseService.getMiseConfigFiles();
 			const groupedTasks = this.groupTasksBySource(tasks);
 			for (const configFile of configFiles) {
+				if (legacyFiles.has(path.basename(configFile.path))) {
+					continue;
+				}
+
 				const expandedPath = expandPath(configFile.path);
 				const isRelativeToWorkspace = expandedPath.startsWith(
 					vscode.workspace.rootPath || "",
@@ -57,7 +62,6 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		}
 
 		if (element instanceof SourceGroupItem) {
-			// Source group level - return tasks
 			return element.tasks.map((task) => new TaskItem(task));
 		}
 
@@ -225,8 +229,13 @@ class SourceGroupItem extends vscode.TreeItem {
 			vscode.TreeItemCollapsibleState.Expanded,
 		);
 		this.tooltip = `Source: ${source}`;
-		this.iconPath = new vscode.ThemeIcon("folder");
-		this.contextValue = "miseTaskGroup";
+		this.collapsibleState =
+			tasks.length === 0
+				? vscode.TreeItemCollapsibleState.None
+				: vscode.TreeItemCollapsibleState.Expanded;
+		this.contextValue = source.endsWith(".toml")
+			? "miseTaskGroupEditable"
+			: "miseSourceGroup";
 	}
 }
 

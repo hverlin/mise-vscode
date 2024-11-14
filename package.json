@@ -30,6 +30,19 @@
 	],
 	"icon": "resources/icon.png",
 	"main": "./dist/extension.js",
+	"activationEvents": [
+		"onTaskType:mise",
+		"workspaceContains:.config/mise/**/config.*.toml",
+		"workspaceContains:.config/mise/**/config.toml",
+		"workspaceContains:.mise.*.toml",
+		"workspaceContains:.mise.toml",
+		"workspaceContains:.mise/config.*.toml",
+		"workspaceContains:.mise/config.toml",
+		"workspaceContains:mise.*.toml",
+		"workspaceContains:mise.toml",
+		"workspaceContains:mise/config.*.toml",
+		"workspaceContains:mise/config.toml"
+	],
 	"contributes": {
 		"snippets": [
 			{
@@ -239,7 +252,7 @@
 					"group": "inline"
 				},
 				{
-					"when": "view == miseTasksView && viewItem == miseTaskGroup",
+					"when": "view == miseTasksView && viewItem == miseTaskGroupEditable",
 					"command": "mise.createTomlTask",
 					"group": "inline"
 				},
@@ -298,8 +311,36 @@
 				],
 				"properties": {
 					"task": {
-						"type": "string",
-						"description": "The mise task to run"
+						"description": "The mise task to execute",
+						"type": "string"
+					},
+					"watch": {
+						"description": "Re-run the task when files change",
+						"type": "boolean"
+					},
+					"profile": {
+						"description": "The mise profile to use",
+						"type": "string"
+					},
+					"glob": {
+						"description": "Glob pattern to watch for changes. Defaults to sources from the tasks(s)",
+						"type": "string"
+					},
+					"runArgs": {
+						"description": "Arguments to pass to the task. Not used when watch is true",
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": []
+					},
+					"watchexecArgs": {
+						"description": "Arguments to pass to watchexec. (example: --clear) | use watchexec --help for more information",
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": []
 					}
 				}
 			}
