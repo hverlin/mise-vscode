@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/hverlin/mise-vscode/compare/v0.7.0...v0.8.0) (2024-11-14)
+
+
+### Features
+
+* Add a notification if some tools are not installed ([71d6d81](https://github.com/hverlin/mise-vscode/commit/71d6d8174a9c0fe1c2ddf72f8ee42eec3d29b6e4))
+* Add a notification to install watchexec ([a737e9d](https://github.com/hverlin/mise-vscode/commit/a737e9de1bafa0956454dae39f6d1e500ac59872))
+
 ## [0.7.0](https://github.com/hverlin/mise-vscode/compare/v0.6.0...v0.7.0) (2024-11-14)
 
 
