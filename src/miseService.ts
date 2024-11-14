@@ -29,6 +29,40 @@ export class MiseService {
 		return execAsync(miseCommand, { cwd: this.workspaceRoot });
 	}
 
+	async runMiseToolActionInConsole(
+		command: string,
+		taskName?: string,
+	): Promise<void> {
+		try {
+			const miseCommand = this.createMiseCommand(command);
+			logger.info(`> ${miseCommand}`);
+
+			if (!miseCommand) {
+				logger.warn("Could not find mise binary");
+				return;
+			}
+
+			const execution = new vscode.ShellExecution(miseCommand);
+			const task = new vscode.Task(
+				{ type: "mise" },
+				vscode.TaskScope.Workspace,
+				taskName ?? `mise ${command}`,
+				"mise",
+				execution,
+			);
+
+			await vscode.tasks.executeTask(task);
+			const disposable = vscode.tasks.onDidEndTask((e) => {
+				if (e.execution.task === task) {
+					vscode.commands.executeCommand("mise.refreshEntry");
+					disposable.dispose();
+				}
+			});
+		} catch (error) {
+			logger.error(`Failed to execute ${taskName}: ${error}`);
+		}
+	}
+
 	public getMiseBinaryPath(): string | undefined {
 		return vscode.workspace.getConfiguration("mise").get("binPath");
 	}

@@ -170,43 +170,6 @@ Install Path: ${tool.install_path}`;
 	}
 }
 
-async function runMiseToolActionInConsole(
-	toolsProvider: MiseToolsProvider,
-	command: string,
-	taskName: string,
-): Promise<void> {
-	try {
-		const miseCommand = toolsProvider
-			.getMiseService()
-			.createMiseCommand(command);
-		logger.info(`> ${miseCommand}`);
-
-		if (!miseCommand) {
-			logger.warn("Could not find mise binary");
-			return;
-		}
-
-		const execution = new vscode.ShellExecution(miseCommand);
-		const task = new vscode.Task(
-			{ type: "mise" },
-			vscode.TaskScope.Workspace,
-			taskName,
-			"mise",
-			execution,
-		);
-
-		await vscode.tasks.executeTask(task);
-		const disposable = vscode.tasks.onDidEndTask((e) => {
-			if (e.execution.task === task) {
-				toolsProvider.refresh();
-				disposable.dispose();
-			}
-		});
-	} catch (error) {
-		vscode.window.showErrorMessage(`Failed to execute ${taskName}: ${error}`);
-	}
-}
-
 export function registerToolsCommands(
 	context: vscode.ExtensionContext,
 	toolsProvider: MiseToolsProvider,
@@ -300,11 +263,12 @@ export function registerToolsCommands(
 				);
 
 				if (confirmed === "Remove") {
-					await runMiseToolActionInConsole(
-						toolsProvider,
-						`rm ${tool.name}@${tool.version}`,
-						"Remove Tool",
-					);
+					await toolsProvider
+						.getMiseService()
+						.runMiseToolActionInConsole(
+							`rm ${tool.name}@${tool.version}`,
+							"Remove Tool",
+						);
 				}
 			},
 		),
@@ -334,20 +298,19 @@ export function registerToolsCommands(
 				}
 
 				tool = tool as MiseTool;
-				await runMiseToolActionInConsole(
-					toolsProvider,
-					`install ${tool.name}@${tool.requested_version}`,
-					"Install Tool",
-				);
+				await toolsProvider
+					.getMiseService()
+					.runMiseToolActionInConsole(
+						`install ${tool.name}@${tool.requested_version}`,
+						"Install Tool",
+					);
 			},
 		),
 
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
-			await runMiseToolActionInConsole(
-				toolsProvider,
-				"install",
-				"Install Tool",
-			);
+			await toolsProvider
+				.getMiseService()
+				.runMiseToolActionInConsole("install", "Install Tool");
 		}),
 
 		vscode.commands.registerCommand(
@@ -384,11 +347,12 @@ export function registerToolsCommands(
 					return;
 				}
 
-				await runMiseToolActionInConsole(
-					toolsProvider,
-					`use --path ${selectedPath} ${selectedToolName}`,
-					"Use Tool",
-				);
+				await toolsProvider
+					.getMiseService()
+					.runMiseToolActionInConsole(
+						`use --path ${selectedPath} ${selectedToolName}`,
+						"Use Tool",
+					);
 			},
 		),
 

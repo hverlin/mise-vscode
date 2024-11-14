@@ -180,12 +180,23 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			execAsync("which watchexec"),
 		]);
 		const tools = res1.status === "fulfilled" ? res1.value : [];
-		const watchexecFromTools = tools.find((tool) => tool.name === "watchexec");
+		const watchexecFromTools = tools.find(
+			(tool) => tool.name === "watchexec" && tool.installed,
+		);
 		const watchexec = res2.status === "fulfilled" ? res2.value.stdout : "";
 		if (!watchexec && !watchexecFromTools) {
-			vscode.window.showErrorMessage(
-				"watchexec is required to run tasks in watch mode. Install it with `mise use -g watchexec`",
-			);
+			vscode.window
+				.showErrorMessage(
+					"watchexec is required to run tasks in watch mode. Install it with `mise use -g watchexec`",
+					"Install watchexec",
+				)
+				.then((selection) => {
+					if (selection === "Install watchexec") {
+						this.miseService.runMiseToolActionInConsole(
+							["use", "-g", "watchexec"].join(" "),
+						);
+					}
+				});
 			return;
 		}
 
