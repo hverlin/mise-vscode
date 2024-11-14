@@ -257,4 +257,15 @@ export class MiseService {
 	async miseReshim() {
 		await this.execMiseCommand("reshim", { setProfile: false });
 	}
+
+	async getVersion() {
+		if (!this.getMiseBinaryPath()) {
+			return "mise binary path is not configured";
+		}
+
+		const { stdout } = await this.execMiseCommand("--version", {
+			setProfile: false,
+		});
+		return stdout.trim();
+	}
 }

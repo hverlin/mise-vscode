@@ -65,7 +65,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	statusBarItem.show();
 	statusBarItem.text = "$(tools) Mise";
-	statusBarItem.tooltip = "Click to refresh Mise";
+	statusBarItem.tooltip = "Mise - Command menu";
 
 	registerTasksCommands(context, tasksProvider);
 	registerToolsCommands(context, toolsProvider);
@@ -75,7 +75,50 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);
 	vscode.window.registerTreeDataProvider("miseEnvsView", envsProvider);
 
-	statusBarItem.command = "mise.refreshEntry";
+	context.subscriptions.push(
+		vscode.commands.registerCommand("mise.openMenu", async () => {
+			const miseVersion = await miseService.getVersion();
+
+			const pick = await vscode.window.showQuickPick(
+				[
+					{ label: "Mise version", detail: miseVersion },
+					{
+						iconPath: new vscode.ThemeIcon("refresh"),
+						label: "Reload configuration",
+						detail: "Reload Mise configuration",
+					},
+					{ label: "", kind: vscode.QuickPickItemKind.Separator },
+					{
+						iconPath: new vscode.ThemeIcon("gear"),
+						label: "Open Mise settings",
+					},
+					{
+						iconPath: new vscode.ThemeIcon("info"),
+						label: "About vscode-mise",
+					},
+				],
+				{ title: "Mise - Command menu" },
+			);
+
+			switch (pick?.label) {
+				case "Reload configuration":
+					await vscode.commands.executeCommand("mise.refreshEntry");
+					break;
+				case "Settings":
+					await vscode.commands.executeCommand("mise.openSettings");
+					break;
+				case "About vscode-mise":
+					vscode.env.openExternal(
+						vscode.Uri.parse("https://github.com/hverlin/mise-vscode"),
+					);
+					break;
+				default:
+					break;
+			}
+		}),
+	);
+
+	statusBarItem.command = "mise.openMenu";
 	statusBarItem.show();
 
 	context.subscriptions.push(statusBarItem);

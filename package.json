@@ -116,12 +116,16 @@
 		"commands": [
 			{
 				"command": "mise.refreshEntry",
-				"title": "Mise: reload configuration",
+				"title": "Mise: Reload configuration",
 				"icon": "$(refresh)"
 			},
 			{
+				"command": "mise.openMenu",
+				"title": "Mise: Open Menu"
+			},
+			{
 				"command": "mise.runTask",
-				"title": "Mise: run task",
+				"title": "Mise: Run task",
 				"icon": "$(play)"
 			},
 			{
