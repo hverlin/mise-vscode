@@ -110,4 +110,18 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		extensionName: "timonwong.shellcheck",
+		toolName: "shellcheck",
+		generateConfiguration: async (tool: MiseTool) => {
+			return {
+				// it seems that it doesn't work with shims
+				"shellcheck.executablePath": path.join(
+					tool.install_path,
+					"bin",
+					"shellcheck",
+				),
+			};
+		},
+	},
 ];
