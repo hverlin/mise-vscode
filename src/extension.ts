@@ -149,6 +149,24 @@ export async function activate(context: vscode.ExtensionContext) {
 
 			statusBarItem.text = "$(sync~spin) Mise";
 			try {
+				miseService.getTools().then(async (tools) => {
+					const missingTools = tools.filter((tool) => !tool.installed);
+					if (missingTools.length > 0) {
+						const selection = await vscode.window.showWarningMessage(
+							`Mise: Missing tools: ${missingTools
+								.map(
+									(tool) =>
+										tool.name + (tool.version ? ` (${tool.version})` : ""),
+								)
+								.join(", ")}`,
+							{ title: "Install missing tools", command: "mise.installAll" },
+						);
+						if (selection?.command) {
+							await vscode.commands.executeCommand(selection.command);
+						}
+					}
+				});
+
 				statusBarItem.text = "$(check) Mise";
 				tasksProvider.refresh();
 				toolsProvider.refresh();

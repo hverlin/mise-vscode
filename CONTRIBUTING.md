@@ -49,6 +49,7 @@ mise tasks # list all available tasks
 ## Roadmap
 
 - [ ] Automatically setup SDKs based on mise tools
-- [ ] Suggest to install missing tools
-- [ ] UI to install tools
+- [ ] Improve UI to install tools
+- [ ] Manage mise settings
+- [ ] Upgrade mise tools
 - ...

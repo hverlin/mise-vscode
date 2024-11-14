@@ -106,9 +106,11 @@ class SourceItem extends vscode.TreeItem {
 
 		super(
 			pathShown,
-			pathShown.startsWith("/") || pathShown.startsWith("~")
-				? vscode.TreeItemCollapsibleState.Collapsed
-				: vscode.TreeItemCollapsibleState.Expanded,
+			tools.length === 0
+				? vscode.TreeItemCollapsibleState.None
+				: pathShown.startsWith("/") || pathShown.startsWith("~")
+					? vscode.TreeItemCollapsibleState.Collapsed
+					: vscode.TreeItemCollapsibleState.Expanded,
 		);
 
 		this.tooltip = `Source: ${source}
