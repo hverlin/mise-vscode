@@ -77,6 +77,26 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+				"view": "miseTasksView",
+				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here.\n[Refresh](command:mise.refreshEntry)",
+				"when": "config.mise.binPath"
+			},
+			{
+				"view": "miseTasksView",
+				"contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openSettings)",
+				"when": "!config.mise.binPath"
+			},
+			{
+				"view": "miseToolsView",
+				"contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here."
+			},
+			{
+				"view": "miseEnvsView",
+				"contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here."
+			}
+		],
 		"views": {
 			"mise-panel": [
 				{
@@ -158,7 +178,7 @@
 			},
 			{
 				"command": "mise.installAll",
-				"title": "Mise: run mise install",
+				"title": "Mise: Run mise install",
 				"icon": "$(cloud-download)"
 			},
 			{
@@ -173,6 +193,11 @@
 			{
 				"command": "mise.configureAllSdkPaths",
 				"title": "Mise: Configure all extension sdk paths"
+			},
+			{
+				"command": "mise.openSettings",
+				"title": "Mise: Open Settings",
+				"icon": "$(tools)"
 			}
 		],
 		"menus": {

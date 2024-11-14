@@ -8,7 +8,9 @@ function ensureMiseCommand(
 	miseCommand: string | undefined,
 ): asserts miseCommand {
 	if (!miseCommand) {
-		throw new Error("Mise binary path is not configured");
+		throw new Error(
+			"Mise binary path is not configured. [Install mise](https://mise.jdx.dev/getting-started.html)",
+		);
 	}
 }
 

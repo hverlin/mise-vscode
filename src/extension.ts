@@ -121,9 +121,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				}
 			} catch (error) {
 				statusBarItem.text = "$(error) Mise";
-				vscode.window.showErrorMessage(
-					`Failed to refresh Mise views: ${error}`,
-				);
+				vscode.window.showErrorMessage(`${error}`);
 			}
 		}),
 	);
@@ -133,6 +131,15 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ language: "toml", pattern: "**/*mise*.toml" },
 			new MiseTomlCodeLensProvider(),
 		),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("mise.openSettings", () => {
+			vscode.commands.executeCommand(
+				"workbench.action.openSettings",
+				"@ext:hverlin.mise-vscode",
+			);
+		}),
 	);
 
 	const rootFolder = vscode.workspace.workspaceFolders?.[0];
