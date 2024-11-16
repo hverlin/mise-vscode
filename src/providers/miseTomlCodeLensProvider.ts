@@ -102,6 +102,9 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i];
+			if (!line) {
+				continue;
+			}
 
 			// Case 1: Check for [tasks] section with inline tasks
 			if (line.trim().match(new RegExp(`^\\s*${taskName}\\s*=`))) {

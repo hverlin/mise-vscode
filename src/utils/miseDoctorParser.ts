@@ -22,6 +22,10 @@ function parseMiseConfig(content: string): MiseConfig {
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
+		if (!line) {
+			continue;
+		}
+
 		const trimmedLine = line.trim();
 
 		if (trimmedLine === "dirs:") {
@@ -43,6 +47,9 @@ function parseMiseConfig(content: string): MiseConfig {
 			const match = trimmedLine.match(/^(\w+):\s+(.+)$/);
 			if (match) {
 				const [, key, value] = match;
+				if (key === undefined) {
+					continue;
+				}
 				result.dirs[key] = value;
 			}
 		}
