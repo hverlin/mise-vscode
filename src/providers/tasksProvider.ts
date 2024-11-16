@@ -294,20 +294,24 @@ function findTaskPosition(
 			let inTasksSection = false;
 
 			for (let i = 0; i < lines.length; i++) {
-				const line = lines[i].trim();
-
-				if (sectionPattern.test(line)) {
-					return new vscode.Position(i, lines[i].indexOf(taskName));
+				const currentLine = lines[i];
+				if (currentLine === undefined) {
+					continue;
 				}
-				if (line === "[tasks]") {
+
+				const trimmedLine = currentLine.trim();
+				if (sectionPattern.test(trimmedLine)) {
+					return new vscode.Position(i, currentLine.indexOf(taskName));
+				}
+				if (trimmedLine === "[tasks]") {
 					inTasksSection = true;
 					continue;
 				}
-				if (inTasksSection && line.startsWith("[")) {
+				if (inTasksSection && trimmedLine.startsWith("[")) {
 					inTasksSection = false;
 				}
-				if (inTasksSection && inlinePattern.test(line)) {
-					return new vscode.Position(i, lines[i].indexOf(taskName));
+				if (inTasksSection && inlinePattern.test(trimmedLine)) {
+					return new vscode.Position(i, currentLine.indexOf(taskName));
 				}
 			}
 		}
@@ -447,8 +451,8 @@ export function registerTasksCommands(
 				return;
 			}
 
-			const rootPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-			const taskDir = `${rootPath}/${taskSource}`;
+			const rootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+			const taskDir = path.join(rootPath ?? "", taskSource);
 			const taskFile = vscode.Uri.file(`${taskDir}/${taskName}`);
 
 			await setupTaskFile(taskFile.fsPath);

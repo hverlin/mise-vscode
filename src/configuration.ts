@@ -31,7 +31,7 @@ export type VSCodeSetting = {
 };
 
 const isObject = (value: unknown) =>
-	typeof value === "object" && value !== null;
+	typeof value === "object" && value !== null && !Array.isArray(value);
 
 export async function updateVSCodeSettings(
 	newSettings: VSCodeSetting[],

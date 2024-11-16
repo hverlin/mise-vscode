@@ -55,7 +55,7 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 				if (!toolsBySource[configFile.path]) {
 					toolsBySource[configFile.path] = [];
 				}
-				toolsBySource[configFile.path].push(
+				toolsBySource[configFile.path]?.push(
 					...configFile.tools
 						.filter(
 							(tool) =>
@@ -210,6 +210,10 @@ export function registerToolsCommands(
 				let line = 0;
 				for (let i = 0; i < editor.document.getText().split("\n").length; i++) {
 					const l = editor.document.getText().split("\n")[i];
+					if (!l) {
+						continue;
+					}
+
 					const [firstWord] = l.replace(/\s/g, "").replace(/"/g, "").split("=");
 					if (firstWord === selectedTool.name) {
 						line = i + 1;

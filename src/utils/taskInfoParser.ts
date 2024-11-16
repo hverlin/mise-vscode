@@ -57,7 +57,7 @@ export function parseUsageSpecLine(line: string, spec: TaskUsageSpec): void {
 		const argMatch = line.match(/<([^>]+)>/);
 		if (argMatch) {
 			spec.args.push({
-				name: argMatch[1],
+				name: argMatch[1] || "",
 				required: true,
 			});
 		}
@@ -65,7 +65,11 @@ export function parseUsageSpecLine(line: string, spec: TaskUsageSpec): void {
 		// Handle indented argument definition for flag
 		const argMatch = line.match(/\[([^\]]+)\]/);
 		if (argMatch && spec.flags.length > 0) {
-			spec.flags[spec.flags.length - 1].arg = argMatch[1];
+			const taskFlag = spec.flags[spec.flags.length - 1];
+			if (!taskFlag) {
+				return;
+			}
+			taskFlag.arg = argMatch[1];
 		}
 	}
 }
@@ -82,30 +86,34 @@ export function parseTaskInfo(output: string): MiseTaskInfo {
 	let currentFlag: TaskFlag | null = null;
 
 	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i].trim();
+		const currentLine = lines[i];
+		if (!currentLine) {
+			continue;
+		}
+		const trimmedLine = currentLine.trim();
 
-		if (line.startsWith("Task:")) {
-			info.name = line.replace("Task:", "").trim();
-		} else if (line.startsWith("Description:")) {
-			info.description = line.replace("Description:", "").trim();
-		} else if (line.startsWith("Source:")) {
-			info.source = line.replace("Source:", "").trim();
-		} else if (line.startsWith("Run:")) {
+		if (trimmedLine.startsWith("Task:")) {
+			info.name = trimmedLine.replace("Task:", "").trim();
+		} else if (trimmedLine.startsWith("Description:")) {
+			info.description = trimmedLine.replace("Description:", "").trim();
+		} else if (trimmedLine.startsWith("Source:")) {
+			info.source = trimmedLine.replace("Source:", "").trim();
+		} else if (trimmedLine.startsWith("Run:")) {
 			collectingRun = true;
-		} else if (line === "Usage Spec:") {
+		} else if (trimmedLine === "Usage Spec:") {
 			collectingRun = false;
 			info.run = runLines.join("\n").trim();
 			currentSection = "usageSpec";
 		} else if (collectingRun) {
-			runLines.push(line);
+			runLines.push(trimmedLine);
 		} else if (currentSection === "usageSpec") {
 			if (
-				line.startsWith("flag") &&
-				line.includes("{") &&
-				!line.includes("arg")
+				trimmedLine.startsWith("flag") &&
+				trimmedLine.includes("{") &&
+				!trimmedLine.includes("arg")
 			) {
 				// Start of a multiline flag definition
-				const tokens = line.trim().split(/\s+/);
+				const tokens = trimmedLine.trim().split(/\s+/);
 				const flagName = tokens[1]?.replace(/"/g, "");
 				if (flagName) {
 					currentFlag = { name: flagName };
@@ -114,18 +122,18 @@ export function parseTaskInfo(output: string): MiseTaskInfo {
 					}
 					info.usageSpec.flags.push(currentFlag);
 				}
-			} else if (currentFlag && line.trim().startsWith("arg")) {
+			} else if (currentFlag && trimmedLine.trim().startsWith("arg")) {
 				// Indented argument line in multiline flag definition
-				const argMatch = line.match(/\[([^\]]+)\]/);
+				const argMatch = trimmedLine.match(/\[([^\]]+)\]/);
 				if (argMatch) {
 					currentFlag.arg = argMatch[1];
 				}
-				if (!line.endsWith("{")) {
+				if (!trimmedLine.endsWith("{")) {
 					currentFlag = null;
 				}
 			} else {
 				currentFlag = null;
-				parseUsageSpecLine(line, info.usageSpec as TaskUsageSpec);
+				parseUsageSpecLine(trimmedLine, info.usageSpec as TaskUsageSpec);
 			}
 		}
 	}
