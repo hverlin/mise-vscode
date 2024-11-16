@@ -21,9 +21,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - run: corepack enable && pnpm i --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm ts-check
-      - run: pnpm compile
+      - run: node --run lint
+      - run: node --run ts-check
+      - run: node --run build
 
   publish-vscode-openvsx:
     needs: build
@@ -37,7 +37,7 @@ jobs:
           node-version: '22.x'
 
       - run: corepack enable && pnpm i --frozen-lockfile
-      - run: npm run package
+      - run: node --run build
 
       - name: Publish to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@v1
@@ -58,7 +58,7 @@ jobs:
           node-version: '22.x'
 
       - run: corepack enable && pnpm i --frozen-lockfile
-      - run: npm run package
+      - run: node --run build
 
       - name: Publish to Visual Studio Marketplace
         uses: HaaLeo/publish-vscode-extension@v1

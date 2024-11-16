@@ -9,6 +9,7 @@ export default defineConfig({
 	server: { port: 9987 },
 	source: { entry: { extension: "./src/extension.ts" } },
 	output: {
+		cleanDistPath: false,
 		sourceMap: { js: "source-map" },
 		target: "node",
 		externals: { vscode: "commonjs vscode" },

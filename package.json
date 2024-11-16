@@ -252,6 +252,11 @@
 				"command": "mise.openSettings",
 				"title": "Mise: Open Settings",
 				"icon": "$(tools)"
+			},
+			{
+				"command": "mise.listAllTools",
+				"title": "Mise: List all Tools",
+				"icon": "$(list-ordered)"
 			}
 		],
 		"menus": {
@@ -267,19 +272,24 @@
 					"group": "navigation@2"
 				},
 				{
-					"command": "mise.useTool",
+					"command": "mise.listAllTools",
 					"when": "view == miseToolsView",
 					"group": "navigation@1"
 				},
 				{
-					"command": "mise.installAll",
+					"command": "mise.useTool",
 					"when": "view == miseToolsView",
 					"group": "navigation@2"
 				},
 				{
+					"command": "mise.installAll",
+					"when": "view == miseToolsView",
+					"group": "navigation@3"
+				},
+				{
 					"command": "mise.refreshEntry",
 					"when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
-					"group": "navigation@3"
+					"group": "navigation@4"
 				}
 			],
 			"view/item/context": [
@@ -384,25 +394,32 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run package --no-optional",
-		"compile": "rsbuild build",
-		"dev": "rsbuild dev",
+		"dev-extension": "rsbuild dev",
+		"dev-webviews": "rsbuild dev -c rsbuild.webviews.config.ts",
+		"build": "rsbuild build && rsbuild build -c rsbuild.webviews.config.ts",
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
-		"test": "npx bun test",
-		"package": "rsbuild build"
+		"test": "npx bun test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@rsbuild/core": "^1.1.0",
+		"@rsbuild/plugin-react": "^1.0.7",
 		"@types/node": "^22.9.0",
+		"@types/react": "^18.3.12",
+		"@types/react-dom": "^18.3.1",
 		"@types/vscode": "^1.85.0",
 		"typescript": "^5.6.3"
 	},
 	"packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228",
 	"dependencies": {
 		"@iarna/toml": "^2.2.5",
-		"@std/collections": "npm:@jsr/std__collections@^1.0.9"
+		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
+		"@tanstack/react-query": "^5.60.5",
+		"@tanstack/react-table": "^8.20.5",
+		"cheerio": "^1.0.0",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1"
 	}
 }

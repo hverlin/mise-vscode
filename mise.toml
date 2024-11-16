@@ -15,14 +15,19 @@ run = 'code --inspect-extensions=5858 --extensionDevelopmentPath=$(pwd)'
 description = 'Starts VSCode with the extension loaded. Pauses on the first line of the extension'
 run = 'code --inspect-brk-extensions=5858 --extensionDevelopmentPath=$(pwd)'
 
-[tasks.build-watch]
+[tasks.dev-extension]
 depends = ['install']
 description = 'Builds the project in watch mode'
-run = 'node --run dev'
+run = 'node --run dev-extension'
+
+[tasks.dev-webviews]
+description = 'Webviews'
+run = 'node --run dev-webviews'
+depends = ['install']
 
 [tasks.dev]
 description = 'Starts the project in watch mode and opens the extension in VSCode'
-depends = ['build-watch', 'start-vscode']
+depends = ['dev-extension', 'dev-webviews', 'start-vscode']
 
 [tasks.ts-check]
 description = 'Type-check the project'

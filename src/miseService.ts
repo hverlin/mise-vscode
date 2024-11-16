@@ -156,7 +156,7 @@ export class MiseService {
 		}
 	}
 
-	async getTools(): Promise<Array<MiseTool>> {
+	async getCurrentTools(): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
@@ -181,7 +181,38 @@ export class MiseService {
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("is not trusted")) {
 				await this.handleUntrustedFile(error);
-				return this.getTools();
+				return this.getCurrentTools();
+			}
+
+			logger.error("Error fetching mise tools:", error as Error);
+			return [];
+		}
+	}
+
+	async getAllTools(): Promise<Array<MiseTool>> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		try {
+			const { stdout } = await this.execMiseCommand("ls --json");
+			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
+				return (tools as MiseTool[]).map((tool) => {
+					return {
+						name: toolName,
+						version: tool.version,
+						requested_version: tool.requested_version,
+						active: tool.active,
+						installed: tool.installed,
+						install_path: tool.install_path,
+						source: tool.source,
+					} satisfies MiseTool;
+				});
+			});
+		} catch (error) {
+			if (error instanceof Error && error.message.includes("is not trusted")) {
+				await this.handleUntrustedFile(error);
+				return this.getAllTools();
 			}
 
 			logger.error("Error fetching mise tools:", error as Error);

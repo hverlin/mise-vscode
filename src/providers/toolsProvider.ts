@@ -35,7 +35,7 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	async getTools(): Promise<MiseTool[]> {
-		return this.miseService.getTools();
+		return this.miseService.getCurrentTools();
 	}
 
 	getMiseService(): MiseService {
@@ -48,7 +48,7 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 		}
 
 		if (!element) {
-			const tools = await this.miseService.getTools();
+			const tools = await this.miseService.getCurrentTools();
 			const configFiles = await this.miseService.getMiseConfigFiles();
 			const toolsBySource = this.groupToolsBySource(tools);
 			for (const configFile of configFiles) {

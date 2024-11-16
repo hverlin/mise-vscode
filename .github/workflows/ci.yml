@@ -26,4 +26,4 @@ jobs:
       - run: node --run lint
       - run: node --run ts-check
       - run: node --run test
-      - run: node --run compile
+      - run: node --run build
