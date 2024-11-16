@@ -1,6 +1,7 @@
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
+import type { MiseService } from "../miseService";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
@@ -9,7 +10,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	public readonly onDidChangeCodeLenses: vscode.Event<void> =
 		this._onDidChangeCodeLenses.event;
 
-	constructor() {
+	constructor(private miseService: MiseService) {
 		vscode.workspace.onDidChangeTextDocument((e) => {
 			if (!isMiseExtensionEnabled()) {
 				return;
@@ -69,6 +70,28 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			console.error("Error parsing TOML:", error);
 		}
 
+		const toolsPosition = this.findToolsPosition(document);
+		if (toolsPosition) {
+			const range = new vscode.Range(toolsPosition, toolsPosition);
+			codeLenses.push(
+				new vscode.CodeLens(range, {
+					title: "$(add) Add tool",
+					tooltip: "Add tool",
+					command: "mise.useTool",
+					arguments: [document.uri.path],
+				}),
+			);
+			if (await this.miseService.hasMissingTools()) {
+				codeLenses.push(
+					new vscode.CodeLens(range, {
+						title: "$(cloud-download) Install missing tools",
+						tooltip: "Install missing tools",
+						command: "mise.installAll",
+					}),
+				);
+			}
+		}
+
 		return codeLenses;
 	}
 
@@ -117,6 +140,23 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			}
 		}
 
+		return undefined;
+	}
+
+	private findToolsPosition(
+		document: vscode.TextDocument,
+	): vscode.Position | undefined {
+		const text = document.getText();
+		const lines = text.split("\n");
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (!line) {
+				continue;
+			}
+			if (line.trim() === "[tools]") {
+				return new vscode.Position(i, 0);
+			}
+		}
 		return undefined;
 	}
 }

@@ -179,6 +179,8 @@ export function registerToolsCommands(
 	context: vscode.ExtensionContext,
 	toolsProvider: MiseToolsProvider,
 ) {
+	const miseService = toolsProvider.getMiseService();
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			MISE_OPEN_TOOL_DEFINITION,
@@ -272,12 +274,10 @@ export function registerToolsCommands(
 				);
 
 				if (confirmed === "Remove") {
-					await toolsProvider
-						.getMiseService()
-						.runMiseToolActionInConsole(
-							`rm ${tool.name}@${tool.version}`,
-							"Remove Tool",
-						);
+					await miseService.runMiseToolActionInConsole(
+						`rm ${tool.name}@${tool.version}`,
+						"Remove Tool",
+					);
 				}
 			},
 		),
@@ -307,19 +307,15 @@ export function registerToolsCommands(
 				}
 
 				tool = tool as MiseTool;
-				await toolsProvider
-					.getMiseService()
-					.runMiseToolActionInConsole(
-						`install ${tool.name}@${tool.requested_version}`,
-						"Install Tool",
-					);
+				await miseService.runMiseToolActionInConsole(
+					`install ${tool.name}@${tool.requested_version}`,
+					"Install Tool",
+				);
 			},
 		),
 
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
-			await toolsProvider
-				.getMiseService()
-				.runMiseToolActionInConsole("install", "Install Tool");
+			await miseService.runMiseToolActionInConsole("install", "Install Tool");
 		}),
 
 		vscode.commands.registerCommand(
@@ -327,11 +323,12 @@ export function registerToolsCommands(
 			async (path: string | SourceItem | undefined) => {
 				let selectedPath = path;
 				if (!selectedPath) {
-					const miseConfigFiles = await toolsProvider
-						.getMiseService()
-						.getMiseConfigFiles();
+					const miseConfigFiles = await miseService.getMiseConfigFiles();
+
 					selectedPath = await vscode.window.showQuickPick(
-						miseConfigFiles.map((file) => file.path),
+						miseConfigFiles.length > 0
+							? miseConfigFiles.map((file) => file.path)
+							: ["~/.config/mise/config.toml"],
 						{ placeHolder: "Select a configuration file" },
 					);
 				} else if (selectedPath instanceof SourceItem) {
@@ -342,26 +339,64 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const selectedToolName = await vscode.window.showInputBox({
-					placeHolder: "Enter the tool name to use (e.g. node@latest)",
-					validateInput: (input) => {
-						if (!input) {
-							return "Tool name is required";
-						}
-						return null;
+				const registry = await miseService.miseRegistry();
+				const selection = await vscode.window.showQuickPick(
+					[
+						{ label: "custom", description: "Enter a custom tool name" },
+						...registry.map(
+							(tool) =>
+								({
+									label: `${tool.short}`,
+									description: tool.full,
+								}) as vscode.QuickPickItem,
+						),
+					],
+					{
+						placeHolder: "Search for a tool to install (e.g. node)",
+						canPickMany: false,
 					},
-				});
+				);
+
+				if (!selection) {
+					return;
+				}
+
+				let selectedToolName: string | undefined;
+				if (selection.label === "custom") {
+					selectedToolName = await vscode.window.showInputBox({
+						placeHolder: "Enter the tool name to use (e.g. node@latest)",
+						validateInput: (input) => {
+							if (!input) {
+								return "Tool name is required";
+							}
+							if (/[^@]+@[^@]+/.test(input)) {
+								return "Tool name must include a version (e.g. node@latest or node@20)";
+							}
+							return null;
+						},
+					});
+				} else {
+					selectedToolName = selection.label;
+					const availableVersions =
+						await miseService.listRemoteVersions(selectedToolName);
+					const selectedVersion = await vscode.window.showQuickPick(
+						["latest"].concat(availableVersions),
+						{ placeHolder: "Select a version to use", canPickMany: false },
+					);
+					if (!selectedVersion) {
+						return;
+					}
+					selectedToolName = `${selectedToolName}@${selectedVersion}`;
+				}
 
 				if (!selectedToolName) {
 					return;
 				}
 
-				await toolsProvider
-					.getMiseService()
-					.runMiseToolActionInConsole(
-						`use --path ${selectedPath} ${selectedToolName}`,
-						"Use Tool",
-					);
+				await miseService.runMiseToolActionInConsole(
+					`use --path ${selectedPath} ${selectedToolName}`,
+					"Use Tool",
+				);
 			},
 		),
 
@@ -396,9 +431,7 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const binPath = await toolsProvider
-					.getMiseService()
-					.miseWhich(tool.name);
+				const binPath = await miseService.miseWhich(tool.name);
 				await vscode.env.clipboard.writeText(binPath);
 				vscode.window.showInformationMessage(
 					`Copied bin path to clipboard: ${binPath}`,
@@ -409,7 +442,7 @@ export function registerToolsCommands(
 		vscode.commands.registerCommand(
 			"mise.configureSdkPath",
 			async (toolName: string | undefined) => {
-				await toolsProvider.getMiseService().miseReshim();
+				await miseService.miseReshim();
 
 				let selectedToolName = toolName;
 
@@ -480,9 +513,7 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const miseConfig = await toolsProvider
-					.getMiseService()
-					.getMiseConfiguration();
+				const miseConfig = await miseService.getMiseConfiguration();
 				configureExtension({
 					tool: selectedTool,
 					miseConfig: miseConfig,
@@ -499,7 +530,7 @@ export function registerToolsCommands(
 			},
 		),
 		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
-			await toolsProvider.getMiseService().miseReshim();
+			await miseService.miseReshim();
 
 			const tools = await toolsProvider.getTools();
 			const configurableTools = tools.filter((tool) => {
@@ -519,9 +550,7 @@ export function registerToolsCommands(
 				return;
 			}
 
-			const miseConfig = await toolsProvider
-				.getMiseService()
-				.getMiseConfiguration();
+			const miseConfig = await miseService.getMiseConfiguration();
 
 			await Promise.allSettled(
 				configurableTools.map(async (tool) => {

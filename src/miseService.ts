@@ -333,4 +333,49 @@ export class MiseService {
 		});
 		return stdout.trim();
 	}
+
+	async miseRegistry() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.execMiseCommand("registry", {
+			setProfile: false,
+		});
+
+		return stdout
+			.trim()
+			.split("\n")
+			.slice(1)
+			.map((line) => {
+				const [short, full] = line.split(/\s+/);
+				return { short, full };
+			})
+			.filter((entry) => entry.short && entry.full)
+			.filter(
+				(entry, index, self) =>
+					self.findIndex((e) => e.short === entry.short) === index,
+			);
+	}
+
+	async listRemoteVersions(toolName: string) {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.execMiseCommand(`ls-remote ${toolName}`, {
+			setProfile: false,
+		});
+
+		return stdout.trim().split("\n").reverse();
+	}
+
+	async hasMissingTools() {
+		if (!this.getMiseBinaryPath()) {
+			return false;
+		}
+
+		const tools = await this.getCurrentTools();
+		return tools.some((tool) => !tool.installed);
+	}
 }

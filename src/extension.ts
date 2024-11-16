@@ -234,7 +234,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerCodeLensProvider(
 			{ language: "toml", pattern: "**/*mise*.toml" },
-			new MiseTomlCodeLensProvider(),
+			new MiseTomlCodeLensProvider(miseService),
 		),
 	);
 
