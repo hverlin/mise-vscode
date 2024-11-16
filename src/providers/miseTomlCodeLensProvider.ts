@@ -135,7 +135,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			}
 
 			// Case 2: Check for [tasks.taskname] style
-			if (line.trim() === `[tasks.${taskName}]`) {
+			if (line.trim().startsWith(`[tasks.${taskName}]`)) {
 				return new vscode.Position(i, line.indexOf(taskName));
 			}
 		}
@@ -153,7 +153,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			if (!line) {
 				continue;
 			}
-			if (line.trim() === "[tools]") {
+			if (line.trim().startsWith("[tools]")) {
 				return new vscode.Position(i, 0);
 			}
 		}
