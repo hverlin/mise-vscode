@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/hverlin/mise-vscode/compare/v0.9.1...v0.10.0) (2024-11-16)
+
+
+### Features
+
+* Add view to list all tools ([b4433cb](https://github.com/hverlin/mise-vscode/commit/b4433cb1895f1d21a7f8c99c4c2e8a7585a6509c))
+
 ## [0.9.1](https://github.com/hverlin/mise-vscode/compare/v0.9.0...v0.9.1) (2024-11-16)
 
 
