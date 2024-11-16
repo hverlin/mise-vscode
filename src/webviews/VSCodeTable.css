@@ -1,0 +1,86 @@
+.vscode-table {
+	width: 100%;
+	font-family: var(--vscode-editor-font-family), monospace;
+	font-size: var(--vscode-editor-font-size);
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+}
+
+.vscode-table table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.vscode-table thead tr {
+	background-color: var(--vscode-list-headerBackground);
+	color: var(--vscode-list-headerForeground);
+}
+
+.vscode-table th {
+	padding: 0.4rem 0.8rem;
+	text-align: left;
+	font-weight: normal;
+	border-bottom: 1px solid var(--vscode-list-headerBorder);
+	white-space: nowrap;
+}
+
+.vscode-table tbody tr {
+	background-color: var(--vscode-list-background);
+	cursor: pointer;
+}
+
+.vscode-table tbody tr:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.vscode-table tbody tr:focus {
+	background-color: var(--vscode-list-focusBackground);
+	outline: none;
+}
+
+.vscode-table tbody tr:active {
+	background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+.vscode-table td {
+	padding: 0.4rem 0.8rem;
+	border-bottom: 1px solid var(--vscode-list-inactiveSelectionBackground);
+}
+
+.vscode-table__sort-button {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	user-select: none;
+	background: none;
+	color: var(--vscode-list-headerForeground);
+	border: none;
+	font-weight: bold;
+}
+
+.vscode-table__sort-icon {
+	margin-left: 0.25rem;
+}
+
+.vscode-table__empty {
+	padding: 1rem;
+	text-align: center;
+	color: var(--vscode-descriptionForeground);
+}
+
+.vscode-table__loading {
+	padding: 1rem;
+	text-align: center;
+	color: var(--vscode-descriptionForeground);
+}
+
+@media (max-width: 640px) {
+	.vscode-table {
+		overflow-x: auto;
+	}
+
+	.vscode-table td,
+	.vscode-table th {
+		padding: 0.4rem;
+	}
+}

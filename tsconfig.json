@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"esModuleInterop": true,
 		"isolatedModules": true,
-		"lib": ["ES2020"],
+		"lib": ["ES2020", "dom"],
 		"module": "Preserve",
 		"moduleResolution": "Bundler",
 		"noEmit": true,
@@ -12,7 +12,14 @@
 		"rootDir": "src",
 		"sourceMap": true,
 		"strict": true,
-		"target": "es2022"
+		"target": "es2022",
+		"jsx": "react-jsx"
 	},
-	"exclude": ["node_modules", ".vscode-test", "rsbuild.config.ts", "dist"]
+	"exclude": [
+		"node_modules",
+		".vscode-test",
+		"rsbuild.config.ts",
+		"rsbuild.webviews.config.ts",
+		"dist"
+	]
 }

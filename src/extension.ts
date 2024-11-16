@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import * as vscode from "vscode";
 import {
 	CONFIGURATION_FLAGS,
@@ -25,6 +27,7 @@ import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
+import WebViewPanel from "./webviewPanel";
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -184,7 +187,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			statusBarItem.text = "$(sync~spin) Mise";
 			try {
 				if (isMiseExtensionEnabled()) {
-					miseService.getTools().then(async (tools) => {
+					miseService.getCurrentTools().then(async (tools) => {
 						const missingTools = tools.filter((tool) => !tool.installed);
 						if (missingTools.length > 0) {
 							const selection = await vscode.window.showWarningMessage(
@@ -268,6 +271,15 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(miseWatcher);
 
 	await vscode.commands.executeCommand("mise.refreshEntry");
+
+	const disposable = vscode.commands.registerCommand(
+		"mise.listAllTools",
+		async () => {
+			WebViewPanel.createOrShow(context, miseService);
+		},
+	);
+
+	context.subscriptions.push(disposable);
 }
 
 export function deactivate() {

@@ -181,7 +181,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 	async watchTask(taskName: string) {
 		const [res1, res2] = await Promise.allSettled([
-			this.miseService.getTools(),
+			this.miseService.getCurrentTools(),
 			execAsync("which watchexec"),
 		]);
 		const tools = res1.status === "fulfilled" ? res1.value : [];
