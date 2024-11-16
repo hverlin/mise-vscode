@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/hverlin/mise-vscode/compare/v0.9.0...v0.9.1) (2024-11-16)
+
+
+### Bug Fixes
+
+* Fix path for symlinked tools in `.vscode` ([816a2a3](https://github.com/hverlin/mise-vscode/commit/816a2a3dd415d8da757526e046072a1634e0de14))
+
 ## [0.9.0](https://github.com/hverlin/mise-vscode/compare/v0.8.0...v0.9.0) (2024-11-16)
 
 
