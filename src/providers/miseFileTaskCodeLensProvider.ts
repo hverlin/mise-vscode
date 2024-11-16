@@ -1,10 +1,13 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
-import { isExecutable } from "../utils/fileUtils";
+import type { MiseService } from "../miseService";
+import { expandPath, isExecutable } from "../utils/fileUtils";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
+	constructor(private miseService: MiseService) {}
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -12,8 +15,17 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
+		const tasks = await this.miseService.getTasks();
 		const codeLenses: vscode.CodeLens[] = [];
-		if (!(await isExecutable(document.fileName))) {
+		const existingTask = tasks.find((t) => {
+			if (t.name === path.basename(document.fileName)) {
+				return true;
+			}
+
+			return expandPath(t.source) === expandPath(document.fileName);
+		});
+
+		if (!((await isExecutable(document.fileName)) && existingTask)) {
 			return [];
 		}
 
@@ -22,21 +34,20 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 			new vscode.Position(0, 0),
 		);
 
-		const taskName = path.basename(document.fileName);
 		codeLenses.push(
 			new vscode.CodeLens(range, {
 				title: "$(play) Run",
-				tooltip: `Run task ${taskName}`,
+				tooltip: `Run task ${existingTask.name}`,
 				command: RUN_TASK_COMMAND,
-				arguments: [taskName],
+				arguments: [existingTask.name],
 			}),
 		);
 		codeLenses.push(
 			new vscode.CodeLens(range, {
 				title: "$(watch) Watch",
-				tooltip: `Watch task ${taskName}`,
+				tooltip: `Watch task ${existingTask.name}`,
 				command: WATCH_TASK_COMMAND,
-				arguments: [taskName],
+				arguments: [existingTask.name],
 			}),
 		);
 		return codeLenses;

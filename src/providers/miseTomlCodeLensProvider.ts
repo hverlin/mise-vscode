@@ -129,14 +129,21 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				continue;
 			}
 
-			// Case 1: Check for [tasks] section with inline tasks
-			if (line.trim().match(new RegExp(`^\\s*${taskName}\\s*=`))) {
-				return new vscode.Position(i, line.indexOf(taskName));
-			}
+			const trimmedLine = line.trim();
 
-			// Case 2: Check for [tasks.taskname] style
-			if (line.trim().startsWith(`[tasks.${taskName}]`)) {
-				return new vscode.Position(i, line.indexOf(taskName));
+			// Check for [tasks] section with inline tasks
+			// Check for [tasks.taskname] style
+			// Check for tasks."taskname" style
+			// Check for tasks.'taskname' style
+			const isFound =
+				trimmedLine.match(new RegExp(`^\\s*${taskName}\\s*=`)) ||
+				trimmedLine.startsWith(`[tasks.${taskName}]`) ||
+				trimmedLine.startsWith(`[tasks."${taskName}"]`) ||
+				trimmedLine.startsWith(`tasks."${taskName}"`) ||
+				trimmedLine.startsWith(`tasks.${taskName}`);
+
+			if (isFound) {
+				return new vscode.Position(i, 0);
 			}
 		}
 

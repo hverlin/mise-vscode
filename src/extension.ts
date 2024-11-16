@@ -251,13 +251,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	if (rootFolder) {
 		context.subscriptions.push(
 			vscode.languages.registerCodeLensProvider(
-				{
-					pattern: new vscode.RelativePattern(
-						rootFolder,
-						`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
-					),
-				},
-				new MiseFileTaskCodeLensProvider(),
+				[
+					{
+						pattern: new vscode.RelativePattern(
+							rootFolder,
+							`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
+						),
+					},
+					{
+						language: "shellscript",
+					},
+				],
+				new MiseFileTaskCodeLensProvider(miseService),
 			),
 		);
 	}

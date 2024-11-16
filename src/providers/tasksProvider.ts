@@ -300,7 +300,12 @@ function findTaskPosition(
 				}
 
 				const trimmedLine = currentLine.trim();
-				if (sectionPattern.test(trimmedLine)) {
+				if (
+					sectionPattern.test(trimmedLine) ||
+					trimmedLine.startsWith(`[tasks."${taskName}"`) ||
+					trimmedLine.startsWith(`tasks.${taskName}`) ||
+					trimmedLine.startsWith(`tasks."${taskName}"`)
+				) {
 					return new vscode.Position(i, currentLine.indexOf(taskName));
 				}
 				if (trimmedLine === "[tasks]") {
