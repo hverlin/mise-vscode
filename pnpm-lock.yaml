@@ -11,6 +11,9 @@ importers:
       '@iarna/toml':
         specifier: ^2.2.5
         version: 2.2.5
+      '@std/collections':
+        specifier: npm:@jsr/std__collections@^1.0.9
+        version: '@jsr/std__collections@1.0.9'
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -85,6 +88,9 @@ packages:
 
   '@iarna/toml@2.2.5':
     resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
+
+  '@jsr/std__collections@1.0.9':
+    resolution: {integrity: sha512-cTxYdBY5oMVyU26MLLHsX1jXu9GUmiQKNnKrcEMo9/qei4lypvnds6I7cp5i7N1ex5DRetQaNa/YjMyJQEabzg==, tarball: https://npm.jsr.io/~/11/@jsr/std__collections/1.0.9.tgz}
 
   '@module-federation/runtime-tools@0.5.1':
     resolution: {integrity: sha512-nfBedkoZ3/SWyO0hnmaxuz0R0iGPSikHZOAZ0N/dVSQaIzlffUo35B5nlC2wgWIc0JdMZfkwkjZRrnuuDIJbzg==}
@@ -233,6 +239,8 @@ snapshots:
     optional: true
 
   '@iarna/toml@2.2.5': {}
+
+  '@jsr/std__collections@1.0.9': {}
 
   '@module-federation/runtime-tools@0.5.1':
     dependencies:

@@ -484,6 +484,9 @@ export function registerToolsCommands(
 					miseConfig: miseConfig,
 					configurableExtension: configurableTool,
 					useShims: useMiseShims === "Yes",
+					useSymLinks: vscode.workspace
+						.getConfiguration("mise")
+						.get("configureExtensionsUseSymLinks"),
 				}).catch((error) => {
 					logger.error(
 						`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
@@ -530,6 +533,9 @@ export function registerToolsCommands(
 							tool: tool,
 							miseConfig: miseConfig,
 							configurableExtension: configurableTool,
+							useSymLinks: vscode.workspace
+								.getConfiguration("mise")
+								.get("configureExtensionsUseSymLinks"),
 							useShims: vscode.workspace
 								.getConfiguration("mise")
 								.get("configureExtensionsUseShims"),

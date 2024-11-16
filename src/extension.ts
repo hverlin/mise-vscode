@@ -113,7 +113,20 @@ export async function activate(context: vscode.ExtensionContext) {
 								label: "Enable extension",
 								detail: "Enable the mise extension for this workspace",
 							},
-				],
+				] satisfies Array<
+					vscode.QuickPickItem & {
+						label:
+							| "Mise version"
+							| "Reload configuration"
+							| "Open Mise settings"
+							| "About vscode-mise"
+							| "Disable the mise extension for this workspace"
+							| "Enable extension"
+							| "Install missing tools"
+							| "Install all tools"
+							| "";
+					}
+				>,
 				{ title: "Mise - Command menu" },
 			);
 
@@ -121,7 +134,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				case "Reload configuration":
 					await vscode.commands.executeCommand("mise.refreshEntry");
 					break;
-				case "Settings":
+				case "Open Mise settings":
 					await vscode.commands.executeCommand("mise.openSettings");
 					break;
 				case "About vscode-mise":
@@ -129,7 +142,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						vscode.Uri.parse("https://github.com/hverlin/mise-vscode"),
 					);
 					break;
-				case "Disable extension":
+				case "Disable the mise extension for this workspace":
 					await vscode.workspace
 						.getConfiguration("mise")
 						.update("enable", false, vscode.ConfigurationTarget.Workspace);

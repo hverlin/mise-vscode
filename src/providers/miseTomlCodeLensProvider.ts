@@ -28,10 +28,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
-		if (
-			!document.fileName.includes("mise") ||
-			!document.fileName.endsWith(".toml")
-		) {
+		if (!document.fileName.endsWith(".toml")) {
 			return [];
 		}
 
@@ -107,7 +104,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			const line = lines[i];
 
 			// Case 1: Check for [tasks] section with inline tasks
-			if (line.trim().match(new RegExp(`${taskName}\\s*=`))) {
+			if (line.trim().match(new RegExp(`^\\s*${taskName}\\s*=`))) {
 				return new vscode.Position(i, line.indexOf(taskName));
 			}
 

@@ -58,7 +58,6 @@ export class Logger {
 			}
 		}
 
-		// Show in Problem panel for warnings and errors
 		if (level >= LogLevel.WARN) {
 			const notify =
 				level === LogLevel.WARN
@@ -69,7 +68,11 @@ export class Logger {
 			if (error) {
 				errorMessage = `${message}: ${error.message}`;
 			}
-			void notify(`Mise: ${errorMessage}`);
+			void notify(`Mise: ${errorMessage}`, "Show Logs").then((selection) => {
+				if (selection === "Show Logs") {
+					this.show();
+				}
+			});
 		}
 	}
 

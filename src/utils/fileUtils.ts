@@ -6,7 +6,7 @@ export function expandPath(filePath: string): string {
 	return path.normalize(filePath).replace("~/", `${os.homedir()}/`);
 }
 
-async function makeDirectory(dirPath: string): Promise<void> {
+export async function mkdirp(dirPath: string): Promise<void> {
 	try {
 		await fs.mkdir(dirPath, { recursive: true });
 	} catch (error) {
@@ -21,7 +21,7 @@ async function makeDirectory(dirPath: string): Promise<void> {
 async function touchFile(filePath: string): Promise<void> {
 	try {
 		const parentDir = path.dirname(filePath);
-		await makeDirectory(parentDir);
+		await mkdirp(parentDir);
 
 		try {
 			const handle = await fs.open(filePath, "wx");
@@ -86,7 +86,7 @@ export async function setupTaskFile(taskFilePath: string) {
 			throw new Error("Task file must be within the task directory");
 		}
 
-		await makeDirectory(normalizedDir);
+		await mkdirp(normalizedDir);
 		await touchFile(normalizedPath);
 		await setFilePermissions(normalizedPath);
 	} catch (error) {

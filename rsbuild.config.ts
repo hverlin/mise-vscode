@@ -6,6 +6,7 @@ export default defineConfig({
 		hmr: false,
 		cliShortcuts: false,
 	},
+	server: { port: 9987 },
 	source: { entry: { extension: "./src/extension.ts" } },
 	output: {
 		sourceMap: { js: "source-map" },

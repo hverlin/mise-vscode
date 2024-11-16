@@ -1,7 +1,10 @@
 import * as path from "node:path";
+import type { VSCodeSettingValue } from "../configuration";
+import {
+	configureSimpleExtension,
+	createMiseToolSymlink,
+} from "./configureExtensionUtil";
 import type { MiseConfig } from "./miseDoctorParser";
-
-export type VSCodeConfigValue = string | Record<string, string> | Array<string>;
 
 export type ConfigurableExtension = {
 	extensionName: string;
@@ -9,8 +12,8 @@ export type ConfigurableExtension = {
 	generateConfiguration: (
 		tool: MiseTool,
 		miseConfig: MiseConfig,
-		{ useShims }: { useShims: boolean },
-	) => Promise<Record<string, VSCodeConfigValue>>;
+		{ useShims, useSymLinks }: { useShims: boolean; useSymLinks: boolean },
+	) => Promise<Record<string, VSCodeSettingValue>>;
 };
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
@@ -20,13 +23,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
-			return {
-				"python.defaultInterpreterPath": useShims
-					? path.join(miseConfig.dirs.shims, "python")
-					: path.join(tool.install_path, "bin", "python"),
-			};
+			return configureSimpleExtension({
+				configKey: "python.defaultInterpreterPath",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
 		},
 	},
 	{
@@ -35,13 +40,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
-			return {
-				"deno.path": useShims
-					? path.join(miseConfig.dirs.shims, "deno")
-					: path.join(tool.install_path, "bin", "deno"),
-			};
+			return configureSimpleExtension({
+				configKey: "deno.path",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
 		},
 	},
 	{
@@ -50,12 +57,18 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
+			const interpreterPath = useShims
+				? path.join(miseConfig.dirs.shims, tool.name)
+				: path.join(tool.install_path, "bin", tool.name);
+
+			const configuredPath = useSymLinks
+				? await createMiseToolSymlink(tool.name, interpreterPath)
+				: interpreterPath;
+
 			return {
-				"ruff.path": useShims
-					? [path.join(miseConfig.dirs.shims, "ruff")]
-					: [path.join(tool.install_path, "bin", "ruff")],
+				"ruff.path": [configuredPath],
 			};
 		},
 	},
@@ -65,23 +78,35 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
-			if (useShims) {
-				return {
-					"go.goroot": tool.install_path,
-					"go.alternateTools": {
-						go: path.join(miseConfig.dirs.shims, "go"),
-						dlv: path.join(miseConfig.dirs.shims, "dlv"),
-					},
-				};
-			}
+			const goRoot = useSymLinks
+				? await createMiseToolSymlink("goRoot", tool.install_path)
+				: tool.install_path;
+
+			const goBin = useShims
+				? useSymLinks
+					? await createMiseToolSymlink(
+							"go",
+							path.join(miseConfig.dirs.shims, "go"),
+						)
+					: path.join(miseConfig.dirs.shims, "go")
+				: path.join(tool.install_path, "bin", "go");
+
+			const dlvBin = useShims
+				? useSymLinks
+					? await createMiseToolSymlink(
+							"dlv",
+							path.join(miseConfig.dirs.shims, "dlv"),
+						)
+					: path.join(miseConfig.dirs.shims, "dlv")
+				: path.join(tool.install_path, "bin", "dlv");
 
 			return {
-				"go.goroot": tool.install_path,
+				"go.goroot": goRoot,
 				"go.alternateTools": {
-					go: path.join(tool.install_path, "bin", "go"),
-					dlv: path.join(tool.install_path, "bin", "dlv"),
+					go: goBin,
+					dlv: dlvBin,
 				},
 			};
 		},
@@ -92,36 +117,47 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
-			return {
-				"bun.runtime": useShims
-					? path.join(miseConfig.dirs.shims, "bun")
-					: path.join(tool.install_path, "bin", "bun"),
-			};
+			return configureSimpleExtension({
+				configKey: "bun.runtime",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
 		},
 	},
 	{
 		extensionName: "oracle.oracle-java",
 		toolName: "java",
-		generateConfiguration: async (tool: MiseTool) => {
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig,
+			{ useSymLinks },
+		) => {
 			return {
-				"jdk.jdkhome": tool.install_path,
+				"jdk.jdkhome": useSymLinks
+					? await createMiseToolSymlink("java", tool.install_path)
+					: tool.install_path,
 			};
 		},
 	},
 	{
 		extensionName: "timonwong.shellcheck",
 		toolName: "shellcheck",
-		generateConfiguration: async (tool: MiseTool) => {
-			return {
-				// it seems that it doesn't work with shims
-				"shellcheck.executablePath": path.join(
-					tool.install_path,
-					"bin",
-					"shellcheck",
-				),
-			};
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims, useSymLinks },
+		) => {
+			return configureSimpleExtension({
+				configKey: "shellcheck.executablePath",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
 		},
 	},
 	{
@@ -130,12 +166,20 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
-			{ useShims },
+			{ useShims, useSymLinks },
 		) => {
+			const interpreterPath = useShims
+				? path.join(miseConfig.dirs.shims, tool.name)
+				: path.join(tool.install_path, "bin", tool.name);
+
+			const configuredPath = useSymLinks
+				? await createMiseToolSymlink(tool.name, interpreterPath)
+				: interpreterPath;
+
 			return {
-				"debug.javascript.defaultRuntimeExecutable": useShims
-					? { "pwa-node": path.join(miseConfig.dirs.shims, "node") }
-					: { "pwa-node": path.join(tool.install_path, "bin", "node") },
+				"debug.javascript.defaultRuntimeExecutable": {
+					"pwa-node": configuredPath,
+				},
 			};
 		},
 	},
