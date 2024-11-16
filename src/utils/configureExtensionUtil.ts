@@ -26,7 +26,12 @@ export async function createMiseToolSymlink(binName: string, binPath: string) {
 
 	await mkdirp(toolsPaths);
 	const linkPath = path.join(toolsPaths, binName);
-	const configuredPath = path.join("${workspaceFolder}", toolsPaths, binName);
+	const configuredPath = path.join(
+		"${workspaceFolder}",
+		".vscode",
+		"mise-tools",
+		binName,
+	);
 
 	if (existsSync(linkPath)) {
 		logger.info(`${await readlink(linkPath)}: ${binPath}`);

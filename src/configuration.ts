@@ -8,6 +8,7 @@ export const CONFIGURATION_FLAGS = {
 	profile: "mise.profile",
 	configureExtensionsAutomatically: "mise.configureExtensionsAutomatically",
 	configureExtensionsUseShims: "mise.configureExtensionsUseShims",
+	configureExtensionsUseSymLinks: "mise.configureExtensionsUseSymLinks",
 };
 
 export const isMiseExtensionEnabled = (): boolean => {
