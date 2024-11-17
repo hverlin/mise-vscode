@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/hverlin/mise-vscode/compare/v0.10.0...v0.11.0) (2024-11-17)
+
+
+### Features
+
+* add autocompletion for depends ([6d0ecfa](https://github.com/hverlin/mise-vscode/commit/6d0ecfa44a0712df24ff66a5873dc1067be406f3))
+* add automatic toml schemas validation ([602cc7c](https://github.com/hverlin/mise-vscode/commit/602cc7c0770d068d337019405e2b4c75d13a4a01))
+* Use registry to list available tools to install ([4d483e0](https://github.com/hverlin/mise-vscode/commit/4d483e09efacbcde09e6a781cbc868862b84ac68))
+
+
+### Bug Fixes
+
+* Improve code-lens file task detection ([de7d40f](https://github.com/hverlin/mise-vscode/commit/de7d40fc3d1859f0e12cf899b9f102c65080a8d6))
+* Improve code-lens task detection ([ce2348e](https://github.com/hverlin/mise-vscode/commit/ce2348eec461a293426786a5a3f57cb372d04039))
+
 ## [0.10.0](https://github.com/hverlin/mise-vscode/compare/v0.9.1...v0.10.0) (2024-11-16)
 
 
