@@ -44,6 +44,23 @@
 		"workspaceContains:mise/config.toml"
 	],
 	"contributes": {
+		"tomlValidation": [
+			{
+				"fileMatch": [
+					".mise.toml",
+					".mise.*.toml",
+					"mise.toml",
+					"mise.*.toml",
+					"**/.mise/config.toml",
+					"**/mise/config.toml"
+				],
+				"url": "https://mise.jdx.dev/schema/mise.json"
+			},
+			{
+				"regexMatch": "task[s]?.toml",
+				"url": "https://raw.githubusercontent.com/hverlin/mise-vscode/refs/heads/main/schemas/toml-task-file-schema.json"
+			}
+		],
 		"snippets": [
 			{
 				"language": "toml",

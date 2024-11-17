@@ -1,5 +1,5 @@
 {
-	"$id": "https://github.com/hverlin/mise-vscode/blob/main/schema/toml-task-file-schema.json",
+	"$id": "toml-task-file-schema",
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"title": "mise tasks",
 	"type": "object",
