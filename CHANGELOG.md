@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.0](https://github.com/hverlin/mise-vscode/compare/v0.11.0...v0.12.0) (2024-11-17)
+
+
+### Features
+
+* Add ignore list to prevent some extensions to be automatically configured ([03647fb](https://github.com/hverlin/mise-vscode/commit/03647fb99cc40b5eaeeae2f69c6d81589ca6508a))
+* add open file action ([02e05cb](https://github.com/hverlin/mise-vscode/commit/02e05cb73b087ddb4e308543dc455626b3b28471))
+* Improve file watcher ([02e05cb](https://github.com/hverlin/mise-vscode/commit/02e05cb73b087ddb4e308543dc455626b3b28471))
+* Show outdated tools in tools view. Allow removing tools ([07f2212](https://github.com/hverlin/mise-vscode/commit/07f2212675a9a2ee0c90b4b6fd7556dfff4b32f6))
+* Support mise set command ([7fe8cd6](https://github.com/hverlin/mise-vscode/commit/7fe8cd66b15036beed8c1ef3ec2758b02e4edfc8))
+
 ## [0.11.0](https://github.com/hverlin/mise-vscode/compare/v0.10.0...v0.11.0) (2024-11-17)
 
 
