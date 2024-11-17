@@ -7,7 +7,6 @@ import {
 	useReactTable,
 } from "@tanstack/react-table";
 
-import "./VSCodeTable.css";
 import { useState } from "react";
 
 type VSCodeTableProps<T> = {
@@ -49,7 +48,7 @@ export default function VSCodeTable<T>({
 	}
 
 	return (
-		<div className="vscode-table">
+		<div className="vscode-table" style={{ position: "relative" }}>
 			<table>
 				<thead>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -80,7 +79,12 @@ export default function VSCodeTable<T>({
 						</tr>
 					))}
 				</thead>
-				<tbody>
+				<tbody
+					style={{
+						maxHeight: "calc(100dvh - 80px)",
+						overflowY: "auto",
+					}}
+				>
 					{table.getRowModel().rows.map((row) => (
 						<tr key={row.id}>
 							{row.getVisibleCells().map((cell) => (

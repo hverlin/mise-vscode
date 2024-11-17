@@ -7,7 +7,7 @@ import { logger } from "./utils/logger";
 
 export default class WebViewPanel {
 	public static currentPanel: WebViewPanel | undefined;
-	private static readonly viewType = "MiseTools";
+	private static readonly viewType = "Mise";
 
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionUri: vscode.Uri;
@@ -45,7 +45,7 @@ export default class WebViewPanel {
 
 		this._panel = vscode.window.createWebviewPanel(
 			WebViewPanel.viewType,
-			"MiseTools",
+			"Mise",
 			column,
 			{ enableScripts: true, localResourceRoots: [this._extensionUri] },
 		);
@@ -87,6 +87,11 @@ export default class WebViewPanel {
 							case "outdatedTools": {
 								return executeAction(message, () =>
 									this.miseService.getOutdatedTools(),
+								);
+							}
+							case "settings": {
+								return executeAction(message, () =>
+									this.miseService.getSettings(),
 								);
 							}
 						}

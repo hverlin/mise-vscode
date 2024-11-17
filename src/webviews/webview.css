@@ -4,6 +4,14 @@
 	font-size: var(--vscode-editor-font-size);
 	background-color: var(--vscode-editor-background);
 	color: var(--vscode-editor-foreground);
+	height: 100%;
+}
+
+.vscode-table thead {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
 }
 
 .vscode-table table {
@@ -146,4 +154,62 @@
 	.vscode-table th {
 		padding: 0.4rem;
 	}
+}
+
+.vscode-tabs {
+	display: flex;
+	height: 35px;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder);
+	position: sticky;
+	top: 0;
+}
+
+.vscode-tab {
+	display: flex;
+	align-items: center;
+	min-width: 120px;
+	max-width: 200px;
+	height: 100%;
+	padding: 0 10px;
+	border-right: 1px solid var(--vscode-editorGroupHeader-tabsBorder);
+	background-color: var(--vscode-tab-inactiveBackground);
+	color: var(--vscode-tab-inactiveForeground);
+	font-size: var(--vscode-font-size);
+	font-family: var(--vscode-font-family);
+	cursor: pointer;
+	position: relative;
+	user-select: none;
+}
+
+.vscode-tab.active {
+	background-color: var(--vscode-tab-activeBackground);
+	color: var(--vscode-tab-activeForeground);
+	border-top: 1px solid var(--vscode-tab-activeBorder);
+}
+
+.vscode-tab:hover {
+	background-color: var(--vscode-tab-hoverBackground);
+}
+
+.vscode-tab-content {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	overflow: hidden;
+}
+
+.vscode-tab-title {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding: 0 5px;
+}
+
+.vscode-tab-icon {
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	margin-right: 5px;
 }

@@ -1,5 +1,6 @@
 import * as os from "node:os";
 import path from "node:path";
+import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import { getRootFolderPath } from "./configuration";
 import { expandPath } from "./utils/fileUtils";
@@ -452,5 +453,14 @@ export class MiseService {
 			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(/"/g, '\\"')}"`,
 			{ setProfile: false },
 		);
+	}
+
+	async getSettings() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.execMiseCommand("settings");
+		return toml.parse(stdout);
 	}
 }
