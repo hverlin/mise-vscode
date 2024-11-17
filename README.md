@@ -66,6 +66,9 @@ See [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Starte
 - Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
 - Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
+### Known Issues
+- Workspaces with multiple folders are not yet supported. Only the first workspace folder is used.
+
 ## 📄 License
 
 This extension is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

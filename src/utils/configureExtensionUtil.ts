@@ -3,7 +3,11 @@ import { readlink, rm, symlink } from "node:fs/promises";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { ConfigurationTarget } from "vscode";
-import { updateVSCodeSettings } from "../configuration";
+import {
+	getRootFolder,
+	getRootFolderPath,
+	updateVSCodeSettings,
+} from "../configuration";
 import { mkdirp } from "./fileUtils";
 import { logger } from "./logger";
 import type { MiseConfig } from "./miseDoctorParser";
@@ -17,9 +21,8 @@ export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
 );
 
 export async function createMiseToolSymlink(binName: string, binPath: string) {
-	const folder = vscode.workspace.workspaceFolders?.[0];
 	const toolsPaths = path.join(
-		folder?.uri.fsPath ?? "",
+		getRootFolderPath() ?? "",
 		".vscode",
 		"mise-tools",
 	);
@@ -99,10 +102,7 @@ export async function configureExtension({
 		return;
 	}
 
-	if (
-		vscode.workspace.workspaceFolders === undefined ||
-		vscode.workspace.workspaceFolders.length === 0
-	) {
+	if (!getRootFolder()) {
 		logger.info(
 			`No workspace folders found, skipping extension configuration for: ${configurableExtension.extensionName}`,
 		);

@@ -66,3 +66,11 @@ export async function updateVSCodeSettings(
 	}
 	return updatedKeys;
 }
+
+export const getRootFolder = () => {
+	return vscode.workspace.workspaceFolders?.[0];
+};
+
+export const getRootFolderPath = () => {
+	return getRootFolder()?.uri.fsPath;
+};

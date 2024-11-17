@@ -2,7 +2,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
-import { isMiseExtensionEnabled } from "../configuration";
+import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
@@ -476,7 +476,7 @@ export function registerTasksCommands(
 				return;
 			}
 
-			const rootPath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+			const rootPath = getRootFolderPath();
 			const taskDir = path.join(rootPath ?? "", taskSource);
 			const taskFile = vscode.Uri.file(`${taskDir}/${taskName}`);
 

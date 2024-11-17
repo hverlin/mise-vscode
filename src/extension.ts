@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import {
 	CONFIGURATION_FLAGS,
 	getMiseProfile,
+	getRootFolder,
 	isMiseExtensionEnabled,
 } from "./configuration";
 import { createMenu } from "./extensionMenu";
@@ -176,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	);
 
-	const rootFolder = vscode.workspace.workspaceFolders?.[0];
+	const rootFolder = getRootFolder();
 	if (rootFolder) {
 		context.subscriptions.push(
 			vscode.languages.registerCodeLensProvider(

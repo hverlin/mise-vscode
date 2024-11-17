@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { getRootFolderPath } from "./configuration";
 import { logger } from "./utils/logger";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
 import { execAsync, execAsyncMergeOutput } from "./utils/shell";
@@ -16,17 +17,12 @@ function ensureMiseCommand(
 
 export class MiseService {
 	private terminal: vscode.Terminal | undefined;
-	private readonly workspaceRoot: string | undefined;
-
-	constructor() {
-		this.workspaceRoot = vscode.workspace.rootPath;
-	}
 
 	async execMiseCommand(command: string, { setProfile = true } = {}) {
 		const miseCommand = this.createMiseCommand(command, { setProfile });
 		ensureMiseCommand(miseCommand);
 		logger.info(`> ${miseCommand}`);
-		return execAsync(miseCommand, { cwd: this.workspaceRoot });
+		return execAsync(miseCommand, { cwd: getRootFolderPath() });
 	}
 
 	async runMiseToolActionInConsole(
@@ -264,7 +260,7 @@ export class MiseService {
 		if (!this.terminal || this._isTerminalClosed(this.terminal)) {
 			this.terminal = vscode.window.createTerminal({
 				name: "Mise Tasks",
-				cwd: this.workspaceRoot,
+				cwd: getRootFolderPath(),
 			});
 
 			vscode.window.onDidCloseTerminal((closedTerminal) => {

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { isMiseExtensionEnabled } from "./configuration";
+import { getRootFolder, isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 import { misePatterns } from "./utils/miseUtilts";
@@ -22,7 +22,7 @@ export class MiseFileWatcher {
 	}
 
 	private initializeFileWatcher() {
-		const rootFolder = vscode.workspace.workspaceFolders?.[0];
+		const rootFolder = getRootFolder();
 		if (!rootFolder) {
 			return;
 		}
