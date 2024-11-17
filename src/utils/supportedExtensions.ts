@@ -184,3 +184,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 ];
+
+export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
+	SUPPORTED_EXTENSIONS.map((item) => [item.toolName, item]),
+);

@@ -20,6 +20,7 @@
 		".vscode-test",
 		"rsbuild.config.ts",
 		"rsbuild.webviews.config.ts",
-		"dist"
+		"dist",
+		"bun-preload-test.ts"
 	]
 }

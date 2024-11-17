@@ -2,11 +2,9 @@ import * as os from "node:os";
 import * as vscode from "vscode";
 import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import {
-	CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME,
-	configureExtension,
-} from "../utils/configureExtensionUtil";
+import { configureExtension } from "../utils/configureExtensionUtil";
 import { logger } from "../utils/logger";
+import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
 
 type TreeItem = SourceItem | ToolItem;
 
@@ -531,6 +529,9 @@ export function registerToolsCommands(
 		),
 		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
 			await miseService.miseReshim();
+			const ignoreList = vscode.workspace
+				.getConfiguration("mise")
+				.get("configureExtensionsAutomaticallyIgnoreList") as string[];
 
 			const tools = await toolsProvider.getTools();
 			const configurableTools = tools.filter((tool) => {
@@ -538,6 +539,10 @@ export function registerToolsCommands(
 					tool.name,
 				);
 				if (!configurableExtension) {
+					return false;
+				}
+
+				if (ignoreList?.includes(configurableExtension.extensionName)) {
 					return false;
 				}
 

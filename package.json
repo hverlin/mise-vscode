@@ -100,8 +100,28 @@
 					"scope": "resource",
 					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))"
 				},
-				"mise.configureExtensionsUseShims": {
+				"mise.configureExtensionsAutomaticallyIgnoreList": {
 					"order": 5,
+					"type": "array",
+					"default": [],
+					"items": {
+						"type": "string",
+						"enum": [
+							"ms-python.python",
+							"denoland.vscode-deno",
+							"charliermarsh.ruff",
+							"golang.go",
+							"oven.bun-vscode",
+							"oracle.oracle-java",
+							"timonwong.shellcheck",
+							"ms-vscode.js-debug"
+						]
+					},
+					"scope": "resource",
+					"markdownDescription": "List of extensions that should not be configured automatically."
+				},
+				"mise.configureExtensionsUseShims": {
+					"order": 6,
 					"type": "boolean",
 					"scope": "resource",
 					"title": "Configure extensions to use shims",
@@ -109,7 +129,7 @@
 					"markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
 				},
 				"mise.configureExtensionsUseSymLinks": {
-					"order": 6,
+					"order": 7,
 					"type": "boolean",
 					"scope": "resource",
 					"title": "Configure extensions to use symlinks",

@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { logger } from "./logger";
 
 export function expandPath(filePath: string): string {
 	return path.normalize(filePath).replace("~/", `${os.homedir()}/`);
@@ -68,7 +69,7 @@ export async function isExecutable(filePath: string): Promise<boolean> {
 		const stats = await fs.stat(filePath);
 		return !!(stats.mode & 0o111);
 	} catch (error) {
-		console.log(`${filePath} is not executable: ${error}`);
+		logger.info(`${filePath} is not executable: ${error}`);
 	}
 	return false;
 }

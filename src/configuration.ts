@@ -11,6 +11,8 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsAutomatically: "mise.configureExtensionsAutomatically",
 	configureExtensionsUseShims: "mise.configureExtensionsUseShims",
 	configureExtensionsUseSymLinks: "mise.configureExtensionsUseSymLinks",
+	configureExtensionsAutomaticallyIgnoreList:
+		"mise.configureExtensionsAutomaticallyIgnoreList",
 };
 
 export const isMiseExtensionEnabled = (): boolean => {

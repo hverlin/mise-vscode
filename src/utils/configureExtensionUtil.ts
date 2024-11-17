@@ -11,14 +11,7 @@ import {
 import { mkdirp } from "./fileUtils";
 import { logger } from "./logger";
 import type { MiseConfig } from "./miseDoctorParser";
-import {
-	type ConfigurableExtension,
-	SUPPORTED_EXTENSIONS,
-} from "./supportedExtensions";
-
-export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
-	SUPPORTED_EXTENSIONS.map((item) => [item.toolName, item]),
-);
+import type { ConfigurableExtension } from "./supportedExtensions";
 
 export async function createMiseToolSymlink(binName: string, binPath: string) {
 	const toolsPaths = path.join(
