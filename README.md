@@ -61,6 +61,10 @@ See the [VSCode task integration wiki page](https://github.com/hverlin/mise-vsco
 
 See [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Started)
 
+## Documentation
+
+https://github.com/hverlin/mise-vscode/wiki
+
 ## 🐛 Bug Reports / Feature Requests / Contributing
 
 - Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
@@ -68,6 +72,11 @@ See [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Starte
 
 ### Known Issues
 - Workspaces with multiple folders are not yet supported. Only the first workspace folder is used.
+
+## Ecosystem
+
+- See [intellij-mise](https://github.com/134130/intellij-mise) if you are looking for a similar plugin for IntelliJ IDEA
+- [Mise documentation](https://mise.jdx.dev/)
 
 ## 📄 License
 
