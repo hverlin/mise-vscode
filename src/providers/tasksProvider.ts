@@ -308,14 +308,34 @@ function findTaskPosition(
 				) {
 					return new vscode.Position(i, currentLine.indexOf(taskName));
 				}
+
 				if (trimmedLine === "[tasks]") {
 					inTasksSection = true;
 					continue;
 				}
+
 				if (inTasksSection && trimmedLine.startsWith("[")) {
 					inTasksSection = false;
 				}
+
 				if (inTasksSection && inlinePattern.test(trimmedLine)) {
+					return new vscode.Position(i, currentLine.indexOf(taskName));
+				}
+			}
+		} else {
+			for (let i = 0; i < lines.length; i++) {
+				const currentLine = lines[i];
+				if (currentLine === undefined) {
+					continue;
+				}
+
+				const trimmedLine = currentLine.trim();
+				if (
+					trimmedLine.startsWith(`[${taskName}]`) ||
+					trimmedLine.startsWith(`["${taskName}"]`) ||
+					trimmedLine.startsWith(`${taskName} =`) ||
+					trimmedLine.startsWith(`"${taskName}"`)
+				) {
 					return new vscode.Position(i, currentLine.indexOf(taskName));
 				}
 			}

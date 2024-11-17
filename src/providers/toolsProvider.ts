@@ -553,32 +553,34 @@ export function registerToolsCommands(
 			const miseConfig = await miseService.getMiseConfiguration();
 
 			await Promise.allSettled(
-				configurableTools.map(async (tool) => {
-					const configurableTool = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
-						tool.name,
-					);
-					if (!configurableTool) {
-						return;
-					}
-
-					try {
-						await configureExtension({
-							tool: tool,
-							miseConfig: miseConfig,
-							configurableExtension: configurableTool,
-							useSymLinks: vscode.workspace
-								.getConfiguration("mise")
-								.get("configureExtensionsUseSymLinks"),
-							useShims: vscode.workspace
-								.getConfiguration("mise")
-								.get("configureExtensionsUseShims"),
-						});
-					} catch (error) {
-						logger.error(
-							`Failed to configure the extension ${configurableTool.extensionName} for ${tool.name}: ${error}`,
+				configurableTools
+					.filter((tool) => tool.installed)
+					.map(async (tool) => {
+						const configurableTool = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
+							tool.name,
 						);
-					}
-				}),
+						if (!configurableTool) {
+							return;
+						}
+
+						try {
+							await configureExtension({
+								tool: tool,
+								miseConfig: miseConfig,
+								configurableExtension: configurableTool,
+								useSymLinks: vscode.workspace
+									.getConfiguration("mise")
+									.get("configureExtensionsUseSymLinks"),
+								useShims: vscode.workspace
+									.getConfiguration("mise")
+									.get("configureExtensionsUseShims"),
+							});
+						} catch (error) {
+							logger.error(
+								`Failed to configure the extension ${configurableTool.extensionName} for ${tool.name}: ${error}`,
+							);
+						}
+					}),
 			);
 		}),
 	);

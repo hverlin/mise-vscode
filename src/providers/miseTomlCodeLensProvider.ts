@@ -1,8 +1,63 @@
-import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
+
+function createRunTaskCodeLens(
+	taskName: string,
+	range: vscode.Range,
+): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(play) Run",
+		tooltip: `Run task ${taskName}`,
+		command: RUN_TASK_COMMAND,
+		arguments: [taskName],
+	});
+}
+
+function createWatchTaskCodeLens(
+	taskName: string,
+	range: vscode.Range,
+): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(watch) Watch",
+		tooltip: `Watch task ${taskName}`,
+		command: WATCH_TASK_COMMAND,
+		arguments: [taskName],
+	});
+}
+
+function createRunAndWatchTaskCodeLens(
+	taskName: string,
+	range: vscode.Range,
+): vscode.CodeLens[] {
+	return [
+		createRunTaskCodeLens(taskName, range),
+		createWatchTaskCodeLens(taskName, range),
+	];
+}
+
+function createAddToolCodeLens(
+	range: vscode.Range,
+	filePath: string,
+): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(add) Add tool",
+		tooltip: "Add tool",
+		command: "mise.useTool",
+		arguments: [filePath],
+	});
+}
+
+function createInstallMissingToolsCodeLens(
+	range: vscode.Range,
+): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(cloud-download) Install missing tools",
+		tooltip: "Install missing tools",
+		command: "mise.installAll",
+	});
+}
 
 export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
@@ -22,6 +77,141 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		});
 	}
 
+	private handleInTasksSection(i: number, lineContent: string) {
+		const trimmedLine = lineContent.trim();
+		const inlineName = trimmedLine.split("=")[0]?.trim();
+		if (
+			inlineName &&
+			!inlineName.includes(".") &&
+			!inlineName.startsWith("[")
+		) {
+			const taskName = inlineName.replace(/^["']|["']$/g, "");
+
+			const startPos = new vscode.Position(i, lineContent.indexOf(taskName));
+			const endPos = startPos.translate(0, taskName.length);
+			return createRunAndWatchTaskCodeLens(
+				taskName,
+				new vscode.Range(startPos, endPos),
+			);
+		}
+
+		return [];
+	}
+
+	private handleTaskFile(document: vscode.TextDocument): vscode.CodeLens[] {
+		// we are already in a [tasks] section so valid patterns are
+		// abc = '333' or "lint:test" = '333'
+		// [abc] or ["lint:ci"]
+		// run = '333'
+		const codeLenses: vscode.CodeLens[] = [];
+		const lines = document.getText().split("\n");
+
+		let inTasksSection = true;
+		for (let i = 0; i < lines.length; i++) {
+			const lineContent = lines[i];
+			if (!lineContent) {
+				continue;
+			}
+			const trimmedLine = lineContent.trim();
+			if (!trimmedLine) continue;
+
+			if (/\[.*]/.test(trimmedLine)) {
+				inTasksSection = false;
+			}
+
+			if (inTasksSection) {
+				codeLenses.push(...this.handleInTasksSection(i, lineContent));
+			} else {
+				const match = trimmedLine.match(/^\s*\[["']?(.*)["']?]/);
+
+				if (match) {
+					const taskName = match[1] || match[2] || match[3];
+
+					if (taskName) {
+						const taskPosition = lineContent.indexOf(taskName);
+						const startPos = new vscode.Position(i, taskPosition);
+						const endPos = startPos.translate(0, taskName.length);
+						codeLenses.push(
+							...createRunAndWatchTaskCodeLens(
+								taskName,
+								new vscode.Range(startPos, endPos),
+							),
+						);
+					}
+				}
+			}
+		}
+		return codeLenses;
+	}
+
+	private async handleMiseTomlFile(document: vscode.TextDocument) {
+		const codeLenses: vscode.CodeLens[] = [];
+		const lines = document.getText().split("\n");
+
+		let inTasksSection = false;
+
+		for (let i = 0; i < lines.length; i++) {
+			const lineContent = lines[i];
+			if (!lineContent) {
+				continue;
+			}
+			const trimmedLine = lineContent.trim();
+			if (!trimmedLine) continue;
+
+			if (trimmedLine.trim().startsWith("[tools]")) {
+				const range = new vscode.Range(
+					new vscode.Position(i, 0),
+					new vscode.Position(i, 0),
+				);
+				codeLenses.push(createAddToolCodeLens(range, document.uri.path));
+				if (await this.miseService.hasMissingTools()) {
+					codeLenses.push(createInstallMissingToolsCodeLens(range));
+				}
+			}
+
+			// Check if we're entering [tasks] section
+			if (trimmedLine === "[tasks]") {
+				inTasksSection = true;
+				continue;
+			}
+
+			// Check if we're leaving [tasks] section (entering a new section)
+			if (trimmedLine.startsWith("[") && trimmedLine !== "[tasks]") {
+				inTasksSection = false;
+			}
+
+			const match = trimmedLine.match(/^\s*\[tasks\.["']?(.*)["']?]/);
+			// tasks.aaa = '3'
+			const match2 = trimmedLine.match(
+				/^\s*tasks\.["']?(.*)["']?\s*=\s*['"]?(.*)['"]?/,
+			);
+
+			if (match || match2) {
+				const taskName = match
+					? match[1] || match[2] || match[3]
+					: match2
+						? match2[1]
+						: null;
+
+				if (taskName) {
+					const taskPosition = lineContent.indexOf(taskName);
+					const startPos = new vscode.Position(i, taskPosition);
+					const endPos = startPos.translate(0, taskName.length);
+					codeLenses.push(
+						...createRunAndWatchTaskCodeLens(
+							taskName,
+							new vscode.Range(startPos, endPos),
+						),
+					);
+				}
+			} else if (inTasksSection) {
+				codeLenses.push(...this.handleInTasksSection(i, lineContent));
+			}
+		}
+
+		return codeLenses;
+	}
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -33,137 +223,15 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
-		const codeLenses: vscode.CodeLens[] = [];
-		const text = document.getText();
+		const isMiseTomlFile =
+			document.fileName.endsWith("mise.toml") ||
+			document.fileName.endsWith("config.toml");
 
-		try {
-			const parsed = toml.parse(text);
-			const tasks = this.findTasks(parsed);
-
-			for (const taskName of tasks) {
-				const taskPosition = this.findTaskPosition(document, taskName);
-				if (taskPosition) {
-					const range = new vscode.Range(
-						taskPosition,
-						taskPosition.translate(0, taskName.length),
-					);
-
-					codeLenses.push(
-						new vscode.CodeLens(range, {
-							title: "$(play) Run",
-							tooltip: `Run task ${taskName}`,
-							command: RUN_TASK_COMMAND,
-							arguments: [taskName],
-						}),
-					);
-					codeLenses.push(
-						new vscode.CodeLens(range, {
-							title: "$(watch) Watch",
-							tooltip: `Watch task ${taskName}`,
-							command: WATCH_TASK_COMMAND,
-							arguments: [taskName],
-						}),
-					);
-				}
-			}
-		} catch (error) {
-			console.error("Error parsing TOML:", error);
+		if (isMiseTomlFile) {
+			return await this.handleMiseTomlFile(document);
 		}
 
-		const toolsPosition = this.findToolsPosition(document);
-		if (toolsPosition) {
-			const range = new vscode.Range(toolsPosition, toolsPosition);
-			codeLenses.push(
-				new vscode.CodeLens(range, {
-					title: "$(add) Add tool",
-					tooltip: "Add tool",
-					command: "mise.useTool",
-					arguments: [document.uri.path],
-				}),
-			);
-			if (await this.miseService.hasMissingTools()) {
-				codeLenses.push(
-					new vscode.CodeLens(range, {
-						title: "$(cloud-download) Install missing tools",
-						tooltip: "Install missing tools",
-						command: "mise.installAll",
-					}),
-				);
-			}
-		}
-
-		return codeLenses;
-	}
-
-	private findTasks(parsed: toml.JsonMap): string[] {
-		const tasks: string[] = [];
-
-		// Case 1: [tasks] section with inline tasks
-		if (parsed.tasks && typeof parsed.tasks === "object") {
-			tasks.push(...Object.keys(parsed.tasks));
-		}
-
-		// Case 2: [tasks.taskname] style
-		for (const key of Object.keys(parsed)) {
-			if (key.startsWith("tasks.")) {
-				const taskName = key.split(".")[1];
-				if (taskName) {
-					tasks.push(taskName);
-				}
-			}
-		}
-
-		return tasks;
-	}
-
-	private findTaskPosition(
-		document: vscode.TextDocument,
-		taskName: string,
-	): vscode.Position | undefined {
-		const text = document.getText();
-		const lines = text.split("\n");
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (!line) {
-				continue;
-			}
-
-			const trimmedLine = line.trim();
-
-			// Check for [tasks] section with inline tasks
-			// Check for [tasks.taskname] style
-			// Check for tasks."taskname" style
-			// Check for tasks.'taskname' style
-			const isFound =
-				trimmedLine.match(new RegExp(`^\\s*${taskName}\\s*=`)) ||
-				trimmedLine.startsWith(`[tasks.${taskName}]`) ||
-				trimmedLine.startsWith(`[tasks."${taskName}"]`) ||
-				trimmedLine.startsWith(`tasks."${taskName}"`) ||
-				trimmedLine.startsWith(`tasks.${taskName}`);
-
-			if (isFound) {
-				return new vscode.Position(i, 0);
-			}
-		}
-
-		return undefined;
-	}
-
-	private findToolsPosition(
-		document: vscode.TextDocument,
-	): vscode.Position | undefined {
-		const text = document.getText();
-		const lines = text.split("\n");
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (!line) {
-				continue;
-			}
-			if (line.trim().startsWith("[tools]")) {
-				return new vscode.Position(i, 0);
-			}
-		}
-		return undefined;
+		// otherwise, it's a task file (included from [tasks_config])
+		return this.handleTaskFile(document);
 	}
 }
