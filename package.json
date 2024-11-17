@@ -218,6 +218,10 @@
 				"title": "Mise: Open Task Definition"
 			},
 			{
+				"command": "mise.openFile",
+				"title": "Mise: Open File"
+			},
+			{
 				"command": "mise.removeTool",
 				"title": "Mise: Remove Tool"
 			},
@@ -321,6 +325,11 @@
 					"group": "inline"
 				},
 				{
+					"when": "view == miseTasksView && (viewItem == miseTaskGroupEditable || viewItem == miseTaskGroup)",
+					"command": "mise.openFile",
+					"group": "2_modification"
+				},
+				{
 					"when": "view == miseTasksView && viewItem == miseTask",
 					"command": "mise.runTask",
 					"group": "2_modification"
@@ -351,9 +360,14 @@
 					"group": "2_modification"
 				},
 				{
-					"when": "view == miseToolsView && viewItem == source",
+					"when": "view == miseToolsView && viewItem == miseToolGroup",
 					"command": "mise.useTool",
 					"group": "inline"
+				},
+				{
+					"when": "view == miseToolsView && viewItem == miseToolGroup",
+					"command": "mise.openFile",
+					"group": "2_modification"
 				},
 				{
 					"command": "mise.copyEnvVariableName",

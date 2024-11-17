@@ -1,6 +1,6 @@
 import * as os from "node:os";
 import * as vscode from "vscode";
-import { isMiseExtensionEnabled } from "../configuration";
+import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
 	CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME,
@@ -106,7 +106,7 @@ class SourceItem extends vscode.TreeItem {
 		public readonly tools: MiseTool[],
 	) {
 		const pathShown = source
-			.replace(`${vscode.workspace.rootPath}/` || "", "")
+			.replace(`${getRootFolderPath()}/` || "", "")
 			.replace(os.homedir(), "~");
 
 		super(
@@ -121,7 +121,7 @@ class SourceItem extends vscode.TreeItem {
 		this.tooltip = `Source: ${source}
 Number of tools: ${tools.length}`;
 
-		this.contextValue = "source";
+		this.contextValue = "miseToolGroup";
 		this.description = `(${tools.length} tools)`;
 	}
 }

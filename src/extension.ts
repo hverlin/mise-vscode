@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import {
 	CONFIGURATION_FLAGS,
+	MISE_OPEN_FILE,
 	getMiseProfile,
 	getRootFolder,
 	isMiseExtensionEnabled,
@@ -159,6 +160,30 @@ export async function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage(`${error}`);
 			}
 		}),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			MISE_OPEN_FILE,
+			async (uri: string | undefined | { source: string }) => {
+				let selectedUri = uri;
+				if (!selectedUri) {
+					const miseConfigFiles = await miseService.getMiseConfigFiles();
+					selectedUri = await vscode.window.showQuickPick(
+						miseConfigFiles.map((file) => file.path),
+						{ placeHolder: "Select a configuration file" },
+					);
+				} else if ((selectedUri as { source: string })?.source) {
+					selectedUri = (selectedUri as { source: string }).source;
+				}
+
+				if (!selectedUri) {
+					return;
+				}
+				const path = selectedUri as string;
+				vscode.window.showTextDocument(vscode.Uri.file(path));
+			},
+		),
 	);
 
 	context.subscriptions.push(

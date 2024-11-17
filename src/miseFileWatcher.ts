@@ -2,10 +2,14 @@ import * as vscode from "vscode";
 import { getRootFolder, isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
-import { misePatterns } from "./utils/miseUtilts";
+import {
+	allowedFileTaskDirs,
+	legacyFiles,
+	misePatterns,
+} from "./utils/miseUtilts";
 
 export class MiseFileWatcher {
-	private fileWatcher: vscode.FileSystemWatcher | undefined;
+	private readonly fileWatchers: vscode.FileSystemWatcher[];
 	private context: vscode.ExtensionContext;
 	private miseService: MiseService;
 	private readonly onConfigChangeCallback: (uri: vscode.Uri) => Promise<void>;
@@ -18,23 +22,54 @@ export class MiseFileWatcher {
 		this.context = context;
 		this.miseService = miseService;
 		this.onConfigChangeCallback = onConfigChangeCallback;
-		this.initializeFileWatcher();
+		this.fileWatchers = [];
+		this.initializeFileWatcher().catch((error) => {
+			logger.error("Error initializing file watcher", error);
+		});
 	}
 
-	private initializeFileWatcher() {
+	private async initializeFileWatcher() {
 		const rootFolder = getRootFolder();
 		if (!rootFolder) {
 			return;
 		}
 
-		const pattern = new vscode.RelativePattern(rootFolder, `{${misePatterns}}`);
-		this.fileWatcher = vscode.workspace.createFileSystemWatcher(pattern);
+		this.fileWatchers.push(
+			vscode.workspace.createFileSystemWatcher(
+				new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
+			),
+		);
 
-		this.context.subscriptions.push(this.fileWatcher);
+		const configFiles = await this.miseService.getMiseConfigFiles();
+		for (const file of configFiles) {
+			this.fileWatchers.push(
+				vscode.workspace.createFileSystemWatcher(
+					new vscode.RelativePattern(vscode.Uri.file(file.path), "*"),
+				),
+			);
+		}
 
-		this.fileWatcher.onDidChange(this.handleFileChange.bind(this));
-		this.fileWatcher.onDidCreate(this.handleFileChange.bind(this));
-		this.fileWatcher.onDidDelete(this.handleFileChange.bind(this));
+		this.fileWatchers.push(
+			vscode.workspace.createFileSystemWatcher(
+				new vscode.RelativePattern(rootFolder, `{${legacyFiles}}`),
+			),
+		);
+
+		this.fileWatchers.push(
+			vscode.workspace.createFileSystemWatcher(
+				new vscode.RelativePattern(
+					rootFolder,
+					`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
+				),
+			),
+		);
+
+		for (const watcher of this.fileWatchers) {
+			this.context.subscriptions.push(watcher);
+			watcher.onDidChange(this.handleFileChange.bind(this));
+			watcher.onDidCreate(this.handleFileChange.bind(this));
+			watcher.onDidDelete(this.handleFileChange.bind(this));
+		}
 	}
 
 	private async handleFileChange(uri: vscode.Uri) {
@@ -54,6 +89,8 @@ export class MiseFileWatcher {
 	}
 
 	public dispose() {
-		this.fileWatcher?.dispose();
+		for (const watcher of this.fileWatchers) {
+			watcher.dispose();
+		}
 	}
 }

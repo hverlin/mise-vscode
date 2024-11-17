@@ -2,6 +2,8 @@ import { isDeepStrictEqual } from "node:util";
 import { deepMerge } from "@std/collections";
 import * as vscode from "vscode";
 
+export const MISE_OPEN_FILE = "mise.openFile";
+
 export const CONFIGURATION_FLAGS = {
 	enable: "mise.enable",
 	binPath: "mise.binPath",

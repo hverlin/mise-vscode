@@ -10,6 +10,10 @@ outputs = ['node_modules/.pnpm/lock.yaml']
 [tasks.start-vscode]
 description = 'Starts VSCode with the extension loaded'
 run = 'code --inspect-extensions=5858 --extensionDevelopmentPath=$(pwd)'
+sources = ['src/**', 'mise.toml', 'package.json']
+
+[tasks.watch-vscode]
+run = 'mise watch -t start-vscode'
 
 [tasks.start-vscode-inspect-brk]
 description = 'Starts VSCode with the extension loaded. Pauses on the first line of the extension'
@@ -28,6 +32,10 @@ depends = ['install']
 [tasks.dev]
 description = 'Starts the project in watch mode and opens the extension in VSCode'
 depends = ['dev-extension', 'dev-webviews', 'start-vscode']
+
+[tasks.dev-reload-vscode]
+description = 'Starts the project in watch mode and opens the extension in VSCode. Reload VSCode on changes'
+depends = ['dev-extension', 'dev-webviews', 'watch-vscode']
 
 [tasks.ts-check]
 description = 'Type-check the project'

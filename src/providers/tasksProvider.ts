@@ -1,11 +1,15 @@
 import * as os from "node:os";
 import * as path from "node:path";
-import * as toml from "@iarna/toml";
 import * as vscode from "vscode";
-import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
+import {
+	MISE_OPEN_FILE,
+	getRootFolderPath,
+	isMiseExtensionEnabled,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
+import { findTaskPosition } from "../utils/miseFileParser";
 import { allowedFileTaskDirs, legacyFiles } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
@@ -54,7 +58,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 				const expandedPath = expandPath(configFile.path);
 				const isRelativeToWorkspace = expandedPath.startsWith(
-					vscode.workspace.rootPath || "",
+					getRootFolderPath() || "",
 				);
 				if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
 					groupedTasks[expandedPath] = [];
@@ -235,30 +239,43 @@ class SourceGroupItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 	) {
-		const pathShown = expandPath(source).replace(
-			`${vscode.workspace.rootPath}/` || "",
-			"",
-		);
+		const pathShown = expandPath(source)
+			.replace(`${getRootFolderPath()}/` || "", "")
+			.replace(os.homedir(), "~");
 
-		super(
-			`${pathShown} (${tasks.length} tasks)`,
-			vscode.TreeItemCollapsibleState.Expanded,
-		);
+		super(`${pathShown} (${tasks.length} tasks)`);
 		this.tooltip = `Source: ${source}`;
-		this.collapsibleState =
-			tasks.length === 0
-				? vscode.TreeItemCollapsibleState.None
-				: vscode.TreeItemCollapsibleState.Expanded;
+
 		this.contextValue = source.endsWith(".toml")
 			? "miseTaskGroupEditable"
-			: "miseSourceGroup";
+			: "miseTaskGroup";
+
+		if (tasks.length === 0) {
+			this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+			this.iconPath = new vscode.ThemeIcon("chevron-right");
+			this.command = {
+				command: MISE_OPEN_FILE,
+				title: "Open file",
+				arguments: [this],
+			};
+		} else {
+			this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+		}
 	}
 }
 
 class TaskItem extends vscode.TreeItem {
 	constructor(public readonly task: MiseTask) {
 		super(task.name, vscode.TreeItemCollapsibleState.None);
-		this.tooltip = `Task: ${task.name}\nSource: ${task.source}\nDescription: ${task.description}`;
+		this.tooltip = [
+			["Task", task.name],
+			["Source", task.source],
+			["Description", task.description],
+		]
+			.filter(([_, value]) => value)
+			.map(([key, value]) => `${key}: ${value}`)
+			.join("\n");
+
 		this.iconPath = new vscode.ThemeIcon("tasklist");
 
 		this.command = {
@@ -270,81 +287,6 @@ class TaskItem extends vscode.TreeItem {
 
 		this.contextValue = "miseTask";
 	}
-}
-
-function findTaskPosition(
-	document: vscode.TextDocument,
-	taskName: string,
-): vscode.Position | undefined {
-	const text = document.getText();
-
-	try {
-		const parsed = toml.parse(text);
-		const lines = text.split("\n");
-
-		if (parsed.tasks) {
-			const sectionPattern = new RegExp(
-				`\\[tasks\\.${taskName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\]`,
-			);
-
-			const inlinePattern = new RegExp(
-				`^\\s*${taskName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`,
-			);
-
-			let inTasksSection = false;
-
-			for (let i = 0; i < lines.length; i++) {
-				const currentLine = lines[i];
-				if (currentLine === undefined) {
-					continue;
-				}
-
-				const trimmedLine = currentLine.trim();
-				if (
-					sectionPattern.test(trimmedLine) ||
-					trimmedLine.startsWith(`[tasks."${taskName}"`) ||
-					trimmedLine.startsWith(`tasks.${taskName}`) ||
-					trimmedLine.startsWith(`tasks."${taskName}"`)
-				) {
-					return new vscode.Position(i, currentLine.indexOf(taskName));
-				}
-
-				if (trimmedLine === "[tasks]") {
-					inTasksSection = true;
-					continue;
-				}
-
-				if (inTasksSection && trimmedLine.startsWith("[")) {
-					inTasksSection = false;
-				}
-
-				if (inTasksSection && inlinePattern.test(trimmedLine)) {
-					return new vscode.Position(i, currentLine.indexOf(taskName));
-				}
-			}
-		} else {
-			for (let i = 0; i < lines.length; i++) {
-				const currentLine = lines[i];
-				if (currentLine === undefined) {
-					continue;
-				}
-
-				const trimmedLine = currentLine.trim();
-				if (
-					trimmedLine.startsWith(`[${taskName}]`) ||
-					trimmedLine.startsWith(`["${taskName}"]`) ||
-					trimmedLine.startsWith(`${taskName} =`) ||
-					trimmedLine.startsWith(`"${taskName}"`)
-				) {
-					return new vscode.Position(i, currentLine.indexOf(taskName));
-				}
-			}
-		}
-	} catch (error) {
-		logger.error("Error parsing TOML:", error as Error);
-	}
-
-	return undefined;
 }
 
 export function registerTasksCommands(
