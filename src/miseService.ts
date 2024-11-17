@@ -49,13 +49,17 @@ export class MiseService {
 				execution,
 			);
 
-			await vscode.tasks.executeTask(task);
-			const disposable = vscode.tasks.onDidEndTask((e) => {
-				if (e.execution.task === task) {
-					vscode.commands.executeCommand("mise.refreshEntry");
-					disposable.dispose();
-				}
+			const p = new Promise((resolve, reject) => {
+				const disposable = vscode.tasks.onDidEndTask((e) => {
+					if (e.execution.task === task) {
+						vscode.commands.executeCommand("mise.refreshEntry");
+						disposable.dispose();
+						resolve(undefined);
+					}
+				});
 			});
+			await vscode.tasks.executeTask(task);
+			return p as Promise<void>;
 		} catch (error) {
 			logger.error(`Failed to execute ${taskName}: ${error}`);
 		}
@@ -193,7 +197,7 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand("ls --json");
+			const { stdout } = await this.execMiseCommand("ls --offline --json");
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
 					return {
@@ -216,6 +220,47 @@ export class MiseService {
 			logger.error("Error fetching mise tools:", error as Error);
 			return [];
 		}
+	}
+
+	async getOutdatedTools({
+		bump = false,
+	} = {}): Promise<Array<MiseToolUpdate>> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.execMiseCommand(
+			bump ? "outdated --bump --json" : "outdated --json",
+		);
+		return Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
+			const foundTool = tool as {
+				name: string;
+				requested: string;
+				current: string;
+				latest: string;
+				bump: string;
+				source: { type: string; path: string };
+			};
+
+			return {
+				name: toolName,
+				version: foundTool.current,
+				requested_version: foundTool.requested,
+				source: foundTool.source,
+				latest: foundTool.latest,
+				bump: foundTool.bump,
+			};
+		});
+	}
+
+	async removeToolInConsole(toolName: string, version?: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(
+			version ? `rm ${toolName} ${version}` : `rm ${toolName}`,
+		);
 	}
 
 	async getEnvs(): Promise<MiseEnv[]> {

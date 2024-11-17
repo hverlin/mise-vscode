@@ -272,10 +272,7 @@ export function registerToolsCommands(
 				);
 
 				if (confirmed === "Remove") {
-					await miseService.runMiseToolActionInConsole(
-						`rm ${tool.name}@${tool.version}`,
-						"Remove Tool",
-					);
+					await miseService.removeToolInConsole(tool.name, tool.version);
 				}
 			},
 		),

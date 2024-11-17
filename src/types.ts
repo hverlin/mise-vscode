@@ -19,6 +19,15 @@ type MiseTool = {
 	install_path: string;
 };
 
+type MiseToolUpdate = {
+	name: string;
+	version: string;
+	requested_version: string;
+	latest: string;
+	bump?: string;
+	source?: MiseToolSource;
+};
+
 type MiseEnv = {
 	name: string;
 	value: string;

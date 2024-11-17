@@ -3,6 +3,7 @@ import path from "node:path";
 import * as cheerio from "cheerio";
 import * as vscode from "vscode";
 import type { MiseService } from "./miseService";
+import { logger } from "./utils/logger";
 
 export default class WebViewPanel {
 	public static currentPanel: WebViewPanel | undefined;
@@ -52,27 +53,54 @@ export default class WebViewPanel {
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
+		const executeAction = async (
+			{ requestId }: { requestId: string },
+			fn: () => Promise<unknown>,
+		) => {
+			try {
+				const data = await fn();
+				this._panel.webview.postMessage({
+					type: "response",
+					requestId,
+					data,
+				});
+			} catch (e) {
+				logger.info(e);
+				this._panel.webview.postMessage({
+					type: "response",
+					requestId,
+					error: e,
+				});
+			}
+		};
+
 		this._panel.webview.onDidReceiveMessage(
 			async (message) => {
 				switch (message.type) {
 					case "query":
 						switch (message.queryKey[0]) {
 							case "tools": {
-								const tools = await this.miseService.getAllTools();
-								this._panel.webview.postMessage({
-									type: "response",
-									requestId: message.requestId,
-									data: tools,
-								});
-								break;
+								return executeAction(message, () =>
+									this.miseService.getAllTools(),
+								);
+							}
+							case "outdatedTools": {
+								return executeAction(message, () =>
+									this.miseService.getOutdatedTools(),
+								);
 							}
 						}
 						break;
 					case "mutation":
 						switch (message.mutationKey[0]) {
-							case "addItem":
-								// todo
-								break;
+							case "uninstallTool": {
+								return executeAction(message, async () =>
+									miseService.removeToolInConsole(
+										message.mutationKey[1],
+										message.mutationKey[2],
+									),
+								);
+							}
 						}
 						break;
 				}
