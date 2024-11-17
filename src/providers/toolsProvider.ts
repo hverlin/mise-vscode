@@ -321,12 +321,8 @@ export function registerToolsCommands(
 			async (path: string | SourceItem | undefined) => {
 				let selectedPath = path;
 				if (!selectedPath) {
-					const miseConfigFiles = await miseService.getMiseConfigFiles();
-
 					selectedPath = await vscode.window.showQuickPick(
-						miseConfigFiles.length > 0
-							? miseConfigFiles.map((file) => file.path)
-							: ["~/.config/mise/config.toml"],
+						await miseService.getMiseTomlConfigFilePathsEvenIfMissing(),
 						{ placeHolder: "Select a configuration file" },
 					);
 				} else if (selectedPath instanceof SourceItem) {

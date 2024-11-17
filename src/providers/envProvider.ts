@@ -87,5 +87,42 @@ export function registerEnvsCommands(
 				vscode.window.showInformationMessage(`Copied value of ${env.name}`);
 			},
 		),
+		vscode.commands.registerCommand(
+			"mise.setEnvVariable",
+			async (filePath: string | undefined) => {
+				let selectedPath = filePath;
+				if (!selectedPath) {
+					selectedPath = await vscode.window.showQuickPick(
+						await miseService.getMiseTomlConfigFilePathsEvenIfMissing(),
+						{ placeHolder: "Select a configuration file" },
+					);
+				}
+
+				if (!selectedPath) {
+					return;
+				}
+
+				const environmentVariableName = await vscode.window.showInputBox({
+					placeHolder: "Environment variable name",
+				});
+				if (!environmentVariableName) {
+					return;
+				}
+
+				const environmentVariableValue = await vscode.window.showInputBox({
+					placeHolder: "Environment variable value",
+				});
+
+				if (!environmentVariableValue) {
+					return;
+				}
+
+				await miseService.miseSetEnv({
+					filePath: selectedPath,
+					name: environmentVariableName,
+					value: environmentVariableValue,
+				});
+			},
+		),
 	);
 }

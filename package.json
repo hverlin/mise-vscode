@@ -298,6 +298,11 @@
 				"command": "mise.listAllTools",
 				"title": "Mise: List all Tools",
 				"icon": "$(list-ordered)"
+			},
+			{
+				"command": "mise.setEnvVariable",
+				"title": "Mise: Set Environment Variable",
+				"icon": "$(add)"
 			}
 		],
 		"menus": {
@@ -326,6 +331,11 @@
 					"command": "mise.installAll",
 					"when": "view == miseToolsView",
 					"group": "navigation@3"
+				},
+				{
+					"command": "mise.setEnvVariable",
+					"when": "view == miseEnvsView",
+					"group": "navigation@1"
 				},
 				{
 					"command": "mise.refreshEntry",

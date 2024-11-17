@@ -1,3 +1,5 @@
+import * as os from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
 import { getRootFolderPath } from "./configuration";
 import { logger } from "./utils/logger";
@@ -315,6 +317,23 @@ export class MiseService {
 		}>;
 	}
 
+	async getMiseTomlConfigFilePathsEvenIfMissing() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const configFiles = (await this.getMiseConfigFiles())
+			.map((file) => file.path)
+			.filter((path) => path.endsWith(".toml"));
+
+		return configFiles.length > 0
+			? configFiles
+			: [
+					`${os.homedir()}/.config/mise/config.toml`,
+					path.join(getRootFolderPath() || "", "mise.toml"),
+				];
+	}
+
 	async miseReshim() {
 		await this.execMiseCommand("reshim", { setProfile: false });
 	}
@@ -373,5 +392,16 @@ export class MiseService {
 
 		const tools = await this.getCurrentTools();
 		return tools.some((tool) => !tool.installed);
+	}
+
+	async miseSetEnv({
+		filePath,
+		name,
+		value,
+	}: { filePath: string; name: string; value: string }) {
+		await this.execMiseCommand(
+			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(/"/g, '\\"')}"`,
+			{ setProfile: false },
+		);
 	}
 }
