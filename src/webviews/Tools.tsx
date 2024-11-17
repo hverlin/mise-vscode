@@ -26,6 +26,7 @@ const ActionCell = ({ tool }: { tool: MiseTool }) => {
 			}}
 			type={"button"}
 		>
+			<i className="codicon codicon-close" />
 			{removeToolMutation.isPending ? "Removing..." : "Remove"}
 		</button>
 	);

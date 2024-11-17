@@ -169,6 +169,19 @@ export default class WebViewPanel {
 			}
 		});
 
+		const codiconsUri = webview.asWebviewUri(
+			vscode.Uri.joinPath(
+				this._extensionUri,
+				"node_modules",
+				"@vscode/codicons",
+				"dist",
+				"codicon.css",
+			),
+		);
+		$("head").append(
+			`<link rel="stylesheet" type="text/css" href="${codiconsUri}">`,
+		);
+
 		return $.html();
 	}
 }

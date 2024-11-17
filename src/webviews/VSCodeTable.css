@@ -82,7 +82,7 @@
 	font-size: var(--vscode-font-size);
 	font-family: var(--vscode-font-family);
 	font-weight: var(--vscode-font-weight);
-	padding: 4px 12px;
+	padding: 4px 10px;
 	min-width: 65px;
 	min-height: 28px;
 	line-height: 1.4;
@@ -131,7 +131,7 @@
 	}
 }
 
-.vscode-button .icon {
+.vscode-button .codicon {
 	margin-right: 6px;
 	font-size: 14px;
 	line-height: 1;

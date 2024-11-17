@@ -7,7 +7,7 @@ import {
 	isMiseExtensionEnabled,
 } from "../configuration";
 import type { MiseService } from "../miseService";
-import { expandPath, setupTaskFile } from "../utils/fileUtils";
+import { expandPath, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findTaskPosition } from "../utils/miseFileParser";
 import { allowedFileTaskDirs, legacyFiles } from "../utils/miseUtilts";
@@ -293,6 +293,8 @@ export function registerTasksCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,
 ) {
+	const miseService = taskProvider.getMiseService();
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			RUN_TASK_COMMAND,
@@ -449,13 +451,11 @@ export function registerTasksCommands(
 			async (path: string | SourceGroupItem | undefined) => {
 				let selectedPath = path;
 				if (!selectedPath) {
-					const miseConfigFiles = await taskProvider
-						.getMiseService()
-						.getMiseConfigFiles();
-					selectedPath = await vscode.window.showQuickPick(
-						miseConfigFiles.map((file) => file.path),
-						{ placeHolder: "Select a configuration file" },
-					);
+					const miseConfigFiles =
+						await miseService.getMiseTomlConfigFilePathsEvenIfMissing();
+					selectedPath = await vscode.window.showQuickPick(miseConfigFiles, {
+						placeHolder: "Select a configuration file",
+					});
 				} else if (selectedPath instanceof SourceGroupItem) {
 					selectedPath = selectedPath.source;
 				}
@@ -465,6 +465,9 @@ export function registerTasksCommands(
 				}
 
 				const uri = vscode.Uri.file(selectedPath);
+
+				await setupMiseToml(uri.fsPath);
+
 				const document = await vscode.workspace.openTextDocument(uri);
 				const editor = await vscode.window.showTextDocument(document);
 
@@ -486,7 +489,7 @@ export function registerTasksCommands(
 				editor.edit((edit) => {
 					edit.insert(
 						new vscode.Position(document.lineCount, 0),
-						`\n[tasks.${taskName}]\n`,
+						`\n[tasks.${taskName}]\nrun = "echo 'Running ${taskName}'"`,
 					);
 				});
 			},

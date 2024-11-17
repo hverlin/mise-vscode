@@ -16,6 +16,7 @@
 		"vscode": "^1.85.0"
 	},
 	"categories": [
+		"Programming Languages",
 		"Other"
 	],
 	"keywords": [
@@ -150,7 +151,7 @@
 		"viewsWelcome": [
 			{
 				"view": "miseTasksView",
-				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here.\n[Refresh](command:mise.refreshEntry)",
+				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.refreshEntry))\n[Add task](command:mise.createTomlTask)",
 				"when": "config.mise.binPath && config.mise.enable"
 			},
 			{
@@ -479,6 +480,7 @@
 		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
 		"@tanstack/react-query": "^5.60.5",
 		"@tanstack/react-table": "^8.20.5",
+		"@vscode/codicons": "^0.0.36",
 		"cheerio": "^1.0.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",

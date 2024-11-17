@@ -2,6 +2,7 @@ import * as os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
 import { getRootFolderPath } from "./configuration";
+import { expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
 import { execAsync, execAsyncMergeOutput } from "./utils/shell";
@@ -367,16 +368,19 @@ export class MiseService {
 			return [];
 		}
 
-		const configFiles = (await this.getMiseConfigFiles())
-			.map((file) => file.path)
+		const configFiles = new Set<string>();
+		configFiles.add(path.join(getRootFolderPath() || "", "mise.toml"));
+		configFiles.add(path.join(os.homedir(), ".config", "mise", "config.toml"));
+
+		const miseConfigs = (await this.getMiseConfigFiles())
+			.map((file) => expandPath(file.path))
 			.filter((path) => path.endsWith(".toml"));
 
-		return configFiles.length > 0
-			? configFiles
-			: [
-					`${os.homedir()}/.config/mise/config.toml`,
-					path.join(getRootFolderPath() || "", "mise.toml"),
-				];
+		for (const file of miseConfigs) {
+			configFiles.add(file);
+		}
+
+		return Array.from(configFiles);
 	}
 
 	async miseReshim() {

@@ -95,3 +95,13 @@ export async function setupTaskFile(taskFilePath: string) {
 		throw error;
 	}
 }
+
+export async function setupMiseToml(taskFilePath: string) {
+	try {
+		const normalizedPath = path.normalize(taskFilePath);
+		await touchFile(normalizedPath);
+	} catch (error) {
+		console.error("Error setting up file:", error);
+		throw error;
+	}
+}
