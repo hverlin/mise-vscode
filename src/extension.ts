@@ -16,6 +16,7 @@ import {
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
+import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
 import {
 	MiseTasksProvider,
 	registerTasksCommands,
@@ -244,6 +245,8 @@ export async function activate(context: vscode.ExtensionContext) {
 			",", // Trigger completion after comma
 		),
 	);
+
+	registerTomlFileLinks(context);
 
 	await vscode.commands.executeCommand("mise.refreshEntry");
 }
