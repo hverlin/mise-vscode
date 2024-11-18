@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.13.0](https://github.com/hverlin/mise-vscode/compare/v0.12.0...v0.13.0) (2024-11-18)
+
+
+### Features
+
+* Add cmd/ctrl+click support for filenames in `includes = [...]` ([03c4509](https://github.com/hverlin/mise-vscode/commit/03c4509ba577f98b7acc453d29e23822c4957c43))
+* Add icon in tool list. Suggest adding a task if no mise.toml file exists ([5fcb5f9](https://github.com/hverlin/mise-vscode/commit/5fcb5f9099a97941803c9bef0bae72052d24e4fd))
+* Add mise settings view ([4f85e2a](https://github.com/hverlin/mise-vscode/commit/4f85e2aed907b11fc441ef90f38ae8df59f09282))
+
 ## [0.12.0](https://github.com/hverlin/mise-vscode/compare/v0.11.0...v0.12.0) (2024-11-17)
 
 
