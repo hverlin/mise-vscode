@@ -92,14 +92,14 @@ export async function configureExtension({
 		logger.error(
 			`Mise: Extension ${configurableExtension.extensionName} is not installed`,
 		);
-		return;
+		return { configurableExtension, updatedKeys: [] };
 	}
 
 	if (!getRootFolder()) {
 		logger.info(
 			`No workspace folders found, skipping extension configuration for: ${configurableExtension.extensionName}`,
 		);
-		return;
+		return { configurableExtension, updatedKeys: [] };
 	}
 
 	const extConfig = await configurableExtension.generateConfiguration(
@@ -117,18 +117,8 @@ export async function configureExtension({
 	);
 
 	if (updatedKeys.length === 0) {
-		return;
+		return { configurableExtension, updatedKeys: [] };
 	}
-	vscode.window
-		.showInformationMessage(
-			`Mise: Extension ${configurableExtension.extensionName} configured.\n${updatedKeys.join("\n")}`,
-			"Show settings",
-		)
-		.then((selection) => {
-			if (selection === "Show settings") {
-				vscode.commands.executeCommand(
-					"workbench.action.openWorkspaceSettingsFile",
-				);
-			}
-		});
+
+	return { configurableExtension, updatedKeys };
 }

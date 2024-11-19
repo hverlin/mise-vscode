@@ -513,11 +513,30 @@ export function registerToolsCommands(
 					useSymLinks: vscode.workspace
 						.getConfiguration("mise")
 						.get("configureExtensionsUseSymLinks"),
-				}).catch((error) => {
-					logger.error(
-						`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
-					);
-				});
+				})
+					.then(({ configurableExtension, updatedKeys }) => {
+						if (updatedKeys.length === 0) {
+							return;
+						}
+
+						vscode.window
+							.showInformationMessage(
+								`Mise: Extension ${configurableExtension.extensionName} configured.\n(updated: ${updatedKeys.join("\n")})`,
+								"Show settings",
+							)
+							.then((selection) => {
+								if (selection === "Show settings") {
+									vscode.commands.executeCommand(
+										"workbench.action.openWorkspaceSettingsFile",
+									);
+								}
+							});
+					})
+					.catch((error) => {
+						logger.error(
+							`Failed to configure the extension ${configurableTool.extensionName} for ${selectedTool.name}: ${error}`,
+						);
+					});
 			},
 		),
 		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
@@ -550,6 +569,7 @@ export function registerToolsCommands(
 
 			const miseConfig = await miseService.getMiseConfiguration();
 
+			const notificationContent: string[] = [];
 			await Promise.allSettled(
 				configurableTools
 					.filter((tool) => tool.installed)
@@ -562,17 +582,26 @@ export function registerToolsCommands(
 						}
 
 						try {
-							await configureExtension({
-								tool: tool,
-								miseConfig: miseConfig,
-								configurableExtension: configurableTool,
-								useSymLinks: vscode.workspace
-									.getConfiguration("mise")
-									.get("configureExtensionsUseSymLinks"),
-								useShims: vscode.workspace
-									.getConfiguration("mise")
-									.get("configureExtensionsUseShims"),
-							});
+							const { configurableExtension, updatedKeys } =
+								await configureExtension({
+									tool: tool,
+									miseConfig: miseConfig,
+									configurableExtension: configurableTool,
+									useSymLinks: vscode.workspace
+										.getConfiguration("mise")
+										.get("configureExtensionsUseSymLinks"),
+									useShims: vscode.workspace
+										.getConfiguration("mise")
+										.get("configureExtensionsUseShims"),
+								});
+
+							if (updatedKeys.length === 0) {
+								return;
+							}
+
+							notificationContent.push(
+								`${configurableExtension.extensionName} (${updatedKeys.join(", ")} settings)`,
+							);
 						} catch (error) {
 							logger.error(
 								`Failed to configure the extension ${configurableTool.extensionName} for ${tool.name}: ${error}`,
@@ -580,6 +609,22 @@ export function registerToolsCommands(
 						}
 					}),
 			);
+			if (notificationContent.length === 0) {
+				return;
+			}
+
+			vscode.window
+				.showInformationMessage(
+					`Mise: Configured extensions:\n${notificationContent.join(",\n")}`,
+					"Show settings",
+				)
+				.then((selection) => {
+					if (selection === "Show settings") {
+						vscode.commands.executeCommand(
+							"workbench.action.openWorkspaceSettingsFile",
+						);
+					}
+				});
 		}),
 	);
 }
