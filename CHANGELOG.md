@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.0](https://github.com/hverlin/mise-vscode/compare/v0.13.0...v0.14.0) (2024-11-19)
+
+
+### Features
+
+* improve notification message when configuring several tools ([0c10571](https://github.com/hverlin/mise-vscode/commit/0c10571cf89477ad8727005e25c134545bb14925))
+
+
+### Bug Fixes
+
+* fix code lens in mise.*.toml files ([5bbc678](https://github.com/hverlin/mise-vscode/commit/5bbc678c028483a53d5c1a8f4316fa9e6bd6fd4b))
+
 ## [0.13.0](https://github.com/hverlin/mise-vscode/compare/v0.12.0...v0.13.0) (2024-11-18)
 
 
