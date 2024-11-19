@@ -224,7 +224,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		}
 
 		const isMiseTomlFile =
-			document.fileName.endsWith("mise.toml") ||
+			/mise\.[^.]*\.?toml$/.test(document.fileName) ||
 			document.fileName.endsWith("config.toml");
 
 		if (isMiseTomlFile) {
