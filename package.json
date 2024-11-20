@@ -115,7 +115,10 @@
 							"oven.bun-vscode",
 							"oracle.oracle-java",
 							"timonwong.shellcheck",
-							"ms-vscode.js-debug"
+							"ms-vscode.js-debug",
+							"vscode.php-language-features",
+							"xdebug.php-debug",
+							"julialang.language-julia"
 						]
 					},
 					"scope": "resource",

@@ -7,8 +7,8 @@ import {
 import type { MiseConfig } from "./miseDoctorParser";
 
 export type ConfigurableExtension = {
-	extensionName: string;
-	toolName: string;
+	extensionId: string;
+	toolNames: string[];
 	generateConfiguration: (
 		tool: MiseTool,
 		miseConfig: MiseConfig,
@@ -18,8 +18,8 @@ export type ConfigurableExtension = {
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
-		extensionName: "ms-python.python",
-		toolName: "python",
+		extensionId: "ms-python.python",
+		toolNames: ["python"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -35,8 +35,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "denoland.vscode-deno",
-		toolName: "deno",
+		extensionId: "denoland.vscode-deno",
+		toolNames: ["deno"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -52,8 +52,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "charliermarsh.ruff",
-		toolName: "ruff",
+		extensionId: "charliermarsh.ruff",
+		toolNames: ["ruff"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -73,8 +73,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "golang.go",
-		toolName: "go",
+		extensionId: "golang.go",
+		toolNames: ["go"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -112,8 +112,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "oven.bun-vscode",
-		toolName: "bun",
+		extensionId: "oven.bun-vscode",
+		toolNames: ["bun"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -129,8 +129,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "oracle.oracle-java",
-		toolName: "java",
+		extensionId: "oracle.oracle-java",
+		toolNames: ["java"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig,
@@ -144,8 +144,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		extensionName: "timonwong.shellcheck",
-		toolName: "shellcheck",
+		extensionId: "timonwong.shellcheck",
+		toolNames: ["shellcheck"],
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -161,8 +161,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolName: "node",
-		extensionName: "ms-vscode.js-debug",
+		toolNames: ["node"],
+		extensionId: "ms-vscode.js-debug",
 		generateConfiguration: async (
 			tool: MiseTool,
 			miseConfig: MiseConfig,
@@ -183,8 +183,70 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		toolNames: ["php", "vfox:version-fox/vfox-php"],
+		extensionId: "vscode.php-language-features",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims, useSymLinks },
+		) => {
+			return configureSimpleExtension({
+				configKey: "php.validate.executablePath",
+				binName: "php",
+				useShims,
+				useSymLinks: false, // does not work with symlinks
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["php", "vfox:version-fox/vfox-php"],
+		extensionId: "xdebug.php-debug",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useShims, useSymLinks },
+		) => {
+			return configureSimpleExtension({
+				configKey: "php.debug.executablePath",
+				binName: "php",
+				useShims,
+				useSymLinks: false, // does not work with symlinks
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["julia"],
+		extensionId: "julialang.language-julia",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useSymLinks },
+		) => {
+			return configureSimpleExtension({
+				configKey: "julia.executablePath",
+				useShims: false, // does not work with shims
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
-export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map(
-	SUPPORTED_EXTENSIONS.map((item) => [item.toolName, item]),
-);
+export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
+	string,
+	ConfigurableExtension[]
+>();
+
+for (const extension of SUPPORTED_EXTENSIONS) {
+	for (const toolName of extension.toolNames) {
+		const extensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(toolName) ?? [];
+		extensions.push(extension);
+		CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.set(toolName, extensions);
+	}
+}

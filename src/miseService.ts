@@ -552,17 +552,39 @@ export class MiseService {
 			);
 	}
 
-	async listRemoteVersions(toolName: string) {
+	async listRemoteVersions(
+		toolName: string,
+		{ yes = false } = {},
+	): Promise<string[]> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
-		const { stdout } = await this.cache.execCmd({
-			command: `ls-remote ${toolName}`,
-			setProfile: false,
-		});
-
-		return stdout.trim().split("\n").reverse();
+		try {
+			const { stdout } = await this.execMiseCommand(
+				`ls-remote ${toolName}${yes ? " --yes" : ""}`,
+				{ setProfile: false },
+			);
+			if (yes) {
+				return this.listRemoteVersions(toolName);
+			}
+			return stdout.trim().split("\n").reverse();
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				error?.message?.includes("community-developed plugin")
+			) {
+				const selection = await vscode.window.showQuickPick(["Yes", "No"], {
+					title: `${toolName} is a community-developed plugin. Do you trust it?`,
+					placeHolder: "Yes",
+				});
+				if (selection === "Yes") {
+					return this.listRemoteVersions(toolName, { yes: true });
+				}
+			}
+			logger.error("Error fetching remote versions:", error as Error);
+			throw error;
+		}
 	}
 
 	async hasMissingTools() {

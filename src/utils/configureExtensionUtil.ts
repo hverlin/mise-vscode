@@ -20,13 +20,15 @@ export async function createMiseToolSymlink(binName: string, binPath: string) {
 		"mise-tools",
 	);
 
+	const sanitizedBinName = binName.replace(/[^a-zA-Z0-9]/g, "_");
+
 	await mkdirp(toolsPaths);
-	const linkPath = path.join(toolsPaths, binName);
+	const linkPath = path.join(toolsPaths, sanitizedBinName);
 	const configuredPath = path.join(
 		"${workspaceFolder}",
 		".vscode",
 		"mise-tools",
-		binName,
+		sanitizedBinName,
 	);
 
 	if (existsSync(linkPath)) {
@@ -41,7 +43,14 @@ export async function createMiseToolSymlink(binName: string, binPath: string) {
 		await rm(linkPath);
 	}
 
-	await symlink(`${binPath}`, `${linkPath}`, "dir");
+	await symlink(binPath, linkPath, "dir").catch((err) => {
+		if (err.code === "EEXIST") {
+			logger.info("Symlink already exists for ${binPath}");
+			return;
+		}
+
+		throw err;
+	});
 	logger.info(`New symlink created ${linkPath} -> ${binPath}`);
 	return configuredPath;
 }
@@ -52,19 +61,21 @@ export async function configureSimpleExtension({
 	useSymLinks,
 	tool,
 	miseConfig,
+	binName = tool.name,
 }: {
 	configKey: string;
 	useShims: boolean;
 	useSymLinks: boolean;
 	tool: MiseTool;
 	miseConfig: MiseConfig;
+	binName?: string;
 }) {
 	const updatedValue = useShims
-		? path.join(miseConfig.dirs.shims, tool.name)
-		: path.join(tool.install_path, "bin", tool.name);
+		? path.join(miseConfig.dirs.shims, binName)
+		: path.join(tool.install_path, "bin", binName);
 
 	const configuredPath = useSymLinks
-		? await createMiseToolSymlink(tool.name, updatedValue)
+		? await createMiseToolSymlink(binName, updatedValue)
 		: updatedValue;
 
 	return {
@@ -86,18 +97,18 @@ export async function configureExtension({
 	useSymLinks?: boolean;
 }) {
 	const extension = vscode.extensions.getExtension(
-		configurableExtension.extensionName,
+		configurableExtension.extensionId,
 	);
 	if (!extension) {
 		logger.error(
-			`Mise: Extension ${configurableExtension.extensionName} is not installed`,
+			`Mise: Extension ${configurableExtension.extensionId} is not installed`,
 		);
 		return { configurableExtension, updatedKeys: [] };
 	}
 
 	if (!getRootFolder()) {
 		logger.info(
-			`No workspace folders found, skipping extension configuration for: ${configurableExtension.extensionName}`,
+			`No workspace folders found, skipping extension configuration for: ${configurableExtension.extensionId}`,
 		);
 		return { configurableExtension, updatedKeys: [] };
 	}

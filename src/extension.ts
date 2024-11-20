@@ -80,6 +80,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	vscode.extensions.onDidChange(() => {
+		if (isMiseExtensionEnabled()) {
+			vscode.commands.executeCommand("mise.refreshEntry");
+		}
+	});
+
 	const globalCmdCache = createCache({
 		ttl: 1,
 	}).define("reload", async () => {
