@@ -3,12 +3,16 @@ import path from "node:path";
 import * as toml from "@iarna/toml";
 import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
-import { getRootFolderPath } from "./configuration";
+import { getRootFolderPath, isMiseExtensionEnabled } from "./configuration";
 import { expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
+import { resolveMisePath } from "./utils/miseBinLocator";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
+import { showSettingsNotification } from "./utils/notify";
 import { execAsync, execAsyncMergeOutput } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
+
+const MIN_MISE_VERSION = [2024, 11, 4] as const;
 
 function ensureMiseCommand(
 	miseCommand: string | undefined,
@@ -28,6 +32,57 @@ export class MiseService {
 	}).define("execCmd", ({ command, setProfile } = {}) =>
 		this.execMiseCommand(command, { setProfile }),
 	);
+	private hasVerifiedMiseVersion = false;
+
+	async initializeMisePath() {
+		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
+		let miseBinaryPath = "mise";
+		try {
+			miseBinaryPath = await resolveMisePath();
+			const config = vscode.workspace.getConfiguration("mise");
+			const previousPath = config.get<string>("binPath");
+			if (previousPath !== miseBinaryPath) {
+				logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
+
+				config.update(
+					"binPath",
+					miseBinaryPath,
+					vscode.ConfigurationTarget.Global,
+				);
+				void showSettingsNotification(
+					`Mise binary path has been updated to: ${miseBinaryPath}`,
+					{ settingsKey: "mise.binPath", type: "info" },
+				);
+			}
+		} catch (error) {
+			void showSettingsNotification(
+				"Mise binary not found. Please configure the binary path.",
+				{ settingsKey: "mise.binPath", type: "error" },
+			);
+			logger.info(
+				`Failed to resolve mise binary path: ${error instanceof Error ? error?.message : String(error)}`,
+			);
+		}
+
+		if (!this.hasVerifiedMiseVersion) {
+			const version = await this.getVersion();
+			const hasValidMiseVersion = await this.hasValidMiseVersion();
+			if (!hasValidMiseVersion) {
+				const selection = await vscode.window.showErrorMessage(
+					`Mise version ${version} is not supported. Please update to a supported version.`,
+					{ modal: true },
+					"Run mise self-update",
+				);
+				this.hasVerifiedMiseVersion = true;
+				if (selection === "Run mise self-update") {
+					await this.runMiseToolActionInConsole("self-update");
+				}
+			}
+		}
+	}
 
 	async execMiseCommand(command: string, { setProfile = true } = {}) {
 		const miseCommand = this.createMiseCommand(command, { setProfile });
@@ -339,13 +394,6 @@ export class MiseService {
 		return vscode.window.terminals.indexOf(terminal) === -1;
 	}
 
-	dispose() {
-		if (this.terminal) {
-			this.terminal.dispose();
-			this.terminal = undefined;
-		}
-	}
-
 	async miseWhich(name: string) {
 		const { stdout } = await this.cache.execCmd({
 			command: `which ${name}`,
@@ -415,6 +463,71 @@ export class MiseService {
 		return stdout.trim();
 	}
 
+	async hasValidMiseVersion() {
+		if (!this.getMiseBinaryPath()) {
+			return false;
+		}
+
+		const version = await this.getVersion();
+		const match = /(\d+)\.(\d+)\.(\d+)/.exec(version);
+		if (!match) {
+			return false;
+		}
+
+		const [, year, month, day] = match.map((n) =>
+			n ? Number.parseInt(n, 10) : undefined,
+		);
+		if (year === undefined || month === undefined || day === undefined) {
+			return false;
+		}
+
+		if (year > MIN_MISE_VERSION[0]) {
+			return true;
+		}
+		if (year < MIN_MISE_VERSION[0]) {
+			return false;
+		}
+
+		if (month > MIN_MISE_VERSION[1]) {
+			return true;
+		}
+		if (month < MIN_MISE_VERSION[1]) {
+			return false;
+		}
+
+		return day >= MIN_MISE_VERSION[2];
+	}
+
+	async checkNewMiseVersion() {
+		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
+		const miseConfig = await this.getMiseConfiguration();
+		const newMiseVersionAvailable =
+			miseConfig.problems?.newMiseVersionAvailable;
+		if (newMiseVersionAvailable) {
+			const suggestion = await vscode.window.showInformationMessage(
+				`New Mise version available ${newMiseVersionAvailable?.latestVersion}. (Current: ${newMiseVersionAvailable?.currentVersion})`,
+				"Update Mise",
+				"Show changelog",
+			);
+
+			if (suggestion === "Update Mise") {
+				await this.runMiseToolActionInConsole("self-update");
+			}
+
+			if (suggestion === "Show changelog") {
+				await vscode.env.openExternal(
+					vscode.Uri.parse(
+						"https://github.com/jdx/mise/blob/HEAD/CHANGELOG.md",
+					),
+				);
+				await this.checkNewMiseVersion();
+			}
+		}
+	}
+
 	async miseRegistry() {
 		if (!this.getMiseBinaryPath()) {
 			return [];
@@ -479,5 +592,12 @@ export class MiseService {
 
 		const { stdout } = await this.execMiseCommand("settings");
 		return toml.parse(stdout);
+	}
+
+	dispose() {
+		if (this.terminal) {
+			this.terminal.dispose();
+			this.terminal = undefined;
+		}
 	}
 }

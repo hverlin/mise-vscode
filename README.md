@@ -12,6 +12,11 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
+This extension is tested against the latest version of `mise`. To update, run
+```shell
+mise self-update
+```
+
 ## ✨ Features
 
 ### Task Management
@@ -72,6 +77,7 @@ https://github.com/hverlin/mise-vscode/wiki
 
 ### Known Issues
 - Workspaces with multiple folders are not yet supported. Only the first workspace folder is used.
+- This extension is not tested on Windows.
 
 ## Ecosystem
 

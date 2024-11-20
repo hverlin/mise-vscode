@@ -11,14 +11,35 @@ type MiseDirs = {
 
 type MiseConfig = {
 	dirs: MiseDirs;
+	problems?: {
+		newMiseVersionAvailable?: {
+			currentVersion: string;
+			latestVersion: string;
+		};
+	};
 };
 
 function parseMiseConfig(content: string): MiseConfig {
-	const result: MiseConfig = { dirs: { shims: "" } };
+	const result: MiseConfig = { dirs: { shims: "" }, problems: {} };
 	const lines: string[] = content.split("\n");
 
 	let currentSection: string | null = null;
 	let sectionIndentLevel = 0;
+
+	// example: new mise version 2024.11.19 available, currently on 2024.11.18
+	const match = content.match(
+		/new mise version (\d+\.\d+\.\d+) available, currently on (\d+\.\d+\.\d+)/,
+	);
+	if (match) {
+		const [, latestVersion, currentVersion] = match;
+		if (currentVersion !== undefined && latestVersion !== undefined) {
+			result.problems ||= {};
+			result.problems.newMiseVersionAvailable = {
+				currentVersion,
+				latestVersion,
+			};
+		}
+	}
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];

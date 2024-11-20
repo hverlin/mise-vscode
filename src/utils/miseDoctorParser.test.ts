@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { type MiseConfig, parseMiseConfig } from "./miseDoctorParser";
 
-describe("mise-parser", () => {
+describe("mise doctor parser", () => {
 	test("should parse dirs section correctly", () => {
 		const input = `version: 2024.11.8
 dirs:
@@ -26,7 +26,7 @@ shell:
 		};
 
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
 	});
 
 	test("should handle empty dirs section", () => {
@@ -38,7 +38,7 @@ shell:
 
 		const expected: MiseConfig = { dirs: { shims: "" } };
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
 	});
 
 	test("should handle missing dirs section", () => {
@@ -49,7 +49,7 @@ shell:
 		const expected: MiseConfig = { dirs: { shims: "" } };
 
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
 	});
 
 	test("should handle different indentation levels", () => {
@@ -72,7 +72,7 @@ dirs:
 		};
 
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
 	});
 
 	test("should handle malformed lines in dirs section", () => {
@@ -92,7 +92,7 @@ dirs:
 		};
 
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
 	});
 
 	test("should handle real-world mise output", () => {
@@ -126,6 +126,38 @@ config_files:
 		};
 
 		const result = parseMiseConfig(input);
-		expect(result).toEqual(expected);
+		expect(result.dirs).toEqual(expected.dirs);
+	});
+
+	test("should parse mise version correctly", () => {
+		const input = `
+  [ruby]
+  default_packages_file = "~/.default-gems"
+  ruby_build_repo = "https://github.com/rbenv/ruby-build.git"
+  ruby_install = false
+  ruby_install_repo = "https://github.com/postmodern/ruby-install.git"
+
+  [status]
+  missing_tools = "if_other_versions_installed"
+  show_env = false
+  show_tools = false
+No warnings found
+1 problem found:
+
+1. new mise version 2024.11.19 available, currently on 2024.11.18
+`;
+
+		const expected: MiseConfig = {
+			dirs: { shims: "" },
+			problems: {
+				newMiseVersionAvailable: {
+					currentVersion: "2024.11.18",
+					latestVersion: "2024.11.19",
+				},
+			},
+		};
+
+		const result = parseMiseConfig(input);
+		expect(result.problems).toEqual(expected.problems);
 	});
 });

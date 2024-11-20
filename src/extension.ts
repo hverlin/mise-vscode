@@ -1,5 +1,6 @@
 import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
+import { MarkdownString } from "vscode";
 import {
 	CONFIGURATION_FLAGS,
 	MISE_OPEN_FILE,
@@ -36,43 +37,9 @@ import WebViewPanel from "./webviewPanel";
 
 let statusBarItem: vscode.StatusBarItem;
 
-async function initializeMisePath() {
-	if (!isMiseExtensionEnabled()) {
-		return;
-	}
-
-	let miseBinaryPath = "mise";
-	try {
-		miseBinaryPath = await resolveMisePath();
-		const config = vscode.workspace.getConfiguration("mise");
-		const previousPath = config.get<string>("binPath");
-		if (previousPath !== miseBinaryPath) {
-			logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
-
-			config.update(
-				"binPath",
-				miseBinaryPath,
-				vscode.ConfigurationTarget.Global,
-			);
-			void showSettingsNotification(
-				`Mise binary path has been updated to: ${miseBinaryPath}`,
-				{ settingsKey: "mise.binPath", type: "info" },
-			);
-		}
-	} catch (error) {
-		void showSettingsNotification(
-			"Mise binary not found. Please configure the binary path.",
-			{ settingsKey: "mise.binPath", type: "error" },
-		);
-		logger.info(
-			`Failed to resolve mise binary path: ${error instanceof Error ? error?.message : String(error)}`,
-		);
-	}
-}
-
 export async function activate(context: vscode.ExtensionContext) {
-	await initializeMisePath();
 	const miseService = new MiseService();
+	await miseService.initializeMisePath();
 
 	const tasksProvider = new MiseTasksProvider(miseService);
 	const toolsProvider = new MiseToolsProvider(miseService);
@@ -84,7 +51,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	statusBarItem.show();
 	statusBarItem.text = "$(tools) Mise";
-	statusBarItem.tooltip = "Mise - Command menu";
+	statusBarItem.tooltip = new MarkdownString(
+		`Mise - click to open menu\n\nVersion: ${await miseService.getVersion()}\n\nBinPath: ${miseService.getMiseBinaryPath()}`,
+	);
 
 	registerTasksCommands(context, tasksProvider);
 	registerToolsCommands(context, toolsProvider);
@@ -115,8 +84,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		ttl: 1,
 	}).define("reload", async () => {
 		logger.info("Reloading Mise configuration");
-		await initializeMisePath();
-
+		await miseService.initializeMisePath();
 		await vscode.commands.executeCommand("workbench.view.extension.mise-panel");
 
 		statusBarItem.text = "$(sync~spin) Mise";
@@ -286,6 +254,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	await vscode.commands.executeCommand("mise.refreshEntry");
+
+	setTimeout(async () => {
+		void miseService.checkNewMiseVersion();
+	}, 1000);
 }
 
 export function deactivate() {
