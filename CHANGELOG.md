@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.15.0](https://github.com/hverlin/mise-vscode/compare/v0.14.0...v0.15.0) (2024-11-20)
+
+
+### Features
+
+* Add code completion for `wait_for` ([08a6f66](https://github.com/hverlin/mise-vscode/commit/08a6f66c3af7bdc54c5c5bb4977809b80cd7d203))
+* Add support for php and julia ([e23bf9c](https://github.com/hverlin/mise-vscode/commit/e23bf9c63572cad6e6b9717026f8bc721d53639c))
+* Check mise version on startup ([b02151c](https://github.com/hverlin/mise-vscode/commit/b02151c898cd596ad6fb11425ec099dd5b5dd424))
+* show installed version inline in editor ([7395075](https://github.com/hverlin/mise-vscode/commit/73950751274b4f9341897204335123e5bfd6937e))
+
 ## [0.14.0](https://github.com/hverlin/mise-vscode/compare/v0.13.0...v0.14.0) (2024-11-19)
 
 
