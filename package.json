@@ -296,6 +296,11 @@
 				"icon": "$(tools)"
 			},
 			{
+				"command": "mise.openLogs",
+				"title": "Mise: Show extension logs",
+				"icon": "$(list-unordered)"
+			},
+			{
 				"command": "mise.listAllTools",
 				"title": "Mise: List all Tools",
 				"icon": "$(list-ordered)"

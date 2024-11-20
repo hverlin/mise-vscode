@@ -1,6 +1,7 @@
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
+import { logger } from "./utils/logger";
 
 export function createMenu(miseService: MiseService) {
 	return vscode.commands.registerCommand("mise.openMenu", async () => {
@@ -18,6 +19,10 @@ export function createMenu(miseService: MiseService) {
 				{
 					iconPath: new vscode.ThemeIcon("gear"),
 					label: "Open Mise settings",
+				},
+				{
+					iconPath: new vscode.ThemeIcon("list-selection"),
+					label: "Show logs",
 				},
 				{
 					iconPath: new vscode.ThemeIcon("info"),
@@ -41,6 +46,7 @@ export function createMenu(miseService: MiseService) {
 						| "Enable extension"
 						| "Install missing tools"
 						| "Install all tools"
+						| "Show logs"
 						| "";
 				}
 			>,
@@ -68,6 +74,9 @@ export function createMenu(miseService: MiseService) {
 				await vscode.workspace
 					.getConfiguration("mise")
 					.update("enable", true, vscode.ConfigurationTarget.Workspace);
+				break;
+			case "Show logs":
+				logger.show();
 				break;
 			default:
 				break;

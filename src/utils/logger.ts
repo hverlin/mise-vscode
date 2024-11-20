@@ -2,20 +2,20 @@ import * as util from "node:util";
 import * as vscode from "vscode";
 
 export enum LogLevel {
-	DEBUG = 0,
-	INFO = 1,
-	WARN = 2,
-	ERROR = 3,
+	DEBUG = "debug",
+	INFO = "info",
+	WARN = "warn",
+	ERROR = "error",
 }
 
 export class Logger {
 	private static instance: Logger;
-	private outputChannel: vscode.OutputChannel;
-	private logLevel: LogLevel;
+	private readonly outputChannel: vscode.LogOutputChannel;
 
 	private constructor() {
-		this.outputChannel = vscode.window.createOutputChannel("Mise");
-		this.logLevel = LogLevel.INFO; // Default log level
+		this.outputChannel = vscode.window.createOutputChannel("Mise", {
+			log: true,
+		});
 	}
 
 	public static getInstance(): Logger {
@@ -25,48 +25,22 @@ export class Logger {
 		return Logger.instance;
 	}
 
-	public setLogLevel(level: LogLevel) {
-		this.logLevel = level;
-		this.info(`Log level set to ${LogLevel[level]}`);
-	}
+	private log(level: LogLevel, ...args: unknown[]) {
+		this.outputChannel[level](util.format(...args));
 
-	private formatMessage(level: string, message: string): string {
-		const timestamp = new Date().toISOString();
-		return `[${timestamp}] [${level}] ${message}`;
-	}
-
-	private shouldLog(level: LogLevel): boolean {
-		return level >= this.logLevel;
-	}
-
-	private log(level: LogLevel, message: string, error?: Error) {
-		if (!this.shouldLog(level)) {
-			return;
-		}
-
-		const formattedMessage = this.formatMessage(LogLevel[level], message);
-		this.outputChannel.appendLine(formattedMessage);
-
-		if (error) {
-			this.outputChannel.appendLine(
-				this.formatMessage(LogLevel[level], `Error Details: ${error.message}`),
-			);
-			if (error.stack) {
-				this.outputChannel.appendLine(
-					this.formatMessage(LogLevel[level], `Stack Trace: ${error.stack}`),
-				);
-			}
-		}
-
-		if (level >= LogLevel.WARN) {
+		if ([LogLevel.WARN, LogLevel.ERROR].includes(level)) {
 			const notify =
 				level === LogLevel.WARN
 					? vscode.window.showWarningMessage
 					: vscode.window.showErrorMessage;
 
-			let errorMessage = message;
+			const error = args.find((arg) => arg instanceof Error);
+			let errorMessage = args.find((arg) => typeof arg === "string");
+
 			if (error) {
-				errorMessage = `${message}: ${error.message}`;
+				errorMessage = errorMessage
+					? `${errorMessage}: ${error.message}`
+					: error.message;
 			}
 			void notify(`Mise: ${errorMessage}`, "Show Logs").then((selection) => {
 				if (selection === "Show Logs") {
@@ -76,37 +50,20 @@ export class Logger {
 		}
 	}
 
-	public debug(message: string) {
-		this.log(LogLevel.DEBUG, message);
+	public debug(...args: unknown[]) {
+		this.log(LogLevel.DEBUG, ...args);
 	}
 
-	public info(message: unknown) {
-		this.log(
-			LogLevel.INFO,
-			typeof message === "string" ? message : util.inspect(message),
-		);
+	public info(...args: unknown[]) {
+		this.log(LogLevel.INFO, ...args);
 	}
 
-	public warn(message: string) {
-		this.log(LogLevel.WARN, message);
+	public warn(...args: unknown[]) {
+		this.log(LogLevel.WARN, ...args);
 	}
 
-	public error(message: string, error?: Error) {
-		this.log(LogLevel.ERROR, message, error);
-	}
-
-	public group(title: string) {
-		if (!this.shouldLog(LogLevel.DEBUG)) {
-			return;
-		}
-		this.outputChannel.appendLine(`\n▼ ${title}`);
-	}
-
-	public groupEnd() {
-		if (!this.shouldLog(LogLevel.DEBUG)) {
-			return;
-		}
-		this.outputChannel.appendLine("▲ End\n");
+	public error(...args: unknown[]) {
+		this.log(LogLevel.ERROR, ...args);
 	}
 
 	public show() {

@@ -211,6 +211,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	);
 
+	context.subscriptions.push(
+		vscode.commands.registerCommand("mise.openLogs", async () => {
+			logger.show();
+		}),
+	);
+
 	const rootFolder = getRootFolder();
 	if (rootFolder) {
 		context.subscriptions.push(
