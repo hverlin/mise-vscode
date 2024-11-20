@@ -50,7 +50,7 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 	}
 
 	private isDependsArrayContext(lineText: string, position: number): boolean {
-		const dependsMatch = /depends\s*=/.test(lineText);
+		const dependsMatch = /(depends|wait_for)\s*=/.test(lineText);
 		if (!dependsMatch) {
 			return false;
 		}
