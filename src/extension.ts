@@ -1,3 +1,4 @@
+import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
 import {
 	CONFIGURATION_FLAGS,
@@ -16,6 +17,7 @@ import {
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
+import { showToolVersionInline } from "./providers/miseToolCompletionProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
 import {
 	MiseTasksProvider,
@@ -42,10 +44,11 @@ async function initializeMisePath() {
 	let miseBinaryPath = "mise";
 	try {
 		miseBinaryPath = await resolveMisePath();
-		logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
 		const config = vscode.workspace.getConfiguration("mise");
 		const previousPath = config.get<string>("binPath");
 		if (previousPath !== miseBinaryPath) {
+			logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
+
 			config.update(
 				"binPath",
 				miseBinaryPath,
@@ -108,58 +111,63 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	const globalCmdCache = createCache({
+		ttl: 1,
+	}).define("reload", async () => {
+		logger.info("Reloading Mise configuration");
+		await initializeMisePath();
+
+		await vscode.commands.executeCommand("workbench.view.extension.mise-panel");
+
+		statusBarItem.text = "$(sync~spin) Mise";
+		try {
+			if (isMiseExtensionEnabled()) {
+				miseService.getCurrentTools().then(async (tools) => {
+					const missingTools = tools.filter((tool) => !tool.installed);
+					if (missingTools.length > 0) {
+						const selection = await vscode.window.showWarningMessage(
+							`Mise: Missing tools: ${missingTools
+								.map(
+									(tool) =>
+										tool.name + (tool.version ? ` (${tool.version})` : ""),
+								)
+								.join(", ")}`,
+							{ title: "Install missing tools", command: "mise.installAll" },
+						);
+						if (selection?.command) {
+							await vscode.commands.executeCommand(selection.command);
+						}
+					}
+				});
+			}
+
+			statusBarItem.text = "$(check) Mise";
+			tasksProvider.refresh();
+			toolsProvider.refresh();
+			envsProvider.refresh();
+
+			const autoConfigureSdks = vscode.workspace
+				.getConfiguration("mise")
+				.get("configureExtensionsAutomatically");
+			if (autoConfigureSdks && isMiseExtensionEnabled()) {
+				await vscode.commands.executeCommand("mise.configureAllSdkPaths");
+			}
+
+			statusBarItem.text = "$(tools) Mise";
+
+			const miseProfile = getMiseProfile();
+			if (miseProfile) {
+				statusBarItem.text = `$(tools) Mise (${miseProfile})`;
+			}
+		} catch (error) {
+			statusBarItem.text = "$(error) Mise";
+			vscode.window.showErrorMessage(`${error}`);
+		}
+	});
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mise.refreshEntry", async () => {
-			await initializeMisePath();
-
-			await vscode.commands.executeCommand(
-				"workbench.view.extension.mise-panel",
-			);
-
-			statusBarItem.text = "$(sync~spin) Mise";
-			try {
-				if (isMiseExtensionEnabled()) {
-					miseService.getCurrentTools().then(async (tools) => {
-						const missingTools = tools.filter((tool) => !tool.installed);
-						if (missingTools.length > 0) {
-							const selection = await vscode.window.showWarningMessage(
-								`Mise: Missing tools: ${missingTools
-									.map(
-										(tool) =>
-											tool.name + (tool.version ? ` (${tool.version})` : ""),
-									)
-									.join(", ")}`,
-								{ title: "Install missing tools", command: "mise.installAll" },
-							);
-							if (selection?.command) {
-								await vscode.commands.executeCommand(selection.command);
-							}
-						}
-					});
-				}
-
-				statusBarItem.text = "$(check) Mise";
-				tasksProvider.refresh();
-				toolsProvider.refresh();
-				envsProvider.refresh();
-
-				const autoConfigureSdks = vscode.workspace
-					.getConfiguration("mise")
-					.get("configureExtensionsAutomatically");
-				if (autoConfigureSdks && isMiseExtensionEnabled()) {
-					await vscode.commands.executeCommand("mise.configureAllSdkPaths");
-				}
-
-				statusBarItem.text = "$(tools) Mise";
-
-				const miseProfile = getMiseProfile();
-				if (miseProfile) {
-					statusBarItem.text = `$(tools) Mise (${miseProfile})`;
-				}
-			} catch (error) {
-				statusBarItem.text = "$(error) Mise";
-				vscode.window.showErrorMessage(`${error}`);
-			}
+			await globalCmdCache.reload();
 		}),
 	);
 
@@ -239,14 +247,37 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerCompletionItemProvider(
 			{ language: "toml", scheme: "file" },
 			new MiseCompletionProvider(miseService),
-			'"', // Trigger completion on quotes
-			"'", // Trigger completion on quotes
-			"[", // Trigger completion when opening array
-			",", // Trigger completion after comma
+			'"',
+			"'",
+			"[",
+			",",
 		),
 	);
 
 	registerTomlFileLinks(context);
+
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			if (
+				event.document === vscode.window.activeTextEditor?.document &&
+				event.document.languageId === "toml"
+			) {
+				showToolVersionInline(event.document, miseService);
+			}
+		}),
+		vscode.window.onDidChangeActiveTextEditor((editor) => {
+			if (editor && editor.document.languageId === "toml") {
+				showToolVersionInline(editor.document, miseService);
+			}
+		}),
+	);
+
+	if (vscode.window.activeTextEditor?.document.languageId === "toml") {
+		void showToolVersionInline(
+			vscode.window.activeTextEditor?.document,
+			miseService,
+		);
+	}
 
 	await vscode.commands.executeCommand("mise.refreshEntry");
 }

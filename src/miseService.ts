@@ -1,6 +1,7 @@
 import * as os from "node:os";
 import path from "node:path";
 import * as toml from "@iarna/toml";
+import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
 import { getRootFolderPath } from "./configuration";
 import { expandPath } from "./utils/fileUtils";
@@ -21,6 +22,12 @@ function ensureMiseCommand(
 
 export class MiseService {
 	private terminal: vscode.Terminal | undefined;
+	private cache = createCache({
+		ttl: 0,
+		storage: { type: "memory" },
+	}).define("execCmd", ({ command, setProfile } = {}) =>
+		this.execMiseCommand(command, { setProfile }),
+	);
 
 	async execMiseCommand(command: string, { setProfile = true } = {}) {
 		const miseCommand = this.createMiseCommand(command, { setProfile });
@@ -129,7 +136,9 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand("tasks ls --json");
+			const { stdout } = await this.cache.execCmd({
+				command: "tasks ls --json",
+			});
 			return JSON.parse(stdout).map((task: MiseTask) => ({
 				name: task.name,
 				source: task.source,
@@ -166,9 +175,10 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand(
-				"ls --current --offline --json",
-			);
+			const { stdout } = await this.cache.execCmd({
+				command: "ls --current --json",
+			});
+
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
 					return {
@@ -199,7 +209,9 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand("ls --offline --json");
+			const { stdout } = await this.cache.execCmd({
+				command: "ls --offline --json",
+			});
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
 					return {
@@ -231,9 +243,9 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.execMiseCommand(
-			bump ? "outdated --bump --json" : "outdated --json",
-		);
+		const { stdout } = await this.cache.execCmd({
+			command: bump ? "outdated --bump --json" : "outdated --json",
+		});
 		return Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
 			const foundTool = tool as {
 				name: string;
@@ -271,7 +283,9 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand("env --json");
+			const { stdout } = await this.cache.execCmd({
+				command: "env --json",
+			});
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
 				name: key,
 				value: value as string,
@@ -333,7 +347,9 @@ export class MiseService {
 	}
 
 	async miseWhich(name: string) {
-		const { stdout } = await this.execMiseCommand(`which ${name}`);
+		const { stdout } = await this.cache.execCmd({
+			command: `which ${name}`,
+		});
 		return stdout.trim();
 	}
 
@@ -347,9 +363,7 @@ export class MiseService {
 			logger.warn(stderr);
 		}
 
-		const config = parseMiseConfig(stdout);
-		logger.info(`Config: ${JSON.stringify(config, null, 2)}`);
-		return config;
+		return parseMiseConfig(stdout);
 	}
 
 	async getMiseConfigFiles() {
@@ -357,7 +371,9 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.execMiseCommand("config ls --json");
+		const { stdout } = await this.cache.execCmd({
+			command: "config ls --json",
+		});
 		return JSON.parse(stdout) as Array<{
 			path: string;
 			tools: string[];
@@ -428,7 +444,8 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.execMiseCommand(`ls-remote ${toolName}`, {
+		const { stdout } = await this.cache.execCmd({
+			command: `ls-remote ${toolName}`,
 			setProfile: false,
 		});
 
