@@ -119,7 +119,8 @@
 							"vscode.php-language-features",
 							"xdebug.php-debug",
 							"julialang.language-julia",
-							"pgourlain.erlang"
+							"pgourlain.erlang",
+							"Dart-Code.dart-code"
 						]
 					},
 					"scope": "resource",

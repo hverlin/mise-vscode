@@ -610,7 +610,7 @@ export function registerToolsCommands(
 							}
 
 							notificationContent.push(
-								`${configurableExtension.extensionId} (${updatedKeys.join(", ")} settings)`,
+								`${configurableExtension.extensionId} (${updatedKeys.join(", ")})`,
 							);
 						} catch (error) {
 							logger.error(

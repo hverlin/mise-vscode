@@ -252,6 +252,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		toolNames: ["dart"],
+		extensionId: "Dart-Code.dart-code",
+		generateConfiguration: async (tool: MiseTool) => {
+			return {
+				"dart.sdkPath": tool.install_path,
+			};
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
