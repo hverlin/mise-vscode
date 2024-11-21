@@ -253,7 +253,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: ["dart"],
+		toolNames: ["dart", "vfox:version-fox/vfox-dart"],
 		extensionId: "Dart-Code.dart-code",
 		generateConfiguration: async (tool: MiseTool) => {
 			return {

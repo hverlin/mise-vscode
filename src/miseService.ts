@@ -253,7 +253,6 @@ export class MiseService {
 				return this.getCurrentTools();
 			}
 
-			logger.error("Error fetching mise tools:", error as Error);
 			return [];
 		}
 	}
