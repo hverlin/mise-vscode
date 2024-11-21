@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/hverlin/mise-vscode/compare/v0.16.0...v0.17.0) (2024-11-21)
+
+
+### Features
+
+* add support for Dart-Code.dart-code ([4baa9d2](https://github.com/hverlin/mise-vscode/commit/4baa9d224ef8141d6a6474b82a20269f43ab7711))
+
 ## [0.16.0](https://github.com/hverlin/mise-vscode/compare/v0.15.0...v0.16.0) (2024-11-21)
 
 
