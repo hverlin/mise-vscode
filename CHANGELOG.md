@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/hverlin/mise-vscode/compare/v0.17.0...v0.17.1) (2024-11-21)
+
+
+### Bug Fixes
+
+* add vfox plugin for dart as well ([95a6951](https://github.com/hverlin/mise-vscode/commit/95a69516c7961a8d11fba931f3b5262951e946f6))
+
 ## [0.17.0](https://github.com/hverlin/mise-vscode/compare/v0.16.0...v0.17.0) (2024-11-21)
 
 
