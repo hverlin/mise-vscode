@@ -236,6 +236,22 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["erlang"],
+		extensionId: "pgourlain.erlang",
+		generateConfiguration: async (
+			tool: MiseTool,
+			miseConfig: MiseConfig,
+			{ useSymLinks },
+		) => {
+			const pathToBin = path.join(tool.install_path, "bin");
+			return {
+				"erlang.erlangPath": useSymLinks
+					? await createMiseToolSymlink("erlang", pathToBin)
+					: pathToBin,
+			};
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<

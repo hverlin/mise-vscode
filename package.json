@@ -118,7 +118,8 @@
 							"ms-vscode.js-debug",
 							"vscode.php-language-features",
 							"xdebug.php-debug",
-							"julialang.language-julia"
+							"julialang.language-julia",
+							"pgourlain.erlang"
 						]
 					},
 					"scope": "resource",
