@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/hverlin/mise-vscode/compare/v0.15.0...v0.16.0) (2024-11-21)
+
+
+### Features
+
+* add support for pgourlain.erlang ([9379342](https://github.com/hverlin/mise-vscode/commit/9379342964930f6811dac37bc314ae6a061ac078))
+
 ## [0.15.0](https://github.com/hverlin/mise-vscode/compare/v0.14.0...v0.15.0) (2024-11-20)
 
 
