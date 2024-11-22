@@ -71,14 +71,20 @@ export class MiseService {
 			const version = await this.getVersion();
 			const hasValidMiseVersion = await this.hasValidMiseVersion();
 			if (!hasValidMiseVersion) {
+				const canSelfUpdate = await this.canSelfUpdate();
 				const selection = await vscode.window.showErrorMessage(
 					`Mise version ${version} is not supported. Please update to a supported version.`,
 					{ modal: true },
-					"Run mise self-update",
+					canSelfUpdate ? "Run mise self-update" : "open mise website",
 				);
 				this.hasVerifiedMiseVersion = true;
 				if (selection === "Run mise self-update") {
 					await this.runMiseToolActionInConsole("self-update");
+				}
+				if (selection === "open mise website") {
+					await vscode.env.openExternal(
+						vscode.Uri.parse("https://mise.jdx.dev/cli/self-update.html"),
+					);
 				}
 			}
 		}
@@ -87,7 +93,7 @@ export class MiseService {
 	async execMiseCommand(command: string, { setProfile = true } = {}) {
 		const miseCommand = this.createMiseCommand(command, { setProfile });
 		ensureMiseCommand(miseCommand);
-		logger.info(`> ${miseCommand}`);
+		logger.debug(`> ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: getRootFolderPath() });
 	}
 
@@ -462,6 +468,19 @@ export class MiseService {
 		return stdout.trim();
 	}
 
+	async canSelfUpdate() {
+		if (!this.getMiseBinaryPath()) {
+			return false;
+		}
+
+		try {
+			await this.execMiseCommand("self-update --help");
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
+
 	async hasValidMiseVersion() {
 		if (!this.getMiseBinaryPath()) {
 			return false;
@@ -506,11 +525,18 @@ export class MiseService {
 		const newMiseVersionAvailable =
 			miseConfig.problems?.newMiseVersionAvailable;
 		if (newMiseVersionAvailable) {
+			const canSelfUpdate = await this.canSelfUpdate();
 			const suggestion = await vscode.window.showInformationMessage(
 				`New Mise version available ${newMiseVersionAvailable?.latestVersion}. (Current: ${newMiseVersionAvailable?.currentVersion})`,
-				"Update Mise",
+				canSelfUpdate ? "Update Mise" : "How to update Mise",
 				"Show changelog",
 			);
+
+			if (suggestion === "How to update Mise") {
+				await vscode.env.openExternal(
+					vscode.Uri.parse("https://mise.jdx.dev/cli/self-update.html"),
+				);
+			}
 
 			if (suggestion === "Update Mise") {
 				await this.runMiseToolActionInConsole("self-update");

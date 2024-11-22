@@ -8,6 +8,7 @@ import {
 	getRootFolderPath,
 	updateVSCodeSettings,
 } from "../configuration";
+import type { MiseService } from "../miseService";
 import { mkdirp } from "./fileUtils";
 import { logger } from "./logger";
 import type { MiseConfig } from "./miseDoctorParser";
@@ -89,9 +90,11 @@ export async function configureExtension({
 	configurableExtension,
 	useShims = true,
 	useSymLinks = false,
+	miseService,
 }: {
 	tool: MiseTool;
 	miseConfig: MiseConfig;
+	miseService: MiseService;
 	configurableExtension: ConfigurableExtension;
 	useShims?: boolean;
 	useSymLinks?: boolean;
@@ -113,11 +116,13 @@ export async function configureExtension({
 		return { configurableExtension, updatedKeys: [] };
 	}
 
-	const extConfig = await configurableExtension.generateConfiguration(
+	const extConfig = await configurableExtension.generateConfiguration({
 		tool,
+		miseService,
 		miseConfig,
-		{ useShims, useSymLinks },
-	);
+		useShims,
+		useSymLinks,
+	});
 
 	const updatedKeys = await updateVSCodeSettings(
 		Object.entries(extConfig).map(([key, value]) => ({

@@ -514,6 +514,7 @@ export function registerToolsCommands(
 						miseConfig: miseConfig,
 						configurableExtension,
 						useShims: useMiseShims === "Yes",
+						miseService,
 						useSymLinks: vscode.workspace
 							.getConfiguration("mise")
 							.get("configureExtensionsUseSymLinks"),
@@ -597,6 +598,7 @@ export function registerToolsCommands(
 								tool: tool,
 								miseConfig: miseConfig,
 								configurableExtension,
+								miseService,
 								useSymLinks: vscode.workspace
 									.getConfiguration("mise")
 									.get("configureExtensionsUseSymLinks"),
