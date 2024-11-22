@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.2](https://github.com/hverlin/mise-vscode/compare/v0.17.1...v0.17.2) (2024-11-22)
+
+
+### Bug Fixes
+
+* Do not run self-update if command is not available ([292aceb](https://github.com/hverlin/mise-vscode/commit/292aceb57ccf572e5fe83b7dfffdbd317dc312d0))
+* support python venv ([292aceb](https://github.com/hverlin/mise-vscode/commit/292aceb57ccf572e5fe83b7dfffdbd317dc312d0))
+
 ## [0.17.1](https://github.com/hverlin/mise-vscode/compare/v0.17.0...v0.17.1) (2024-11-21)
 
 
