@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import VSCodeTable from "./VSCodeTable";
-import { flattenedSettingsSchema, getDefaultForType } from "./settingsSchema";
+import { VscodeCheckbox } from "@vscode-elements/react-elements";
+import React, { useState } from "react";
+import CustomTable from "./CustomTable";
+import { flattenJsonSchema, getDefaultForType } from "./settingsSchema";
 import { vscodeClient } from "./webviewVsCodeApi";
 
 export const Settings = () => {
@@ -12,6 +13,22 @@ export const Settings = () => {
 		queryFn: ({ queryKey }) =>
 			vscodeClient.request({ queryKey }) as Promise<object>,
 	});
+
+	const schemaQuery = useQuery({
+		queryKey: ["settingsSchema2"],
+		queryFn: async () => {
+			const res = await fetch(
+				"https://raw.githubusercontent.com/jdx/mise/refs/heads/main/schema/mise.json",
+			);
+			if (!res.ok) {
+				return [];
+			}
+			const json = await res.json();
+			return flattenJsonSchema(json.$defs.settings);
+		},
+	});
+
+	const schema = schemaQuery.data ?? [];
 
 	if (settingsQuery.isError) {
 		return <div>Error: {settingsQuery.error.message}</div>;
@@ -28,9 +45,7 @@ export const Settings = () => {
 			return { key, value };
 		})
 		.map(({ key, value }) => {
-			const schemaDef = flattenedSettingsSchema.find(
-				(schema) => schema.key === key,
-			);
+			const schemaDef = schema.find((schema) => schema.key === key);
 			return {
 				key,
 				value,
@@ -46,16 +61,13 @@ export const Settings = () => {
 	return (
 		<div>
 			<div style={{ padding: "10px" }}>
-				<input
-					id={"showModifiedOnly"}
-					name={"showModifiedOnly"}
-					type={"checkbox"}
-					checked={showModifiedOnly}
-					onChange={(e) => setShowModifiedOnly(e.target.checked)}
+				<VscodeCheckbox
+					onChange={() => setShowModifiedOnly(!showModifiedOnly)}
+					label="Show modified only"
+					checked={showModifiedOnly ? true : undefined}
 				/>
-				<label htmlFor={"showModifiedOnly"}>Show modified only</label>
 			</div>
-			<VSCodeTable
+			<CustomTable
 				isLoading={settingsQuery.isLoading}
 				data={settingValues.filter(
 					(value) =>
@@ -94,9 +106,9 @@ export const Settings = () => {
 						accessorKey: "description",
 						cell: ({ row }) => {
 							return (
-								<div>
+								<>
 									{row.original.description} (type: {row.original.type})
-								</div>
+								</>
 							);
 						},
 					},

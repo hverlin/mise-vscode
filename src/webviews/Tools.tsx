@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import VSCodeTable from "./VSCodeTable";
+import { VscodeButton } from "@vscode-elements/react-elements";
+import CustomTable from "./CustomTable";
 import { vscodeClient } from "./webviewVsCodeApi";
 
 const ActionCell = ({ tool }: { tool: MiseTool }) => {
@@ -15,8 +16,9 @@ const ActionCell = ({ tool }: { tool: MiseTool }) => {
 	}
 
 	return (
-		<button
-			className={"vscode-button secondary"}
+		<VscodeButton
+			className="small-button"
+			secondary
 			disabled={removeToolMutation.isPending}
 			onClick={() => {
 				return removeToolMutation.mutate(undefined, {
@@ -24,11 +26,10 @@ const ActionCell = ({ tool }: { tool: MiseTool }) => {
 						queryClient.invalidateQueries({ queryKey: ["tools"] }),
 				});
 			}}
-			type={"button"}
 		>
 			<i className="codicon codicon-close" />
 			{removeToolMutation.isPending ? "Removing..." : "Remove"}
-		</button>
+		</VscodeButton>
 	);
 };
 
@@ -51,8 +52,7 @@ export const Tools = () => {
 
 	return (
 		<div>
-			{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
-			<VSCodeTable
+			<CustomTable
 				isLoading={toolsQuery.isLoading}
 				columns={[
 					{
@@ -121,6 +121,7 @@ export const Tools = () => {
 				]}
 				data={toolsQuery?.data || []}
 			/>
+			{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
 		</div>
 	);
 };

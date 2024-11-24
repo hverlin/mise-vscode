@@ -237,7 +237,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "ls --current --json",
+				command: "ls --current --offline --json",
 			});
 
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
