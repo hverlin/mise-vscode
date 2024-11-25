@@ -3,7 +3,13 @@ import path from "node:path";
 import * as toml from "@iarna/toml";
 import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
-import { getRootFolderPath, isMiseExtensionEnabled } from "./configuration";
+import {
+	getConfiguredBinPath,
+	getMiseProfile,
+	getRootFolderPath,
+	isMiseExtensionEnabled,
+	updateBinPath,
+} from "./configuration";
 import { expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
@@ -42,16 +48,10 @@ export class MiseService {
 		let miseBinaryPath = "mise";
 		try {
 			miseBinaryPath = await resolveMisePath();
-			const config = vscode.workspace.getConfiguration("mise");
-			const previousPath = config.get<string>("binPath");
+			const previousPath = getConfiguredBinPath();
 			if (previousPath !== miseBinaryPath) {
 				logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
-
-				config.update(
-					"binPath",
-					miseBinaryPath,
-					vscode.ConfigurationTarget.Global,
-				);
+				await updateBinPath(miseBinaryPath);
 				void showSettingsNotification(
 					`Mise binary path has been updated to: ${miseBinaryPath}`,
 					{ settingsKey: "mise.binPath", type: "info" },
@@ -136,7 +136,7 @@ export class MiseService {
 	}
 
 	public getMiseBinaryPath(): string | undefined {
-		return vscode.workspace.getConfiguration("mise").get("binPath");
+		return getConfiguredBinPath();
 	}
 
 	public createMiseCommand(
@@ -149,12 +149,10 @@ export class MiseService {
 		}
 
 		let miseCommand = `"${miseBinaryPath}"`;
-		const miseProfile = vscode.workspace
-			.getConfiguration("mise")
-			.get("profile");
+		const miseProfile = getMiseProfile();
 
 		if (miseProfile && setProfile && !command.includes("use --path")) {
-			miseCommand = `${miseCommand} --profile ${miseProfile}`;
+			miseCommand = `${miseCommand} --profile ${getMiseProfile()}`;
 		}
 		return `${miseCommand} ${command}`;
 	}

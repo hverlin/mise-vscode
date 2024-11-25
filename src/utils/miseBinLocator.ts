@@ -1,13 +1,12 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import * as vscode from "vscode";
+import { getConfiguredBinPath } from "../configuration";
 import { logger } from "./logger";
 import { execAsync } from "./shell";
 
 export async function resolveMisePath(): Promise<string> {
-	const config = vscode.workspace.getConfiguration("mise");
-	const configuredPath = config.get<string>("binPath")?.trim();
+	const configuredPath = getConfiguredBinPath();
 
 	if (configuredPath) {
 		if (await isValidBinary(configuredPath)) {

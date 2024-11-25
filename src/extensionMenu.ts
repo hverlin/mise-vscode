@@ -1,5 +1,9 @@
 import vscode from "vscode";
-import { isMiseExtensionEnabled } from "./configuration";
+import {
+	disableExtensionForWorkspace,
+	enableExtensionForWorkspace,
+	isMiseExtensionEnabled,
+} from "./configuration";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
@@ -66,14 +70,10 @@ export function createMenu(miseService: MiseService) {
 				);
 				break;
 			case "Disable the mise extension for this workspace":
-				await vscode.workspace
-					.getConfiguration("mise")
-					.update("enable", false, vscode.ConfigurationTarget.Workspace);
+				await disableExtensionForWorkspace();
 				break;
 			case "Enable extension":
-				await vscode.workspace
-					.getConfiguration("mise")
-					.update("enable", true, vscode.ConfigurationTarget.Workspace);
+				await enableExtensionForWorkspace();
 				break;
 			case "Show logs":
 				logger.show();

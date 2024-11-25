@@ -141,6 +141,22 @@
 					"title": "Configure extensions to use symlinks",
 					"default": false,
 					"markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin. This is useful if you share the `.vscode/settings.json` file with others."
+				},
+				"mise.enableCodeLens": {
+					"order": 8,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Enable code lens",
+					"default": true,
+					"markdownDescription": "Show run/add tool code lens indicators in the editor."
+				},
+				"mise.showToolVersionsDecorations": {
+					"order": 9,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Show tool versions",
+					"default": true,
+					"markdownDescription": "Show tool versions in the editor. (requires reload)"
 				}
 			}
 		},

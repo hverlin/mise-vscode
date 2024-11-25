@@ -1,6 +1,12 @@
 import * as os from "node:os";
 import * as vscode from "vscode";
-import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
+import {
+	getIgnoreList,
+	getRootFolderPath,
+	isMiseExtensionEnabled,
+	shouldUseShims,
+	shouldUseSymLinks,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
 import { logger } from "../utils/logger";
@@ -481,12 +487,8 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const useShimsDefault = vscode.workspace
-					.getConfiguration("mise")
-					.get("configureExtensionsUseShims");
-
 				const useMiseShims = await vscode.window.showQuickPick(
-					useShimsDefault ? ["Yes", "No"] : ["No", "Yes"],
+					shouldUseShims() ? ["Yes", "No"] : ["No", "Yes"],
 					{
 						placeHolder: `Use mise shims for ${selectedToolName}? (recommended as it will automatically load environment variables)`,
 						ignoreFocusOut: true,
@@ -508,16 +510,16 @@ export function registerToolsCommands(
 				}
 
 				const miseConfig = await miseService.getMiseConfiguration();
+				const useSymLinks = shouldUseSymLinks();
+				const useShims = useMiseShims === "Yes";
 				for (const configurableExtension of configurableExtensions) {
 					configureExtension({
 						tool: selectedTool,
-						miseConfig: miseConfig,
+						miseConfig,
 						configurableExtension,
-						useShims: useMiseShims === "Yes",
+						useShims,
 						miseService,
-						useSymLinks: vscode.workspace
-							.getConfiguration("mise")
-							.get("configureExtensionsUseSymLinks"),
+						useSymLinks,
 					})
 						.then(({ configurableExtension, updatedKeys }) => {
 							if (updatedKeys.length === 0) {
@@ -547,10 +549,7 @@ export function registerToolsCommands(
 		),
 		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
 			await miseService.miseReshim();
-			const ignoreList = vscode.workspace
-				.getConfiguration("mise")
-				.get("configureExtensionsAutomaticallyIgnoreList") as string[];
-
+			const ignoreList = getIgnoreList();
 			const tools = await toolsProvider.getTools();
 			const configurableTools = tools.filter((tool) => {
 				const configurableExtensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
@@ -561,7 +560,7 @@ export function registerToolsCommands(
 				}
 
 				return configurableExtensions.some((configurableExtension) => {
-					return ignoreList?.includes(configurableExtension.extensionId)
+					return ignoreList.includes(configurableExtension.extensionId)
 						? false
 						: vscode.extensions.getExtension(configurableExtension.extensionId);
 				});
@@ -599,12 +598,8 @@ export function registerToolsCommands(
 								miseConfig: miseConfig,
 								configurableExtension,
 								miseService,
-								useSymLinks: vscode.workspace
-									.getConfiguration("mise")
-									.get("configureExtensionsUseSymLinks"),
-								useShims: vscode.workspace
-									.getConfiguration("mise")
-									.get("configureExtensionsUseShims"),
+								useSymLinks: shouldUseSymLinks(),
+								useShims: shouldUseShims(),
 							});
 
 							if (updatedKeys.length === 0) {

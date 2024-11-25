@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { isMiseExtensionEnabled } from "../configuration";
+import { getMiseProfile, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 
 // this allows to run VSCode tasks from the command palette
@@ -55,9 +55,7 @@ export class VsCodeTaskProvider {
 					const profile = task.definition.profile;
 
 					if (profile === undefined) {
-						const profileFromConfig = vscode.workspace
-							.getConfiguration("mise")
-							.get("profile");
+						const profileFromConfig = getMiseProfile();
 						if (profileFromConfig) {
 							runArgs.push(`--profile=${profileFromConfig}`);
 						}

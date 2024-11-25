@@ -7,6 +7,7 @@ import {
 	getMiseProfile,
 	getRootFolder,
 	isMiseExtensionEnabled,
+	shouldConfigureExtensionsAutomatically,
 } from "./configuration";
 import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
@@ -72,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.workspace.onDidChangeConfiguration((e) => {
 		const miseConfigUpdated = Object.values(CONFIGURATION_FLAGS).some((flag) =>
-			e.affectsConfiguration(flag),
+			e.affectsConfiguration(`mise.${flag}`),
 		);
 
 		if (miseConfigUpdated) {
@@ -120,10 +121,10 @@ export async function activate(context: vscode.ExtensionContext) {
 			toolsProvider.refresh();
 			envsProvider.refresh();
 
-			const autoConfigureSdks = vscode.workspace
-				.getConfiguration("mise")
-				.get("configureExtensionsAutomatically");
-			if (autoConfigureSdks && isMiseExtensionEnabled()) {
+			if (
+				shouldConfigureExtensionsAutomatically() &&
+				isMiseExtensionEnabled()
+			) {
 				await vscode.commands.executeCommand("mise.configureAllSdkPaths");
 			}
 

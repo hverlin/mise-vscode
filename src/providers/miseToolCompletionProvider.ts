@@ -1,4 +1,8 @@
 import * as vscode from "vscode";
+import {
+	isMiseExtensionEnabled,
+	shouldShowToolVersionsDecorations,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 
 const activeDecorationsPerFileAndTool: {
@@ -11,6 +15,14 @@ export async function showToolVersionInline(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
+	if (!isMiseExtensionEnabled()) {
+		return;
+	}
+
+	if (!shouldShowToolVersionsDecorations()) {
+		return;
+	}
+
 	const tools = await miseService.getCurrentTools();
 	const currentFile = document.uri.fsPath;
 

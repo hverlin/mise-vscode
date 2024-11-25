@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { isMiseExtensionEnabled } from "../configuration";
+import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
@@ -68,6 +68,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	constructor(private miseService: MiseService) {
 		vscode.workspace.onDidChangeTextDocument((e) => {
 			if (!isMiseExtensionEnabled()) {
+				return;
+			}
+
+			if (!isCodeLensEnabled()) {
 				return;
 			}
 
@@ -216,6 +220,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
 		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
+		if (!isCodeLensEnabled()) {
 			return [];
 		}
 

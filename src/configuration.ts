@@ -5,22 +5,98 @@ import * as vscode from "vscode";
 export const MISE_OPEN_FILE = "mise.openFile";
 
 export const CONFIGURATION_FLAGS = {
-	enable: "mise.enable",
-	binPath: "mise.binPath",
-	profile: "mise.profile",
-	configureExtensionsAutomatically: "mise.configureExtensionsAutomatically",
-	configureExtensionsUseShims: "mise.configureExtensionsUseShims",
-	configureExtensionsUseSymLinks: "mise.configureExtensionsUseSymLinks",
+	enable: "enable",
+	binPath: "binPath",
+	profile: "profile",
+	configureExtensionsAutomatically: "configureExtensionsAutomatically",
+	configureExtensionsUseShims: "configureExtensionsUseShims",
+	configureExtensionsUseSymLinks: "configureExtensionsUseSymLinks",
 	configureExtensionsAutomaticallyIgnoreList:
-		"mise.configureExtensionsAutomaticallyIgnoreList",
+		"configureExtensionsAutomaticallyIgnoreList",
+	enableCodeLens: "enableCodeLens",
+	showToolVersionsDecorations: "showToolVersionsDecorations",
+};
+
+const getExtensionConfig = () => {
+	return vscode.workspace.getConfiguration("mise");
+};
+
+export const getIgnoreList = (): string[] => {
+	return (
+		getExtensionConfig().get(
+			CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIgnoreList,
+		) ?? []
+	);
+};
+
+export const shouldConfigureExtensionsAutomatically = (): boolean => {
+	return (
+		getExtensionConfig().get(
+			CONFIGURATION_FLAGS.configureExtensionsAutomatically,
+		) ?? true
+	);
+};
+
+export const shouldUseShims = (): boolean => {
+	return (
+		getExtensionConfig().get(CONFIGURATION_FLAGS.configureExtensionsUseShims) ??
+		true
+	);
+};
+
+export const shouldUseSymLinks = (): boolean => {
+	return (
+		getExtensionConfig().get(
+			CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
+		) ?? true
+	);
 };
 
 export const isMiseExtensionEnabled = (): boolean => {
-	return vscode.workspace.getConfiguration("mise").get("enable") ?? true;
+	return getExtensionConfig().get(CONFIGURATION_FLAGS.enable) ?? true;
 };
 
 export const getMiseProfile = (): string | undefined => {
-	return vscode.workspace.getConfiguration("mise").get("profile");
+	return getExtensionConfig().get<string>(CONFIGURATION_FLAGS.profile);
+};
+
+export const getConfiguredBinPath = (): string | undefined => {
+	return getExtensionConfig().get<string>(CONFIGURATION_FLAGS.binPath)?.trim();
+};
+
+export const updateBinPath = async (binPath: string) => {
+	await getExtensionConfig().update(
+		CONFIGURATION_FLAGS.binPath,
+		binPath,
+		vscode.ConfigurationTarget.Global,
+	);
+};
+
+export const disableExtensionForWorkspace = async () => {
+	return getExtensionConfig().update(
+		"enable",
+		false,
+		vscode.ConfigurationTarget.Workspace,
+	);
+};
+
+export const enableExtensionForWorkspace = async () => {
+	return getExtensionConfig().update(
+		"enable",
+		true,
+		vscode.ConfigurationTarget.Workspace,
+	);
+};
+
+export const isCodeLensEnabled = (): boolean => {
+	return getExtensionConfig().get(CONFIGURATION_FLAGS.enableCodeLens) ?? true;
+};
+
+export const shouldShowToolVersionsDecorations = (): boolean => {
+	return (
+		getExtensionConfig().get(CONFIGURATION_FLAGS.showToolVersionsDecorations) ??
+		true
+	);
 };
 
 export type VSCodeSettingValue =
