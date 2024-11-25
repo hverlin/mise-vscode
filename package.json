@@ -157,6 +157,14 @@
 					"title": "Show tool versions",
 					"default": true,
 					"markdownDescription": "Show tool versions in the editor. (requires reload)"
+				},
+				"mise.checkForNewMiseVersion": {
+					"order": 10,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Check for new mise version",
+					"default": true,
+					"markdownDescription": "Check if a new mise version is available on startup."
 				}
 			}
 		},

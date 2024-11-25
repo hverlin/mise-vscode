@@ -8,6 +8,7 @@ import {
 	getMiseProfile,
 	getRootFolderPath,
 	isMiseExtensionEnabled,
+	shouldCheckForNewMiseVersion,
 	updateBinPath,
 } from "./configuration";
 import { expandPath } from "./utils/fileUtils";
@@ -516,6 +517,10 @@ export class MiseService {
 
 	async checkNewMiseVersion() {
 		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
+		if (!shouldCheckForNewMiseVersion()) {
 			return;
 		}
 

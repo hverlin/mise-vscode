@@ -22,7 +22,7 @@ export function createMenu(miseService: MiseService) {
 				{ label: "", kind: vscode.QuickPickItemKind.Separator },
 				{
 					iconPath: new vscode.ThemeIcon("gear"),
-					label: "Open Mise settings",
+					label: "Open extension settings",
 				},
 				{
 					iconPath: new vscode.ThemeIcon("list-selection"),
@@ -44,7 +44,7 @@ export function createMenu(miseService: MiseService) {
 					label:
 						| "Mise version"
 						| "Reload configuration"
-						| "Open Mise settings"
+						| "Open extension settings"
 						| "About vscode-mise"
 						| "Disable the mise extension for this workspace"
 						| "Enable extension"
@@ -61,7 +61,7 @@ export function createMenu(miseService: MiseService) {
 			case "Reload configuration":
 				await vscode.commands.executeCommand("mise.refreshEntry");
 				break;
-			case "Open Mise settings":
+			case "Open extension settings":
 				await vscode.commands.executeCommand("mise.openSettings");
 				break;
 			case "About vscode-mise":

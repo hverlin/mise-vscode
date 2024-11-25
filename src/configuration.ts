@@ -15,6 +15,7 @@ export const CONFIGURATION_FLAGS = {
 		"configureExtensionsAutomaticallyIgnoreList",
 	enableCodeLens: "enableCodeLens",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
+	checkForNewMiseVersion: "checkForNewMiseVersion",
 };
 
 const getExtensionConfig = () => {
@@ -96,6 +97,12 @@ export const shouldShowToolVersionsDecorations = (): boolean => {
 	return (
 		getExtensionConfig().get(CONFIGURATION_FLAGS.showToolVersionsDecorations) ??
 		true
+	);
+};
+
+export const shouldCheckForNewMiseVersion = (): boolean => {
+	return (
+		getExtensionConfig().get(CONFIGURATION_FLAGS.checkForNewMiseVersion) ?? true
 	);
 };
 
