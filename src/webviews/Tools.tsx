@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeButton } from "@vscode-elements/react-elements";
-import CustomTable from "./CustomTable";
+import CustomTable from "./components/CustomTable";
 import { vscodeClient } from "./webviewVsCodeApi";
 
 const ActionCell = ({ tool }: { tool: MiseTool }) => {

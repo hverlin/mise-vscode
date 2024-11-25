@@ -56,8 +56,13 @@ export default function CustomTable<T>({
 	}
 
 	return (
-		// @ts-ignore
-		<VscodeTable bordered-columns zebra style={{ maxHeight: "100dvh" }}>
+		<VscodeTable
+			resizable
+			bordered-columns
+			// @ts-ignore
+			zebra
+			style={{ maxHeight: "100dvh" }}
+		>
 			{table.getHeaderGroups().map((headerGroup) => (
 				<VscodeTableHeader slot="header" key={headerGroup.id}>
 					{headerGroup.headers.map((header) => (
@@ -87,9 +92,14 @@ export default function CustomTable<T>({
 			))}
 			<VscodeTableBody slot="body">
 				{table.getRowModel().rows.map((row) => (
-					<VscodeTableRow key={row.id} className="my-row">
+					<VscodeTableRow key={row.id} className="vscode-table__row">
 						{row.getVisibleCells().map((cell) => (
-							<VscodeTableCell key={cell.id}>
+							<VscodeTableCell
+								key={cell.id}
+								style={{
+									whiteSpace: "wrap",
+								}}
+							>
 								{flexRender(cell.column.columnDef.cell, cell.getContext())}
 							</VscodeTableCell>
 						))}

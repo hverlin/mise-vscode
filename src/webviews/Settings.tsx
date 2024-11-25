@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { VscodeCheckbox } from "@vscode-elements/react-elements";
 import React, { useState } from "react";
-import CustomTable from "./CustomTable";
+import CustomTable from "./components/CustomTable";
 import { flattenJsonSchema, getDefaultForType } from "./settingsSchema";
 import { vscodeClient } from "./webviewVsCodeApi";
 
