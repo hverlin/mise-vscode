@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/hverlin/mise-vscode/compare/v0.17.2...v0.18.0) (2024-11-25)
+
+
+### Features
+
+* make code lens and tool versions optional ([4f1daa0](https://github.com/hverlin/mise-vscode/commit/4f1daa0eb794c71d3210278d236cfaf5ea7ca7e0))
+
+
+### Bug Fixes
+
+* show full setting description ([1938eb0](https://github.com/hverlin/mise-vscode/commit/1938eb0263c92e5f507bc2474bafb0e0e9e405a4))
+
 ## [0.17.2](https://github.com/hverlin/mise-vscode/compare/v0.17.1...v0.17.2) (2024-11-22)
 
 
