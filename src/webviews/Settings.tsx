@@ -15,7 +15,7 @@ export const Settings = () => {
 	});
 
 	const schemaQuery = useQuery({
-		queryKey: ["settingsSchema2"],
+		queryKey: ["settingsSchema"],
 		queryFn: async () => {
 			const res = await fetch(
 				"https://raw.githubusercontent.com/jdx/mise/refs/heads/main/schema/mise.json",
@@ -60,14 +60,14 @@ export const Settings = () => {
 
 	return (
 		<div>
-			<div style={{ padding: "10px" }}>
-				<VscodeCheckbox
-					onChange={() => setShowModifiedOnly(!showModifiedOnly)}
-					label="Show modified only"
-					checked={showModifiedOnly ? true : undefined}
-				/>
-			</div>
 			<CustomTable
+				filterRowElement={
+					<VscodeCheckbox
+						onChange={() => setShowModifiedOnly(!showModifiedOnly)}
+						label="Show modified only"
+						checked={showModifiedOnly ? true : undefined}
+					/>
+				}
 				isLoading={settingsQuery.isLoading}
 				data={settingValues.filter(
 					(value) =>

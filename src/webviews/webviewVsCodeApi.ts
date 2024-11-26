@@ -22,13 +22,16 @@ export const vscodeClient = {
 		mutationKey?: string[];
 		variables?: Record<string, unknown>;
 	}) {
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
 			const requestId = crypto.randomUUID();
 
 			const messageHandler = (event: MessageEvent) => {
 				const message = event.data;
 				if (message.type === "response" && message.requestId === requestId) {
 					window.removeEventListener("message", messageHandler);
+					if (message.error) {
+						return reject(message.error);
+					}
 					resolve(message.data);
 				}
 			};

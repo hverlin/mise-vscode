@@ -53,6 +53,9 @@ export const Tools = () => {
 	return (
 		<div>
 			<CustomTable
+				filterRowElement={
+					outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""
+				}
 				isLoading={toolsQuery.isLoading}
 				columns={[
 					{
@@ -121,7 +124,6 @@ export const Tools = () => {
 				]}
 				data={toolsQuery?.data || []}
 			/>
-			{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
 		</div>
 	);
 };

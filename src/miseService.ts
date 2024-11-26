@@ -1,3 +1,4 @@
+import { readlink } from "node:fs/promises";
 import * as os from "node:os";
 import path from "node:path";
 import * as toml from "@iarna/toml";
@@ -12,12 +13,20 @@ import {
 	updateBinPath,
 } from "./configuration";
 import { expandPath } from "./utils/fileUtils";
+import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
 import { showSettingsNotification } from "./utils/notify";
 import { execAsync, execAsyncMergeOutput } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
+
+// https://github.com/jdx/mise/blob/main/src/env.rs
+const XDG_STATE_HOME =
+	process.env.XDG_STATE_HOME ?? path.join(os.homedir(), ".local", "state");
+const STATE_DIR =
+	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
+const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
 const MIN_MISE_VERSION = [2024, 11, 4] as const;
 
@@ -642,6 +651,47 @@ export class MiseService {
 
 		const { stdout } = await this.execMiseCommand("settings");
 		return toml.parse(stdout);
+	}
+
+	async getTrackedConfigFiles() {
+		const trackedConfigFiles = await vscode.workspace.fs.readDirectory(
+			vscode.Uri.file(TRACKED_CONFIG_DIR),
+		);
+
+		const parsedTrackedConfigs = await Promise.all(
+			trackedConfigFiles.map(async ([n]) => {
+				try {
+					const trackedConfigPath = await readlink(
+						path.join(TRACKED_CONFIG_DIR, n),
+					).catch(() => "");
+					if (!trackedConfigPath) {
+						return {};
+					}
+
+					const stats = await vscode.workspace.fs.stat(
+						vscode.Uri.file(trackedConfigPath),
+					);
+
+					if (stats.type === vscode.FileType.File) {
+						const content = await vscode.workspace.fs.readFile(
+							vscode.Uri.file(trackedConfigPath),
+						);
+						const config = toml.parse(content.toString());
+						return { path: trackedConfigPath, tools: config.tools ?? {} };
+					}
+				} catch {
+					return {};
+				}
+			}),
+		);
+
+		const validConfigs = parsedTrackedConfigs.filter(
+			(trackedConfigPath) => trackedConfigPath?.path,
+		) as Array<{ path: string; tools: object }>;
+
+		return uniqBy(validConfigs, (c) => c.path).sort((a, b) =>
+			a.path.localeCompare(b.path),
+		);
 	}
 
 	dispose() {

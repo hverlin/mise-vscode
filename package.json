@@ -512,6 +512,7 @@
 	"dependencies": {
 		"@iarna/toml": "^2.2.5",
 		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
+		"@tanstack/match-sorter-utils": "^8.19.4",
 		"@tanstack/react-query": "^5.60.5",
 		"@tanstack/react-table": "^8.20.5",
 		"@vscode-elements/react-elements": "^0.7.0",

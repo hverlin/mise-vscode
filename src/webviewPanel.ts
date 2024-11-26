@@ -14,6 +14,7 @@ export default class WebViewPanel {
 	private readonly _extContext: vscode.ExtensionContext;
 	private _disposables: vscode.Disposable[] = [];
 	private readonly miseService: MiseService;
+	private _currentPath = "tools";
 
 	public static createOrShow(
 		extContext: vscode.ExtensionContext,
@@ -38,16 +39,22 @@ export default class WebViewPanel {
 		_extContext: vscode.ExtensionContext,
 		column: vscode.ViewColumn,
 		miseService: MiseService,
+		initialPath?: string,
 	) {
 		this._extContext = _extContext;
 		this._extensionUri = _extContext.extensionUri;
 		this.miseService = miseService;
+		this._currentPath = initialPath ?? "tools";
 
 		this._panel = vscode.window.createWebviewPanel(
 			WebViewPanel.viewType,
 			"Mise",
 			column,
-			{ enableScripts: true, localResourceRoots: [this._extensionUri] },
+			{
+				retainContextWhenHidden: true,
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri],
+			},
 		);
 
 		this._panel.webview.html = this._getHtmlForWebview(this._panel.webview);
@@ -77,6 +84,10 @@ export default class WebViewPanel {
 		this._panel.webview.onDidReceiveMessage(
 			async (message) => {
 				switch (message.type) {
+					case "updateState": {
+						this._currentPath = message.path;
+						break;
+					}
 					case "query":
 						switch (message.queryKey[0]) {
 							case "tools": {
@@ -94,6 +105,11 @@ export default class WebViewPanel {
 									this.miseService.getSettings(),
 								);
 							}
+							case "trackedConfigs": {
+								return executeAction(message, () =>
+									this.miseService.getTrackedConfigFiles(),
+								);
+							}
 						}
 						break;
 					case "mutation":
@@ -103,6 +119,14 @@ export default class WebViewPanel {
 									miseService.removeToolInConsole(
 										message.mutationKey[1],
 										message.mutationKey[2],
+									),
+								);
+							}
+							case "openFile": {
+								return executeAction(message, async () =>
+									vscode.window.showTextDocument(
+										vscode.Uri.file(message.variables?.path as string),
+										{ preview: true, viewColumn: vscode.ViewColumn.One },
 									),
 								);
 							}
@@ -174,6 +198,9 @@ export default class WebViewPanel {
 			}
 		});
 
+		const $head = $("head");
+		$head.append(`<meta name="initial-path" content="${this._currentPath}">`);
+
 		const codiconsUri = webview.asWebviewUri(
 			vscode.Uri.joinPath(
 				this._extensionUri,
@@ -183,7 +210,7 @@ export default class WebViewPanel {
 				"codicon.css",
 			),
 		);
-		$("head").append(
+		$head.append(
 			`<link rel="stylesheet" type="text/css" href="${codiconsUri}">`,
 		);
 

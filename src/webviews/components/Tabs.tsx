@@ -1,18 +1,29 @@
 import { type ReactNode, useState } from "react";
+import { vscode } from "../webviewVsCodeApi";
 
 export function Tabs({
 	tabs,
+	initialTab,
 }: {
+	initialTab?: string;
 	tabs: Array<{ name: string; icon?: string; content: ReactNode }>;
 }) {
-	const [selectedTab, setSelectedTab] = useState(tabs[0]?.name ?? "");
+	const [selectedTab, setSelectedTab] = useState(
+		initialTab ?? tabs[0]?.name ?? "",
+	);
 
 	return (
 		<div style={{ height: "100%", position: "relative" }}>
 			<nav className="vscode-tabs">
 				{tabs.map((tab) => (
 					<div
-						onClick={() => setSelectedTab(tab.name)}
+						onClick={() => {
+							setSelectedTab(tab.name);
+							vscode.postMessage({
+								type: "updateState",
+								path: tab.name,
+							});
+						}}
 						className={[
 							"vscode-tab",
 							tab.name === selectedTab ? "active" : "",
