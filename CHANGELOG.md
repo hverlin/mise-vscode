@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/hverlin/mise-vscode/compare/v0.18.0...v0.19.0) (2024-11-26)
+
+
+### Features
+
+* allow disabling mise new version check ([c276217](https://github.com/hverlin/mise-vscode/commit/c27621761bcbd2f5a328c1e6075133c57624d1b1))
+* show track configuration files ([e068e52](https://github.com/hverlin/mise-vscode/commit/e068e52dfb6679f25141f3549ca926d1ca27f7ea))
+
 ## [0.18.0](https://github.com/hverlin/mise-vscode/compare/v0.17.2...v0.18.0) (2024-11-25)
 
 
