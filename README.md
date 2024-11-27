@@ -12,8 +12,9 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
+### 📦 Requirements
 - This extension is tested against the latest version of `mise`. To update, run `mise self-update`.
-- Works best with [even-better-toml](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)
+- For syntax highlighting, install [even-better-toml](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). See [wiki](https://github.com/hverlin/mise-vscode/wiki/mise.toml-language-support).
 
 ## ✨ Features
 
