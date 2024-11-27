@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/hverlin/mise-vscode/compare/v0.20.0...v0.21.0) (2024-11-27)
+
+
+### Features
+
+* find env. variable definition from mise.toml files ([5234e19](https://github.com/hverlin/mise-vscode/commit/5234e190b89704f803aa516c36c3176f70385a73))
+
 ## [0.20.0](https://github.com/hverlin/mise-vscode/compare/v0.19.0...v0.20.0) (2024-11-27)
 
 
