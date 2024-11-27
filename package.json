@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "0.21.0",
+	"version": "0.22.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
