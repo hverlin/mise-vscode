@@ -122,6 +122,27 @@ export default class WebViewPanel {
 									),
 								);
 							}
+							case "pruneTools": {
+								return executeAction(message, async () =>
+									miseService.pruneToolsInConsole(),
+								);
+							}
+							case "upgradeTool": {
+								return executeAction(message, async () =>
+									miseService.upgradeToolInConsole(
+										message.mutationKey[1],
+										message.mutationKey[2],
+									),
+								);
+							}
+							case "installTool": {
+								return executeAction(message, async () =>
+									miseService.installToolInConsole(
+										message.mutationKey[1],
+										message.mutationKey[2],
+									),
+								);
+							}
 							case "openFile": {
 								return executeAction(message, async () =>
 									vscode.window.showTextDocument(

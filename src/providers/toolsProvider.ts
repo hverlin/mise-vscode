@@ -126,7 +126,11 @@ class SourceItem extends vscode.TreeItem {
 Number of tools: ${tools.length}`;
 
 		this.contextValue = "miseToolGroup";
-		this.description = `(${tools.length} tools)`;
+		this.description = `(${tools.length === 0 ? "no tools" : `${tools.length} tool${tools.length > 1 ? "s" : ""}`})`;
+		if (tools.length === 0) {
+			this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+			this.iconPath = new vscode.ThemeIcon("chevron-right");
+		}
 	}
 }
 

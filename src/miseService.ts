@@ -700,4 +700,41 @@ export class MiseService {
 			this.terminal = undefined;
 		}
 	}
+
+	async pruneToolsInConsole() {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		const selection = await vscode.window.showWarningMessage(
+			"Are you sure you want to prune unused tools?",
+			{ modal: true },
+			"Yes",
+			"dry run",
+		);
+
+		if (!selection) {
+			return;
+		}
+
+		return selection === "Yes"
+			? this.runMiseToolActionInConsole("prune")
+			: this.runMiseToolActionInConsole("prune --dry-run");
+	}
+
+	async upgradeToolInConsole(toolName: string, version: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(`up ${toolName}@${version}`);
+	}
+
+	async installToolInConsole(toolName: string, version: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(`install ${toolName}@${version}`);
+	}
 }

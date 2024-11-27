@@ -3,7 +3,10 @@ import { VscodeButton } from "@vscode-elements/react-elements";
 import CustomTable from "./components/CustomTable";
 import { vscodeClient } from "./webviewVsCodeApi";
 
-const ActionCell = ({ tool }: { tool: MiseTool }) => {
+const ActionCell = ({
+	tool,
+	outdatedToolInfo,
+}: { tool: MiseTool; outdatedToolInfo?: MiseToolUpdate }) => {
 	const queryClient = useQueryClient();
 	const mutationKey = ["uninstallTool", tool.name, tool.version];
 	const removeToolMutation = useMutation({
@@ -11,33 +14,85 @@ const ActionCell = ({ tool }: { tool: MiseTool }) => {
 		mutationFn: () => vscodeClient.request({ mutationKey }),
 	});
 
+	const installToolMutation = useMutation({
+		mutationKey: ["installTool", tool.name, tool.version],
+		mutationFn: () =>
+			vscodeClient.request({
+				mutationKey: ["installTool", tool.name, tool.version],
+			}),
+	});
+
+	const upgradeToolMutation = useMutation({
+		mutationKey: ["upgradeTool", tool.name, tool.requested_version],
+		mutationFn: () =>
+			vscodeClient.request({
+				mutationKey: ["upgradeTool", tool.name, tool.requested_version],
+			}),
+	});
+
 	if (!tool.installed) {
-		return null;
+		return (
+			<VscodeButton
+				title={"Install"}
+				disabled={installToolMutation.isPending}
+				onClick={() => {
+					return installToolMutation.mutate(undefined, {
+						onSettled: () =>
+							queryClient.invalidateQueries({ queryKey: ["tools"] }),
+					});
+				}}
+			>
+				<i className="codicon codicon-cloud-download" />
+			</VscodeButton>
+		);
 	}
 
 	return (
-		<VscodeButton
-			className="small-button"
-			secondary
-			disabled={removeToolMutation.isPending}
-			onClick={() => {
-				return removeToolMutation.mutate(undefined, {
-					onSettled: () =>
-						queryClient.invalidateQueries({ queryKey: ["tools"] }),
-				});
-			}}
-		>
-			<i className="codicon codicon-close" />
-			{removeToolMutation.isPending ? "Removing..." : "Remove"}
-		</VscodeButton>
+		<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+			{outdatedToolInfo && (
+				<VscodeButton
+					title={"Upgrade"}
+					className="small-button"
+					disabled={upgradeToolMutation.isPending}
+					onClick={() => {
+						return upgradeToolMutation.mutate(undefined, {
+							onSettled: () =>
+								queryClient.invalidateQueries({ queryKey: ["tools"] }),
+						});
+					}}
+				>
+					<i className="codicon codicon-arrow-up" />
+				</VscodeButton>
+			)}
+			<VscodeButton
+				title={"Uninstall"}
+				className="small-button"
+				secondary
+				disabled={removeToolMutation.isPending}
+				onClick={() => {
+					return removeToolMutation.mutate(undefined, {
+						onSettled: () =>
+							queryClient.invalidateQueries({ queryKey: ["tools"] }),
+					});
+				}}
+			>
+				<i className="codicon codicon-trash" />
+			</VscodeButton>
+		</div>
 	);
 };
 
 export const Tools = () => {
+	const queryClient = useQueryClient();
 	const toolsQuery = useQuery({
 		queryKey: ["tools"],
 		queryFn: ({ queryKey }) =>
 			vscodeClient.request({ queryKey }) as Promise<Array<MiseTool>>,
+	});
+
+	const pruneToolsMutations = useMutation({
+		mutationKey: ["pruneTools"],
+		mutationFn: () => vscodeClient.request({ mutationKey: ["pruneTools"] }),
 	});
 
 	const outdatedToolsQuery = useQuery({
@@ -54,7 +109,34 @@ export const Tools = () => {
 		<div>
 			<CustomTable
 				filterRowElement={
-					outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""
+					<div style={{ display: "flex", alignItems: "center" }}>
+						<VscodeButton
+							secondary
+							disabled={pruneToolsMutations.isPending}
+							onClick={() => {
+								return pruneToolsMutations.mutate(undefined, {
+									onSettled: () =>
+										queryClient.invalidateQueries({ queryKey: ["tools"] }),
+								});
+							}}
+						>
+							{pruneToolsMutations.isPending
+								? "Pruning..."
+								: "Prune unused tools"}
+						</VscodeButton>
+						<VscodeButton
+							title={"Refresh"}
+							onClick={() => {
+								return outdatedToolsQuery.refetch();
+							}}
+							style={{ background: "none", border: "none" }}
+						>
+							<i className={"codicon codicon-refresh"} />
+						</VscodeButton>
+						<p>
+							{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
+						</p>
+					</div>
 				}
 				isLoading={toolsQuery.isLoading}
 				columns={[
@@ -119,7 +201,16 @@ export const Tools = () => {
 					{
 						id: "Actions",
 						header: "Actions",
-						cell: (props) => <ActionCell tool={props.row.original} />,
+						cell: (props) => (
+							<ActionCell
+								outdatedToolInfo={outdatedToolsQuery.data?.find(
+									(outdatedTool) =>
+										outdatedTool.name === props.row.original.name &&
+										outdatedTool.version === props.row.original.version,
+								)}
+								tool={props.row.original}
+							/>
+						),
 					},
 				]}
 				data={toolsQuery?.data || []}
