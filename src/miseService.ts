@@ -341,7 +341,7 @@ export class MiseService {
 		}
 
 		await this.runMiseToolActionInConsole(
-			version ? `rm ${toolName} ${version}` : `rm ${toolName}`,
+			version ? `rm ${toolName}@${version}` : `rm ${toolName}`,
 		);
 	}
 
