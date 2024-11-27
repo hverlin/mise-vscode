@@ -518,7 +518,7 @@
 		"@tanstack/match-sorter-utils": "^8.19.4",
 		"@tanstack/react-query": "^5.60.5",
 		"@tanstack/react-table": "^8.20.5",
-		"@vscode-elements/react-elements": "^0.7.0",
+		"@vscode-elements/react-elements": "^0.8.0",
 		"@vscode/codicons": "^0.0.36",
 		"async-cache-dedupe": "^2.2.0",
 		"cheerio": "^1.0.0",
@@ -526,10 +526,5 @@
 		"react-dom": "18.3.1",
 		"react-error-boundary": "^4.1.2",
 		"toml-v1": "^1.0.0"
-	},
-	"pnpm": {
-		"overrides": {
-			"react": "18.3.1"
-		}
 	}
 }

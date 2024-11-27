@@ -33,7 +33,9 @@ export async function createMiseToolSymlink(binName: string, binPath: string) {
 	);
 
 	if (existsSync(linkPath)) {
-		logger.info(`${await readlink(linkPath)}: ${binPath}`);
+		logger.debug(
+			`Checking symlink for ${binName}: ${await readlink(linkPath)}: ${binPath}`,
+		);
 		if ((await readlink(linkPath)) === binPath) {
 			return configuredPath;
 		}

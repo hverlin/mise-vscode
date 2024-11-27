@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as cheerio from "cheerio";
 import * as vscode from "vscode";
@@ -29,7 +29,7 @@ export default class WebViewPanel {
 		} else {
 			WebViewPanel.currentPanel = new WebViewPanel(
 				extContext,
-				vscode.ViewColumn.Two,
+				vscode.ViewColumn.One,
 				miseService,
 			);
 		}
@@ -182,18 +182,23 @@ export default class WebViewPanel {
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview) {
-		const html = readFileSync(
-			path.join(this._extensionUri.path, "dist", "webviews", "index.html"),
-			"utf-8",
+		const basePath = vscode.Uri.joinPath(
+			this._extensionUri,
+			"dist",
+			"webviews",
 		);
 
-		const $ = cheerio.load(html);
+		const htmlContent = readFileSync(
+			path.join(basePath.path, "index.html"),
+			"utf-8",
+		);
+		const $ = cheerio.load(htmlContent);
 
 		$("script").each((_, element) => {
 			const src = $(element).attr("src");
 			if (src && !src.startsWith("http")) {
 				const scriptUri = webview.asWebviewUri(
-					vscode.Uri.joinPath(this._extensionUri, "dist", "webviews", src),
+					vscode.Uri.joinPath(basePath, src),
 				);
 				$(element).attr("src", scriptUri.toString());
 			}
@@ -201,38 +206,49 @@ export default class WebViewPanel {
 
 		$('link[rel="stylesheet"]').each((_, element) => {
 			const href = $(element).attr("href");
-			if (href && !href.startsWith("http")) {
-				const styleUri = webview.asWebviewUri(
-					vscode.Uri.joinPath(this._extensionUri, "dist", "webviews", href),
+			if (!(href && !href.startsWith("http"))) {
+				return;
+			}
+
+			$(element).attr(
+				"href",
+				webview.asWebviewUri(vscode.Uri.joinPath(basePath, href)).toString(),
+			);
+
+			const cssPath = path.join(basePath.path, href);
+			try {
+				const cssContent = readFileSync(cssPath, "utf-8");
+				const processedCss = cssContent.replace(
+					/url\(['"]?([^'")]+)['"]?\)/g,
+					(match, url) => {
+						if (url.startsWith("http")) {
+							return match;
+						}
+
+						return `url("${webview
+							.asWebviewUri(vscode.Uri.joinPath(basePath, url))
+							.toString()}")`;
+					},
 				);
-				$(element).attr("href", styleUri.toString());
+				writeFileSync(cssPath, processedCss);
+			} catch (error) {
+				logger.error("Error processing CSS file:", error);
 			}
 		});
 
 		$("img").each((_, element) => {
 			const src = $(element).attr("src");
-			if (src && !src.startsWith("http")) {
-				const imageUri = webview.asWebviewUri(
-					vscode.Uri.joinPath(this._extensionUri, "dist", "webviews", src),
-				);
-				$(element).attr("src", imageUri.toString());
+			if (!(src && !src?.startsWith("http"))) {
+				return;
 			}
+			$(element).attr(
+				"src",
+				webview.asWebviewUri(vscode.Uri.joinPath(basePath, src)).toString(),
+			);
 		});
 
-		const $head = $("head");
-		$head.append(`<meta name="initial-path" content="${this._currentPath}">`);
-
-		const codiconsUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(
-				this._extensionUri,
-				"node_modules",
-				"@vscode/codicons",
-				"dist",
-				"codicon.css",
-			),
-		);
-		$head.append(
-			`<link rel="stylesheet" type="text/css" href="${codiconsUri}">`,
+		$("head").append(
+			`<meta name="initial-path" content="${this._currentPath}">`,
 		);
 
 		return $.html();

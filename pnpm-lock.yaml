@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  react: 18.3.1
-
 importers:
 
   .:
@@ -24,8 +21,8 @@ importers:
         specifier: ^8.20.5
         version: 8.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vscode-elements/react-elements':
-        specifier: ^0.7.0
-        version: 0.7.0(@types/react@18.3.12)
+        specifier: ^0.8.0
+        version: 0.8.0(@types/react@18.3.12)(react@18.3.1)
       '@vscode/codicons':
         specifier: ^0.0.36
         version: 0.0.36
@@ -250,13 +247,13 @@ packages:
   '@tanstack/react-query@5.60.5':
     resolution: {integrity: sha512-M77bOsPwj1wYE56gk7iJvxGAr4IC12NWdIDhT+Eo8ldkWRHMvIR8I/rufIvT1OXoV/bl7EECwuRuMlxxWtvW2Q==}
     peerDependencies:
-      react: 18.3.1
+      react: ^18 || ^19
 
   '@tanstack/react-table@8.20.5':
     resolution: {integrity: sha512-WEHopKw3znbUZ61s9i0+i9g8drmDo6asTWbrQh8Us63DAk/M0FkmIqERew6P71HI75ksZ2Pxyuf4vvKh9rAkiA==}
     engines: {node: '>=12'}
     peerDependencies:
-      react: 18.3.1
+      react: '>=16.8'
       react-dom: '>=16.8'
 
   '@tanstack/table-core@8.20.5':
@@ -284,8 +281,10 @@ packages:
   '@vscode-elements/elements@1.8.1':
     resolution: {integrity: sha512-pfH/ZQVZA2WFLw45HNtijqEAohPfH8oyAlVaiSFpu8ppRBSm1L/gcwoe+xCPCbZ+VjflRUM9zQDAARIiIpqs2g==}
 
-  '@vscode-elements/react-elements@0.7.0':
-    resolution: {integrity: sha512-7Ta8w2ipugz/ZqTN6KRcpTbHfnMBqc917/FILq0otXeGUeLzoGuxRFiRaqy8aOnLFBuDZa/SlKv/wrq25QDI/Q==}
+  '@vscode-elements/react-elements@0.8.0':
+    resolution: {integrity: sha512-lSOynIyoUsRYuLEKRokKu1UL58GTXwixM5zjmQDLbs5WoDbdHZTr6YQKcqV7kcd2UBzN8hdclKMsnliuxYESpw==}
+    peerDependencies:
+      react: ^18.0.0
 
   '@vscode/codicons@0.0.36':
     resolution: {integrity: sha512-wsNOvNMMJ2BY8rC2N2MNBG7yOowV3ov8KlvUE/AiVUlHKTfWsw3OgAOQduX7h0Un6GssKD3aoTVH+TF3DSQwKQ==}
@@ -405,12 +404,12 @@ packages:
   react-dom@18.3.1:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
     peerDependencies:
-      react: 18.3.1
+      react: ^18.3.1
 
   react-error-boundary@4.1.2:
     resolution: {integrity: sha512-GQDxZ5Jd+Aq/qUxbCm1UtzmL/s++V7zKgE8yMktJiCQXCCFZnMZh9ng+6/Ne6PjNSXH0L9CjeOEREfRnq6Duag==}
     peerDependencies:
-      react: 18.3.1
+      react: '>=16.13.1'
 
   react-refresh@0.14.2:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
@@ -663,7 +662,7 @@ snapshots:
     dependencies:
       lit: 3.2.1
 
-  '@vscode-elements/react-elements@0.7.0(@types/react@18.3.12)':
+  '@vscode-elements/react-elements@0.8.0(@types/react@18.3.12)(react@18.3.1)':
     dependencies:
       '@lit/react': 1.0.6(@types/react@18.3.12)
       '@vscode-elements/elements': 1.8.1
