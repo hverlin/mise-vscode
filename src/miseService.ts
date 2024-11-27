@@ -335,6 +335,20 @@ export class MiseService {
 		});
 	}
 
+	async useRmTool(filename: string, toolName: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		const cmd = ["use"];
+		if (filename) {
+			cmd.push(`--path "${filename}"`);
+		}
+		cmd.push("--rm");
+		cmd.push(toolName);
+		await this.runMiseToolActionInConsole(cmd.join(" "));
+	}
+
 	async removeToolInConsole(toolName: string, version?: string) {
 		if (!this.getMiseBinaryPath()) {
 			return;

@@ -9,6 +9,7 @@ import {
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
+import { expandPath } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
@@ -80,9 +81,17 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 				);
 			}
 
-			return Object.entries(toolsBySource).map(
-				([source, tools]) => new SourceItem(source, tools),
-			);
+			return Object.entries(toolsBySource)
+				.sort(([sourceA], [sourceB]) => {
+					// keep original order of config files
+					const indexA = configFiles.findIndex((file) => file.path === sourceA);
+					const indexB = configFiles.findIndex((file) => file.path === sourceB);
+					if (indexA !== -1 && indexB !== -1) {
+						return indexB - indexA;
+					}
+					return sourceA.localeCompare(sourceB);
+				})
+				.map(([source, tools]) => new SourceItem(source, tools));
 		}
 
 		if (element instanceof SourceItem) {
@@ -252,14 +261,21 @@ export function registerToolsCommands(
 				}
 
 				tool = tool as MiseTool;
-				const confirmed = await vscode.window.showWarningMessage(
-					`Are you sure you want to remove ${tool.name} ${tool.version}?`,
-					{ modal: true },
-					"Remove",
-				);
-
-				if (confirmed === "Remove") {
-					await miseService.removeToolInConsole(tool.name, tool.version);
+				await miseService.removeToolInConsole(tool.name, tool.version);
+				if (tool.source?.path.endsWith(".toml")) {
+					const removeToolFromConfigFile = await vscode.window.showQuickPick(
+						["Yes", "No"],
+						{
+							placeHolder: `Remove tool from configuration file? ${tool.source.path}`,
+							ignoreFocusOut: true,
+						},
+					);
+					if (removeToolFromConfigFile === "Yes") {
+						await miseService.useRmTool(
+							expandPath(tool.source?.path || ""),
+							tool.name,
+						);
+					}
 				}
 			},
 		),

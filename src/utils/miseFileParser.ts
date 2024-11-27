@@ -60,6 +60,10 @@ export function findToolPosition(
 	document: vscode.TextDocument,
 	toolName: string,
 ) {
+	if (!document.fileName.endsWith("toml")) {
+		return;
+	}
+
 	const toolsToTry: string[] = [];
 	toolsToTry.push(toolName);
 	for (const [from, to] of toolsMapping) {
