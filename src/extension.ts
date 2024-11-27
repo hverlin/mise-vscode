@@ -92,7 +92,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	}).define("reload", async () => {
 		logger.info("Reloading Mise configuration");
 		await miseService.initializeMisePath();
-		await vscode.commands.executeCommand("workbench.view.extension.mise-panel");
 
 		statusBarItem.text = "$(sync~spin) Mise";
 		try {
