@@ -12,10 +12,8 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
-This extension is tested against the latest version of `mise`. To update, run
-```shell
-mise self-update
-```
+- This extension is tested against the latest version of `mise`. To update, run `mise self-update`.
+- Works best with [even-better-toml](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)
 
 ## ✨ Features
 
