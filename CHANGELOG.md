@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.22.0](https://github.com/hverlin/mise-vscode/compare/v0.21.0...v0.22.0) (2024-11-27)
+
+
+### Features
+
+* Improve remove tool action by calling `use --rm` ([58b76c1](https://github.com/hverlin/mise-vscode/commit/58b76c1f3712989d3cb18d1e371583a77d503819))
+
+
+### Bug Fixes
+
+* make sure icons are loaded correctly ([4a5c006](https://github.com/hverlin/mise-vscode/commit/4a5c0069c60f4fde4e7f4e95a30f0a8391e97b3c))
+
 ## [0.21.0](https://github.com/hverlin/mise-vscode/compare/v0.20.0...v0.21.0) (2024-11-27)
 
 
