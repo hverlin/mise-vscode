@@ -10,6 +10,7 @@ import {
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
 import { logger } from "../utils/logger";
+import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
 
 type TreeItem = SourceItem | ToolItem;
@@ -216,34 +217,10 @@ export function registerToolsCommands(
 					selectedTool.source.path,
 				);
 				const editor = await vscode.window.showTextDocument(document);
-
-				let line = 0;
-				for (let i = 0; i < editor.document.getText().split("\n").length; i++) {
-					const l = editor.document.getText().split("\n")[i];
-					if (!l) {
-						continue;
-					}
-
-					const [firstWord] = l.replace(/\s/g, "").replace(/"/g, "").split("=");
-					if (firstWord === selectedTool.name) {
-						line = i + 1;
-						break;
-					}
-				}
-
-				if (line) {
-					const position = new vscode.Position(Math.max(0, line - 1), 0);
-					const position2 = new vscode.Position(
-						Math.max(0, line - 1),
-						selectedTool.name.includes(":")
-							? selectedTool.name.length + 2
-							: selectedTool.name.length,
-					);
-					editor.selection = new vscode.Selection(position, position2);
-					editor.revealRange(
-						new vscode.Range(position, position2),
-						vscode.TextEditorRevealType.InCenter,
-					);
+				const range = findToolPosition(document, selectedTool.name);
+				if (range) {
+					editor.selection = new vscode.Selection(range.start, range.end);
+					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 				}
 			},
 		),

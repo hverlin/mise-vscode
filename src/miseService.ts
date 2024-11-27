@@ -1,8 +1,8 @@
 import { readlink } from "node:fs/promises";
 import * as os from "node:os";
 import path from "node:path";
-import * as toml from "@iarna/toml";
 import { createCache } from "async-cache-dedupe";
+import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import {
 	getConfiguredBinPath,
@@ -650,7 +650,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.execMiseCommand("settings");
-		return toml.parse(stdout);
+		return parse(stdout);
 	}
 
 	async getTrackedConfigFiles() {
@@ -676,7 +676,7 @@ export class MiseService {
 						const content = await vscode.workspace.fs.readFile(
 							vscode.Uri.file(trackedConfigPath),
 						);
-						const config = toml.parse(content.toString());
+						const config = parse(content.toString());
 						return { path: trackedConfigPath, tools: config.tools ?? {} };
 					}
 				} catch {

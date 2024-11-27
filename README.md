@@ -4,7 +4,7 @@
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
-> [mise](https://mise.jdx.dev/) is a development environment setup tool that manages your project's tools, runtimes, environment variables, and tasks all in one place.
+> [mise](https://mise.jdx.dev/) is a development setup tool that manages your project's tools, runtimes, environment variables, and tasks all in one place.
 
 ![mise-extension.png](screenshots/mise-extension.png)
 
@@ -38,6 +38,7 @@ mise self-update
 
 ### Environment Variables
 - 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)
+- 📍 Quick navigation to environment variable definitions
 
 ### Snippets
 - 📝 Snippets to create tasks in `mise.toml` and task files

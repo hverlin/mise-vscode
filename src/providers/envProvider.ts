@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { findEnvVarPosition } from "../utils/miseFileParser";
 
 export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -36,6 +37,11 @@ class EnvItem extends vscode.TreeItem {
 		super(label, vscode.TreeItemCollapsibleState.None);
 
 		this.contextValue = "envItem";
+		this.command = {
+			command: "mise.openEnvVariableDefinition",
+			arguments: [this.env.name],
+			title: "Copy name",
+		};
 	}
 }
 
@@ -44,6 +50,40 @@ export function registerEnvsCommands(
 	miseService: MiseService,
 ) {
 	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			"mise.openEnvVariableDefinition",
+			async (name: string | undefined) => {
+				const possibleEnvs = await miseService.getEnvs();
+				let selectedName = name;
+				if (!selectedName) {
+					selectedName = await vscode.window.showQuickPick(
+						possibleEnvs.map((env) => env.name),
+					);
+				}
+
+				const env = possibleEnvs.find((env) => env.name === selectedName);
+
+				if (!env) {
+					return;
+				}
+
+				const configs = (await miseService.getMiseConfigFiles()).filter((c) =>
+					c.path.endsWith(".toml"),
+				);
+
+				const documents = await Promise.all(
+					configs.map((config) =>
+						vscode.workspace.openTextDocument(config.path),
+					),
+				);
+				const needle = findEnvVarPosition(documents, env.name);
+				if (needle?.range) {
+					void vscode.window.showTextDocument(needle.document, {
+						selection: needle.range,
+					});
+				}
+			},
+		),
 		vscode.commands.registerCommand(
 			"mise.copyEnvVariableName",
 			async (name: EnvItem | string | undefined) => {
