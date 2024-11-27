@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/hverlin/mise-vscode/compare/v0.19.0...v0.20.0) (2024-11-27)
+
+
+### Features
+
+* add prune tools & upgrade tool actions ([cedfa77](https://github.com/hverlin/mise-vscode/commit/cedfa77541614cc57e8b52849f644ec6d0ce5976))
+
+
+### Bug Fixes
+
+* do not hide/show panel on refresh ([427425b](https://github.com/hverlin/mise-vscode/commit/427425b9c4f779467097b10e31c1c20270ec6b5f))
+* fix remove tool command ([e466acf](https://github.com/hverlin/mise-vscode/commit/e466acf9f61425427b3daba70aec06327b7ba047))
+
 ## [0.19.0](https://github.com/hverlin/mise-vscode/compare/v0.18.0...v0.19.0) (2024-11-26)
 
 
