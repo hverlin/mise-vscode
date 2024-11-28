@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.23.0](https://github.com/hverlin/mise-vscode/compare/v0.22.1...v0.23.0) (2024-11-28)
+
+
+### Features
+
+* Add the option to automatically set/unset env variables in open terminals ([efd8f89](https://github.com/hverlin/mise-vscode/commit/efd8f89dcdd53117513afa5c23ce51a08b701a32))
+* automatically update environment variables ([9bf0216](https://github.com/hverlin/mise-vscode/commit/9bf0216aa0b6bcaff6f819ef2a0535ee22de2690))
+
 ## [0.22.1](https://github.com/hverlin/mise-vscode/compare/v0.22.0...v0.22.1) (2024-11-28)
 
 
