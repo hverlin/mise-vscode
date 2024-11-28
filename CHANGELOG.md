@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.1](https://github.com/hverlin/mise-vscode/compare/v0.22.0...v0.22.1) (2024-11-28)
+
+
+### Bug Fixes
+
+* Do not specify version with mise upgrade ([95f0e4f](https://github.com/hverlin/mise-vscode/commit/95f0e4fa62ff1a5ab36a469f7187bc3d1c348621))
+
 ## [0.22.0](https://github.com/hverlin/mise-vscode/compare/v0.21.0...v0.22.0) (2024-11-27)
 
 
