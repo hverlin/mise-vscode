@@ -28,20 +28,23 @@ export const misePatterns = [
 	".mise.*.local.toml",
 ].join(",");
 
-export const legacyFiles = new Set([
-	".crystal-version",
-	".exenv-version",
-	".go-version",
-	"go.mod",
-	".java-version",
-	".sdkmanrc",
-	".nvmrc",
-	".node-version",
-	".python-version",
-	".ruby-version",
-	"Gemfile",
-	".terraform-version",
-	".packer-version",
-	"main.tf",
-	".yarnrc",
-]);
+export const idiomaticFileToTool = {
+	".crystal-version": "crystal",
+	".exenv-version": "elixir",
+	".go-version": "go",
+	"go.mod": "go",
+	".java-version": "java",
+	".sdkmanrc": "java",
+	".nvmrc": "node",
+	".node-version": "node",
+	".python-version": "python",
+	".python-versions": "python",
+	".ruby-version": "ruby",
+	Gemfile: "ruby",
+	".terraform-version": "terraform",
+	".packer-version": "packer",
+	"main.tf": "terraform",
+	".yarnrc": "yarn",
+} as const;
+
+export const idiomaticFiles = new Set(Object.keys(idiomaticFileToTool));

@@ -99,7 +99,8 @@ export default function CustomTable<T>({
 				bordered-columns
 				// @ts-ignore
 				zebra
-				style={{ maxHeight: "100dvh" }}
+				responsive
+				breakpoint={400}
 			>
 				{table.getHeaderGroups().map((headerGroup) => (
 					<VscodeTableHeader slot="header" key={headerGroup.id}>

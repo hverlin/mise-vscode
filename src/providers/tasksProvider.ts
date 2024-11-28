@@ -10,7 +10,7 @@ import type { MiseService } from "../miseService";
 import { expandPath, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findTaskPosition } from "../utils/miseFileParser";
-import { allowedFileTaskDirs, legacyFiles } from "../utils/miseUtilts";
+import { allowedFileTaskDirs, idiomaticFiles } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
@@ -52,7 +52,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			const configFiles = await this.miseService.getMiseConfigFiles();
 			const groupedTasks = this.groupTasksBySource(tasks);
 			for (const configFile of configFiles) {
-				if (legacyFiles.has(path.basename(configFile.path))) {
+				if (idiomaticFiles.has(path.basename(configFile.path))) {
 					continue;
 				}
 

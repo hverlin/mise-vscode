@@ -4,7 +4,7 @@ import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
-	legacyFiles,
+	idiomaticFiles,
 	misePatterns,
 } from "./utils/miseUtilts";
 
@@ -51,7 +51,7 @@ export class MiseFileWatcher {
 
 		this.fileWatchers.push(
 			vscode.workspace.createFileSystemWatcher(
-				new vscode.RelativePattern(rootFolder, `{${legacyFiles}}`),
+				new vscode.RelativePattern(rootFolder, `{${idiomaticFiles}}`),
 			),
 		);
 

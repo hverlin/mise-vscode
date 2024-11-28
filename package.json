@@ -504,7 +504,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@rsbuild/core": "^1.1.0",
+		"@rsbuild/core": "^1.1.6",
 		"@rsbuild/plugin-react": "^1.0.7",
 		"@types/node": "^22.9.0",
 		"@types/react": "^18.3.12",

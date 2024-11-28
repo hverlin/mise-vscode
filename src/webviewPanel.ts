@@ -129,10 +129,7 @@ export default class WebViewPanel {
 							}
 							case "upgradeTool": {
 								return executeAction(message, async () =>
-									miseService.upgradeToolInConsole(
-										message.mutationKey[1],
-										message.mutationKey[2],
-									),
+									miseService.upgradeToolInConsole(message.mutationKey[1]),
 								);
 							}
 							case "installTool": {

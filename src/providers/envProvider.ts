@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { logger } from "../utils/logger";
 import { findEnvVarPosition } from "../utils/miseFileParser";
 
 export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
@@ -130,7 +131,7 @@ export function registerEnvsCommands(
 		vscode.commands.registerCommand(
 			"mise.setEnvVariable",
 			async (filePath: string | undefined) => {
-				let selectedPath = filePath;
+				let selectedPath = filePath?.trim?.();
 				if (!selectedPath) {
 					selectedPath = await vscode.window.showQuickPick(
 						await miseService.getMiseTomlConfigFilePathsEvenIfMissing(),
@@ -142,6 +143,7 @@ export function registerEnvsCommands(
 					return;
 				}
 
+				logger.info(`Selected path: ${selectedPath}`);
 				const environmentVariableName = await vscode.window.showInputBox({
 					placeHolder: "Environment variable name",
 				});

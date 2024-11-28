@@ -26,7 +26,7 @@ export function App() {
 						icon: "codicon codicon-settings",
 					},
 					{
-						name: "Config files",
+						name: "Tracked Configs",
 						content: <TrackedConfigs />,
 						icon: "codicon codicon-file",
 					},

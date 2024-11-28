@@ -17,6 +17,7 @@ import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
+import { idiomaticFileToTool, idiomaticFiles } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import { execAsync, execAsyncMergeOutput } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
@@ -690,8 +691,25 @@ export class MiseService {
 						const content = await vscode.workspace.fs.readFile(
 							vscode.Uri.file(trackedConfigPath),
 						);
-						const config = parse(content.toString());
-						return { path: trackedConfigPath, tools: config.tools ?? {} };
+						if (trackedConfigPath.endsWith(".toml")) {
+							const config = parse(content.toString());
+							return { path: trackedConfigPath, tools: config.tools ?? {} };
+						}
+						const idiomaticFile = [...idiomaticFiles].find((ext) =>
+							trackedConfigPath.endsWith(ext),
+						);
+						if (idiomaticFile) {
+							return {
+								path: trackedConfigPath,
+								tools: {
+									// @ts-ignore
+									[idiomaticFileToTool[idiomaticFile]]: content
+										.toString()
+										.trim(),
+								},
+							};
+						}
+						return { path: trackedConfigPath, tools: {} };
 					}
 				} catch {
 					return {};
@@ -736,12 +754,12 @@ export class MiseService {
 			: this.runMiseToolActionInConsole("prune --dry-run");
 	}
 
-	async upgradeToolInConsole(toolName: string, version: string) {
+	async upgradeToolInConsole(toolName: string) {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(`up ${toolName}@${version}`);
+		await this.runMiseToolActionInConsole(`up ${toolName}`);
 	}
 
 	async installToolInConsole(toolName: string, version: string) {
