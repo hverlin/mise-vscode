@@ -38,6 +38,7 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 ### Environment Variables
 - 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)
 - 📍 Quick navigation to environment variable definitions
+- 🔄 Automatically load environment variables from `mise.toml` files in VS Code
 
 ### Snippets
 - 📝 Snippets to create tasks in `mise.toml` and task files

@@ -20,7 +20,12 @@ import { resolveMisePath } from "./utils/miseBinLocator";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
 import { idiomaticFileToTool, idiomaticFiles } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
-import { execAsync, execAsyncMergeOutput } from "./utils/shell";
+import {
+	execAsync,
+	execAsyncMergeOutput,
+	isTerminalClosed,
+	runInVscodeTerminal,
+} from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
 
 // https://github.com/jdx/mise/blob/main/src/env.rs
@@ -43,14 +48,16 @@ function ensureMiseCommand(
 }
 
 export class MiseService {
-	private terminal: vscode.Terminal | undefined;
+	private hasVerifiedMiseVersion = false;
+
+	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
+
 	private cache = createCache({
 		ttl: 0,
 		storage: { type: "memory" },
 	}).define("execCmd", ({ command, setProfile } = {}) =>
 		this.execMiseCommand(command, { setProfile }),
 	);
-	private hasVerifiedMiseVersion = false;
 
 	async initializeMisePath() {
 		if (!isMiseExtensionEnabled()) {
@@ -386,41 +393,46 @@ export class MiseService {
 	}
 
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
-		const terminal = this.getOrCreateTerminal();
+		const terminal = this.getOrCreateTerminal("Mise run");
 		terminal.show();
 		const baseCommand = this.createMiseCommand(`run --timing ${taskName}`);
 		ensureMiseCommand(baseCommand);
-		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
+		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {
-		const terminal = this.getOrCreateTerminal();
+		const terminalName = `mise-watch ${taskName}`;
+		const previousTerminal = this.terminals.get(terminalName);
+		if (previousTerminal) {
+			previousTerminal.dispose();
+			this.terminals.delete(terminalName);
+		}
+		const terminal = this.getOrCreateTerminal(terminalName);
 		terminal.show();
 		const baseCommand = this.createMiseCommand(
 			`watch -t "${taskName.replace(/"/g, '\\"')}"`,
 		);
 		ensureMiseCommand(baseCommand);
-		terminal.sendText(`${baseCommand} ${args.join(" ")}`);
+		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
 	}
 
-	private getOrCreateTerminal(): vscode.Terminal {
-		if (!this.terminal || this._isTerminalClosed(this.terminal)) {
-			this.terminal = vscode.window.createTerminal({
-				name: "Mise Tasks",
+	private getOrCreateTerminal(name: string): vscode.Terminal {
+		let terminal = this.terminals.get(name);
+		if (!terminal || isTerminalClosed(terminal)) {
+			terminal = vscode.window.createTerminal({
+				name,
 				cwd: getRootFolderPath(),
 			});
 
 			vscode.window.onDidCloseTerminal((closedTerminal) => {
-				if (closedTerminal === this.terminal) {
-					this.terminal = undefined;
+				if (closedTerminal === terminal) {
+					terminal = undefined;
+					this.terminals.delete(name);
 				}
 			});
 		}
-		return this.terminal;
-	}
-
-	private _isTerminalClosed(terminal: vscode.Terminal): boolean {
-		return vscode.window.terminals.indexOf(terminal) === -1;
+		this.terminals.set(name, terminal);
+		return terminal;
 	}
 
 	async miseWhich(name: string) {
@@ -728,9 +740,10 @@ export class MiseService {
 	}
 
 	dispose() {
-		if (this.terminal) {
-			this.terminal.dispose();
-			this.terminal = undefined;
+		for (const terminal of this.terminals.values()) {
+			if (terminal) {
+				terminal.dispose?.();
+			}
 		}
 	}
 

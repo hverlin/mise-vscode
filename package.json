@@ -173,7 +173,15 @@
 					"scope": "resource",
 					"title": "Update environment variables automatically",
 					"default": true,
-					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration"
+					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, this may not work as expected."
+				},
+				"mise.updateOpenTerminalsEnvAutomatically": {
+					"order": 12,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Update terminal environment variables automatically",
+					"default": false,
+					"markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
 				}
 			}
 		},

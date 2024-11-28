@@ -15,6 +15,7 @@ export const CONFIGURATION_FLAGS = {
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
 	updateEnvAutomatically: "updateEnvAutomatically",
+	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 } as const;
 
 const getExtensionConfig = () => {
@@ -103,6 +104,13 @@ export const shouldCheckForNewMiseVersion = () => {
 
 export const shouldUpdateEnv = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.updateEnvAutomatically, true);
+};
+
+export const shouldAutomaticallyReloadTerminalEnv = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.updateOpenTerminalsEnvAutomatically,
+		false,
+	);
 };
 
 export type VSCodeSettingValue =

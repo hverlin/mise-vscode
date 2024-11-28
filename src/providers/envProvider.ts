@@ -5,10 +5,15 @@ import {
 	MISE_OPEN_ENV_VAR_DEFINITION,
 	MISE_SET_ENV_VARIABLE,
 } from "../commands";
-import { isMiseExtensionEnabled } from "../configuration";
+import {
+	isMiseExtensionEnabled,
+	shouldAutomaticallyReloadTerminalEnv,
+	shouldUpdateEnv,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
 import { findEnvVarPosition } from "../utils/miseFileParser";
+import { runInVscodeTerminal } from "../utils/shell";
 
 export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -173,4 +178,70 @@ export function registerEnvsCommands(
 			},
 		),
 	);
+}
+
+let previousEnvs: Map<string, string> = new Map();
+function updateEnvironment(
+	context: vscode.ExtensionContext,
+	envs: Map<string, string>,
+	removedEnvs: [string, string][],
+) {
+	context.environmentVariableCollection.description =
+		"Provide environment variables from `mise env`";
+	for (const [name, value] of envs.entries()) {
+		process.env[name] = value;
+		context.environmentVariableCollection.replace(name, value);
+	}
+
+	for (const [name] of removedEnvs) {
+		process.env[name] = undefined;
+		context.environmentVariableCollection.delete(name);
+	}
+}
+
+function updateTerminalsEnvs(variablesToRemove: [string, string][]) {
+	const commands = variablesToRemove.map(([name]) => `;unset ${name}`).join("");
+	const commandLine = `${commands};eval "$(mise env)"; clear;`;
+	for (const terminal of vscode.window.terminals) {
+		if (terminal.name.startsWith("mise-watch")) {
+			continue;
+		}
+
+		void runInVscodeTerminal(terminal, commandLine);
+	}
+}
+
+export async function updateEnv(
+	context: vscode.ExtensionContext,
+	miseService: MiseService,
+) {
+	if (!isMiseExtensionEnabled() || !shouldUpdateEnv()) {
+		return;
+	}
+
+	const currentEnvs = new Map(
+		(await miseService.getEnvs())
+			.filter(({ name }) => name !== "PATH")
+			.map(({ name, value }) => [name, value]),
+	);
+
+	if (previousEnvs.size === 0) {
+		updateEnvironment(context, currentEnvs, []);
+	} else {
+		const variablesToRemove = [...previousEnvs.entries()].filter(
+			([name]) => !currentEnvs.has(name),
+		);
+		const shouldUpdateTerminal =
+			variablesToRemove.length > 0 ||
+			[...currentEnvs.entries()].some(
+				([name, value]) => previousEnvs.get(name) !== value,
+			);
+
+		updateEnvironment(context, currentEnvs, variablesToRemove);
+		if (shouldAutomaticallyReloadTerminalEnv() && shouldUpdateTerminal) {
+			updateTerminalsEnvs(variablesToRemove);
+		}
+	}
+
+	previousEnvs = new Map(currentEnvs);
 }

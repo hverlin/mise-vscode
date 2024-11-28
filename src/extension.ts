@@ -25,6 +25,7 @@ import { MiseService } from "./miseService";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
+	updateEnv,
 } from "./providers/envProvider";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
@@ -44,8 +45,6 @@ import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import WebViewPanel from "./webviewPanel";
 
-let statusBarItem: vscode.StatusBarItem;
-
 export async function activate(context: vscode.ExtensionContext) {
 	const miseService = new MiseService();
 	await miseService.initializeMisePath();
@@ -54,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const toolsProvider = new MiseToolsProvider(miseService);
 	const envsProvider = new MiseEnvsProvider(miseService);
 
-	statusBarItem = vscode.window.createStatusBarItem(
+	const statusBarItem = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Right,
 		100,
 	);
@@ -128,13 +127,9 @@ export async function activate(context: vscode.ExtensionContext) {
 			toolsProvider.refresh();
 			envsProvider.refresh();
 
-			if (shouldUpdateEnv()) {
-				const env = await miseService.getEnvs();
-				for (const { name, value } of env) {
-					process.env[name] = value;
-					context.environmentVariableCollection.replace(name, value);
-				}
-			}
+			updateEnv(context, miseService).catch((error) => {
+				logger.error(`Error while updating environment: ${error}`);
+			});
 
 			if (
 				shouldConfigureExtensionsAutomatically() &&
@@ -144,7 +139,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			}
 
 			statusBarItem.text = "$(tools) Mise";
-
 			const miseProfile = getMiseProfile();
 			if (miseProfile) {
 				statusBarItem.text = `$(tools) Mise (${miseProfile})`;
@@ -280,10 +274,4 @@ export async function activate(context: vscode.ExtensionContext) {
 	setTimeout(async () => {
 		void miseService.checkNewMiseVersion();
 	}, 1000);
-}
-
-export function deactivate() {
-	if (statusBarItem) {
-		statusBarItem.dispose();
-	}
 }
