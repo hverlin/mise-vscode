@@ -14,45 +14,47 @@ export const CONFIGURATION_FLAGS = {
 	enableCodeLens: "enableCodeLens",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
+	updateEnvAutomatically: "updateEnvAutomatically",
 } as const;
 
 const getExtensionConfig = () => {
 	return vscode.workspace.getConfiguration("mise");
 };
 
+export const getConfOrElse = <T>(
+	key: (typeof CONFIGURATION_FLAGS)[keyof typeof CONFIGURATION_FLAGS],
+	fallback: T,
+): T => {
+	return getExtensionConfig().get(key) ?? fallback;
+};
+
 export const getIgnoreList = (): string[] => {
-	return (
-		getExtensionConfig().get(
-			CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIgnoreList,
-		) ?? []
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIgnoreList,
+		[],
 	);
 };
 
 export const shouldConfigureExtensionsAutomatically = (): boolean => {
-	return (
-		getExtensionConfig().get(
-			CONFIGURATION_FLAGS.configureExtensionsAutomatically,
-		) ?? true
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.configureExtensionsAutomatically,
+		true,
 	);
 };
 
-export const shouldUseShims = (): boolean => {
-	return (
-		getExtensionConfig().get(CONFIGURATION_FLAGS.configureExtensionsUseShims) ??
-		true
-	);
+export const shouldUseShims = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.configureExtensionsUseShims, true);
 };
 
-export const shouldUseSymLinks = (): boolean => {
-	return (
-		getExtensionConfig().get(
-			CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
-		) ?? true
+export const shouldUseSymLinks = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
+		true,
 	);
 };
 
 export const isMiseExtensionEnabled = (): boolean => {
-	return getExtensionConfig().get(CONFIGURATION_FLAGS.enable) ?? true;
+	return getConfOrElse(CONFIGURATION_FLAGS.enable, true);
 };
 
 export const getMiseProfile = (): string | undefined => {
@@ -87,21 +89,20 @@ export const enableExtensionForWorkspace = async () => {
 	);
 };
 
-export const isCodeLensEnabled = (): boolean => {
-	return getExtensionConfig().get(CONFIGURATION_FLAGS.enableCodeLens) ?? true;
+export const isCodeLensEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableCodeLens, true);
 };
 
-export const shouldShowToolVersionsDecorations = (): boolean => {
-	return (
-		getExtensionConfig().get(CONFIGURATION_FLAGS.showToolVersionsDecorations) ??
-		true
-	);
+export const shouldShowToolVersionsDecorations = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.showToolVersionsDecorations, true);
 };
 
-export const shouldCheckForNewMiseVersion = (): boolean => {
-	return (
-		getExtensionConfig().get(CONFIGURATION_FLAGS.checkForNewMiseVersion) ?? true
-	);
+export const shouldCheckForNewMiseVersion = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.checkForNewMiseVersion, true);
+};
+
+export const shouldUpdateEnv = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.updateEnvAutomatically, true);
 };
 
 export type VSCodeSettingValue =

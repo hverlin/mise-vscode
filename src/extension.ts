@@ -17,6 +17,7 @@ import {
 	getRootFolder,
 	isMiseExtensionEnabled,
 	shouldConfigureExtensionsAutomatically,
+	shouldUpdateEnv,
 } from "./configuration";
 import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
@@ -126,6 +127,14 @@ export async function activate(context: vscode.ExtensionContext) {
 			tasksProvider.refresh();
 			toolsProvider.refresh();
 			envsProvider.refresh();
+
+			if (shouldUpdateEnv()) {
+				const env = await miseService.getEnvs();
+				for (const { name, value } of env) {
+					process.env[name] = value;
+					context.environmentVariableCollection.replace(name, value);
+				}
+			}
 
 			if (
 				shouldConfigureExtensionsAutomatically() &&

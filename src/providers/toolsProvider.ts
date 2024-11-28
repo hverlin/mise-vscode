@@ -7,6 +7,7 @@ import {
 	MISE_COPY_TOOL_INSTALL_PATH,
 	MISE_INSTALL_ALL,
 	MISE_INSTALL_TOOL,
+	MISE_OPEN_FILE,
 	MISE_OPEN_TOOL_DEFINITION,
 	MISE_REMOVE_TOOL,
 	MISE_USE_TOOL,
@@ -143,6 +144,11 @@ Number of tools: ${tools.length}`;
 		if (tools.length === 0) {
 			this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 			this.iconPath = new vscode.ThemeIcon("chevron-right");
+			this.command = {
+				command: MISE_OPEN_FILE,
+				title: "Open file",
+				arguments: [this.source],
+			};
 		}
 	}
 }

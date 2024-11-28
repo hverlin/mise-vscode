@@ -166,6 +166,14 @@
 					"title": "Check for new mise version",
 					"default": true,
 					"markdownDescription": "Check if a new mise version is available on startup."
+				},
+				"mise.updateEnvAutomatically": {
+					"order": 11,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Update environment variables automatically",
+					"default": true,
+					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration"
 				}
 			}
 		},
@@ -326,7 +334,7 @@
 			},
 			{
 				"command": "mise.openSettings",
-				"title": "Mise: Open Settings",
+				"title": "Mise: Open extension settings",
 				"icon": "$(tools)"
 			},
 			{
