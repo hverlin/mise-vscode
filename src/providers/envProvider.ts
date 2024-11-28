@@ -1,4 +1,10 @@
 import * as vscode from "vscode";
+import {
+	MISE_COPY_ENV_VARIABLE_NAME,
+	MISE_COPY_ENV_VARIABLE_VALUE,
+	MISE_OPEN_ENV_VAR_DEFINITION,
+	MISE_SET_ENV_VARIABLE,
+} from "../commands";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
@@ -39,7 +45,7 @@ class EnvItem extends vscode.TreeItem {
 
 		this.contextValue = "envItem";
 		this.command = {
-			command: "mise.openEnvVariableDefinition",
+			command: MISE_OPEN_ENV_VAR_DEFINITION,
 			arguments: [this.env.name],
 			title: "Copy name",
 		};
@@ -52,7 +58,7 @@ export function registerEnvsCommands(
 ) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
-			"mise.openEnvVariableDefinition",
+			MISE_OPEN_ENV_VAR_DEFINITION,
 			async (name: string | undefined) => {
 				const possibleEnvs = await miseService.getEnvs();
 				let selectedName = name;
@@ -86,7 +92,7 @@ export function registerEnvsCommands(
 			},
 		),
 		vscode.commands.registerCommand(
-			"mise.copyEnvVariableName",
+			MISE_COPY_ENV_VARIABLE_NAME,
 			async (name: EnvItem | string | undefined) => {
 				let selectedName = name;
 				if (!selectedName) {
@@ -107,7 +113,7 @@ export function registerEnvsCommands(
 			},
 		),
 		vscode.commands.registerCommand(
-			"mise.copyEnvVariableValue",
+			MISE_COPY_ENV_VARIABLE_VALUE,
 			async (name: EnvItem | string | undefined) => {
 				const possibleEnvs = await miseService.getEnvs();
 				let selectedName = name;
@@ -129,7 +135,7 @@ export function registerEnvsCommands(
 			},
 		),
 		vscode.commands.registerCommand(
-			"mise.setEnvVariable",
+			MISE_SET_ENV_VARIABLE,
 			async (filePath: string | undefined) => {
 				let selectedPath = filePath?.trim?.();
 				if (!selectedPath) {

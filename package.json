@@ -42,7 +42,8 @@
 		"workspaceContains:mise.*.toml",
 		"workspaceContains:mise.toml",
 		"workspaceContains:mise/config.*.toml",
-		"workspaceContains:mise/config.toml"
+		"workspaceContains:mise/config.toml",
+		"onLanguage"
 	],
 	"contributes": {
 		"tomlValidation": [

@@ -2,8 +2,17 @@ import { createCache } from "async-cache-dedupe";
 import * as vscode from "vscode";
 import { MarkdownString } from "vscode";
 import {
-	CONFIGURATION_FLAGS,
+	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_INSTALL_ALL,
+	MISE_LIST_ALL_TOOLS,
 	MISE_OPEN_FILE,
+	MISE_OPEN_LOGS,
+	MISE_OPEN_MENU,
+	MISE_OPEN_SETTINGS,
+	MISE_RELOAD,
+} from "./commands";
+import {
+	CONFIGURATION_FLAGS,
 	getMiseProfile,
 	getRootFolder,
 	isMiseExtensionEnabled,
@@ -31,9 +40,7 @@ import {
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { logger } from "./utils/logger";
-import { resolveMisePath } from "./utils/miseBinLocator";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
-import { showSettingsNotification } from "./utils/notify";
 import WebViewPanel from "./webviewPanel";
 
 let statusBarItem: vscode.StatusBarItem;
@@ -66,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(createMenu(miseService));
 
-	statusBarItem.command = "mise.openMenu";
+	statusBarItem.command = MISE_OPEN_MENU;
 	statusBarItem.show();
 
 	context.subscriptions.push(statusBarItem);
@@ -77,13 +84,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		);
 
 		if (miseConfigUpdated) {
-			vscode.commands.executeCommand("mise.refreshEntry");
+			vscode.commands.executeCommand(MISE_RELOAD);
 		}
 	});
 
 	vscode.extensions.onDidChange(() => {
 		if (isMiseExtensionEnabled()) {
-			vscode.commands.executeCommand("mise.refreshEntry");
+			vscode.commands.executeCommand(MISE_RELOAD);
 		}
 	});
 
@@ -106,7 +113,7 @@ export async function activate(context: vscode.ExtensionContext) {
 										tool.name + (tool.version ? ` (${tool.version})` : ""),
 								)
 								.join(", ")}`,
-							{ title: "Install missing tools", command: "mise.installAll" },
+							{ title: "Install missing tools", command: MISE_INSTALL_ALL },
 						);
 						if (selection?.command) {
 							await vscode.commands.executeCommand(selection.command);
@@ -124,7 +131,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				shouldConfigureExtensionsAutomatically() &&
 				isMiseExtensionEnabled()
 			) {
-				await vscode.commands.executeCommand("mise.configureAllSdkPaths");
+				await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SKD_PATHS);
 			}
 
 			statusBarItem.text = "$(tools) Mise";
@@ -140,7 +147,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mise.refreshEntry", async () => {
+		vscode.commands.registerCommand(MISE_RELOAD, async () => {
 			await globalCmdCache.reload();
 		}),
 	);
@@ -177,7 +184,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mise.openSettings", () => {
+		vscode.commands.registerCommand(MISE_OPEN_SETTINGS, () => {
 			vscode.commands.executeCommand(
 				"workbench.action.openSettings",
 				"@ext:hverlin.mise-vscode",
@@ -186,7 +193,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mise.openLogs", async () => {
+		vscode.commands.registerCommand(MISE_OPEN_LOGS, async () => {
 			logger.show();
 		}),
 	);
@@ -213,12 +220,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const miseWatcher = new MiseFileWatcher(context, miseService, async (uri) => {
 		logger.info(`Mise configuration file changed: ${uri}`);
-		await vscode.commands.executeCommand("mise.refreshEntry");
+		await vscode.commands.executeCommand(MISE_RELOAD);
 	});
 	context.subscriptions.push(miseWatcher);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mise.listAllTools", async () => {
+		vscode.commands.registerCommand(MISE_LIST_ALL_TOOLS, async () => {
 			WebViewPanel.createOrShow(context, miseService);
 		}),
 	);
@@ -259,7 +266,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		);
 	}
 
-	await vscode.commands.executeCommand("mise.refreshEntry");
+	await vscode.commands.executeCommand(MISE_RELOAD);
 
 	setTimeout(async () => {
 		void miseService.checkNewMiseVersion();

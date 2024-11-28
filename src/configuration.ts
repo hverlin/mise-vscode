@@ -2,8 +2,6 @@ import { isDeepStrictEqual } from "node:util";
 import { deepMerge } from "@std/collections";
 import * as vscode from "vscode";
 
-export const MISE_OPEN_FILE = "mise.openFile";
-
 export const CONFIGURATION_FLAGS = {
 	enable: "enable",
 	binPath: "binPath",
@@ -16,7 +14,7 @@ export const CONFIGURATION_FLAGS = {
 	enableCodeLens: "enableCodeLens",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
-};
+} as const;
 
 const getExtensionConfig = () => {
 	return vscode.workspace.getConfiguration("mise");

@@ -1,6 +1,17 @@
 import * as os from "node:os";
 import * as vscode from "vscode";
 import {
+	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_CONFIGURE_SDK_PATH,
+	MISE_COPY_TOOL_BIN_PATH,
+	MISE_COPY_TOOL_INSTALL_PATH,
+	MISE_INSTALL_ALL,
+	MISE_INSTALL_TOOL,
+	MISE_OPEN_TOOL_DEFINITION,
+	MISE_REMOVE_TOOL,
+	MISE_USE_TOOL,
+} from "../commands";
+import {
 	getIgnoreList,
 	getRootFolderPath,
 	isMiseExtensionEnabled,
@@ -15,14 +26,6 @@ import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
 
 type TreeItem = SourceItem | ToolItem;
-
-export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
-export const MISE_REMOVE_TOOL = "mise.removeTool";
-export const MISE_INSTALL_TOOL = "mise.installTool";
-export const MISE_INSTALL_ALL = "mise.installAll";
-export const MISE_USE_TOOL = "mise.useTool";
-export const MISE_COPY_TOOL_INSTALL_PATH = "mise.copyToolInstallPath";
-export const MISE_COPY_TOOL_BIN_PATH = "mise.copyToolBinPath";
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -438,7 +441,7 @@ export function registerToolsCommands(
 		),
 
 		vscode.commands.registerCommand(
-			"mise.configureSdkPath",
+			MISE_CONFIGURE_SDK_PATH,
 			async (toolName: string | undefined) => {
 				await miseService.miseReshim();
 
@@ -544,7 +547,7 @@ export function registerToolsCommands(
 				}
 			},
 		),
-		vscode.commands.registerCommand("mise.configureAllSdkPaths", async () => {
+		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SKD_PATHS, async () => {
 			await miseService.miseReshim();
 			const ignoreList = getIgnoreList();
 			const tools = await toolsProvider.getTools();

@@ -2,10 +2,14 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import {
+	MISE_CREATE_FILE_TASK,
+	MISE_CREATE_TOML_TASK,
 	MISE_OPEN_FILE,
-	getRootFolderPath,
-	isMiseExtensionEnabled,
-} from "../configuration";
+	MISE_OPEN_TASK_DEFINITION,
+	MISE_RUN_TASK,
+	MISE_WATCH_TASK,
+} from "../commands";
+import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
@@ -13,12 +17,6 @@ import { findTaskPosition } from "../utils/miseFileParser";
 import { allowedFileTaskDirs, idiomaticFiles } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
-
-export const RUN_TASK_COMMAND = "mise.runTask";
-export const WATCH_TASK_COMMAND = "mise.watchTask";
-export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
-export const MISE_CREATE_FILE_TASK = "mise.createFileTask";
-export const MISE_CREATE_TOML_TASK = "mise.createTomlTask";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -297,7 +295,7 @@ export function registerTasksCommands(
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
-			RUN_TASK_COMMAND,
+			MISE_RUN_TASK,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {
 				await vscode.workspace.saveAll(false);
 
@@ -318,7 +316,7 @@ export function registerTasksCommands(
 			},
 		),
 		vscode.commands.registerCommand(
-			WATCH_TASK_COMMAND,
+			MISE_WATCH_TASK,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {
 				await vscode.workspace.saveAll(false);
 

@@ -1,4 +1,5 @@
 import vscode from "vscode";
+import { MISE_OPEN_MENU, MISE_OPEN_SETTINGS, MISE_RELOAD } from "./commands";
 import {
 	disableExtensionForWorkspace,
 	enableExtensionForWorkspace,
@@ -8,7 +9,7 @@ import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
 export function createMenu(miseService: MiseService) {
-	return vscode.commands.registerCommand("mise.openMenu", async () => {
+	return vscode.commands.registerCommand(MISE_OPEN_MENU, async () => {
 		const miseVersion = await miseService.getVersion();
 
 		const pick = await vscode.window.showQuickPick(
@@ -59,10 +60,10 @@ export function createMenu(miseService: MiseService) {
 
 		switch (pick?.label) {
 			case "Reload configuration":
-				await vscode.commands.executeCommand("mise.refreshEntry");
+				await vscode.commands.executeCommand(MISE_RELOAD);
 				break;
 			case "Open extension settings":
-				await vscode.commands.executeCommand("mise.openSettings");
+				await vscode.commands.executeCommand(MISE_OPEN_SETTINGS);
 				break;
 			case "About vscode-mise":
 				vscode.env.openExternal(

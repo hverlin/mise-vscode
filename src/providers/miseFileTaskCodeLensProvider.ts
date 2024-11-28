@@ -1,9 +1,9 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { MISE_RUN_TASK, MISE_WATCH_TASK } from "../commands";
 import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath, isExecutable } from "../utils/fileUtils";
-import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 	constructor(private miseService: MiseService) {}
@@ -42,7 +42,7 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 			new vscode.CodeLens(range, {
 				title: "$(play) Run",
 				tooltip: `Run task ${existingTask.name}`,
-				command: RUN_TASK_COMMAND,
+				command: MISE_RUN_TASK,
 				arguments: [existingTask.name],
 			}),
 		);
@@ -50,7 +50,7 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 			new vscode.CodeLens(range, {
 				title: "$(watch) Watch",
 				tooltip: `Watch task ${existingTask.name}`,
-				command: WATCH_TASK_COMMAND,
+				command: MISE_WATCH_TASK,
 				arguments: [existingTask.name],
 			}),
 		);

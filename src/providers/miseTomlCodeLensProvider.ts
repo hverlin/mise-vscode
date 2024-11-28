@@ -1,7 +1,12 @@
 import * as vscode from "vscode";
+import {
+	MISE_INSTALL_ALL,
+	MISE_RUN_TASK,
+	MISE_USE_TOOL,
+	MISE_WATCH_TASK,
+} from "../commands";
 import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { RUN_TASK_COMMAND, WATCH_TASK_COMMAND } from "./tasksProvider";
 
 function createRunTaskCodeLens(
 	taskName: string,
@@ -10,7 +15,7 @@ function createRunTaskCodeLens(
 	return new vscode.CodeLens(range, {
 		title: "$(play) Run",
 		tooltip: `Run task ${taskName}`,
-		command: RUN_TASK_COMMAND,
+		command: MISE_RUN_TASK,
 		arguments: [taskName],
 	});
 }
@@ -22,7 +27,7 @@ function createWatchTaskCodeLens(
 	return new vscode.CodeLens(range, {
 		title: "$(watch) Watch",
 		tooltip: `Watch task ${taskName}`,
-		command: WATCH_TASK_COMMAND,
+		command: MISE_WATCH_TASK,
 		arguments: [taskName],
 	});
 }
@@ -44,7 +49,7 @@ function createAddToolCodeLens(
 	return new vscode.CodeLens(range, {
 		title: "$(add) Add tool",
 		tooltip: "Add tool",
-		command: "mise.useTool",
+		command: MISE_USE_TOOL,
 		arguments: [filePath],
 	});
 }
@@ -55,7 +60,7 @@ function createInstallMissingToolsCodeLens(
 	return new vscode.CodeLens(range, {
 		title: "$(cloud-download) Install missing tools",
 		tooltip: "Install missing tools",
-		command: "mise.installAll",
+		command: MISE_INSTALL_ALL,
 	});
 }
 

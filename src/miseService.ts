@@ -4,6 +4,7 @@ import path from "node:path";
 import { createCache } from "async-cache-dedupe";
 import { parse } from "toml-v1";
 import * as vscode from "vscode";
+import { MISE_RELOAD } from "./commands";
 import {
 	getConfiguredBinPath,
 	getMiseProfile,
@@ -133,7 +134,7 @@ export class MiseService {
 			const p = new Promise((resolve, reject) => {
 				const disposable = vscode.tasks.onDidEndTask((e) => {
 					if (e.execution.task === task) {
-						vscode.commands.executeCommand("mise.refreshEntry");
+						vscode.commands.executeCommand(MISE_RELOAD);
 						disposable.dispose();
 						resolve(undefined);
 					}
