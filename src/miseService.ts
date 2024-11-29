@@ -37,6 +37,30 @@ const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
 const MIN_MISE_VERSION = [2024, 11, 4] as const;
 
+function compareVersions(
+	a: readonly [number, number, number],
+	b: readonly [number, number, number],
+) {
+	for (let i = 0; i < a.length; i++) {
+		// @ts-ignore
+		if (a[i] > b[i]) {
+			return 1;
+		}
+		// @ts-ignore
+		if (a[i] < b[i]) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+function isVersionGreaterOrEqualThan(
+	version: readonly [number, number, number],
+	target: readonly [number, number, number],
+) {
+	return compareVersions(version, target) >= 0;
+}
+
 function ensureMiseCommand(
 	miseCommand: string | undefined,
 ): asserts miseCommand {
@@ -504,6 +528,19 @@ export class MiseService {
 		return stdout.trim();
 	}
 
+	async getParsedMiseVersion() {
+		const version = await this.getVersion();
+		const match = /(\d+)\.(\d+)\.(\d+)/.exec(version);
+		if (!match) {
+			return undefined;
+		}
+
+		const [, year, minor, patch] = match.map((n) =>
+			n ? Number.parseInt(n, 10) : 0,
+		);
+		return [year, minor, patch] as [number, number, number];
+	}
+
 	async canSelfUpdate() {
 		if (!this.getMiseBinaryPath()) {
 			return false;
@@ -522,34 +559,12 @@ export class MiseService {
 			return false;
 		}
 
-		const version = await this.getVersion();
-		const match = /(\d+)\.(\d+)\.(\d+)/.exec(version);
-		if (!match) {
+		const version = await this.getParsedMiseVersion();
+		if (!version) {
 			return false;
 		}
 
-		const [, year, month, day] = match.map((n) =>
-			n ? Number.parseInt(n, 10) : undefined,
-		);
-		if (year === undefined || month === undefined || day === undefined) {
-			return false;
-		}
-
-		if (year > MIN_MISE_VERSION[0]) {
-			return true;
-		}
-		if (year < MIN_MISE_VERSION[0]) {
-			return false;
-		}
-
-		if (month > MIN_MISE_VERSION[1]) {
-			return true;
-		}
-		if (month < MIN_MISE_VERSION[1]) {
-			return false;
-		}
-
-		return day >= MIN_MISE_VERSION[2];
+		return isVersionGreaterOrEqualThan(version, MIN_MISE_VERSION);
 	}
 
 	async checkNewMiseVersion() {
@@ -675,6 +690,12 @@ export class MiseService {
 	async getSettings() {
 		if (!this.getMiseBinaryPath()) {
 			return [];
+		}
+
+		const version = await this.getParsedMiseVersion();
+		if (version && isVersionGreaterOrEqualThan(version, [2024, 11, 34])) {
+			const { stdout } = await this.execMiseCommand("settings --all --json");
+			return JSON.parse(stdout);
 		}
 
 		const { stdout } = await this.execMiseCommand("settings");

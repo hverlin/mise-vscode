@@ -7,7 +7,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { App } from "./App";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+	defaultOptions: { queries: { retry: 1 } },
+});
 
 // @ts-ignore
 function Fallback({ error, resetErrorBoundary }) {
