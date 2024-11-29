@@ -98,7 +98,7 @@ export class MiseService {
 				);
 				this.hasVerifiedMiseVersion = true;
 				if (selection === "Run mise self-update") {
-					await this.runMiseToolActionInConsole("self-update");
+					await this.runMiseToolActionInConsole("self-update -y");
 				}
 				if (selection === "open mise website") {
 					await vscode.env.openExternal(
