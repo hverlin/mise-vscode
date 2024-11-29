@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.24.0](https://github.com/hverlin/mise-vscode/compare/v0.23.0...v0.24.0) (2024-11-29)
+
+
+### Features
+
+* skip confirmation prompt for mise self-update ([a046e15](https://github.com/hverlin/mise-vscode/commit/a046e15c44239227737364e5aa38199ef104d9c1))
+
+
+### Bug Fixes
+
+* setting view broken after 2024.11.34 release ([80a49b3](https://github.com/hverlin/mise-vscode/commit/80a49b358484fc7dfe17fb3855a7c65a14a9c4b3))
+
 ## [0.23.0](https://github.com/hverlin/mise-vscode/compare/v0.22.1...v0.23.0) (2024-11-28)
 
 
