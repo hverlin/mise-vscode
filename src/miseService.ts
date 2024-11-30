@@ -594,7 +594,7 @@ export class MiseService {
 			}
 
 			if (suggestion === "Update Mise") {
-				await this.runMiseToolActionInConsole("self-update");
+				await this.runMiseToolActionInConsole("self-update -y");
 			}
 
 			if (suggestion === "Show changelog") {
@@ -694,8 +694,8 @@ export class MiseService {
 
 		const version = await this.getParsedMiseVersion();
 		if (version && isVersionGreaterOrEqualThan(version, [2024, 11, 34])) {
-			const { stdout } = await this.execMiseCommand("settings --all --json");
-			return JSON.parse(stdout);
+			const { stdout } = await this.execMiseCommand("settings --all --toml");
+			return parse(stdout);
 		}
 
 		const { stdout } = await this.execMiseCommand("settings");
