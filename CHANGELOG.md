@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.1](https://github.com/hverlin/mise-vscode/compare/v0.24.0...v0.24.1) (2024-11-30)
+
+
+### Bug Fixes
+
+* use toml output for settings view ([335b038](https://github.com/hverlin/mise-vscode/commit/335b0382161888213aee5601a2ee81db7c5854a3))
+
 ## [0.24.0](https://github.com/hverlin/mise-vscode/compare/v0.23.0...v0.24.0) (2024-11-29)
 
 
