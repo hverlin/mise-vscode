@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/hverlin/mise-vscode/compare/v0.24.1...v0.25.0) (2024-12-02)
+
+
+### Features
+
+* use `mise --env` instead of `mise --profile` ([cc0f9bb](https://github.com/hverlin/mise-vscode/commit/cc0f9bb64208e321d187ba5e38af2368305ef3bd))
+
 ## [0.24.1](https://github.com/hverlin/mise-vscode/compare/v0.24.0...v0.24.1) (2024-11-30)
 
 
