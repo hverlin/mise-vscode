@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 export const CONFIGURATION_FLAGS = {
 	enable: "enable",
 	binPath: "binPath",
-	profile: "profile",
+	miseEnv: "miseEnv",
 	configureExtensionsAutomatically: "configureExtensionsAutomatically",
 	configureExtensionsUseShims: "configureExtensionsUseShims",
 	configureExtensionsUseSymLinks: "configureExtensionsUseSymLinks",
@@ -58,8 +58,8 @@ export const isMiseExtensionEnabled = (): boolean => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enable, true);
 };
 
-export const getMiseProfile = (): string | undefined => {
-	return getExtensionConfig().get<string>(CONFIGURATION_FLAGS.profile);
+export const getMiseEnv = (): string | undefined => {
+	return getExtensionConfig().get<string>(CONFIGURATION_FLAGS.miseEnv);
 };
 
 export const getConfiguredBinPath = (): string | undefined => {

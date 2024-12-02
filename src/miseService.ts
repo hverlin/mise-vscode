@@ -7,7 +7,7 @@ import * as vscode from "vscode";
 import { MISE_RELOAD } from "./commands";
 import {
 	getConfiguredBinPath,
-	getMiseProfile,
+	getMiseEnv,
 	getRootFolderPath,
 	isMiseExtensionEnabled,
 	shouldCheckForNewMiseVersion,
@@ -35,7 +35,7 @@ const STATE_DIR =
 	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
 const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
-const MIN_MISE_VERSION = [2024, 11, 4] as const;
+const MIN_MISE_VERSION = [2024, 11, 32] as const;
 
 function compareVersions(
 	a: readonly [number, number, number],
@@ -79,8 +79,8 @@ export class MiseService {
 	private cache = createCache({
 		ttl: 0,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ command, setProfile } = {}) =>
-		this.execMiseCommand(command, { setProfile }),
+	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
+		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
 	async initializeMisePath() {
@@ -95,10 +95,12 @@ export class MiseService {
 			if (previousPath !== miseBinaryPath) {
 				logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
 				await updateBinPath(miseBinaryPath);
-				void showSettingsNotification(
-					`Mise binary path has been updated to: ${miseBinaryPath}`,
-					{ settingsKey: "mise.binPath", type: "info" },
-				);
+				if (previousPath) {
+					void showSettingsNotification(
+						`Mise binary path has been updated to: ${miseBinaryPath}`,
+						{ settingsKey: "mise.binPath", type: "info" },
+					);
+				}
 			}
 		} catch (error) {
 			void showSettingsNotification(
@@ -133,8 +135,8 @@ export class MiseService {
 		}
 	}
 
-	async execMiseCommand(command: string, { setProfile = true } = {}) {
-		const miseCommand = this.createMiseCommand(command, { setProfile });
+	async execMiseCommand(command: string, { setMiseEnv = true } = {}) {
+		const miseCommand = this.createMiseCommand(command, { setMiseEnv });
 		ensureMiseCommand(miseCommand);
 		logger.debug(`> ${miseCommand}`);
 		return execAsync(miseCommand, { cwd: getRootFolderPath() });
@@ -184,7 +186,7 @@ export class MiseService {
 
 	public createMiseCommand(
 		command: string,
-		{ setProfile = true } = {},
+		{ setMiseEnv = true } = {},
 	): string | undefined {
 		const miseBinaryPath = this.getMiseBinaryPath();
 		if (!miseBinaryPath) {
@@ -192,10 +194,9 @@ export class MiseService {
 		}
 
 		let miseCommand = `"${miseBinaryPath}"`;
-		const miseProfile = getMiseProfile();
-
-		if (miseProfile && setProfile && !command.includes("use --path")) {
-			miseCommand = `${miseCommand} --profile ${getMiseProfile()}`;
+		const miseEnv = getMiseEnv();
+		if (miseEnv && setMiseEnv && !command.includes("use --path")) {
+			miseCommand = `${miseCommand} --env "${getMiseEnv()}"`;
 		}
 		return `${miseCommand} ${command}`;
 	}
@@ -419,7 +420,7 @@ export class MiseService {
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal("Mise run");
 		terminal.show();
-		const baseCommand = this.createMiseCommand(`run --timing ${taskName}`);
+		const baseCommand = this.createMiseCommand(`run ${taskName}`);
 		ensureMiseCommand(baseCommand);
 		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
 	}
@@ -468,7 +469,7 @@ export class MiseService {
 
 	async getMiseConfiguration(): Promise<MiseConfig> {
 		const miseCmd = this.createMiseCommand("doctor", {
-			setProfile: false,
+			setMiseEnv: false,
 		});
 
 		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "");
@@ -514,7 +515,7 @@ export class MiseService {
 	}
 
 	async miseReshim() {
-		await this.execMiseCommand("reshim", { setProfile: false });
+		await this.execMiseCommand("reshim", { setMiseEnv: false });
 	}
 
 	async getVersion() {
@@ -523,7 +524,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.execMiseCommand("--version", {
-			setProfile: false,
+			setMiseEnv: false,
 		});
 		return stdout.trim();
 	}
@@ -614,7 +615,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.execMiseCommand("registry", {
-			setProfile: false,
+			setMiseEnv: false,
 		});
 
 		return stdout
@@ -643,7 +644,7 @@ export class MiseService {
 		try {
 			const { stdout } = await this.execMiseCommand(
 				`ls-remote ${toolName}${yes ? " --yes" : ""}`,
-				{ setProfile: false },
+				{ setMiseEnv: false },
 			);
 			if (yes) {
 				return this.listRemoteVersions(toolName);
@@ -683,7 +684,7 @@ export class MiseService {
 	}: { filePath: string; name: string; value: string }) {
 		await this.execMiseCommand(
 			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(/"/g, '\\"')}"`,
-			{ setProfile: false },
+			{ setMiseEnv: false },
 		);
 	}
 

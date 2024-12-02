@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getMiseProfile, isMiseExtensionEnabled } from "../configuration";
+import { getMiseEnv, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 
 // this allows to run VSCode tasks from the command palette
@@ -52,15 +52,15 @@ export class VsCodeTaskProvider {
 					const runArgs = [];
 					const allWatchArgs = [];
 					const glob = task.definition.glob ?? "";
-					const profile = task.definition.profile;
+					const miseEnv = task.definition.miseEnv;
 
-					if (profile === undefined) {
-						const profileFromConfig = getMiseProfile();
-						if (profileFromConfig) {
-							runArgs.push(`--profile=${profileFromConfig}`);
+					if (miseEnv === undefined) {
+						const miseEnvFromConfig = getMiseEnv();
+						if (miseEnvFromConfig) {
+							runArgs.push(`--env "${miseEnvFromConfig}"`);
 						}
-					} else if (profile) {
-						runArgs.push(`--profile=${profile}`);
+					} else if (miseEnv) {
+						runArgs.push(`--env "${miseEnv}"`);
 					}
 
 					allWatchArgs.push(...runArgs);
@@ -68,13 +68,15 @@ export class VsCodeTaskProvider {
 						allWatchArgs.push(`--glob=${glob}`);
 					}
 					allWatchArgs.push(...watchexecArgs);
-					runArgs.push("--", ...args);
+					if (args.length > 0) {
+						runArgs.push("--", ...args);
+					}
 
 					const baseCommand = miseService.createMiseCommand(
 						definition.watch
 							? `watch -t "${definition.task.replace(/"/g, '\\"')}" ${allWatchArgs.join(" ")}`
 							: `run ${definition.task} ${runArgs.join(" ")}`,
-						{ setProfile: false },
+						{ setMiseEnv: false },
 					);
 
 					if (!baseCommand) {

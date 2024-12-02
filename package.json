@@ -89,11 +89,11 @@
 					"scope": "resource",
 					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nSee https://mise.jdx.dev/getting-started.html to install mise."
 				},
-				"mise.profile": {
+				"mise.miseEnv": {
 					"order": 3,
 					"type": "string",
 					"scope": "resource",
-					"markdownDescription": "Mise profile to use. (https://mise.jdx.dev/profiles.html)"
+					"markdownDescription": "Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)"
 				},
 				"mise.configureExtensionsAutomatically": {
 					"order": 4,
@@ -482,8 +482,8 @@
 						"description": "Re-run the task when files change",
 						"type": "boolean"
 					},
-					"profile": {
-						"description": "The mise profile to use",
+					"miseEnv": {
+						"description": "The mise environment to use",
 						"type": "string"
 					},
 					"glob": {

@@ -13,7 +13,7 @@ import {
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
-	getMiseProfile,
+	getMiseEnv,
 	getRootFolder,
 	isMiseExtensionEnabled,
 	shouldConfigureExtensionsAutomatically,
@@ -139,9 +139,9 @@ export async function activate(context: vscode.ExtensionContext) {
 			}
 
 			statusBarItem.text = "$(tools) Mise";
-			const miseProfile = getMiseProfile();
-			if (miseProfile) {
-				statusBarItem.text = `$(tools) Mise (${miseProfile})`;
+			const miseEnv = getMiseEnv();
+			if (miseEnv) {
+				statusBarItem.text = `$(tools) Mise (${miseEnv})`;
 			}
 		} catch (error) {
 			statusBarItem.text = "$(error) Mise";
