@@ -1,15 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import CustomTable from "./components/CustomTable";
-import { vscodeClient } from "./webviewVsCodeApi";
+import {
+	toDisplayPath,
+	trackedConfigsQueryOptions,
+	vscodeClient,
+} from "./webviewVsCodeApi";
 
 export const TrackedConfigs = () => {
-	const settingsQuery = useQuery({
-		queryKey: ["trackedConfigs"],
-		queryFn: ({ queryKey }) =>
-			vscodeClient.request({ queryKey }) as Promise<
-				Array<{ path: string; tools: object }>
-			>,
-	});
+	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
 
 	const openFileMutation = useMutation({
 		mutationKey: ["openFile"],
@@ -17,16 +15,16 @@ export const TrackedConfigs = () => {
 			vscodeClient.request({ mutationKey: ["openFile"], variables: { path } }),
 	});
 
-	if (settingsQuery.isError) {
-		return <div>Error: {settingsQuery.error.message}</div>;
+	if (trackedConfigQuery.isError) {
+		return <div>Error: {trackedConfigQuery.error.message}</div>;
 	}
 
 	return (
 		<div>
 			<CustomTable
 				filterRowElement={"Showing tracked config files"}
-				isLoading={settingsQuery.isLoading}
-				data={settingsQuery.data || []}
+				isLoading={trackedConfigQuery.isLoading}
+				data={trackedConfigQuery.data || []}
 				columns={[
 					{
 						id: "path",
@@ -42,7 +40,7 @@ export const TrackedConfigs = () => {
 									}}
 									title={row.original.path}
 								>
-									{row.original.path}
+									{toDisplayPath(row.original.path)}
 								</a>
 							);
 						},

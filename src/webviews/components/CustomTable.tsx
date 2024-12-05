@@ -19,7 +19,7 @@ import {
 	VscodeTableHeaderCell,
 	VscodeTableRow,
 } from "@vscode-elements/react-elements";
-import { type ReactElement, useState } from "react";
+import { type CSSProperties, type ReactElement, useState } from "react";
 import { DebouncedInput } from "./DebouncedInput";
 
 type VSCodeTableProps<T> = {
@@ -34,7 +34,8 @@ export default function CustomTable<T>({
 	columns,
 	isLoading = false,
 	filterRowElement,
-}: VSCodeTableProps<T>) {
+	style,
+}: VSCodeTableProps<T> & { style?: CSSProperties }) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState<string | number>("");
 
@@ -100,7 +101,8 @@ export default function CustomTable<T>({
 				// @ts-ignore
 				zebra
 				responsive
-				breakpoint={400}
+				breakpoint={500}
+				style={style}
 			>
 				{table.getHeaderGroups().map((headerGroup) => (
 					<VscodeTableHeader slot="header" key={headerGroup.id}>

@@ -128,13 +128,13 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		for (const flag of spec.flags) {
 			if (flag.arg) {
 				const shouldProvide = await vscode.window.showQuickPick(["Yes", "No"], {
-					placeHolder: `Do you want to provide ${flag.name}?`,
+					placeHolder: `Do you want to provide "--${flag.name}" option?`,
 					ignoreFocusOut: true,
 				});
 
 				if (shouldProvide === "Yes") {
 					const value = await vscode.window.showInputBox({
-						prompt: `Enter value for ${flag.name}`,
+						prompt: `Enter value for --${flag.name}=?`,
 						placeHolder: flag.arg,
 						ignoreFocusOut: true,
 					});

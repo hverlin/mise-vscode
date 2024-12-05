@@ -1,3 +1,5 @@
+import { queryOptions } from "@tanstack/react-query";
+
 declare global {
 	interface Window {
 		acquireVsCodeApi(): {
@@ -48,3 +50,22 @@ export const vscodeClient = {
 		});
 	},
 };
+
+const homeDir = document
+	.querySelector("meta[name='homeDir']")
+	?.getAttribute("content");
+
+export const toDisplayPath = (path: string) => {
+	if (!homeDir) {
+		return path;
+	}
+	return path.replace(homeDir, "~");
+};
+
+export const trackedConfigsQueryOptions = queryOptions({
+	queryKey: ["trackedConfigs"],
+	queryFn: ({ queryKey }) =>
+		vscodeClient.request({ queryKey }) as Promise<
+			Array<{ path: string; tools: object }>
+		>,
+});

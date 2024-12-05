@@ -1,4 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import * as os from "node:os";
 import path from "node:path";
 import * as cheerio from "cheerio";
 import * as vscode from "vscode";
@@ -248,7 +250,9 @@ export default class WebViewPanel {
 			);
 		});
 
-		$("head").append(`<meta name="view" content="${this.view}">`);
+		$("head")
+			.append(`<meta name="view" content="${this.view}">`)
+			.append(`<meta name="homeDir" content="${os.homedir()}">`);
 
 		return $.html();
 	}
