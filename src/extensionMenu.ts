@@ -1,5 +1,12 @@
 import vscode from "vscode";
-import { MISE_OPEN_MENU, MISE_OPEN_SETTINGS, MISE_RELOAD } from "./commands";
+import {
+	MISE_LIST_ALL_TOOLS,
+	MISE_OPEN_EXTENSION_SETTINGS,
+	MISE_OPEN_MENU,
+	MISE_RELOAD,
+	MISE_SHOW_SETTINGS,
+	MISE_SHOW_TRACKED_CONFIG,
+} from "./commands";
 import {
 	disableExtensionForWorkspace,
 	enableExtensionForWorkspace,
@@ -14,11 +21,26 @@ export function createMenu(miseService: MiseService) {
 
 		const pick = await vscode.window.showQuickPick(
 			[
+				{
+					label: "Mise tools",
+					detail: "List & manage Mise tools",
+					iconPath: new vscode.ThemeIcon("tools"),
+				},
+				{
+					label: "Mise settings",
+					detail: "Configure Mise settings",
+					iconPath: new vscode.ThemeIcon("gear"),
+				},
+				{
+					label: "Tracked configurations",
+					detail: "List & manage tracked configurations",
+					iconPath: new vscode.ThemeIcon("list-selection"),
+				},
+				{ label: "", kind: vscode.QuickPickItemKind.Separator },
 				{ label: "Mise version", detail: miseVersion },
 				{
 					iconPath: new vscode.ThemeIcon("refresh"),
 					label: "Reload configuration",
-					detail: "Reload Mise configuration",
 				},
 				{ label: "", kind: vscode.QuickPickItemKind.Separator },
 				{
@@ -26,7 +48,7 @@ export function createMenu(miseService: MiseService) {
 					label: "Open extension settings",
 				},
 				{
-					iconPath: new vscode.ThemeIcon("list-selection"),
+					iconPath: new vscode.ThemeIcon("output"),
 					label: "Show logs",
 				},
 				{
@@ -43,6 +65,9 @@ export function createMenu(miseService: MiseService) {
 			] satisfies Array<
 				vscode.QuickPickItem & {
 					label:
+						| "Mise tools"
+						| "Mise settings"
+						| "Tracked configurations"
 						| "Mise version"
 						| "Reload configuration"
 						| "Open extension settings"
@@ -59,11 +84,20 @@ export function createMenu(miseService: MiseService) {
 		);
 
 		switch (pick?.label) {
+			case "Mise tools":
+				await vscode.commands.executeCommand(MISE_LIST_ALL_TOOLS);
+				break;
+			case "Mise settings":
+				await vscode.commands.executeCommand(MISE_SHOW_SETTINGS);
+				break;
+			case "Tracked configurations":
+				await vscode.commands.executeCommand(MISE_SHOW_TRACKED_CONFIG);
+				break;
 			case "Reload configuration":
 				await vscode.commands.executeCommand(MISE_RELOAD);
 				break;
 			case "Open extension settings":
-				await vscode.commands.executeCommand(MISE_OPEN_SETTINGS);
+				await vscode.commands.executeCommand(MISE_OPEN_EXTENSION_SETTINGS);
 				break;
 			case "About vscode-mise":
 				vscode.env.openExternal(

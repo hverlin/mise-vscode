@@ -5,11 +5,13 @@ import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
+	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_FILE,
 	MISE_OPEN_LOGS,
 	MISE_OPEN_MENU,
-	MISE_OPEN_SETTINGS,
 	MISE_RELOAD,
+	MISE_SHOW_SETTINGS,
+	MISE_SHOW_TRACKED_CONFIG,
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
@@ -187,7 +189,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand(MISE_OPEN_SETTINGS, () => {
+		vscode.commands.registerCommand(MISE_OPEN_EXTENSION_SETTINGS, () => {
 			vscode.commands.executeCommand(
 				"workbench.action.openSettings",
 				"@ext:hverlin.mise-vscode",
@@ -229,7 +231,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(MISE_LIST_ALL_TOOLS, async () => {
-			WebViewPanel.createOrShow(context, miseService);
+			WebViewPanel.createOrShow(context, miseService, "TOOLS");
+		}),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(MISE_SHOW_SETTINGS, async () => {
+			WebViewPanel.createOrShow(context, miseService, "SETTINGS");
+		}),
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(MISE_SHOW_TRACKED_CONFIG, async () => {
+			WebViewPanel.createOrShow(context, miseService, "TRACKED_CONFIGS");
 		}),
 	);
 

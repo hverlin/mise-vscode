@@ -19,10 +19,6 @@ export function Tabs({
 					<div
 						onClick={() => {
 							setSelectedTab(tab.name);
-							vscode.postMessage({
-								type: "updateState",
-								path: tab.name,
-							});
 						}}
 						className={[
 							"vscode-tab",

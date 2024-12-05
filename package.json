@@ -202,7 +202,7 @@
 			},
 			{
 				"view": "miseTasksView",
-				"contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openSettings)",
+				"contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openExtensionSettings)",
 				"when": "!config.mise.binPath"
 			},
 			{
@@ -217,17 +217,17 @@
 			},
 			{
 				"view": "miseTasksView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
 				"when": "!config.mise.enable"
 			},
 			{
 				"view": "miseToolsView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
 				"when": "!config.mise.enable"
 			},
 			{
 				"view": "miseEnvsView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openSettings)",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
 				"when": "!config.mise.enable"
 			}
 		],
@@ -341,7 +341,7 @@
 				"title": "Mise: Configure all extension sdk paths"
 			},
 			{
-				"command": "mise.openSettings",
+				"command": "mise.openExtensionSettings",
 				"title": "Mise: Open extension settings",
 				"icon": "$(tools)"
 			},
@@ -353,6 +353,16 @@
 			{
 				"command": "mise.listAllTools",
 				"title": "Mise: List all Tools",
+				"icon": "$(list-ordered)"
+			},
+			{
+				"command": "mise.showSettings",
+				"title": "Mise: Show mise settings",
+				"icon": "$(list-ordered)"
+			},
+			{
+				"command": "mise.showTrackedConfig",
+				"title": "Mise: Show mise tracked configurations",
 				"icon": "$(list-ordered)"
 			},
 			{

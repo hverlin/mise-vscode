@@ -5,8 +5,10 @@ import * as vscode from "vscode";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
+type PanelView = "TOOLS" | "SETTINGS" | "TRACKED_CONFIGS";
+
 export default class WebViewPanel {
-	public static currentPanel: WebViewPanel | undefined;
+	public static currentPanels: Record<string, WebViewPanel> = {};
 	private static readonly viewType = "Mise";
 
 	private readonly _panel: vscode.WebviewPanel;
@@ -14,23 +16,25 @@ export default class WebViewPanel {
 	private readonly _extContext: vscode.ExtensionContext;
 	private _disposables: vscode.Disposable[] = [];
 	private readonly miseService: MiseService;
-	private _currentPath = "tools";
+	private view: PanelView = "TOOLS";
 
 	public static createOrShow(
 		extContext: vscode.ExtensionContext,
 		miseService: MiseService,
+		view: PanelView,
 	) {
 		const column = vscode.window.activeTextEditor
 			? vscode.window.activeTextEditor.viewColumn
 			: undefined;
 
-		if (WebViewPanel.currentPanel) {
-			WebViewPanel.currentPanel._panel.reveal(column);
+		if (WebViewPanel.currentPanels[view]) {
+			WebViewPanel.currentPanels[view]._panel.reveal(column);
 		} else {
-			WebViewPanel.currentPanel = new WebViewPanel(
+			WebViewPanel.currentPanels[view] = new WebViewPanel(
 				extContext,
 				vscode.ViewColumn.One,
 				miseService,
+				view,
 			);
 		}
 	}
@@ -39,16 +43,16 @@ export default class WebViewPanel {
 		_extContext: vscode.ExtensionContext,
 		column: vscode.ViewColumn,
 		miseService: MiseService,
-		initialPath?: string,
+		view: PanelView,
 	) {
 		this._extContext = _extContext;
 		this._extensionUri = _extContext.extensionUri;
 		this.miseService = miseService;
-		this._currentPath = initialPath ?? "tools";
+		this.view = view;
 
 		this._panel = vscode.window.createWebviewPanel(
 			WebViewPanel.viewType,
-			"Mise",
+			`Mise: ${this.view === "TOOLS" ? "Tools" : this.view === "SETTINGS" ? "Settings" : "Tracked Configs"}`,
 			column,
 			{
 				retainContextWhenHidden: true,
@@ -84,10 +88,6 @@ export default class WebViewPanel {
 		this._panel.webview.onDidReceiveMessage(
 			async (message) => {
 				switch (message.type) {
-					case "updateState": {
-						this._currentPath = message.path;
-						break;
-					}
 					case "query":
 						switch (message.queryKey[0]) {
 							case "tools": {
@@ -168,7 +168,11 @@ export default class WebViewPanel {
 	}
 
 	public dispose() {
-		WebViewPanel.currentPanel = undefined;
+		for (const view in WebViewPanel.currentPanels) {
+			if (WebViewPanel.currentPanels[view] === this) {
+				delete WebViewPanel.currentPanels[view];
+			}
+		}
 		this._panel.dispose();
 		while (this._disposables.length) {
 			const x = this._disposables.pop();
@@ -244,9 +248,7 @@ export default class WebViewPanel {
 			);
 		});
 
-		$("head").append(
-			`<meta name="initial-path" content="${this._currentPath}">`,
-		);
+		$("head").append(`<meta name="view" content="${this.view}">`);
 
 		return $.html();
 	}
