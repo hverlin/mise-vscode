@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.0](https://github.com/hverlin/mise-vscode/compare/v0.25.0...v0.26.0) (2024-12-05)
+
+
+### Features
+
+* Create separate views for tools, settings and tracked configurations ([3df5dfe](https://github.com/hverlin/mise-vscode/commit/3df5dfecf2579c1cdf192f768152e6ea51fe9d49))
+* Show tool information ([70611b7](https://github.com/hverlin/mise-vscode/commit/70611b7c50e3a7f078d95f1480d9d6821ee99b3a))
+
 ## [0.25.0](https://github.com/hverlin/mise-vscode/compare/v0.24.1...v0.25.0) (2024-12-02)
 
 
