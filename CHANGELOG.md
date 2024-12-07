@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.1](https://github.com/hverlin/mise-vscode/compare/v0.28.0...v0.28.1) (2024-12-07)
+
+
+### Bug Fixes
+
+* Only show code-lens in files detected by `mise` in current project ([6d05d56](https://github.com/hverlin/mise-vscode/commit/6d05d560da35b2ef3eb021d2c65ec64a827294d7))
+
 ## [0.28.0](https://github.com/hverlin/mise-vscode/compare/v0.27.0...v0.28.0) (2024-12-07)
 
 
