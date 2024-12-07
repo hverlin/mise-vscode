@@ -77,11 +77,15 @@ export class MiseService {
 	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
 
 	private cache = createCache({
-		ttl: 0,
+		ttl: 1,
 		storage: { type: "memory" },
 	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
+
+	invalidateCache() {
+		return this.cache.clear();
+	}
 
 	async initializeMisePath() {
 		if (!isMiseExtensionEnabled()) {
@@ -253,9 +257,18 @@ export class MiseService {
 				return this.getTasks();
 			}
 
-			logger.error("Error fetching mise tasks:", error as Error);
+			logger.info("Error fetching mise tasks:", error as Error);
 			return [];
 		}
+	}
+
+	async getCurrentConfigFiles(): Promise<string[]> {
+		const files = await Promise.all([
+			this.getTasks().then((tasks) => tasks.map((task) => task.source)),
+			this.getMiseConfigFiles().then((files) => files.map((file) => file.path)),
+		]);
+
+		return [...new Set(files.flat().map((file) => expandPath(file)))];
 	}
 
 	async getTaskInfo(taskName: string): Promise<MiseTaskInfo | undefined> {
@@ -267,7 +280,7 @@ export class MiseService {
 			const { stdout } = await this.execMiseCommand(`tasks info ${taskName}`);
 			return parseTaskInfo(stdout);
 		} catch (error: unknown) {
-			logger.error("Error fetching mise task info:", error as Error);
+			logger.info("Error fetching mise task info:", error as Error);
 			return undefined;
 		}
 	}
@@ -333,7 +346,7 @@ export class MiseService {
 				return this.getAllTools();
 			}
 
-			logger.error("Error fetching mise tools:", error as Error);
+			logger.info("Error fetching mise tools:", error as Error);
 			return [];
 		}
 	}
@@ -412,7 +425,7 @@ export class MiseService {
 				return this.getEnvs();
 			}
 
-			logger.error("Error fetching mise environments:", error as Error);
+			logger.info("Error fetching mise environments:", error as Error);
 			return [];
 		}
 	}
@@ -515,7 +528,11 @@ export class MiseService {
 	}
 
 	async miseReshim() {
-		await this.execMiseCommand("reshim", { setMiseEnv: false });
+		await this.execMiseCommand("reshim", { setMiseEnv: false }).catch(
+			(error) => {
+				logger.info("mise reshim", error as Error);
+			},
+		);
 	}
 
 	async getVersion() {
@@ -530,7 +547,6 @@ export class MiseService {
 		if (stderr) {
 			logger.info(`Mise stderr: ${stderr.trim()}`);
 		}
-		logger.info(stdout);
 		return stdout.trim();
 	}
 
@@ -668,7 +684,7 @@ export class MiseService {
 					return this.listRemoteVersions(toolName, { yes: true });
 				}
 			}
-			logger.error("Error fetching remote versions:", error as Error);
+			logger.info("Error fetching remote versions:", error as Error);
 			throw error;
 		}
 	}

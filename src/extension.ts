@@ -100,6 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		ttl: 1,
 	}).define("reload", async () => {
 		logger.info("Reloading Mise configuration");
+		await miseService.invalidateCache();
 		await miseService.initializeMisePath();
 
 		statusBarItem.text = "$(sync~spin) Mise";

@@ -24,7 +24,8 @@ export class MiseFileWatcher {
 		this.onConfigChangeCallback = onConfigChangeCallback;
 		this.fileWatchers = [];
 		this.initializeFileWatcher().catch((error) => {
-			logger.error("Error initializing file watcher", error);
+			logger.warn("Error initializing file watcher");
+			logger.info("Unable to initialize file watcher", { error });
 		});
 	}
 

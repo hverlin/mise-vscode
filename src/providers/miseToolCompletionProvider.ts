@@ -4,6 +4,7 @@ import {
 	shouldShowToolVersionsDecorations,
 } from "../configuration";
 import type { MiseService } from "../miseService";
+import { expandPath } from "../utils/fileUtils";
 
 const activeDecorationsPerFileAndTool: {
 	[filePath: string]: {
@@ -23,8 +24,15 @@ export async function showToolVersionInline(
 		return;
 	}
 
-	const tools = await miseService.getCurrentTools();
-	const currentFile = document.uri.fsPath;
+	const currentFile = expandPath(document.uri.fsPath);
+
+	const [files, tools] = await Promise.all([
+		miseService.getCurrentConfigFiles(),
+		miseService.getCurrentTools(),
+	]);
+	if (!files.includes(currentFile)) {
+		return;
+	}
 
 	activeDecorationsPerFileAndTool[currentFile] ??= {};
 	const updatedToolNames = new Set<string>();

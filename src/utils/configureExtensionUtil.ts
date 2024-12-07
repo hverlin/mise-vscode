@@ -105,9 +105,6 @@ export async function configureExtension({
 		configurableExtension.extensionId,
 	);
 	if (!extension) {
-		logger.debug(
-			`Mise: Extension ${configurableExtension.extensionId} is not installed`,
-		);
 		return { configurableExtension, updatedKeys: [] };
 	}
 
