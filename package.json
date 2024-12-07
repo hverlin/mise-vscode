@@ -17,6 +17,7 @@
 	},
 	"categories": [
 		"Programming Languages",
+		"Snippets",
 		"Other"
 	],
 	"keywords": [
@@ -44,6 +45,9 @@
 		"workspaceContains:mise/config.*.toml",
 		"workspaceContains:mise/config.toml",
 		"onLanguage"
+	],
+	"extensionDependencies": [
+		"tamasfe.even-better-toml"
 	],
 	"contributes": {
 		"tomlValidation": [
