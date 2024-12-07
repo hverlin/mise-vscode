@@ -289,7 +289,7 @@ export const Tools = () => {
 						<IconButton
 							title={"Refresh"}
 							iconName={"refresh"}
-							onClick={() => outdatedToolsQuery.refetch()}
+							onClick={() => queryClient.invalidateQueries()}
 						/>
 						<VscodeCheckbox
 							label={"Active only"}

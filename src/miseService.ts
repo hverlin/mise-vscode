@@ -474,7 +474,7 @@ export class MiseService {
 
 		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "");
 		if (stderr) {
-			logger.warn(stderr);
+			logger.info(miseCmd, stderr);
 		}
 
 		return parseMiseConfig(stdout);
@@ -519,13 +519,18 @@ export class MiseService {
 	}
 
 	async getVersion() {
-		if (!this.getMiseBinaryPath()) {
+		const miseCommand = this.createMiseCommand("version", {
+			setMiseEnv: false,
+		});
+		if (!miseCommand) {
 			return "mise binary path is not configured";
 		}
 
-		const { stdout } = await this.execMiseCommand("--version", {
-			setMiseEnv: false,
-		});
+		const { stdout, stderr } = await execAsyncMergeOutput(miseCommand ?? "");
+		if (stderr) {
+			logger.info(`Mise stderr: ${stderr.trim()}`);
+		}
+		logger.info(stdout);
 		return stdout.trim();
 	}
 
