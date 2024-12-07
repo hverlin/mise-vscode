@@ -19,7 +19,6 @@ import {
 	getRootFolder,
 	isMiseExtensionEnabled,
 	shouldConfigureExtensionsAutomatically,
-	shouldUpdateEnv,
 } from "./configuration";
 import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
@@ -31,6 +30,10 @@ import {
 } from "./providers/envProvider";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
+import {
+	TeraCompletionProvider,
+	createHoverProvider,
+} from "./providers/miseTeraCompletionProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
 import { showToolVersionInline } from "./providers/miseToolCompletionProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
@@ -248,14 +251,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		}),
 	);
 
+	const allTomlFilesSelector = { scheme: "file", language: "toml" };
+
 	context.subscriptions.push(
 		vscode.languages.registerCompletionItemProvider(
-			{ language: "toml", scheme: "file" },
+			allTomlFilesSelector,
 			new MiseCompletionProvider(miseService),
-			'"',
-			"'",
-			"[",
-			",",
+			...['"', "'", "[", ","],
 		),
 	);
 
@@ -283,6 +285,15 @@ export async function activate(context: vscode.ExtensionContext) {
 			miseService,
 		);
 	}
+
+	context.subscriptions.push(
+		vscode.languages.registerCompletionItemProvider(
+			allTomlFilesSelector,
+			new TeraCompletionProvider(),
+			...["{", "%", "|", "."],
+		),
+	);
+	context.subscriptions.push(createHoverProvider(allTomlFilesSelector));
 
 	await vscode.commands.executeCommand(MISE_RELOAD);
 

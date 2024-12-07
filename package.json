@@ -200,6 +200,14 @@
 					"title": "Update terminal environment variables automatically",
 					"default": false,
 					"markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
+				},
+				"mise.enableExperimentalTeraAutoCompletion": {
+					"order": 13,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Enable experimental Tera auto-completion",
+					"default": false,
+					"markdownDescription": "Enable experimental Tera auto-completion in `.mise.toml` files."
 				}
 			}
 		},
