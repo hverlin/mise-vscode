@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.0](https://github.com/hverlin/mise-vscode/compare/v0.26.0...v0.27.0) (2024-12-07)
+
+
+### Features
+
+* Add syntax highlighting for tera template ([9ba6852](https://github.com/hverlin/mise-vscode/commit/9ba68524464bf4de05e050735005ad70d113d809))
+* Indicate that the extension depends on tamasfe.even-better-toml ([c67f70e](https://github.com/hverlin/mise-vscode/commit/c67f70e3eae6984536b422b50d3ce2234a5595ae))
+
 ## [0.26.0](https://github.com/hverlin/mise-vscode/compare/v0.25.0...v0.26.0) (2024-12-05)
 
 

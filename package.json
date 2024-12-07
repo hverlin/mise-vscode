@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "0.26.0",
+	"version": "0.27.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -69,7 +69,9 @@
 		],
 		"grammars": [
 			{
-				"injectTo": ["source.toml"],
+				"injectTo": [
+					"source.toml"
+				],
 				"scopeName": "inline.tera-mise",
 				"path": "./syntaxes/tera-mise.json",
 				"embeddedLanguages": {
