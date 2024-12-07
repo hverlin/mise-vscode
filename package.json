@@ -67,6 +67,17 @@
 				"url": "https://mise.jdx.dev/schema/mise-task.json"
 			}
 		],
+		"grammars": [
+			{
+				"injectTo": ["source.toml"],
+				"scopeName": "inline.tera-mise",
+				"path": "./syntaxes/tera-mise.json",
+				"embeddedLanguages": {
+					"meta.embedded.tera.expression": "tera",
+					"meta.embedded.tera.statement": "tera"
+				}
+			}
+		],
 		"snippets": [
 			{
 				"language": "toml",

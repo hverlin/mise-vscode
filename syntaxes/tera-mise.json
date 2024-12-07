@@ -1,0 +1,145 @@
+{
+	"scopeName": "inline.tera-mise",
+	"injectionSelector": "L:string.quoted, L:string.quoted.single, L:string.quoted.double, L:string.quoted.triple",
+	"patterns": [
+		{
+			"name": "meta.embedded.block.tera",
+			"begin": "(\\{\\{)(-?)",
+			"beginCaptures": {
+				"1": { "name": "punctuation.section.embedded.begin.tera" },
+				"2": { "name": "keyword.operator.whitespace.trim.tera" }
+			},
+			"end": "(-?)(\\}\\})",
+			"endCaptures": {
+				"1": { "name": "keyword.operator.whitespace.trim.tera" },
+				"2": { "name": "punctuation.section.embedded.end.tera" }
+			},
+			"patterns": [
+				{
+					"include": "#expression"
+				}
+			]
+		},
+		{
+			"name": "meta.embedded.block.tera",
+			"begin": "(\\{%)(-?)",
+			"beginCaptures": {
+				"1": { "name": "punctuation.section.embedded.begin.tera" },
+				"2": { "name": "keyword.operator.whitespace.trim.tera" }
+			},
+			"end": "(-?)(\\%\\})",
+			"endCaptures": {
+				"1": { "name": "keyword.operator.whitespace.trim.tera" },
+				"2": { "name": "punctuation.section.embedded.end.tera" }
+			},
+			"patterns": [
+				{
+					"include": "#expression"
+				}
+			]
+		},
+		{
+			"name": "comment.block.tera",
+			"begin": "\\{#",
+			"end": "#\\}"
+		}
+	],
+	"repository": {
+		"expression": {
+			"patterns": [
+				{
+					"match": "\\b(and|else|if|elif|in|import|not|or|recursive|set|include|default|block|endblock|macro|endmacro|arg|option|for|endfor|raw|endraw)\\b",
+					"name": "keyword.control.tera"
+				},
+				{
+					"match": "\\b(true|false|none|True|False)\\b",
+					"name": "constant.language.tera"
+				},
+				{
+					"match": "\\b(loop|super|self|varargs|kwargs|env|cwd|config_root|mise_bin|mise_pid|xdg_cache_home|xdg_config_home|xdg_data_home|xdg_state_home)\\b",
+					"name": "support.variable.language.tera"
+				},
+				{
+					"match": "\\b(range|now|throw|get_random|get_env|exec|arch|os|os_family|num_cpus|choice)\\s*\\(",
+					"name": "support.function.tera"
+				},
+				{
+					"match": "\\b(is)\\s+(defined|string|number|starting_with|ending_with|containing|matching|dir|file|exists|odd)\\b",
+					"name": "keyword.operator.word.tera"
+				},
+				{
+					"begin": "(\\|)\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+					"beginCaptures": {
+						"1": { "name": "punctuation.section.pipe.tera" },
+						"2": { "name": "support.function.filter.tera" }
+					},
+					"end": "\\)",
+					"patterns": [
+						{
+							"match": "\\b(value|name|var|from|to|sep|format|len|pat)\\s*(=)",
+							"captures": {
+								"1": { "name": "variable.parameter.tera" },
+								"2": { "name": "keyword.operator.assignment.tera" }
+							}
+						},
+						{
+							"include": "#expression"
+						}
+					]
+				},
+				{
+					"captures": {
+						"1": { "name": "punctuation.section.pipe.tera" },
+						"2": { "name": "support.function.filter.tera" }
+					},
+					"match": "(\\|)\\s*(lower|upper|capitalize|title|trim|trim_start|trim_end|truncate|first|last|length|reverse|urlencode|map|concat|abs|filesizeformat|split|default|hash|hash_file|canonicalize|basename|file_size|dirname|extname|file_stem|last_modified|join_path|quote|kebabcase|lowercamelcase|uppercamelcase|shoutycamelcase|snakecase|shoutysnakecase)"
+				},
+				{
+					"captures": {
+						"1": { "name": "punctuation.accessor.tera" },
+						"2": { "name": "variable.other.member.tera" }
+					},
+					"match": "(\\.)([a-zA-Z_][a-zA-Z0-9_]*)"
+				},
+				{
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
+					"name": "variable.other.tera"
+				},
+				{
+					"match": "(==|>=|<=|<|>|!=)",
+					"name": "keyword.operator.comparison.tera"
+				},
+				{
+					"match": "(\\+|\\-|\\*|/|%|~)",
+					"name": "keyword.operator.arithmetic.tera"
+				},
+				{
+					"begin": "'",
+					"end": "'",
+					"name": "string.quoted.single.tera",
+					"patterns": [{ "include": "#string_content" }]
+				},
+				{
+					"begin": "\"",
+					"end": "\"",
+					"name": "string.quoted.double.tera",
+					"patterns": [{ "include": "#string_content" }]
+				},
+				{
+					"begin": "`",
+					"end": "`",
+					"name": "string.quoted.backtick.tera",
+					"patterns": [{ "include": "#string_content" }]
+				}
+			]
+		},
+		"string_content": {
+			"patterns": [
+				{
+					"match": "\\\\(['\"\\\\`])",
+					"name": "constant.character.escape.tera"
+				}
+			]
+		}
+	}
+}
