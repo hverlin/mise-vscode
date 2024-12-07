@@ -138,7 +138,8 @@
 							"xdebug.php-debug",
 							"julialang.language-julia",
 							"pgourlain.erlang",
-							"Dart-Code.dart-code"
+							"Dart-Code.dart-code",
+							"ziglang.vscode-zig"
 						]
 					},
 					"scope": "resource",

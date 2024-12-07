@@ -276,6 +276,43 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		toolNames: ["zig"],
+		extensionId: "ziglang.vscode-zig",
+		generateConfiguration: async ({
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension({
+				configKey: "zig.path",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["zls", "ubi:zigtools/zls", "aqua:zigtools/zls"],
+		extensionId: "ziglang.vscode-zig",
+		generateConfiguration: async ({
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension({
+				configKey: "zig.zls.path",
+				binName: "zls",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
