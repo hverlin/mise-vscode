@@ -60,7 +60,7 @@
 			},
 			{
 				"regexMatch": "task[s]?.toml",
-				"url": "https://raw.githubusercontent.com/hverlin/mise-vscode/refs/heads/main/schemas/toml-task-file-schema.json"
+				"url": "https://mise.jdx.dev/schema/mise-task.json"
 			}
 		],
 		"snippets": [
