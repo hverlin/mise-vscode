@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.28.0](https://github.com/hverlin/mise-vscode/compare/v0.27.0...v0.28.0) (2024-12-07)
+
+
+### Features
+
+* Add zig support ([f036579](https://github.com/hverlin/mise-vscode/commit/f036579a92cbe4c30d5be7567f3331f556275f38))
+
+
+### Bug Fixes
+
+* Remove some mise version update warnings ([952e730](https://github.com/hverlin/mise-vscode/commit/952e7309117046d47eddc877e9c35efc85a1b064))
+
 ## [0.27.0](https://github.com/hverlin/mise-vscode/compare/v0.26.0...v0.27.0) (2024-12-07)
 
 
