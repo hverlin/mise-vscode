@@ -317,9 +317,9 @@ export const Tools = () => {
 						>
 							{pruneToolsMutations.isPending ? "Pruning..." : "Prune tools"}
 						</VscodeButton>
-						<p>
+						<div>
 							{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
-						</p>
+						</div>
 					</div>
 				}
 				isLoading={toolsQuery.isLoading}

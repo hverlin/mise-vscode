@@ -65,14 +65,6 @@ export default function CustomTable<T>({
 		);
 	}
 
-	if (!data.length) {
-		return (
-			<div className="vscode-table">
-				<div className="vscode-table__empty">No data available</div>
-			</div>
-		);
-	}
-
 	return (
 		<div
 			style={{
@@ -132,6 +124,11 @@ export default function CustomTable<T>({
 					</VscodeTableHeader>
 				))}
 				<VscodeTableBody slot="body">
+					{table.getRowModel().rows.length === 0 && (
+						<VscodeTableRow>
+							<center style={{ padding: 50 }}>No data found</center>
+						</VscodeTableRow>
+					)}
 					{table.getRowModel().rows.map((row) => (
 						<VscodeTableRow key={row.id} className="vscode-table__row">
 							{row.getVisibleCells().map((cell) => (
