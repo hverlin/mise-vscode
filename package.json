@@ -23,8 +23,10 @@
 	"keywords": [
 		"mise",
 		"mise-en-place",
-		"rtx",
 		"devtools",
+		"rtx",
+		"asdf",
+		"asdf-vm",
 		"tasks",
 		"envs",
 		"environment variables",
