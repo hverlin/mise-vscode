@@ -5,7 +5,7 @@
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
-> [mise](https://mise.jdx.dev/) is a polyglot tool version manager, environment variables manger, and tasks runner.
+> [mise](https://mise.jdx.dev/) is a polyglot tool version manager, environment variables manager, and tasks runner.
 > - Like asdf (or nvm or pyenv but for any language), it manages dev tools like node, python, cmake, terraform, and hundreds more. 
 > - Like direnv, it manages environment variables for different project directories.
 > - Like make, it manages tasks used to build and test projects.
@@ -20,20 +20,13 @@ It can automatically [configure other extensions](https://github.com/hverlin/mis
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
-### Requirements
-- This extension is tested against the latest version of `mise`. To update, run `mise self-update`.
-
 ## ✨ Features
 
 ### Task Management
 - 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
-- ⚡ Run tasks directly from:
-    - `mise.toml` files or file tasks
-    - Command palette
-    - Mise sidebar
-- Arguments are supported!
-- 📝 View task definitions 
-- ➕ Create new file tasks 
+- ⚡ Run tasks directly from, `mise.toml` files, file tasks, the command palette or the activity bar! (arguments are supported)
+- 📝 View task definitions
+- ➕ Create new toml & file tasks 
 
 ### Tool Management
 - 🧰 View all [mise tools](https://mise.jdx.dev/dev-tools/) (python, node, jq, etc.) in the sidebar
@@ -72,9 +65,11 @@ https://github.com/hverlin/mise-vscode/wiki
 - Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
 - Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
+Note that this extension is tested against the latest version of `mise`. If you encounter an issue, make sure to update `mise` first with `mise self-update` or using your package manager.
+
 ### Known Issues
 - Workspaces with multiple folders are not yet supported. Only the first workspace folder is used.
-- This extension is not tested on Windows.
+- Windows is partially supported. Some features may not work as expected. Please report any issues you encounter.
 
 ## Ecosystem
 
