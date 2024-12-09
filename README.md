@@ -1,6 +1,8 @@
 # mise-vscode 🛠️
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/hverlin.mise-vscode)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![Open VSX](https://img.shields.io/open-vsx/v/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
+![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)
+![GitHub License](https://img.shields.io/github/license/hverlin/mise-vscode)
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
@@ -11,6 +13,8 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 
 This VSCode extension makes it easier to manage `mise` [tasks](https://github.com/hverlin/mise-vscode/wiki/Tasks), [tools](https://github.com/hverlin/mise-vscode/wiki/Tools), and [environment variables](https://github.com/hverlin/mise-vscode/wiki/Environment-variables) directly from your editor.
 
+It can automatically [configure other extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions) to use tools provided by `mise` in your current project.
+
 ![mise-extension.png](screenshots/mise-extension.png)
 
 ## Installation
@@ -19,7 +23,6 @@ This VSCode extension makes it easier to manage `mise` [tasks](https://github.co
 
 ### Requirements
 - This extension is tested against the latest version of `mise`. To update, run `mise self-update`.
-- For syntax highlighting, install [even-better-toml](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). See [wiki](https://github.com/hverlin/mise-vscode/wiki/mise.toml-language-support).
 
 ## ✨ Features
 
@@ -79,6 +82,6 @@ https://github.com/hverlin/mise-vscode/wiki
 - See [intellij-mise](https://github.com/134130/intellij-mise) if you are looking for a similar plugin for IntelliJ IDEA
 - [Mise documentation](https://mise.jdx.dev/)
 
-## 📄 License
+## License
 
 This extension is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
