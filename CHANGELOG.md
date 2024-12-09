@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.1](https://github.com/hverlin/mise-vscode/compare/v0.29.0...v0.29.1) (2024-12-09)
+
+
+### Bug Fixes
+
+* improve windows support ([d3b6e62](https://github.com/hverlin/mise-vscode/commit/d3b6e6295aa081b13825fac202b93a7af5d7a30d))
+
 ## [0.29.0](https://github.com/hverlin/mise-vscode/compare/v0.28.1...v0.29.0) (2024-12-09)
 
 
