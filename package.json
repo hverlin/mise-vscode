@@ -139,6 +139,7 @@
 							"julialang.language-julia",
 							"pgourlain.erlang",
 							"Dart-Code.dart-code",
+							"dart-code.flutter",
 							"ziglang.vscode-zig"
 						]
 					},

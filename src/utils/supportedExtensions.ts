@@ -277,6 +277,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
+		toolNames: ["flutter", "vfox:version-fox/vfox-flutter"],
+		extensionId: "dart-code.flutter",
+		generateConfiguration: async ({ tool }) => {
+			return {
+				"dart.flutterSdkPath": tool.install_path,
+			};
+		},
+	},
+	{
 		toolNames: ["zig"],
 		extensionId: "ziglang.vscode-zig",
 		generateConfiguration: async ({
