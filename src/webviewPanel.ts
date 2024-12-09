@@ -190,9 +190,8 @@ export default class WebViewPanel {
 			"dist",
 			"webviews",
 		);
-
 		const htmlContent = readFileSync(
-			path.join(basePath.path, "index.html"),
+			path.join(basePath.fsPath, "index.html"),
 			"utf-8",
 		);
 		const $ = cheerio.load(htmlContent);
@@ -218,7 +217,7 @@ export default class WebViewPanel {
 				webview.asWebviewUri(vscode.Uri.joinPath(basePath, href)).toString(),
 			);
 
-			const cssPath = path.join(basePath.path, href);
+			const cssPath = path.join(basePath.fsPath, href);
 			try {
 				const cssContent = readFileSync(cssPath, "utf-8");
 				const processedCss = cssContent.replace(

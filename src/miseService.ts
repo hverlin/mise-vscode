@@ -118,6 +118,9 @@ export class MiseService {
 
 		if (!this.hasVerifiedMiseVersion) {
 			const version = await this.getVersion();
+			if (!version || version.includes("not configured")) {
+				return;
+			}
 			const hasValidMiseVersion = await this.hasValidMiseVersion();
 			if (!hasValidMiseVersion) {
 				const canSelfUpdate = await this.canSelfUpdate();
@@ -197,7 +200,12 @@ export class MiseService {
 			return undefined;
 		}
 
-		let miseCommand = `"${miseBinaryPath}"`;
+		let miseCommand = miseBinaryPath.includes(" ")
+			? process.platform === "win32"
+				? `& "${miseBinaryPath}"`
+				: `"${miseBinaryPath}"`
+			: miseBinaryPath;
+
 		const miseEnv = getMiseEnv();
 		if (miseEnv && setMiseEnv && !command.includes("use --path")) {
 			miseCommand = `${miseCommand} --env "${getMiseEnv()}"`;
@@ -540,7 +548,7 @@ export class MiseService {
 			setMiseEnv: false,
 		});
 		if (!miseCommand) {
-			return "mise binary path is not configured";
+			return "";
 		}
 
 		const { stdout, stderr } = await execAsyncMergeOutput(miseCommand ?? "");
