@@ -41,6 +41,9 @@ importers:
       react-error-boundary:
         specifier: ^4.1.2
         version: 4.1.2(react@18.3.1)
+      tinyexec:
+        specifier: ^0.3.1
+        version: 0.3.1
       toml-v1:
         specifier: ^1.0.0
         version: 1.0.0
@@ -443,6 +446,9 @@ packages:
 
   super-sources@1.1.1:
     resolution: {integrity: sha512-urkv0ksWoPIdRQjiDRrMLLLZvZtsJqU6Txlh3cxi/NhpC+NzlC170owSe8ruOZRJN1eWZ+GdvNsh/QXqMizxtQ==}
+
+  tinyexec@0.3.1:
+    resolution: {integrity: sha512-WiCJLEECkO18gwqIp6+hJg0//p23HXp4S+gGtAKu3mI2F2/sXC4FvHvXvB0zJVVaTPhx1/tOwdbRsa1sOBIKqQ==}
 
   toml-v1@1.0.0:
     resolution: {integrity: sha512-fMk7vzBrPNFeuAvpN1eLeC3QBvTAKmqD3XRvHj5Z2nGasQfF+b//S4OqByUYRGASwshXM2TBCmMXMNWbnm7EYA==}
@@ -848,6 +854,8 @@ snapshots:
   super-sources@1.1.1:
     dependencies:
       string-width: 4.2.3
+
+  tinyexec@0.3.1: {}
 
   toml-v1@1.0.0:
     dependencies:
