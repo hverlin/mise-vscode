@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.29.0](https://github.com/hverlin/mise-vscode/compare/v0.28.1...v0.29.0) (2024-12-09)
+
+
+### Features
+
+* Add flutter support ([4d91437](https://github.com/hverlin/mise-vscode/commit/4d91437a2dc8943cd94c9d3025b35aece70b8ff6))
+
+
+### Bug Fixes
+
+* Add experimental support for auto-completion in mise templates ([e31762e](https://github.com/hverlin/mise-vscode/commit/e31762e9f17283c8a6e27155d48bf537d1def998))
+
 ## [0.28.1](https://github.com/hverlin/mise-vscode/compare/v0.28.0...v0.28.1) (2024-12-07)
 
 
