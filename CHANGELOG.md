@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.30.0](https://github.com/hverlin/mise-vscode/compare/v0.29.1...v0.30.0) (2024-12-09)
+
+
+### Features
+
+* automatically locate mise binary if installed with scoop ([0878839](https://github.com/hverlin/mise-vscode/commit/0878839a45dc091bb2e00781e37b36f61e9784db))
+
 ## [0.29.1](https://github.com/hverlin/mise-vscode/compare/v0.29.0...v0.29.1) (2024-12-09)
 
 
