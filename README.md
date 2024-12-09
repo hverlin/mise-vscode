@@ -4,15 +4,20 @@
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
-> [mise](https://mise.jdx.dev/) is a development setup tool that manages your project's tools, runtimes, environment variables, and tasks all in one place.
+> [mise](https://mise.jdx.dev/) is a polyglot tool version manager, environment variables manger, and tasks runner.
+> - Like asdf (or nvm or pyenv but for any language), it manages dev tools like node, python, cmake, terraform, and hundreds more. 
+> - Like direnv, it manages environment variables for different project directories.
+> - Like make, it manages tasks used to build and test projects.
+
+This VSCode extension makes it easier to manage `mise` [tasks](https://github.com/hverlin/mise-vscode/wiki/Tasks), [tools](https://github.com/hverlin/mise-vscode/wiki/Tools), and [environment variables](https://github.com/hverlin/mise-vscode/wiki/Environment-variables) directly from your editor.
 
 ![mise-extension.png](screenshots/mise-extension.png)
 
-## 📥 Installation
+## Installation
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
-### 📦 Requirements
+### Requirements
 - This extension is tested against the latest version of `mise`. To update, run `mise self-update`.
 - For syntax highlighting, install [even-better-toml](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml). See [wiki](https://github.com/hverlin/mise-vscode/wiki/mise.toml-language-support).
 
@@ -46,32 +51,21 @@ VS Code extension for [mise](https://mise.jdx.dev/)
 ### Integration with VSCode tasks (`launch.json`)
 This extension lets [VSCode tasks](https://code.visualstudio.com/docs/editor/tasks) use `mise` tasks. You can use `mise` tasks in your `launch.json` file.
 
-Example `launch.json` file:
-```json
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "type": "mise",
-            "task": "build-my-app",
-            "label": "Build my app",
-            "watch": true
-        }
-    ]
-}
-```
-
-See the [VSCode task integration wiki page](https://github.com/hverlin/mise-vscode/wiki/VSCode-task-integration) for more information.
-
-## 🚀 Getting Started
-
-See [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Started)
+See the [VSCode task integration wiki page](https://github.com/hverlin/mise-vscode/wiki/Tasks#vscode-task-integration) for more information.
 
 ## Documentation
 
 https://github.com/hverlin/mise-vscode/wiki
 
-## 🐛 Bug Reports / Feature Requests / Contributing
+- [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Started)
+- [mise.toml language support](https://github.com/hverlin/mise-vscode/wiki/mise.toml-language-support)
+- [Tasks](https://github.com/hverlin/mise-vscode/wiki/Tasks)
+- [Tools](https://github.com/hverlin/mise-vscode/wiki/Tools)
+- [Environment variables](https://github.com/hverlin/mise-vscode/wiki/Environment-variables)
+- [Supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)
+- [Settings](https://github.com/hverlin/mise-vscode/wiki/Settings)
+
+## Bug Reports / Feature Requests / Contributing
 
 - Found a bug? Please [open an issue](https://github.com/hverlin/mise-vscode/issues)
 - Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
