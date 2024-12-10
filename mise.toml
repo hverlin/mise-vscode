@@ -2,7 +2,20 @@
 node = '22'
 
 [env]
-_.path = ["./node_modules/.bin"]
+_.path = ["./docs/node_modules/.bin", "./node_modules/.bin"]
+
+[tasks."docs:dev"]
+description = 'Builds the documentation'
+run = 'node --run dev'
+dir = "{{config_root}}/docs"
+
+[tasks."docs:build"]
+run = 'node --run build'
+dir = "{{config_root}}/docs"
+
+[tasks."docs:preview"]
+run = 'node --run preview'
+dir = "{{config_root}}/docs"
 
 [tasks.install]
 description = 'Installs dependencies with pnpm'

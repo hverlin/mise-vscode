@@ -22,6 +22,7 @@
 		"rsbuild.config.ts",
 		"rsbuild.webviews.config.ts",
 		"dist",
-		"bun-preload-test.ts"
+		"bun-preload-test.ts",
+		"docs"
 	]
 }

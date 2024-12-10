@@ -5,3 +5,4 @@ node_modules
 mise.local.toml
 dist/
 .DS_Store
+doc/.astro
