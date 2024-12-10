@@ -20,20 +20,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Install dependencies
-        run: corepack enable && pnpm i --frozen-lockfile
-      - name: Build
-        run: |
-          cd docs
-          pnpm run build
       - name: Install, build, and upload your site
         uses: withastro/action@v3
         with:
