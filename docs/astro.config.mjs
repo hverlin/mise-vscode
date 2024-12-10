@@ -3,6 +3,7 @@ import { defineConfig } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://hverlin.github.io/mise-vscode/',
 	integrations: [
 		starlight({
 			title: "VSCode mise",

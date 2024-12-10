@@ -3,7 +3,6 @@ name: docs
 on:
   push:
     branches: [main]
-
   workflow_dispatch:
 
 permissions:
@@ -31,14 +30,14 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install dependencies
         run: corepack enable && pnpm i --frozen-lockfile
-      - name: Build with Rspress
+      - name: Build
         run: |
           cd docs
           pnpm run build
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Install, build, and upload your site
+        uses: withastro/action@v3
         with:
-          path: docs/dist
+          path: docs
 
   deploy:
     environment:
