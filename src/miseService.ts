@@ -285,7 +285,7 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand(`tasks info ${taskName}`);
+			const { stdout } = await this.execMiseCommand(`tasks info "${taskName}"`);
 			return parseTaskInfo(stdout);
 		} catch (error: unknown) {
 			logger.info("Error fetching mise task info:", error as Error);
@@ -712,7 +712,10 @@ export class MiseService {
 		value,
 	}: { filePath: string; name: string; value: string }) {
 		await this.execMiseCommand(
-			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(/"/g, '\\"')}"`,
+			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(
+				/"/g,
+				'\\"',
+			)}"`,
 			{ setMiseEnv: false },
 		);
 	}
@@ -757,7 +760,10 @@ export class MiseService {
 						);
 						if (trackedConfigPath.endsWith(".toml")) {
 							const config = parse(content.toString());
-							return { path: trackedConfigPath, tools: config.tools ?? {} };
+							return {
+								path: trackedConfigPath,
+								tools: config.tools ?? {},
+							};
 						}
 						const idiomaticFile = [...idiomaticFiles].find((ext) =>
 							trackedConfigPath.endsWith(ext),

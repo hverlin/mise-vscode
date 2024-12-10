@@ -274,6 +274,8 @@ class TaskItem extends vscode.TreeItem {
 			.map(([key, value]) => `${key}: ${value}`)
 			.join("\n");
 
+		this.description = task.description;
+
 		this.iconPath = new vscode.ThemeIcon("tasklist");
 
 		this.command = {
@@ -383,7 +385,6 @@ export function registerTasksCommands(
 				}
 			},
 		),
-
 		vscode.commands.registerCommand(MISE_CREATE_FILE_TASK, async () => {
 			const taskName = await vscode.window.showInputBox({
 				prompt: "Enter the name of the task",
@@ -443,7 +444,6 @@ export function registerTasksCommands(
 			await vscode.commands.executeCommand("workbench.action.files.save");
 			taskProvider.refresh();
 		}),
-
 		vscode.commands.registerCommand(
 			MISE_CREATE_TOML_TASK,
 			async (path: string | SourceGroupItem | undefined) => {

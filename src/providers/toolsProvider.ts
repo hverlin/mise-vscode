@@ -140,7 +140,11 @@ class SourceItem extends vscode.TreeItem {
 Number of tools: ${tools.length}`;
 
 		this.contextValue = "miseToolGroup";
-		this.description = `(${tools.length === 0 ? "no tools" : `${tools.length} tool${tools.length > 1 ? "s" : ""}`})`;
+		this.description = `(${
+			tools.length === 0
+				? "no tools"
+				: `${tools.length} tool${tools.length > 1 ? "s" : ""}`
+		})`;
 		if (tools.length === 0) {
 			this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 			this.iconPath = new vscode.ThemeIcon("chevron-right");
@@ -157,15 +161,10 @@ class ToolItem extends vscode.TreeItem {
 	tool: MiseTool;
 	constructor(tool: MiseTool) {
 		super(
-			[
-				tool.name,
-				tool.version,
-				tool.requested_version ? `(${tool.requested_version})` : "",
-			]
-				.filter(Boolean)
-				.join(" "),
+			[tool.name, tool.version].filter(Boolean).join(" "),
 			vscode.TreeItemCollapsibleState.None,
 		);
+		this.description = tool.requested_version;
 		this.tool = tool;
 		this.tooltip = `Tool: ${tool.name}
 Version: ${tool.version}
@@ -320,11 +319,9 @@ export function registerToolsCommands(
 				);
 			},
 		),
-
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
 			await miseService.runMiseToolActionInConsole("install", "Install Tool");
 		}),
-
 		vscode.commands.registerCommand(
 			MISE_USE_TOOL,
 			async (path: string | SourceItem | undefined) => {
