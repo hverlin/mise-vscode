@@ -2,7 +2,7 @@
 title: mise.toml language support
 description: mise.toml language support in VS Code
 sidebar:
-    order: 2
+    order: 100
 ---
 
 ### Syntax Highlighting for TOML

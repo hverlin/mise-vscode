@@ -1,6 +1,8 @@
 ---
 title: Environment variables
 description: How to manage environment variables in VS Code with mise
+sidebar:
+  order: 20
 ---
 
 ## Environment variables list

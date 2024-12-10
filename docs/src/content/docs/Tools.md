@@ -1,6 +1,8 @@
 ---
 title: Tools
 description: Manage tools in VS Code with mise
+sidebar:
+    order: 10
 ---
 
 ## Tools versions

@@ -293,7 +293,8 @@
 			},
 			{
 				"command": "mise.watchTask",
-				"title": "Mise: Run Task in Watch Mode"
+				"title": "Mise: Run Task in Watch Mode",
+				"icon": "$(watch)"
 			},
 			{
 				"command": "mise.createFileTask",
@@ -445,6 +446,11 @@
 					"group": "inline"
 				},
 				{
+					"when": "view == miseTasksView && viewItem == miseTask",
+					"command": "mise.watchTask",
+					"group": "inline"
+				},
+				{
 					"when": "view == miseTasksView && viewItem == miseTaskGroupEditable",
 					"command": "mise.createTomlTask",
 					"group": "inline"
@@ -556,7 +562,7 @@
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
-		"test": "npx bun test"
+		"test": "npx --offline bun test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

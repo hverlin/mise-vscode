@@ -1,6 +1,8 @@
 ---
 title: Tasks
 description: How to manage tasks in VS Code with mise
+sidebar:
+  order: 30
 ---
 
 ## Finding tasks

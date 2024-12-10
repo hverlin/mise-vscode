@@ -1,6 +1,8 @@
 ---
 title: Extension Settings
 description: VSCode mise extension settings
+sidebar:
+    order: 102
 ---
 
 You can configure the extension behavior through Visual Studio Code settings. To
