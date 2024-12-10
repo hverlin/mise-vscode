@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import type { DocumentSelector } from "vscode";
 import { isTeraAutoCompletionEnabled } from "../configuration";
+import type { MiseService } from "../miseService";
+import { expandPath } from "../utils/fileUtils";
+import { logger } from "../utils/logger";
 import {
 	teraFilters,
 	teraFunctions,
@@ -10,23 +13,42 @@ import {
 } from "./teraKeywords";
 
 export class TeraCompletionProvider implements vscode.CompletionItemProvider {
-	provideCompletionItems(
+	private miseService: MiseService;
+	constructor(miseService: MiseService) {
+		this.miseService = miseService;
+	}
+
+	async provideCompletionItems(
 		document: vscode.TextDocument,
 		position: vscode.Position,
-	): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList> {
+	) {
 		const lineText = document.lineAt(position).text;
 		const linePrefix = lineText.substring(0, position.character);
 
 		if (!isTeraAutoCompletionEnabled()) {
-			return undefined;
+			return;
 		}
 
-		if (!this.isInTomlString(lineText, position.character)) {
-			return undefined;
+		if (!document.fileName.endsWith(".toml")) {
+			return;
+		}
+
+		const files = await this.miseService.getCurrentConfigFiles();
+		if (!files.includes(expandPath(document.uri.fsPath))) {
+			const isMiseTomlFile =
+				/mise\.[^.]*\.?toml$/.test(document.fileName) ||
+				document.fileName.endsWith("config.toml");
+			if (!isMiseTomlFile) {
+				return;
+			}
+		}
+
+		if (!this.isInTomlString(document, position)) {
+			return;
 		}
 
 		if (!this.isInTeraContext(linePrefix)) {
-			return undefined;
+			return;
 		}
 
 		const items: vscode.CompletionItem[] = [];
@@ -94,13 +116,18 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 		return items;
 	}
 
-	private isInTomlString(line: string, position: number): boolean {
+	private isInTomlString(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): boolean {
+		const line = document.lineAt(position).text;
+
 		let inSingleQuote = false;
 		let inDoubleQuote = false;
 		let inMultiSingleQuote = false;
 		let inMultiDoubleQuote = false;
 
-		for (let i = 0; i < position; i++) {
+		for (let i = 0; i < position.character; i++) {
 			const char = line[i];
 			const nextChars = line.slice(i, i + 3);
 
@@ -151,9 +178,29 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 			}
 		}
 
-		return (
-			inSingleQuote || inDoubleQuote || inMultiSingleQuote || inMultiDoubleQuote
-		);
+		if (
+			inSingleQuote ||
+			inDoubleQuote ||
+			inMultiSingleQuote ||
+			inMultiDoubleQuote
+		) {
+			return true;
+		}
+
+		// try to check if we are in a multiline string
+		let lineNum = position.line;
+		while (lineNum > 0) {
+			const line = document.lineAt(lineNum).text;
+			if (!line.includes("=") && line.match(/('''|""")/)) {
+				return false;
+			}
+			if (line.match(/=\s*('''|""")/)) {
+				return true;
+			}
+			lineNum--;
+		}
+
+		return false;
 	}
 
 	private getStringContext(
@@ -214,7 +261,9 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 	}
 
 	private shouldProvideFunctions(linePrefix: string): boolean {
-		return !linePrefix.trimEnd().endsWith("|");
+		return (
+			!linePrefix.trimEnd().endsWith("|") && !linePrefix.trimEnd().endsWith(".")
+		);
 	}
 
 	private shouldProvideFilters(linePrefix: string): boolean {
@@ -222,6 +271,13 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 	}
 
 	private shouldProvideKeywords(linePrefix: string): boolean {
+		if (
+			linePrefix.trimEnd().endsWith("|") ||
+			linePrefix.trimEnd().endsWith(".")
+		) {
+			return false;
+		}
+
 		return /\{%[^%]*$/.test(linePrefix) || /\{\{[^}]*$/.test(linePrefix);
 	}
 }
@@ -256,15 +312,31 @@ const isInsideTeraExpression = (
 	);
 };
 
-export const createHoverProvider = (documentSelector: DocumentSelector) =>
+export const createHoverProvider = (
+	documentSelector: DocumentSelector,
+	miseService: MiseService,
+) =>
 	vscode.languages.registerHoverProvider(documentSelector, {
-		provideHover(document: vscode.TextDocument, position: vscode.Position) {
+		async provideHover(
+			document: vscode.TextDocument,
+			position: vscode.Position,
+		) {
 			if (!isTeraAutoCompletionEnabled()) {
 				return undefined;
 			}
 
 			if (!isInsideTeraExpression(document, position)) {
 				return undefined;
+			}
+
+			const files = await miseService.getCurrentConfigFiles();
+			if (!files.includes(expandPath(document.uri.fsPath))) {
+				const isMiseTomlFile =
+					/mise\.[^.]*\.?toml$/.test(document.fileName) ||
+					document.fileName.endsWith("config.toml");
+				if (!isMiseTomlFile) {
+					return;
+				}
 			}
 
 			const wordRange = document.getWordRangeAtPosition(position);

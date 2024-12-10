@@ -1,7 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { deepMerge } from "@std/collections";
 import * as vscode from "vscode";
-import { logger } from "./utils/logger";
 
 export const CONFIGURATION_FLAGS = {
 	enable: "enable",
@@ -17,7 +16,7 @@ export const CONFIGURATION_FLAGS = {
 	checkForNewMiseVersion: "checkForNewMiseVersion",
 	updateEnvAutomatically: "updateEnvAutomatically",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
-	enableExperimentalTeraAutoCompletion: "enableExperimentalTeraAutoCompletion",
+	teraAutoCompletion: "teraAutoCompletion",
 } as const;
 
 const getExtensionConfig = () => {
@@ -116,10 +115,7 @@ export const shouldAutomaticallyReloadTerminalEnv = () => {
 };
 
 export const isTeraAutoCompletionEnabled = () => {
-	return getConfOrElse(
-		CONFIGURATION_FLAGS.enableExperimentalTeraAutoCompletion,
-		false,
-	);
+	return getConfOrElse(CONFIGURATION_FLAGS.teraAutoCompletion, false);
 };
 
 export type VSCodeSettingValue =

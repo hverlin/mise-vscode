@@ -194,7 +194,7 @@
 					"scope": "resource",
 					"title": "Update environment variables automatically",
 					"default": true,
-					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, this may not work as expected."
+					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, other extensions might not see all mise environment variables."
 				},
 				"mise.updateOpenTerminalsEnvAutomatically": {
 					"order": 12,
@@ -204,12 +204,12 @@
 					"default": false,
 					"markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
 				},
-				"mise.enableExperimentalTeraAutoCompletion": {
+				"mise.teraAutoCompletion": {
 					"order": 13,
 					"type": "boolean",
 					"scope": "resource",
-					"title": "Enable experimental Tera auto-completion",
-					"default": false,
+					"title": "Enable Tera auto-completion",
+					"default": true,
 					"markdownDescription": "Enable experimental Tera auto-completion in `.mise.toml` files."
 				}
 			}

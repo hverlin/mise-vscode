@@ -7,6 +7,11 @@ export const teraVariables = [
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
+		name: "vars",
+		detail: "Access mise.toml variables (example: vars.foo)",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
 		name: "cwd",
 		detail: "Current working directory",
 		kind: vscode.CompletionItemKind.Variable,

@@ -56,7 +56,7 @@
 					"name": "constant.language.tera"
 				},
 				{
-					"match": "\\b(loop|super|self|varargs|kwargs|env|cwd|config_root|mise_bin|mise_pid|xdg_cache_home|xdg_config_home|xdg_data_home|xdg_state_home)\\b",
+					"match": "\\b(loop|super|self|varargs|kwargs|env|vars|cwd|config_root|mise_bin|mise_pid|xdg_cache_home|xdg_config_home|xdg_data_home|xdg_state_home)\\b",
 					"name": "support.variable.language.tera"
 				},
 				{
@@ -92,7 +92,7 @@
 						"1": { "name": "punctuation.section.pipe.tera" },
 						"2": { "name": "support.function.filter.tera" }
 					},
-					"match": "(\\|)\\s*(lower|upper|capitalize|title|trim|trim_start|trim_end|truncate|first|last|length|reverse|urlencode|map|concat|abs|filesizeformat|split|default|hash|hash_file|canonicalize|basename|file_size|dirname|extname|file_stem|last_modified|join_path|quote|kebabcase|lowercamelcase|uppercamelcase|shoutycamelcase|snakecase|shoutysnakecase)"
+					"match": "(\\|)\\s*(lower|upper|capitalize|title|trim|trim_start|trim_end|truncate|first|last|length|reverse|urlencode|map|concat|abs|filesizeformat|split|default|hash|hash_file|canonicalize|basename|file_size|dirname|extname|file_stem|last_modified|join_path|quote|kebabcase|lowercamelcase|uppercamelcase|shoutycamelcase|snakecase|shoutysnakecase)\b"
 				},
 				{
 					"captures": {

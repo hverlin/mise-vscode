@@ -5,7 +5,7 @@ export function registerTomlFileLinks(context: vscode.ExtensionContext) {
 	const linkProvider = vscode.languages.registerDocumentLinkProvider("toml", {
 		async provideDocumentLinks(document: vscode.TextDocument) {
 			const text = document.getText();
-			const regex = /["']([^"']*\.toml)["']/g;
+			const regex = /["']([^"']*\.[a-z]+)["']/g;
 			const matches = Array.from(text.matchAll(regex));
 			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
 

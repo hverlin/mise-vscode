@@ -289,11 +289,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerCompletionItemProvider(
 			allTomlFilesSelector,
-			new TeraCompletionProvider(),
+			new TeraCompletionProvider(miseService),
 			...["{", "%", "|", "."],
 		),
 	);
-	context.subscriptions.push(createHoverProvider(allTomlFilesSelector));
+	context.subscriptions.push(
+		createHoverProvider(allTomlFilesSelector, miseService),
+	);
 
 	await vscode.commands.executeCommand(MISE_RELOAD);
 
