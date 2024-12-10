@@ -1,6 +1,9 @@
 [tools]
 node = '22'
 
+[env]
+_.path = ["./node_modules/.bin"]
+
 [tasks.install]
 description = 'Installs dependencies with pnpm'
 run = 'corepack enable && pnpm install'
@@ -22,7 +25,7 @@ run = 'code --inspect-brk-extensions=5858 --extensionDevelopmentPath=$(pwd)'
 [tasks.dev-extension]
 depends = ['install']
 description = 'Builds the project in watch mode'
-run = 'node --run dev-extension'
+run = 'rsbuild dev'
 
 [tasks.dev-webviews]
 description = 'Webviews'
