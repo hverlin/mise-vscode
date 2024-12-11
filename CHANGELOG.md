@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.1](https://github.com/hverlin/mise-vscode/compare/v0.31.0...v0.31.1) (2024-12-11)
+
+
+### Bug Fixes
+
+* Fix for mise trust with latest release ([a1d6714](https://github.com/hverlin/mise-vscode/commit/a1d671451f0936ee5a1d6d7b3709e8a11d7e8af8))
+
 ## [0.31.0](https://github.com/hverlin/mise-vscode/compare/v0.30.0...v0.31.0) (2024-12-11)
 
 
