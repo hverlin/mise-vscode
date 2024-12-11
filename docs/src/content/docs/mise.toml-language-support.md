@@ -14,7 +14,7 @@ TOML files.
 `mise-vscode` provides syntax highlighting for `tera` used for
 [templating](https://mise.jdx.dev/templates.html) in `mise.toml` files
 
-![image](https://github.com/user-attachments/assets/8654329a-1f8d-4d06-98af-064c8e4c622d)
+![mise-toml-language-support.png](../../assets/mise-toml-language-support.png)
 
 ### Code completion
 

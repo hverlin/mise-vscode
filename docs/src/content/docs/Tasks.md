@@ -9,7 +9,8 @@ sidebar:
 
 ### Using the mise activity bar
 
-![image](https://github.com/user-attachments/assets/6c4243fb-4cd4-4296-a16d-9cdf31acf32e)
+![task-activity-bar.png](../../assets/task-activity-bar.png)
+
 Click on a task to navigate to the file where the task is defined.
 
 ### Using the command palette
@@ -23,14 +24,15 @@ You have several ways to run a task with the extension:
 
 ### Use the run task code lens action
 
-![image](https://github.com/user-attachments/assets/f10db1fd-6e4e-4cc3-b0ff-a81d78a524e3)
+![task-code-lens.png](../../assets/task-code-lens.png)
 
 Click on the run button to run the task. If some option/arguments are required,
 you will be prompted to enter them.
 
 ### Use the mise activity bar
 
-![image](https://github.com/user-attachments/assets/603f1c05-78eb-44a3-b9b8-8dfe380d1810)
+![task-run-activity-bar.png](../../assets/task-run-activity-bar.png)
+
 Click on the run action, or use right-click -> run task
 
 ### Use the command palette
@@ -38,7 +40,7 @@ Click on the run action, or use right-click -> run task
 Using the command palette: `cmd|ctrl+shift+p`, search for `Mise: run task`.
 Press enter.
 
-![image](https://github.com/user-attachments/assets/28e67c2b-c1fe-492c-a06d-078d1ab001bf)
+![img.png](../../assets/tasks-command-palette.png)
 
 ### VSCode task integration
 
@@ -79,7 +81,7 @@ create your own shortcuts to run tasks
 
 You can create a file task or a toml task directly from the activity bar
 
-![image](https://github.com/user-attachments/assets/58cd931f-724a-4e09-ad8a-89c039154ac5)
+![create-file-task.png](../../assets/create-file-task.png)
 
 ### Use the command palette
 

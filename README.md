@@ -2,7 +2,7 @@
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/hverlin.mise-vscode)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![Open VSX](https://img.shields.io/open-vsx/v/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
-[![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://github.com/hverlin/mise-vscode/wiki)
+[![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/tools/)
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
@@ -50,7 +50,7 @@ to use tools provided by `mise` in your current project.
 - 📱 Show tools which are not installed or active
 - 📦 Install/Remove/Use tools directly from the sidebar
 - 🔧 Configure your other VSCode extensions to use tools provided by `mise`
-  ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))
+  ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/))
 
 ### Environment Variables
 
@@ -69,20 +69,21 @@ This extension lets
 tasks. You can use `mise` tasks in your `launch.json` file.
 
 See the
-[VSCode task integration wiki page](https://github.com/hverlin/mise-vscode/wiki/Tasks#vscode-task-integration)
+[VSCode task integration wiki page](https://hverlin.github.io/mise-vscode/tasks/#vscode-task-integration)
 for more information.
 
 ## Documentation
 
-https://github.com/hverlin/mise-vscode/wiki
+https://hverlin.github.io/mise-vscode/tools/
 
-- [Getting Started](https://github.com/hverlin/mise-vscode/wiki/Getting-Started)
-- [mise.toml language support](https://github.com/hverlin/mise-vscode/wiki/mise.toml-language-support)
-- [Tasks](https://github.com/hverlin/mise-vscode/wiki/Tasks)
-- [Tools](https://github.com/hverlin/mise-vscode/wiki/Tools)
-- [Environment variables](https://github.com/hverlin/mise-vscode/wiki/Environment-variables)
-- [Supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)
-- [Settings](https://github.com/hverlin/mise-vscode/wiki/Settings)
+- [Getting Started](https://hverlin.github.io/mise-vscode/getting-started/)
+- [Tools](https://hverlin.github.io/mise-vscode/tools/)
+- [Environment variables](https://hverlin.github.io/mise-vscode/environment-variables/)
+- [Tasks](https://hverlin.github.io/mise-vscode/tasks/)
+- [mise.toml language support](https://hverlin.github.io/mise-vscode/misetoml-language-support/)
+- Reference
+  - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
+  - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
 
 ## Bug Reports / Feature Requests / Contributing
 

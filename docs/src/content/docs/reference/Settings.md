@@ -15,7 +15,7 @@ access the settings:
 You can also click on the mise extension indicator in the status bar to quickly
 access the extension settings.
 
-<img width="1414" alt="picture showing mise extension settings" src="https://github.com/user-attachments/assets/1572f0e8-98b2-4f05-a21f-de77ee020f73">
+![picture showing mise extension settings](../../../assets/mise-menu.png)
 
 ## `mise.enable`
 

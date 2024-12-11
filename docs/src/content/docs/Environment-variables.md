@@ -10,7 +10,7 @@ sidebar:
 Environment variables are listed in the activity bar. Click on an environment
 variable to find where it's defined.
 
-![image](https://github.com/user-attachments/assets/6c11cc6f-c7b9-4608-8ad3-701fc1d7566f)
+![env-list.png](../../assets/env-1.png)
 
 ## Loading environment variables
 
@@ -21,16 +21,16 @@ extension.
 The variables will be provided to any newly created terminals, even if `mise` is
 not activated.
 
-![image](https://github.com/user-attachments/assets/6abe2397-05ea-4a73-a3b6-4f12406f9bec)
+![env-terminal.png](../../assets/env-terminal.png)
 
 If the list of environment variables has changed, you might to reload the
 terminal. In this case, a warning sign will be shown next to the terminal name.
 
-![image](https://github.com/user-attachments/assets/cc905263-2b3f-4a5b-8ce9-988fbb8c8e79)
+![env-terminal-warning.png](../../assets/env-terminal-warning.png)
 
 You can choose to reload open terminals automatically in the
 [settings](vscode://settings/mise.updateOpenTerminalsEnvAutomatically) (off by
 default). If `mise` is activated in your terminal, it's better to keep this
 option turned off.
 
-![image](https://github.com/user-attachments/assets/54c1cd26-9859-47ce-aa95-d835818a56df)
+![env-terminal-settings.png](../../assets/env-terminal-settings.png)
