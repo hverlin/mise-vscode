@@ -4,10 +4,15 @@ node = '22'
 [env]
 _.path = ["./docs/node_modules/.bin", "./node_modules/.bin"]
 
+[tasks."docs:extractSettings"]
+run = 'bun src/extract-settings.mjs'
+dir = "{{config_root}}/docs"
+
 [tasks."docs:dev"]
 description = 'Builds the documentation'
 run = 'node --run dev'
 dir = "{{config_root}}/docs"
+depends = ['docs:extractSettings']
 
 [tasks."docs:build"]
 run = 'node --run build'
@@ -78,4 +83,4 @@ run = 'node --run test'
 
 [tasks.check]
 description = "Lint, type-check, and test the project"
-depends = ['lint-fix', 'test', 'ts-check']
+depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
