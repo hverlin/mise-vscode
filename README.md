@@ -2,7 +2,7 @@
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/hverlin.mise-vscode)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![Open VSX](https://img.shields.io/open-vsx/v/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
-[![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/tools/)
+[![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/)
 
 VS Code extension for [mise](https://mise.jdx.dev/)
 
