@@ -24,12 +24,18 @@ export class MiseFileWatcher {
 		this.onConfigChangeCallback = onConfigChangeCallback;
 		this.fileWatchers = [];
 		this.initializeFileWatcher().catch((error) => {
-			logger.warn("Error initializing file watcher");
 			logger.info("Unable to initialize file watcher", { error });
+
+			logger.info("Retrying to initialize file watcher in 5 seconds");
+			setTimeout(() => {
+				this.initializeFileWatcher();
+			}, 5000);
 		});
 	}
 
 	private async initializeFileWatcher() {
+		this.dispose();
+
 		const rootFolder = getRootFolder();
 		if (!rootFolder) {
 			return;
@@ -71,6 +77,8 @@ export class MiseFileWatcher {
 			watcher.onDidCreate(this.handleFileChange.bind(this));
 			watcher.onDidDelete(this.handleFileChange.bind(this));
 		}
+
+		logger.info("File watcher initialized");
 	}
 
 	private async handleFileChange(uri: vscode.Uri) {

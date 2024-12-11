@@ -40,6 +40,7 @@ export async function resolveMisePath(): Promise<string> {
 
 	if (process.platform === "win32") {
 		commonPaths.push(path.join(homedir, "scoop", "shims", "mise"));
+		commonPaths.push(path.join(homedir, "scoop", "shims", "mise.exe"));
 	}
 
 	const allPaths = [...commonPaths];

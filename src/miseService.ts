@@ -214,19 +214,10 @@ export class MiseService {
 	}
 
 	private async handleUntrustedFile(error: Error): Promise<void> {
-		const match = error.message.match(/file (.*?) is not trusted/);
-		if (!match) {
-			logger.error(
-				"Could not extract filename from trust error message:",
-				error,
-			);
-			throw new Error("Invalid trust error message format");
-		}
-
-		const filename = match[1];
-		const trustAction = "Trust File";
+		const trustAction = "Trust";
+		logger.info("Untrusted file error:", error);
 		const selection = await vscode.window.showErrorMessage(
-			`The Mise configuration file "${filename}" is not trusted. Would you like to trust it?`,
+			"Do you trust the Mise configuration file in the current project?",
 			{ modal: true },
 			trustAction,
 		);
@@ -236,11 +227,11 @@ export class MiseService {
 		}
 
 		try {
-			await this.execMiseCommand("trust");
+			await this.cache.execCmd({ command: "trust" });
 		} catch (trustError) {
 			logger.error("Error trusting mise configuration:", trustError as Error);
 			throw new Error(
-				`Failed to trust the Mise configuration file "${filename}". Please try again or trust it manually.`,
+				`Failed to trust the Mise configuration. "${error}". Please try again or trust it manually.`,
 			);
 		}
 	}
@@ -260,7 +251,7 @@ export class MiseService {
 				description: task.description,
 			}));
 		} catch (error: unknown) {
-			if (error instanceof Error && error.message.includes("is not trusted")) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
 				await this.handleUntrustedFile(error);
 				return this.getTasks();
 			}
@@ -317,7 +308,7 @@ export class MiseService {
 				});
 			});
 		} catch (error) {
-			if (error instanceof Error && error.message.includes("is not trusted")) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
 				await this.handleUntrustedFile(error);
 				return this.getCurrentTools();
 			}
@@ -349,7 +340,7 @@ export class MiseService {
 				});
 			});
 		} catch (error) {
-			if (error instanceof Error && error.message.includes("is not trusted")) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
 				await this.handleUntrustedFile(error);
 				return this.getAllTools();
 			}
@@ -428,7 +419,7 @@ export class MiseService {
 				value: value as string,
 			}));
 		} catch (error) {
-			if (error instanceof Error && error.message.includes("is not trusted")) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
 				await this.handleUntrustedFile(error);
 				return this.getEnvs();
 			}
