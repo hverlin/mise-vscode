@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.0](https://github.com/hverlin/mise-vscode/compare/v0.30.0...v0.31.0) (2024-12-11)
+
+
+### Features
+
+* improve tera autocompletion ([6c4f572](https://github.com/hverlin/mise-vscode/commit/6c4f5720e261175d614ae23ba2cd0a4b0482ccad))
+* show task description in sidebar ([afc7e8b](https://github.com/hverlin/mise-vscode/commit/afc7e8b47e747cc9b6b3ea8a7a70190f1410f726))
+
 ## [0.30.0](https://github.com/hverlin/mise-vscode/compare/v0.29.1...v0.30.0) (2024-12-09)
 
 
