@@ -74,7 +74,7 @@ for more information.
 
 ## Documentation
 
-https://hverlin.github.io/mise-vscode/tools/
+https://hverlin.github.io/mise-vscode/
 
 - [Getting Started](https://hverlin.github.io/mise-vscode/getting-started/)
 - [Tools](https://hverlin.github.io/mise-vscode/tools/)

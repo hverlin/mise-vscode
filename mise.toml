@@ -16,6 +16,7 @@ dir = "{{config_root}}/docs"
 [tasks."docs:preview"]
 run = 'node --run preview'
 dir = "{{config_root}}/docs"
+depends = ['docs:build']
 
 [tasks.install]
 description = 'Installs dependencies with pnpm'

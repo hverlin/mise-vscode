@@ -7,6 +7,8 @@ sidebar:
 
 ## Finding tasks
 
+Here are a few ways to find tasks in your project:
+
 ### Using the mise activity bar
 
 ![task-activity-bar.png](../../assets/task-activity-bar.png)

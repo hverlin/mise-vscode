@@ -210,7 +210,7 @@
 					"scope": "resource",
 					"title": "Enable Tera auto-completion",
 					"default": true,
-					"markdownDescription": "Enable experimental Tera auto-completion in `.mise.toml` files."
+					"markdownDescription": "Enable experimental Tera auto-completion in `mise.toml` files."
 				}
 			}
 		},
