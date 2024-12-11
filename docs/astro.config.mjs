@@ -7,7 +7,7 @@ export default defineConfig({
 	base: "mise-vscode",
 	integrations: [
 		starlight({
-			title: "mise VSCode",
+			title: "mise | VSCode",
 			social: {
 				github: "https://github.com/hverlin/mise-vscode",
 			},

@@ -5,20 +5,21 @@ sidebar:
     order: 1
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps, FileTree } from '@astrojs/starlight/components';
 
 <Steps>
 1. [Install mise](https://mise.jdx.dev/getting-started.html)
 1. Install the extension from the
    [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview)
    or [Open VSX](https://open-vsx.org/extension/hverlin/mise-vscode)
-1. Open a project with a `mise.toml` file (or create one with `mise use <tool>`)
-1. Access mise features through:
+1. Open a project with a `mise.toml` file (or any other files supported by mise)
+
+</Steps>
+
+The extension should now be activated. You can access the features using:
    - The sidebar `terminal` icon in the activity bar (usually on the left)
    - Command palette (`Ctrl/Cmd + Shift + P`). Search for `Run Mise Task` or
      `Open Tool definition` or `Open Mise Task definition`
    - The status bar at the bottom of the window
-
-</Steps>
 
 ![image](https://github.com/user-attachments/assets/9d7b98c6-a55d-47ab-8f95-75639c1590a5)
