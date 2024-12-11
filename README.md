@@ -4,7 +4,7 @@
 [![Open VSX](https://img.shields.io/open-vsx/v/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
 [![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/)
 
-VS Code extension for [mise](https://mise.jdx.dev/)
+Visual Studio Code extension for [mise](https://mise.jdx.dev/)
 
 > [mise](https://mise.jdx.dev/) is a polyglot tool version manager, environment
 > variables manager, and tasks runner.
