@@ -78,7 +78,11 @@
 				"path": "./syntaxes/tera-mise.json",
 				"embeddedLanguages": {
 					"meta.embedded.tera.expression": "tera",
-					"meta.embedded.tera.statement": "tera"
+					"meta.embedded.tera.statement": "tera",
+					"source.js": "javascript",
+					"source.python": "python",
+					"source.shell": "shellscript",
+					"source.ruby": "ruby"
 				}
 			}
 		],

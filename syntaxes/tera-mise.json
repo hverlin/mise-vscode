@@ -42,6 +42,46 @@
 			"name": "comment.block.tera",
 			"begin": "\\{#",
 			"end": "#\\}"
+		},
+		{
+			"name": "meta.embedded.block.scriptJS",
+			"contentName": "meta.embedded.block.scriptJS",
+			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:node|deno\\s+run|bun)[^\\n]*(?=\\n|$))",
+			"beginCaptures": {
+				"2": { "name": "comment.line.shebang.script" }
+			},
+			"end": "(?='''|\"\"\")",
+			"patterns": [{ "include": "source.ts" }]
+		},
+		{
+			"name": "meta.embedded.block.scriptPython",
+			"contentName": "meta.embedded.block.scriptPython",
+			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:python)[^\\n]*(?=\\n|$))",
+			"beginCaptures": {
+				"2": { "name": "comment.line.shebang.script" }
+			},
+			"end": "(?='''|\"\"\")",
+			"patterns": [{ "include": "source.python" }]
+		},
+		{
+			"name": "meta.embedded.block.scriptRuby",
+			"contentName": "meta.embedded.block.scriptRuby",
+			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:ruby)[^\\n]*(?=\\n|$))",
+			"beginCaptures": {
+				"2": { "name": "comment.line.shebang.script" }
+			},
+			"end": "(?='''|\"\"\")",
+			"patterns": [{ "include": "source.ruby" }]
+		},
+		{
+			"name": "meta.embedded.block.scriptShell",
+			"contentName": "meta.embedded.block.scriptShell",
+			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:bash|sh|zsh)[^\\n]*(?=\\n|$))",
+			"beginCaptures": {
+				"2": { "name": "comment.line.shebang.script" }
+			},
+			"end": "(?='''|\"\"\")",
+			"patterns": [{ "include": "source.shell" }]
 		}
 	],
 	"repository": {
@@ -92,7 +132,7 @@
 						"1": { "name": "punctuation.section.pipe.tera" },
 						"2": { "name": "support.function.filter.tera" }
 					},
-					"match": "(\\|)\\s*(lower|upper|capitalize|title|trim|trim_start|trim_end|truncate|first|last|length|reverse|urlencode|map|concat|abs|filesizeformat|split|default|hash|hash_file|canonicalize|basename|file_size|dirname|extname|file_stem|last_modified|join_path|quote|kebabcase|lowercamelcase|uppercamelcase|shoutycamelcase|snakecase|shoutysnakecase)\b"
+					"match": "(\\|)\\s*(lower|upper|capitalize|title|trim|trim_start|trim_end|truncate|first|last|length|reverse|urlencode|map|concat|abs|filesizeformat|split|default|hash|hash_file|canonicalize|basename|file_size|dirname|extname|file_stem|last_modified|join_path|quote|kebabcase|lowercamelcase|uppercamelcase|shoutycamelcase|snakecase|shoutysnakecase)\\b"
 				},
 				{
 					"captures": {
