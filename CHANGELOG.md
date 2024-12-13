@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.2](https://github.com/hverlin/mise-vscode/compare/v0.31.1...v0.31.2) (2024-12-13)
+
+
+### Bug Fixes
+
+* log error if activation fails ([286dd0f](https://github.com/hverlin/mise-vscode/commit/286dd0fcdb62404c335edc686b0a7bc311ec048a))
+
 ## [0.31.1](https://github.com/hverlin/mise-vscode/compare/v0.31.0...v0.31.1) (2024-12-11)
 
 
