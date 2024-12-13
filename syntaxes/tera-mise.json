@@ -56,7 +56,7 @@
 		{
 			"name": "meta.embedded.block.scriptPython",
 			"contentName": "meta.embedded.block.scriptPython",
-			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:python)[^\\n]*(?=\\n|$))",
+			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:python|uv)[^\\n]*(?=\\n|$))",
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
