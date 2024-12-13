@@ -10,9 +10,9 @@ dir = "{{config_root}}/docs"
 
 [tasks."docs:dev"]
 description = 'Builds the documentation'
-run = 'node --run dev'
+run = 'exec node --run dev'
 dir = "{{config_root}}/docs"
-depends = ['docs:extractSettings']
+#depends = ['docs:extractSettings']
 
 [tasks."docs:build"]
 run = 'node --run build'
