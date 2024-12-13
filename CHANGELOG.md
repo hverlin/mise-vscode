@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.32.0](https://github.com/hverlin/mise-vscode/compare/v0.31.2...v0.32.0) (2024-12-13)
+
+
+### Features
+
+* Add syntax highlighting for JS, python, ruby and shell if shebang is present ([4ccd287](https://github.com/hverlin/mise-vscode/commit/4ccd28782d50bc045ff5e29c2ffedd74ef1db5ae))
+
 ## [0.31.2](https://github.com/hverlin/mise-vscode/compare/v0.31.1...v0.31.2) (2024-12-13)
 
 
