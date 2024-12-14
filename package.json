@@ -51,6 +51,12 @@
 	"extensionDependencies": [
 		"tamasfe.even-better-toml"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": false,
+			"description": "This extension requires a trusted workspace because it can execute code in the workspace."
+		}
+	},
 	"contributes": {
 		"tomlValidation": [
 			{
@@ -215,6 +221,14 @@
 					"title": "Enable Tera auto-completion",
 					"default": true,
 					"markdownDescription": "Enable experimental Tera auto-completion in `mise.toml` files."
+				},
+				"mise.automaticallyTrustMiseConfigFiles": {
+					"order": 14,
+					"type": "boolean",
+					"scope": "resource",
+					"title": "Automatically trust mise config files",
+					"default": true,
+					"markdownDescription": "Automatically trust mise config files when opening them in a trusted worskspace."
 				}
 			}
 		},

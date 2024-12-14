@@ -17,6 +17,7 @@ export const CONFIGURATION_FLAGS = {
 	updateEnvAutomatically: "updateEnvAutomatically",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 	teraAutoCompletion: "teraAutoCompletion",
+	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 } as const;
 
 const getExtensionConfig = () => {
@@ -111,6 +112,13 @@ export const shouldAutomaticallyReloadTerminalEnv = () => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.updateOpenTerminalsEnvAutomatically,
 		false,
+	);
+};
+
+export const shouldAutomaticallyTrustMiseConfigFiles = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.automaticallyTrustMiseConfigFiles,
+		true,
 	);
 };
 

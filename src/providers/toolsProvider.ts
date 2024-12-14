@@ -124,9 +124,13 @@ class SourceItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tools: MiseTool[],
 	) {
-		const pathShown = source
-			.replace(`${getRootFolderPath()}/` || "", "")
-			.replace(os.homedir(), "~");
+		const rootFolderPath = getRootFolderPath();
+		const pathWithoutRoot =
+			rootFolderPath && source.startsWith(rootFolderPath)
+				? source.replace(`${rootFolderPath}/` || "", "")
+				: source;
+
+		const pathShown = pathWithoutRoot.replace(os.homedir(), "~");
 
 		super(
 			pathShown,

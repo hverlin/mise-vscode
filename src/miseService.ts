@@ -236,6 +236,13 @@ export class MiseService {
 		}
 	}
 
+	async miseTrust() {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+		await this.cache.execCmd({ command: "trust", setMiseEnv: false });
+	}
+
 	async getTasks(): Promise<MiseTask[]> {
 		if (!this.getMiseBinaryPath()) {
 			return [];

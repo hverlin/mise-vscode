@@ -18,6 +18,7 @@ import {
 	getMiseEnv,
 	getRootFolder,
 	isMiseExtensionEnabled,
+	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
 } from "./configuration";
 import { createMenu } from "./extensionMenu";
@@ -66,6 +67,14 @@ class MiseExtension {
 		context.subscriptions.push(this.statusBarItem);
 
 		await this.miseService.initializeMisePath();
+
+		if (
+			isMiseExtensionEnabled() &&
+			shouldAutomaticallyTrustMiseConfigFiles() &&
+			vscode.workspace.isTrusted
+		) {
+			await this.miseService.miseTrust();
+		}
 
 		const tasksProvider = new MiseTasksProvider(this.miseService);
 		const toolsProvider = new MiseToolsProvider(this.miseService);
