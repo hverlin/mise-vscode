@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.1](https://github.com/hverlin/mise-vscode/compare/v0.33.0...v0.33.1) (2024-12-14)
+
+
+### Bug Fixes
+
+* automatically trust mise configuration files when opening a trusted vscode workspace ([591f485](https://github.com/hverlin/mise-vscode/commit/591f485d285118b94a64ac3d91e15604ea0b44bd))
+* fix copy bin paths command when there are multiple bins ([4ef1e36](https://github.com/hverlin/mise-vscode/commit/4ef1e36d5e9f207b6c9e103561dc3c329e869deb))
+
 ## [0.33.0](https://github.com/hverlin/mise-vscode/compare/v0.32.0...v0.33.0) (2024-12-13)
 
 
