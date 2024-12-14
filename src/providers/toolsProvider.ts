@@ -1,4 +1,5 @@
 import * as os from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
@@ -435,10 +436,10 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const binPath = await miseService.miseWhich(tool.name);
-				await vscode.env.clipboard.writeText(binPath);
+				const binPath = await miseService.getAllBinsForTool(tool.name);
+				await vscode.env.clipboard.writeText(binPath.join("\n"));
 				vscode.window.showInformationMessage(
-					`Copied bin path to clipboard: ${binPath}`,
+					`Copied bin paths to clipboard: ${binPath}`,
 				);
 			},
 		),

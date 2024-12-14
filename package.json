@@ -338,8 +338,8 @@
 				]
 			},
 			{
-				"command": "mise.copyToolBinPath",
-				"title": "Mise: Copy Tool Bin Path",
+				"command": "mise.copyToolBinPaths",
+				"title": "Mise: Copy Tool Bin Paths",
 				"context": [
 					"miseToolsView"
 				]
@@ -490,7 +490,7 @@
 					"group": "2_modification"
 				},
 				{
-					"command": "mise.copyToolBinPath",
+					"command": "mise.copyToolBinPaths",
 					"when": "view == miseToolsView && viewItem == tool-installed",
 					"group": "2_modification"
 				},

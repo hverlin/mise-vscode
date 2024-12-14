@@ -479,6 +479,32 @@ export class MiseService {
 		return stdout.trim();
 	}
 
+	async binPaths(name: string) {
+		const { stdout } = await this.cache.execCmd({
+			command: `bin-paths ${name}`,
+		});
+		return stdout.trim().split("\n");
+	}
+
+	async getAllBinsForTool(toolName: string) {
+		const binDirs = await this.binPaths(toolName);
+		return (
+			await Promise.all(
+				binDirs.map(async (binDir) => {
+					try {
+						const files = await vscode.workspace.fs.readDirectory(
+							vscode.Uri.file(binDir),
+						);
+						return files.map(([name]) => path.join(binDir, name));
+					} catch (e) {
+						logger.info(`Error reading bin path: ${binDir}`, e as Error);
+						return [];
+					}
+				}),
+			)
+		).flat();
+	}
+
 	async getMiseConfiguration(): Promise<MiseConfig> {
 		const miseCmd = this.createMiseCommand("doctor", {
 			setMiseEnv: false,
