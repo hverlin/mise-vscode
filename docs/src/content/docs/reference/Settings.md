@@ -142,3 +142,11 @@ Enable experimental Tera auto-completion in `mise.toml` files.
 
 ---
 
+##### `mise.automaticallyTrustMiseConfigFiles`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Automatically trust mise config files when opening them in a trusted worskspace.
+
+---
+
