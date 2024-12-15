@@ -109,26 +109,22 @@
 					"order": 1,
 					"type": "boolean",
 					"default": true,
-					"scope": "resource",
 					"markdownDescription": "Enable/disable mise extension."
 				},
 				"mise.binPath": {
 					"order": 2,
 					"type": "string",
-					"scope": "resource",
 					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nSee https://mise.jdx.dev/getting-started.html to install mise."
 				},
 				"mise.miseEnv": {
 					"order": 3,
 					"type": "string",
-					"scope": "resource",
 					"markdownDescription": "Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)"
 				},
 				"mise.configureExtensionsAutomatically": {
 					"order": 4,
 					"type": "boolean",
 					"default": true,
-					"scope": "resource",
 					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))"
 				},
 				"mise.configureExtensionsAutomaticallyIgnoreList": {
@@ -155,13 +151,11 @@
 							"ziglang.vscode-zig"
 						]
 					},
-					"scope": "resource",
 					"markdownDescription": "List of extensions that should not be configured automatically."
 				},
 				"mise.configureExtensionsUseShims": {
 					"order": 6,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Configure extensions to use shims",
 					"default": true,
 					"markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
@@ -169,7 +163,6 @@
 				"mise.configureExtensionsUseSymLinks": {
 					"order": 7,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Configure extensions to use symlinks",
 					"default": false,
 					"markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin. This is useful if you share the `.vscode/settings.json` file with others."
@@ -177,7 +170,6 @@
 				"mise.enableCodeLens": {
 					"order": 8,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Enable code lens",
 					"default": true,
 					"markdownDescription": "Show run/add tool code lens indicators in the editor."
@@ -185,7 +177,6 @@
 				"mise.showToolVersionsDecorations": {
 					"order": 9,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Show tool versions",
 					"default": true,
 					"markdownDescription": "Show tool versions in the editor. (requires reload)"
@@ -193,7 +184,6 @@
 				"mise.checkForNewMiseVersion": {
 					"order": 10,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Check for new mise version",
 					"default": true,
 					"markdownDescription": "Check if a new mise version is available on startup."
@@ -201,7 +191,6 @@
 				"mise.updateEnvAutomatically": {
 					"order": 11,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Update environment variables automatically",
 					"default": true,
 					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, other extensions might not see all mise environment variables."
@@ -209,7 +198,6 @@
 				"mise.updateOpenTerminalsEnvAutomatically": {
 					"order": 12,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Update terminal environment variables automatically",
 					"default": false,
 					"markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
@@ -217,7 +205,6 @@
 				"mise.teraAutoCompletion": {
 					"order": 13,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Enable Tera auto-completion",
 					"default": true,
 					"markdownDescription": "Enable experimental Tera auto-completion in `mise.toml` files."
@@ -225,7 +212,6 @@
 				"mise.automaticallyTrustMiseConfigFiles": {
 					"order": 14,
 					"type": "boolean",
-					"scope": "resource",
 					"title": "Automatically trust mise config files",
 					"default": true,
 					"markdownDescription": "Automatically trust mise config files when opening them in a trusted worskspace."
