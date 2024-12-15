@@ -3,8 +3,23 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { logger } from "./logger";
 
+const isWindows = os.platform() === 'win32';
+
 export function expandPath(filePath: string): string {
-	return path.normalize(filePath).replace("~/", `${os.homedir()}/`);
+	const res = path.normalize(filePath).replace("~/", `${os.homedir()}${path.sep}`);
+	if (isWindows) {
+		return res.toLowerCase();
+	}
+	return res;
+}
+
+export function displayPathRelativeTo(filePath: string, rootFolder: string | undefined) {
+	const homedir = isWindows ? os.homedir().toLowerCase() : os.homedir();
+	const rootPath = rootFolder ? `${rootFolder}${path.sep}` : ''
+	const pathShown = expandPath(filePath)
+		.replace(isWindows ? rootPath.toLowerCase() : rootPath, "")
+		.replace(homedir, "~");
+	return pathShown;
 }
 
 export async function mkdirp(dirPath: string): Promise<void> {
@@ -46,8 +61,7 @@ async function touchFile(filePath: string): Promise<void> {
 
 async function setFilePermissions(filePath: string): Promise<void> {
 	try {
-		if (os.platform() === "win32") {
-			// On Windows, TODO?
+		if (isWindows) {
 			return;
 		}
 
@@ -61,7 +75,7 @@ async function setFilePermissions(filePath: string): Promise<void> {
 }
 
 export async function isExecutable(filePath: string): Promise<boolean> {
-	if (os.platform() === "win32") {
+	if (isWindows) {
 		return true;
 	}
 

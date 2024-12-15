@@ -22,7 +22,7 @@ import {
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
-import { expandPath } from "../utils/fileUtils";
+import { expandPath, displayPathRelativeTo } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
@@ -124,13 +124,7 @@ class SourceItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tools: MiseTool[],
 	) {
-		const rootFolderPath = getRootFolderPath();
-		const pathWithoutRoot =
-			rootFolderPath && source.startsWith(rootFolderPath)
-				? source.replace(`${rootFolderPath}/` || "", "")
-				: source;
-
-		const pathShown = pathWithoutRoot.replace(os.homedir(), "~");
+		const pathShown = displayPathRelativeTo(source,  getRootFolderPath());
 
 		super(
 			pathShown,

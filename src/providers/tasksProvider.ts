@@ -11,7 +11,7 @@ import {
 } from "../commands";
 import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { expandPath, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
+import { expandPath, displayPathRelativeTo, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findTaskPosition } from "../utils/miseFileParser";
 import { allowedFileTaskDirs, idiomaticFiles } from "../utils/miseUtilts";
@@ -237,9 +237,7 @@ class SourceGroupItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 	) {
-		const pathShown = expandPath(source)
-			.replace(`${getRootFolderPath()}/` || "", "")
-			.replace(os.homedir(), "~");
+		const pathShown = displayPathRelativeTo(source, getRootFolderPath());
 
 		super(`${pathShown} (${tasks.length} tasks)`);
 		this.tooltip = `Source: ${source}`;
