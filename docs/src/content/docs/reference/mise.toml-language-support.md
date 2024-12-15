@@ -2,7 +2,7 @@
 title: mise.toml language support
 description: mise.toml language support in VS Code
 sidebar:
-    order: 100
+    order: 304
 ---
 
 ### Syntax Highlighting for TOML
@@ -14,7 +14,7 @@ TOML files.
 `mise-vscode` provides syntax highlighting for `tera` used for
 [templating](https://mise.jdx.dev/templates.html) in `mise.toml` files
 
-![mise-toml-language-support.png](../../assets/mise-toml-language-support.png)
+![mise-toml-language-support.png](../../../assets/mise-toml-language-support.png)
 
 ### Code completion
 

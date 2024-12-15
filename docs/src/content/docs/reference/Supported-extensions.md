@@ -2,7 +2,7 @@
 title: Supported extensions
 description: Supported extensions that can be automatically configured to use tools from `mise`
 sidebar:
-  order: 101
+  order: 304
 ---
 
 List of extensions that can be automatically configured to use tools from

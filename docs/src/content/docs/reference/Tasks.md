@@ -2,7 +2,7 @@
 title: Tasks
 description: How to manage tasks in VS Code with mise
 sidebar:
-  order: 30
+  order: 301
 ---
 
 ## Finding tasks
@@ -11,7 +11,7 @@ Here are a few ways to find tasks in your project:
 
 ### Using the mise activity bar
 
-![task-activity-bar.png](../../assets/task-activity-bar.png)
+![task-activity-bar.png](../../../assets/task-activity-bar.png)
 
 Click on a task to navigate to the file where the task is defined.
 
@@ -26,14 +26,14 @@ You have several ways to run a task with the extension:
 
 ### Use the run task code lens action
 
-![task-code-lens.png](../../assets/task-code-lens.png)
+![task-code-lens.png](../../../assets/task-code-lens.png)
 
 Click on the run button to run the task. If some option/arguments are required,
 you will be prompted to enter them.
 
 ### Use the mise activity bar
 
-![task-run-activity-bar.png](../../assets/task-run-activity-bar.png)
+![task-run-activity-bar.png](../../../assets/task-run-activity-bar.png)
 
 Click on the run action, or use right-click -> run task
 
@@ -42,7 +42,7 @@ Click on the run action, or use right-click -> run task
 Using the command palette: `cmd|ctrl+shift+p`, search for `Mise: run task`.
 Press enter.
 
-![img.png](../../assets/tasks-command-palette.png)
+![img.png](../../../assets/tasks-command-palette.png)
 
 ### VSCode task integration
 
@@ -83,7 +83,7 @@ create your own shortcuts to run tasks
 
 You can create a file task or a toml task directly from the activity bar
 
-![create-file-task.png](../../assets/create-file-task.png)
+![create-file-task.png](../../../assets/create-file-task.png)
 
 ### Use the command palette
 

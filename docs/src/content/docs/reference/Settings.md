@@ -2,7 +2,7 @@
 title: Extension Settings
 description: VSCode mise extension settings
 sidebar:
-    order: 102
+    order: 305
 tableOfContents:
   minHeadingLevel: 1
   maxHeadingLevel: 5
@@ -18,7 +18,7 @@ access the settings:
 You can also click on the mise extension indicator in the status bar to quickly
 access the extension settings.
 
-![picture showing mise extension settings](../../../assets/mise-menu.png)
+![picture showing mise extension settings](..//../../assets/mise-menu.png)
 
 ## Settings
 

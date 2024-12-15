@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import packageJson from "../../package.json";
 
 const _dirname = new URL(".", import.meta.url).pathname;
@@ -7,7 +8,7 @@ const pageContent = `---
 title: Extension Settings
 description: VSCode mise extension settings
 sidebar:
-    order: 102
+    order: 305
 tableOfContents:
   minHeadingLevel: 1
   maxHeadingLevel: 5
@@ -23,7 +24,7 @@ access the settings:
 You can also click on the mise extension indicator in the status bar to quickly
 access the extension settings.
 
-![picture showing mise extension settings](../../../assets/mise-menu.png)
+![picture showing mise extension settings](..//../../assets/mise-menu.png)
 
 ## Settings`;
 
@@ -71,7 +72,13 @@ function generateWikiContent(packageJson) {
 }
 
 try {
-	const outputPath = `${_dirname}/content/docs/Reference/Settings.md`;
+	const outputPath = path.join(
+		_dirname,
+		"content",
+		"docs",
+		"reference",
+		"Settings.md",
+	);
 	const wikiContent = generateWikiContent(packageJson);
 	fs.writeFileSync(outputPath, `${pageContent}\n\n${wikiContent}`);
 	console.log(`Wiki page generated successfully at ${outputPath}`);

@@ -1,0 +1,21 @@
+---
+title: Go setup
+description: How to setup Go in VS Code with mise
+sidebar:
+    order: 200
+---
+import { Steps } from '@astrojs/starlight/components';
+
+Here are the steps to set up Go in VS Code with mise:
+
+<Steps>
+1. Install the [mise-vscode extension](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview) (if not already installed)
+1. Install the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.Go) for VS Code
+1. Open a project with a `mise.toml` file (or any other files supported by mise)
+</Steps>
+
+If your project does not have a `mise.toml` file, you can creat one using:
+- the command palette (`Ctrl/Cmd + Shift + P`). Search for `Mise: use tool`. Select `mise.toml` and then `go`
+- or by running `mise use go` in the terminal
+
+`mise-vscode` will automatically detect the Go tools in your project and configure the Go extension to use them.
