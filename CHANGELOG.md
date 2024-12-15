@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.2](https://github.com/hverlin/mise-vscode/compare/v0.33.1...v0.33.2) (2024-12-15)
+
+
+### Bug Fixes
+
+* improve path handling on windows ([52e346c](https://github.com/hverlin/mise-vscode/commit/52e346c8f4b3e1ba50e8b35783ca03412f2910ae))
+* remove resource scope for settings ([a7d42ab](https://github.com/hverlin/mise-vscode/commit/a7d42abb0c96795c0fb91b22e09c92bbb572b9de))
+
 ## [0.33.1](https://github.com/hverlin/mise-vscode/compare/v0.33.0...v0.33.1) (2024-12-14)
 
 
