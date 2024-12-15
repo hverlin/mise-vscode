@@ -1,10 +1,9 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { x } from "tinyexec";
 import { getConfiguredBinPath } from "../configuration";
 import { logger } from "./logger";
-import { execAsync } from "./shell";
+import { safeExec } from "./shell";
 
 export async function resolveMisePath(): Promise<string> {
 	const configuredPath = getConfiguredBinPath();
@@ -19,7 +18,7 @@ export async function resolveMisePath(): Promise<string> {
 	}
 
 	// Check if mise is in the PATH
-	const result = await x("which", ["mise"]);
+	const result = await safeExec("which", ["mise"]);
 	if (result.stdout) {
 		return result.stdout.trim();
 	}
@@ -59,7 +58,7 @@ export async function resolveMisePath(): Promise<string> {
 export async function isValidBinary(filepath: string): Promise<boolean> {
 	try {
 		if (process.platform === "win32") {
-			const result = await x(filepath, ["--help"]);
+			const result = await safeExec(filepath, ["--help"]);
 			return result.stdout.toLowerCase().includes("mise");
 		}
 
@@ -67,7 +66,7 @@ export async function isValidBinary(filepath: string): Promise<boolean> {
 		const isExecutable = (stats.mode & fs.constants.X_OK) !== 0;
 
 		if (stats.isFile()) {
-			const { stdout } = await x(filepath, ["--help"]);
+			const { stdout } = await safeExec(filepath, ["--help"]);
 			return stdout.toLowerCase().includes("mise");
 		}
 	} catch (error) {
