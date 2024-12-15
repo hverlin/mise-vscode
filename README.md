@@ -76,12 +76,12 @@ for more information.
 
 https://hverlin.github.io/mise-vscode/
 
-- [Getting Started](https://hverlin.github.io/mise-vscode/getting-started/)
-- [Tools](https://hverlin.github.io/mise-vscode/tools/)
-- [Environment variables](https://hverlin.github.io/mise-vscode/environment-variables/)
-- [Tasks](https://hverlin.github.io/mise-vscode/tasks/)
-- [mise.toml language support](https://hverlin.github.io/mise-vscode/misetoml-language-support/)
+- [Getting Started](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
 - Reference
+  - [Tools](https://hverlin.github.io/mise-vscode/reference/tools/)
+  - [Environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
+  - [Tasks](https://hverlin.github.io/mise-vscode/reference/tasks/)
+  - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
   - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
   - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
 
