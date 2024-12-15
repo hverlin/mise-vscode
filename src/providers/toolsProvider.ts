@@ -402,8 +402,12 @@ export function registerToolsCommands(
 					return;
 				}
 
+				const normalizedPath = selectedPath
+					.replace(/\\/g, "/")
+					.replace(/^\//, "");
+
 				await miseService.runMiseToolActionInConsole(
-					`use --path ${selectedPath} ${selectedToolName}`,
+					`use --path ${normalizedPath} ${selectedToolName}`,
 					"Use Tool",
 				);
 			},
