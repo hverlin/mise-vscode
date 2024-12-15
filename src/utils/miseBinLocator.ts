@@ -19,6 +19,7 @@ export async function resolveMisePath(): Promise<string> {
 
 	// Check if mise is in the PATH
 	const result = await safeExec("which", ["mise"]);
+	logger.info(`which mise: ${result.stdout}`);
 	if (result.stdout) {
 		return result.stdout.trim();
 	}
@@ -57,18 +58,8 @@ export async function resolveMisePath(): Promise<string> {
 
 export async function isValidBinary(filepath: string): Promise<boolean> {
 	try {
-		if (process.platform === "win32") {
-			const result = await safeExec(filepath, ["--help"]);
-			return result.stdout.toLowerCase().includes("mise");
-		}
-
-		const stats = await fs.stat(filepath);
-		const isExecutable = (stats.mode & fs.constants.X_OK) !== 0;
-
-		if (stats.isFile()) {
-			const { stdout } = await safeExec(filepath, ["--help"]);
-			return stdout.toLowerCase().includes("mise");
-		}
+		const result = await safeExec(filepath, ["--help"]);
+		return result.stdout.toLowerCase().includes("mise");
 	} catch (error) {
 		logger.info(
 			`Path ${filepath} is not a valid mise binary: ${error instanceof Error ? error.message : String(error)}`,
