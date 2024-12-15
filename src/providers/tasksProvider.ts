@@ -11,7 +11,12 @@ import {
 } from "../commands";
 import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { expandPath, displayPathRelativeTo, setupMiseToml, setupTaskFile } from "../utils/fileUtils";
+import {
+	displayPathRelativeTo,
+	expandPath,
+	setupMiseToml,
+	setupTaskFile,
+} from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findTaskPosition } from "../utils/miseFileParser";
 import { allowedFileTaskDirs, idiomaticFiles } from "../utils/miseUtilts";

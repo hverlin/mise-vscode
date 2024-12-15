@@ -3,19 +3,24 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { logger } from "./logger";
 
-const isWindows = os.platform() === 'win32';
+const isWindows = os.platform() === "win32";
 
 export function expandPath(filePath: string): string {
-	const res = path.normalize(filePath).replace("~/", `${os.homedir()}${path.sep}`);
+	const res = path
+		.normalize(filePath)
+		.replace("~/", `${os.homedir()}${path.sep}`);
 	if (isWindows) {
 		return res.toLowerCase();
 	}
 	return res;
 }
 
-export function displayPathRelativeTo(filePath: string, rootFolder: string | undefined) {
+export function displayPathRelativeTo(
+	filePath: string,
+	rootFolder: string | undefined,
+) {
 	const homedir = isWindows ? os.homedir().toLowerCase() : os.homedir();
-	const rootPath = rootFolder ? `${rootFolder}${path.sep}` : ''
+	const rootPath = rootFolder ? `${rootFolder}${path.sep}` : "";
 	const pathShown = expandPath(filePath)
 		.replace(isWindows ? rootPath.toLowerCase() : rootPath, "")
 		.replace(homedir, "~");
