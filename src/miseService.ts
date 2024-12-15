@@ -395,7 +395,8 @@ export class MiseService {
 
 		const cmd = ["use"];
 		if (filename) {
-			cmd.push(`--path "${filename}"`);
+			const normalizedPath = filename.replace(/\\/g, "/").replace(/^\//, "");
+			cmd.push(`--path "${normalizedPath}"`);
 		}
 		cmd.push("--rm");
 		cmd.push(toolName);
