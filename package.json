@@ -580,7 +580,7 @@
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
-		"test": "npx --offline bun test"
+		"test": "bun test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
