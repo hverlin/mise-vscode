@@ -1,4 +1,3 @@
-import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { getConfiguredBinPath } from "../configuration";
@@ -24,23 +23,46 @@ export async function resolveMisePath(): Promise<string> {
 		return result.stdout.trim();
 	}
 
+	if (process.platform === "win32") {
+		const result = await safeExec("where.exe", ["mise"]);
+		logger.info(`where mise: ${result.stdout}`);
+		const firstEntry = result.stdout.split("\r\n")?.[0];
+		if (firstEntry) {
+			return firstEntry.trim();
+		}
+	}
+
 	//  Check common installation locations
 	const homedir = os.homedir();
 	const commonPaths = [
-		path.join(homedir, ".local", "bin", "mise"), // ~/.local/bin/mise
-		path.join(homedir, "bin", "mise"), // ~/bin/mise
+		path.join(homedir, ".local", "bin", "mise"),
+		path.join(homedir, "bin", "mise"),
 	];
 
 	if (process.platform !== "win32") {
 		commonPaths.push(
-			"/usr/local/bin/mise",
-			"/opt/homebrew/bin/mise", // Homebrew
+			path.join("/usr", "local", "bin", "mise"),
+			path.join("/opt", "homebrew", "bin", "mise"),
 		);
 	}
 
 	if (process.platform === "win32") {
-		commonPaths.push(path.join(homedir, "scoop", "shims", "mise"));
 		commonPaths.push(path.join(homedir, "scoop", "shims", "mise.exe"));
+		commonPaths.push(
+			path.join("C:", "ProgramData", "chocolatey", "bin", "mise.exe"),
+		);
+		commonPaths.push(path.join("C:", "Program Files", "mise", "mise.exe"));
+		commonPaths.push(
+			path.join(
+				homedir,
+				"AppData",
+				"Local",
+				"Microsoft",
+				"WinGet",
+				"Links",
+				"mise.exe",
+			),
+		);
 	}
 
 	const allPaths = [...commonPaths];
