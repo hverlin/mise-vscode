@@ -546,15 +546,19 @@ export class MiseService {
 		}
 
 		const configFiles = new Set<string>();
-		configFiles.add(path.join(getRootFolderPath() || "", "mise.toml"));
-		configFiles.add(path.join(os.homedir(), ".config", "mise", "config.toml"));
+		configFiles.add(
+			expandPath(path.join(getRootFolderPath() || "", "mise.toml")),
+		);
+		configFiles.add(
+			expandPath(path.join(os.homedir(), ".config", "mise", "config.toml")),
+		);
 
 		const miseConfigs = (await this.getMiseConfigFiles())
 			.map((file) => expandPath(file.path))
 			.filter((path) => path.endsWith(".toml"));
 
 		for (const file of miseConfigs) {
-			configFiles.add(file);
+			configFiles.add(expandPath(file));
 		}
 
 		return Array.from(configFiles);
