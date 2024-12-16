@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.34.0](https://github.com/hverlin/mise-vscode/compare/v0.33.2...v0.34.0) (2024-12-16)
+
+
+### Features
+
+* check for additional install paths on windows ([45bd1dc](https://github.com/hverlin/mise-vscode/commit/45bd1dc74d1767a1a7e2f2a303ba8d3d0f64dd5f))
+
+
+### Bug Fixes
+
+* remove duplicated paths on windows when creating a task ([fb4acb9](https://github.com/hverlin/mise-vscode/commit/fb4acb9b1c39b08dd98e53616f12e16c28d2f900))
+
 ## [0.33.2](https://github.com/hverlin/mise-vscode/compare/v0.33.1...v0.33.2) (2024-12-15)
 
 
