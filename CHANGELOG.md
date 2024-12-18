@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.1](https://github.com/hverlin/mise-vscode/compare/v0.34.0...v0.34.1) (2024-12-18)
+
+
+### Bug Fixes
+
+* fix expandPath on windows ([8199a18](https://github.com/hverlin/mise-vscode/commit/8199a1893a5d9376ffc9d42b88b4604cd37f3ea4))
+
 ## [0.34.0](https://github.com/hverlin/mise-vscode/compare/v0.33.2...v0.34.0) (2024-12-16)
 
 
