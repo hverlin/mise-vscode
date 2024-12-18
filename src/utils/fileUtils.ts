@@ -8,7 +8,7 @@ const isWindows = os.platform() === "win32";
 export function expandPath(filePath: string): string {
 	const res = path
 		.normalize(filePath)
-		.replace("~/", `${os.homedir()}${path.sep}`);
+		.replace(`~${path.sep}`, `${os.homedir()}${path.sep}`);
 	if (isWindows) {
 		return res.toLowerCase();
 	}
