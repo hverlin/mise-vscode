@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.2](https://github.com/hverlin/mise-vscode/compare/v0.34.1...v0.34.2) (2024-12-19)
+
+
+### Bug Fixes
+
+* rm -&gt; uninstall ([4c95bf1](https://github.com/hverlin/mise-vscode/commit/4c95bf1b42c4d29c5bf76ca8ca5eb2e90b37b1e4))
+
 ## [0.34.1](https://github.com/hverlin/mise-vscode/compare/v0.34.0...v0.34.1) (2024-12-18)
 
 
