@@ -9,6 +9,7 @@ run = 'bun src/extract-settings.mjs'
 dir = "{{config_root}}/docs"
 
 [tasks."docs:dev"]
+alias = 'docs'
 description = 'Builds the documentation'
 run = 'exec node --run dev'
 dir = "{{config_root}}/docs"

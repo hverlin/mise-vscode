@@ -114,6 +114,13 @@ class MiseExtension {
 			this.statusBarItem.text = "$(sync~spin) Mise";
 			try {
 				if (isMiseExtensionEnabled()) {
+					if (
+						shouldAutomaticallyTrustMiseConfigFiles() &&
+						vscode.workspace.isTrusted
+					) {
+						await this.miseService.miseTrust();
+					}
+
 					this.miseService.getCurrentTools().then(async (tools) => {
 						const missingTools = tools.filter((tool) => !tool.installed);
 						if (missingTools.length > 0) {

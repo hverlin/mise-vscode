@@ -1,0 +1,21 @@
+---
+title: Java setup
+description: How to set up Java in VS Code with mise
+sidebar:
+    order: 200
+---
+import { Steps } from '@astrojs/starlight/components';
+
+Here are the steps to set up Go in VS Code with mise:
+
+<Steps>
+1. Install the [mise-vscode extension](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview) (if not already installed)
+1. Install the [Java extension](https://marketplace.visualstudio.com/items?itemName=oracle.oracle-java) for VS Code
+1. Open a project with a `mise.toml` file (or any other files supported by mise)
+1. The Java SDK will be automatically detected and configured by `mise-vscode`
+</Steps>
+
+Here is an example Java project setup with mise:
+![java setup](./java-example.png)
+
+The `settings.json` file has been updated with the Java SDK path provided by `mise`.
