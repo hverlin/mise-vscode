@@ -22,7 +22,11 @@ import {
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
-import { displayPathRelativeTo, expandPath } from "../utils/fileUtils";
+import {
+	displayPathRelativeTo,
+	expandPath,
+	isWindows,
+} from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
@@ -396,9 +400,9 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const normalizedPath = selectedPath
-					.replace(/\\/g, "/")
-					.replace(/^\//, "");
+				const normalizedPath = isWindows
+					? selectedPath.replace(/\\/g, "/").replace(/^\//, "")
+					: selectedPath;
 
 				await miseService.runMiseToolActionInConsole(
 					`use --path ${normalizedPath} ${selectedToolName}`,

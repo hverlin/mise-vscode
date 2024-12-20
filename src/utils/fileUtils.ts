@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { logger } from "./logger";
 
-const isWindows = os.platform() === "win32";
+export const isWindows = os.platform() === "win32";
 
 export function expandPath(filePath: string): string {
 	const res = path

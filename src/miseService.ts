@@ -13,7 +13,7 @@ import {
 	shouldCheckForNewMiseVersion,
 	updateBinPath,
 } from "./configuration";
-import { expandPath } from "./utils/fileUtils";
+import { expandPath, isWindows } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
@@ -395,7 +395,10 @@ export class MiseService {
 
 		const cmd = ["use"];
 		if (filename) {
-			const normalizedPath = filename.replace(/\\/g, "/").replace(/^\//, "");
+			const normalizedPath = isWindows
+				? filename.replace(/\\/g, "/").replace(/^\//, "")
+				: filename;
+
 			cmd.push(`--path "${normalizedPath}"`);
 		}
 		cmd.push("--rm");
