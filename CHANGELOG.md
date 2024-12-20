@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.3](https://github.com/hverlin/mise-vscode/compare/v0.34.2...v0.34.3) (2024-12-20)
+
+
+### Bug Fixes
+
+* fix mise use action ([cdc5899](https://github.com/hverlin/mise-vscode/commit/cdc5899a6163a79477e8c5b30cd350f7d4c1631c))
+
 ## [0.34.2](https://github.com/hverlin/mise-vscode/compare/v0.34.1...v0.34.2) (2024-12-19)
 
 
