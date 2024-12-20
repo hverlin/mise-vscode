@@ -20,12 +20,12 @@ If your project contains a `mise.toml` file, such as the one below:
 
 ```toml [mise.toml]
 [tools]
-python = "3.12"
+python = "3.13"
 ```
 
 `mise-vscode` will automatically detect it and set `python.defaultInterpreterPath` in your workspace settings.
 
-If your `mise.toml` file reference a `venv` like:
+If your `mise.toml` file references a `venv` like:
 
 ```toml [mise.toml]
 [tools]
@@ -44,7 +44,7 @@ _.python.venv = { create = true, path = '.venv' }
 
 The VSCode python extension does not use the `python.defaultInterpreterPath` setting if an interpret was previously set (see [this document](https://github.com/microsoft/vscode-python/wiki/Setting-descriptions) for more details.
 
-For this reason, you might need to have to manually switch the python interpreter if the wrong one is selected.
+For this reason, you might need to manually switch the python interpreter if the wrong one was selected by the python extension.
 
 <Steps>
 1. Open a python file
