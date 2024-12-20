@@ -33,13 +33,27 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 		return element;
 	}
 
+	async getEnvItems() {
+		const envs = await this.miseService.getEnvs();
+		return envs.map((env) => new EnvItem(env));
+	}
+
 	async getChildren(): Promise<EnvItem[]> {
 		if (!isMiseExtensionEnabled()) {
 			return [];
 		}
 
-		const envs = await this.miseService.getEnvs();
-		return envs.map((env) => new EnvItem(env));
+		try {
+			return await this.getEnvItems();
+		} catch (e) {
+			logger.info("Error while fetching mise envs", e);
+			vscode.commands.executeCommand(
+				"setContext",
+				"mise.envProviderError",
+				true,
+			);
+			return [];
+		}
 	}
 }
 

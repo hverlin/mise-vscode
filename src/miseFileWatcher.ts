@@ -23,13 +23,11 @@ export class MiseFileWatcher {
 		this.miseService = miseService;
 		this.onConfigChangeCallback = onConfigChangeCallback;
 		this.fileWatchers = [];
+	}
+
+	initialize() {
 		this.initializeFileWatcher().catch((error) => {
 			logger.info("Unable to initialize file watcher", { error });
-
-			logger.info("Retrying to initialize file watcher in 5 seconds");
-			setTimeout(() => {
-				this.initializeFileWatcher();
-			}, 5000);
 		});
 	}
 
@@ -87,11 +85,7 @@ export class MiseFileWatcher {
 		}
 
 		try {
-			const { stdout } = await this.miseService.execMiseCommand("tasks ls");
-
-			if (stdout) {
-				await this.onConfigChangeCallback(uri);
-			}
+			await this.onConfigChangeCallback(uri);
 		} catch (error) {
 			logger.info(`Error while handling file change ${error}`);
 		}

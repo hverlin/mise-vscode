@@ -18,6 +18,7 @@ export const CONFIGURATION_FLAGS = {
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 	teraAutoCompletion: "teraAutoCompletion",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
+	commandTTLCacheSeconds: "commandTTLCacheSeconds",
 } as const;
 
 const getExtensionConfig = () => {
@@ -124,6 +125,10 @@ export const shouldAutomaticallyTrustMiseConfigFiles = () => {
 
 export const isTeraAutoCompletionEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.teraAutoCompletion, false);
+};
+
+export const getCommandTTLCacheSeconds = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.commandTTLCacheSeconds, 1);
 };
 
 export type VSCodeSettingValue =

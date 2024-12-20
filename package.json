@@ -215,6 +215,13 @@
 					"title": "Automatically trust mise config files",
 					"default": true,
 					"markdownDescription": "Automatically trust mise config files when opening them in a trusted worskspace."
+				},
+				"mise.commandTTLCacheSeconds": {
+					"order": 15,
+					"type": "number",
+					"title": "Command TTL cache seconds",
+					"default": 2,
+					"markdownDescription": "Time to live in seconds for the mise command cache. Only changed it if some commands are expensive to run."
 				}
 			}
 		},
@@ -231,7 +238,12 @@
 			{
 				"view": "miseTasksView",
 				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.refreshEntry))\n[Add task](command:mise.createTomlTask)",
-				"when": "config.mise.binPath && config.mise.enable"
+				"when": "config.mise.binPath && config.mise.enable && !mise.tasksProviderError"
+			},
+			{
+				"view": "miseTasksView",
+				"contents": "Error loading tasks. [Open logs](command:mise.openLogs)",
+				"when": "mise.tasksProviderError && config.mise.enable"
 			},
 			{
 				"view": "miseTasksView",
@@ -239,9 +251,24 @@
 				"when": "!config.mise.binPath"
 			},
 			{
+				"view": "miseTasksView",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+				"when": "!config.mise.enable"
+			},
+			{
 				"view": "miseToolsView",
 				"contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here.",
-				"when": "config.mise.enable"
+				"when": "config.mise.enable && !mise.toolsProviderError"
+			},
+			{
+				"view": "miseToolsView",
+				"contents": "Error loading tools. [Open logs](command:mise.openLogs)",
+				"when": "mise.toolsProviderError && config.mise.enable"
+			},
+			{
+				"view": "miseToolsView",
+				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+				"when": "!config.mise.enable"
 			},
 			{
 				"view": "miseEnvsView",
@@ -249,19 +276,14 @@
 				"when": "config.mise.binPath && config.mise.enable"
 			},
 			{
-				"view": "miseTasksView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
-				"when": "!config.mise.enable"
-			},
-			{
-				"view": "miseToolsView",
+				"view": "miseEnvsView",
 				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
 				"when": "!config.mise.enable"
 			},
 			{
 				"view": "miseEnvsView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
-				"when": "!config.mise.enable"
+				"contents": "Error loading environment variables. [Open logs](command:mise.openLogs)",
+				"when": "mise.envProviderError && config.mise.enable"
 			}
 		],
 		"views": {

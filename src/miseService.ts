@@ -6,6 +6,7 @@ import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { MISE_RELOAD } from "./commands";
 import {
+	getCommandTTLCacheSeconds,
 	getConfiguredBinPath,
 	getMiseEnv,
 	getRootFolderPath,
@@ -76,15 +77,22 @@ export class MiseService {
 
 	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
 
-	private cache = createCache({
-		ttl: 1,
+	private dedupeCache = createCache({
+		ttl: 0,
 		storage: { type: "memory" },
 	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
-	invalidateCache() {
-		return this.cache.clear();
+	private cache = createCache({
+		ttl: getCommandTTLCacheSeconds(),
+		storage: { type: "memory" },
+	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
+		this.execMiseCommand(command, { setMiseEnv }),
+	);
+
+	async invalidateCache() {
+		await Promise.all([this.dedupeCache.clear(), this.cache.clear()]);
 	}
 
 	async initializeMisePath() {
@@ -201,7 +209,7 @@ export class MiseService {
 		}
 
 		let miseCommand = miseBinaryPath.includes(" ")
-			? process.platform === "win32"
+			? isWindows
 				? `& "${miseBinaryPath}"`
 				: `"${miseBinaryPath}"`
 			: miseBinaryPath;
@@ -291,13 +299,20 @@ export class MiseService {
 		}
 	}
 
-	async getCurrentTools(): Promise<Array<MiseTool>> {
+	async getCurrentTools(
+		{
+			useCache,
+		}: {
+			useCache?: boolean;
+		} = { useCache: true },
+	): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
 		try {
-			const { stdout } = await this.cache.execCmd({
+			const cacheInstance = useCache ? this.cache : this.dedupeCache;
+			const { stdout } = await cacheInstance.execCmd({
 				command: "ls --current --offline --json",
 			});
 
@@ -443,7 +458,11 @@ export class MiseService {
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal("Mise run");
 		terminal.show();
-		const baseCommand = this.createMiseCommand(`run ${taskName}`);
+
+		const runTaskCmd = isWindows
+			? `run "${taskName.replace(/"/g, '\\"')}"`
+			: `run '${taskName.replace(/'/g, "\\'")}'`;
+		const baseCommand = this.createMiseCommand(runTaskCmd);
 		ensureMiseCommand(baseCommand);
 		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
 	}
@@ -457,9 +476,10 @@ export class MiseService {
 		}
 		const terminal = this.getOrCreateTerminal(terminalName);
 		terminal.show();
-		const baseCommand = this.createMiseCommand(
-			`watch -t "${taskName.replace(/"/g, '\\"')}"`,
-		);
+		const watchTaskCmd = isWindows
+			? `watch "${taskName.replace(/"/g, '\\"')}"`
+			: `watch '${taskName.replace(/'/g, "\\'")}'`;
+		const baseCommand = this.createMiseCommand(watchTaskCmd);
 		ensureMiseCommand(baseCommand);
 		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
 	}

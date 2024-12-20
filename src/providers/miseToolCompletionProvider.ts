@@ -28,7 +28,7 @@ export async function showToolVersionInline(
 
 	const [files, tools] = await Promise.all([
 		miseService.getCurrentConfigFiles(),
-		miseService.getCurrentTools(),
+		miseService.getCurrentTools({ useCache: false }),
 	]);
 	if (!files.includes(currentFile)) {
 		return;

@@ -31,7 +31,7 @@ import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
 
-type TreeItem = SourceItem | ToolItem;
+type TreeItem = ToolsSourceItem | ToolItem;
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -57,53 +57,70 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 		return this.miseService;
 	}
 
+	async getToolsSourceItems() {
+		const [tools, configFiles] = await Promise.all([
+			this.miseService.getCurrentTools(),
+			this.miseService.getMiseConfigFiles(),
+		]);
+
+		const toolsBySource = this.groupToolsBySource(tools);
+		for (const configFile of configFiles) {
+			if (!toolsBySource[configFile.path]) {
+				toolsBySource[configFile.path] = [];
+			}
+			toolsBySource[configFile.path]?.push(
+				...configFile.tools
+					.filter(
+						(tool) =>
+							!tools.find(
+								(t) => t.name === tool && t.source?.path === configFile.path,
+							),
+					)
+					.map((tool) => ({
+						name: tool,
+						version: "",
+						source: { type: "file", path: configFile.path },
+						requested_version: "",
+						installed: true,
+						active: false,
+						install_path: "-",
+					})),
+			);
+		}
+
+		return Object.entries(toolsBySource)
+			.sort(([sourceA], [sourceB]) => {
+				// keep original order of config files
+				const indexA = configFiles.findIndex((file) => file.path === sourceA);
+				const indexB = configFiles.findIndex((file) => file.path === sourceB);
+				if (indexA !== -1 && indexB !== -1) {
+					return indexB - indexA;
+				}
+				return sourceA.localeCompare(sourceB);
+			})
+			.map(([source, tools]) => new ToolsSourceItem(source, tools));
+	}
+
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
 		if (!isMiseExtensionEnabled()) {
 			return [];
 		}
 
 		if (!element) {
-			const tools = await this.miseService.getCurrentTools();
-			const configFiles = await this.miseService.getMiseConfigFiles();
-			const toolsBySource = this.groupToolsBySource(tools);
-			for (const configFile of configFiles) {
-				if (!toolsBySource[configFile.path]) {
-					toolsBySource[configFile.path] = [];
-				}
-				toolsBySource[configFile.path]?.push(
-					...configFile.tools
-						.filter(
-							(tool) =>
-								!tools.find(
-									(t) => t.name === tool && t.source?.path === configFile.path,
-								),
-						)
-						.map((tool) => ({
-							name: tool,
-							version: "",
-							source: { type: "file", path: configFile.path },
-							requested_version: "",
-							installed: true,
-							active: false,
-							install_path: "-",
-						})),
+			try {
+				return await this.getToolsSourceItems();
+			} catch (error) {
+				logger.info("Failed to get tools source items", error);
+				vscode.commands.executeCommand(
+					"setContext",
+					"mise.toolsProviderError",
+					true,
 				);
+				return [];
 			}
-
-			return Object.entries(toolsBySource)
-				.sort(([sourceA], [sourceB]) => {
-					// keep original order of config files
-					const indexA = configFiles.findIndex((file) => file.path === sourceA);
-					const indexB = configFiles.findIndex((file) => file.path === sourceB);
-					if (indexA !== -1 && indexB !== -1) {
-						return indexB - indexA;
-					}
-					return sourceA.localeCompare(sourceB);
-				})
-				.map(([source, tools]) => new SourceItem(source, tools));
 		}
 
-		if (element instanceof SourceItem) {
+		if (element instanceof ToolsSourceItem) {
 			return element.tools.map((tool) => new ToolItem(tool));
 		}
 
@@ -123,7 +140,7 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 }
 
-class SourceItem extends vscode.TreeItem {
+class ToolsSourceItem extends vscode.TreeItem {
 	constructor(
 		public readonly source: string,
 		public readonly tools: MiseTool[],
@@ -206,17 +223,15 @@ Install Path: ${tool.install_path}`;
 
 export function registerToolsCommands(
 	context: vscode.ExtensionContext,
-	toolsProvider: MiseToolsProvider,
+	miseService: MiseService,
 ) {
-	const miseService = toolsProvider.getMiseService();
-
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			MISE_OPEN_TOOL_DEFINITION,
 			async (tool: MiseTool | undefined) => {
 				let selectedTool = tool;
 				if (!selectedTool) {
-					const tools = await toolsProvider.getTools();
+					const tools = await miseService.getCurrentTools();
 					const toolNames = tools.map(
 						(tool) => `${tool.name} | ${tool.version}`,
 					);
@@ -250,7 +265,7 @@ export function registerToolsCommands(
 			async (inputTool: undefined | MiseTool | ToolItem) => {
 				let tool = inputTool;
 				if (!tool) {
-					const tools = await toolsProvider.getTools();
+					const tools = await miseService.getCurrentTools();
 					const toolNames = tools
 						.filter((tool) => tool.installed)
 						.map((tool) => `${tool.name} ${tool.version}`);
@@ -296,7 +311,7 @@ export function registerToolsCommands(
 			async (inputTool: undefined | MiseTool | ToolItem) => {
 				let tool = inputTool;
 				if (!tool) {
-					const tools = await toolsProvider.getTools();
+					const tools = await miseService.getCurrentTools();
 					const toolNames = tools
 						.filter((tool) => !tool.installed)
 						.map((tool) => `${tool.name} ${tool.version}`);
@@ -327,15 +342,15 @@ export function registerToolsCommands(
 		}),
 		vscode.commands.registerCommand(
 			MISE_USE_TOOL,
-			async (path: string | SourceItem | undefined) => {
+			async (path: string | ToolsSourceItem | undefined) => {
 				let selectedPath = path;
 				if (!selectedPath) {
 					selectedPath = await vscode.window.showQuickPick(
 						await miseService.getMiseTomlConfigFilePathsEvenIfMissing(),
 						{ placeHolder: "Select a configuration file" },
 					);
-				} else if (selectedPath instanceof SourceItem) {
-					selectedPath = path instanceof SourceItem ? path.source : path;
+				} else if (selectedPath instanceof ToolsSourceItem) {
+					selectedPath = path instanceof ToolsSourceItem ? path.source : path;
 				}
 
 				if (!selectedPath) {
@@ -457,7 +472,7 @@ export function registerToolsCommands(
 
 				let selectedToolName = toolName;
 
-				const tools = await toolsProvider.getTools();
+				const tools = await miseService.getCurrentTools();
 				const configurableTools = tools.filter((tool) => {
 					const configurableExtensions =
 						CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(tool.name);
@@ -560,7 +575,7 @@ export function registerToolsCommands(
 		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SKD_PATHS, async () => {
 			await miseService.miseReshim();
 			const ignoreList = getIgnoreList();
-			const tools = await toolsProvider.getTools();
+			const tools = await miseService.getCurrentTools();
 			const configurableTools = tools.filter((tool) => {
 				const configurableExtensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
 					tool.name,

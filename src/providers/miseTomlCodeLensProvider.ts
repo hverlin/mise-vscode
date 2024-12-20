@@ -190,7 +190,9 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				inTasksSection = false;
 			}
 
-			const match = trimmedLine.match(/^\s*\[tasks\.["']?(.*)["']?]/);
+			const match = trimmedLine.match(
+				/^\s*\[tasks\.(?:["']([^"']+)["']|([^\]]+))\]/,
+			);
 			// tasks.aaa = '3'
 			const match2 = trimmedLine.match(
 				/^\s*tasks\.["']?(.*)["']?\s*=\s*['"]?(.*)['"]?/,

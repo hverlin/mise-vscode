@@ -45,35 +45,52 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return this.miseService;
 	}
 
+	async getTasksSourceGroupItems() {
+		const [tasks, configFiles] = await Promise.all([
+			this.miseService.getTasks(),
+			this.miseService.getMiseConfigFiles(),
+		]);
+
+		const groupedTasks = this.groupTasksBySource(tasks);
+		for (const configFile of configFiles) {
+			if (idiomaticFiles.has(path.basename(configFile.path))) {
+				continue;
+			}
+
+			const expandedPath = expandPath(configFile.path);
+			const isRelativeToWorkspace = expandedPath.startsWith(
+				getRootFolderPath() || "",
+			);
+			if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
+				groupedTasks[expandedPath] = [];
+			}
+		}
+
+		return Object.entries(groupedTasks).map(
+			([source, tasks]) => new TasksSourceGroupItem(source, tasks),
+		);
+	}
+
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (!isMiseExtensionEnabled()) {
 			return [];
 		}
 
 		if (!element) {
-			const tasks = await this.miseService.getTasks();
-			const configFiles = await this.miseService.getMiseConfigFiles();
-			const groupedTasks = this.groupTasksBySource(tasks);
-			for (const configFile of configFiles) {
-				if (idiomaticFiles.has(path.basename(configFile.path))) {
-					continue;
-				}
-
-				const expandedPath = expandPath(configFile.path);
-				const isRelativeToWorkspace = expandedPath.startsWith(
-					getRootFolderPath() || "",
+			try {
+				return await this.getTasksSourceGroupItems();
+			} catch (e) {
+				logger.info("Error while getting tasks tree items", e);
+				vscode.commands.executeCommand(
+					"setContext",
+					"mise.tasksProviderError",
+					true,
 				);
-				if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
-					groupedTasks[expandedPath] = [];
-				}
+				return [];
 			}
-
-			return Object.entries(groupedTasks).map(
-				([source, tasks]) => new SourceGroupItem(source, tasks),
-			);
 		}
 
-		if (element instanceof SourceGroupItem) {
+		if (element instanceof TasksSourceGroupItem) {
 			return element.tasks.map((task) => new TaskItem(task));
 		}
 
@@ -235,9 +252,9 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 }
 
-type TreeNode = SourceGroupItem | TaskItem;
+type TreeNode = TasksSourceGroupItem | TaskItem;
 
-class SourceGroupItem extends vscode.TreeItem {
+class TasksSourceGroupItem extends vscode.TreeItem {
 	constructor(
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
@@ -449,7 +466,7 @@ export function registerTasksCommands(
 		}),
 		vscode.commands.registerCommand(
 			MISE_CREATE_TOML_TASK,
-			async (path: string | SourceGroupItem | undefined) => {
+			async (path: string | TasksSourceGroupItem | undefined) => {
 				let selectedPath = path;
 				if (!selectedPath) {
 					const miseConfigFiles =
@@ -457,7 +474,7 @@ export function registerTasksCommands(
 					selectedPath = await vscode.window.showQuickPick(miseConfigFiles, {
 						placeHolder: "Select a configuration file",
 					});
-				} else if (selectedPath instanceof SourceGroupItem) {
+				} else if (selectedPath instanceof TasksSourceGroupItem) {
 					selectedPath = selectedPath.source;
 				}
 
