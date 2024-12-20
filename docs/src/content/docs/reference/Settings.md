@@ -150,3 +150,11 @@ Automatically trust mise config files when opening them in a trusted worskspace.
 
 ---
 
+##### `mise.commandTTLCacheSeconds`
+- **Type:** `number`
+- **Default:** `2`
+
+Time to live in seconds for the mise command cache. Only changed it if some commands are expensive to run.
+
+---
+
