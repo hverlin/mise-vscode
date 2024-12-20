@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.34.4](https://github.com/hverlin/mise-vscode/compare/v0.34.3...v0.34.4) (2024-12-20)
+
+
+### Bug Fixes
+
+* Improve error handling. Improve file watcher. ([a9a3ae2](https://github.com/hverlin/mise-vscode/commit/a9a3ae2b5a39bfac48cde5cb98ca0bbedf2f64a3))
+
 ## [0.34.3](https://github.com/hverlin/mise-vscode/compare/v0.34.2...v0.34.3) (2024-12-20)
 
 
