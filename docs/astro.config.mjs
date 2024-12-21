@@ -11,7 +11,9 @@ export default defineConfig({
 		starlight({
 			title: "mise | VSCode",
 			plugins: [
-				starlightLinksValidator(),
+				starlightLinksValidator({
+					exclude: ["http://127.0.0.1:8000/"],
+				}),
 				starlightImageZoom(),
 				starlightThemeObsidian({
 					graphConfig: { visibilityRules: [] },
