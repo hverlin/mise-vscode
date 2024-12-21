@@ -14,8 +14,42 @@ Here are the steps to set up Go in VS Code with mise:
 1. Open a project with a `mise.toml` file (or any other files supported by mise)
 </Steps>
 
-If your project does not have a `mise.toml` file, you can create one using:
-- the command palette (`Ctrl/Cmd + Shift + P`). Search for `Mise: use tool`. Select `mise.toml` and then `go`
-- or by running `mise use go` in the terminal
+If you do not have a `go` project ready and want to quickly try out Go, you can use the following commands:
+
 
 `mise-vscode` will automatically detect the Go tools in your project and configure the Go extension to use them.
+
+![Go setup](./go-example.png)
+
+<Steps>
+1. ```shell
+    mkdir my-go-project && cd my-go-project
+    ```
+1. ```shell
+    mise use go@latest
+    ```
+1. ```shell
+    go mod init example/hello
+    ```
+1. Open the folder in VS Code and create a new file called `hello.go` with the following content:
+    ```go [hello.go]
+    package main
+
+    import "fmt"
+
+    func main() {
+        fmt.Println("Hello, World!")
+    }
+    ```
+1. Click the `run and debug` button in the editor
+</Steps>
+
+If you want to debug a Go program, you will need to install the `dlv` debugger.
+You can do this by clicking on the notification that appears when you run a Go file for the first time.
+
+![dlv install notification](./go-dlv-install.png)
+
+Alternatively, you can install `dlv` manually by running the following command:
+```shell
+go install -v github.com/go-delve/delve/cmd/dlv@latest
+```
