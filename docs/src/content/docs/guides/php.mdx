@@ -16,8 +16,43 @@ Here are the steps to set up PHP in VS Code with mise:
 
 ## Installing PHP
 
+### vfox-php
+
+I would recommend using the `vfox-php` toolchain for PHP development.
+
+This will require you to install some system dependencies, see https://github.com/version-fox/vfox-php?tab=readme-ov-file#prerequirements for more information.
+
+
+<Tabs>
+  <TabItem label="Mac (Homebrew)">
+  ```shell
+  brew install autoconf automake bison freetype gd gettext icu4c krb5 libedit libiconv libjpeg libpng libxml2 libxslt libzip pkg-config re2c zlib
+  ```
+  </TabItem>
+  <TabItem label="Debian/Ubuntu">
+  ```shell
+   sudo apt-get update && sudo apt-get install -y autoconf bison build-essential curl gettext git libgd-dev libcurl4-openssl-dev libedit-dev libicu-dev libjpeg-dev libmysqlclient-dev libonig-dev libpng-dev libpq-dev libreadline-dev libsqlite3-dev libssl-dev libxml2-dev libxslt-dev libzip-dev openssl pkg-config re2c zlib1g-dev
+   ```
+  </TabItem>
+</Tabs>
+
+```shell
+mise use vfox:version-fox/vfox-php
+```
+
+This will compile and install the latest version of PHP on your system (note that this may take a few minutes).
+
+If you want to install it globally, use:
+```shell
+mise use -g vfox:version-fox/vfox-php
+```
+
 ### asdf-php
 
+This will show you how to install PHP using the default `mise` provided `asdf-php` plugin.
+
+<details>
+<summary>Installation details</summary>
 Currently, the default `php` provided `mise` is the [asdf-php](https://github.com/asdf-community/asdf-php) plugin.
 This plugin requires a few dependencies to be installed on your system. See [the asdf-php README](https://github.com/asdf-community/asdf-php) for more information.
 
@@ -37,20 +72,12 @@ This plugin requires a few dependencies to be installed on your system. See [the
 You can now install `php` using `mise`:
 
 ```shell
-mise use php@latest
+mise use asdf:asdf-community/asdf-php
 ```
 
 This will compile and install the latest version of PHP on your system (note that this may take a few minutes).
 
-### vfox-php
-
-Alternatively, you can use `vfox:version-fox/vfox-php`.
-As for the `asdf plugin`, this will require you to install some system dependencies, see https://github.com/version-fox/vfox-php?tab=readme-ov-file#prerequirements for more information.
-```shell
-mise use vfox:version-fox/vfox-php
-```
-
-This will compile and install the latest version of PHP on your system (note that this may take a few minutes).
+</details>
 
 ## Default PHP support
 
@@ -94,3 +121,34 @@ You can now debug PHP files from VSCode:
 - The default target "Launch currently open script" should allows you to run and debug PHP files.
 
 ![php-debug](./php-debug.png)
+
+## Example with laravel
+
+```shell
+mise exec vfox:version-fox/vfox-php -- composer create-project laravel/laravel example-app
+cd example-app
+mise use vfox:version-fox/vfox-php
+php artisan serve
+```
+
+Open http://127.0.0.1:8000/ in your browser to see the Laravel welcome page.
+
+You can now open the `example-app` folder in VSCode.
+
+To enable debugging, update your `php.ini` (use `php --ini` to find it) file with the following:
+
+```text
+zend_extension=... # same as in the `PHP debugger setup` section
+
+xdebug.start_with_request=yes ;
+xdebug.mode=develop,gcstats,coverage,profile,debug
+xdebug.idekey=VSCODE
+xdebug.client_port=9003 ;
+```
+
+You can now set breakpoints in your code and start debugging.
+- Run `php artisan serve` in the terminal
+- Go to the debug view in the sidebar
+- Click the `Listen for XDebug` button
+
+![php-laravel-debug](./php-laravel-debug.png)
