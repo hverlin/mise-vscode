@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.35.0](https://github.com/hverlin/mise-vscode/compare/v0.34.4...v0.35.0) (2024-12-23)
+
+
+### Features
+
+* Add autocompletion for tool names and versions ([e742e6f](https://github.com/hverlin/mise-vscode/commit/e742e6faf6824a5f713491790f57a29e80c81345))
+* Add mise fmt ([5e9be2e](https://github.com/hverlin/mise-vscode/commit/5e9be2e4b624875e8e6fba185a53fdb176399465))
+* Open env variables defined in other files than toml files ([9c2f2ac](https://github.com/hverlin/mise-vscode/commit/9c2f2ace24713bae63281699501156457608015e))
+
 ## [0.34.4](https://github.com/hverlin/mise-vscode/compare/v0.34.3...v0.34.4) (2024-12-20)
 
 
