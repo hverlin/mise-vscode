@@ -5,6 +5,7 @@ import {
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
+import { getCleanedToolName } from "../utils/miseUtilts";
 
 const activeDecorationsPerFileAndTool: {
 	[filePath: string]: {
@@ -59,15 +60,11 @@ export async function showToolVersionInline(
 		}
 
 		const toolMatch = trimmedLine.match(/^([a-z/'"-0-9:]*)\s*=\s.*/);
-		if (!toolMatch) {
+		if (!toolMatch || !toolMatch[1]) {
 			continue;
 		}
 
-		const cleanedToolName = toolMatch[1]
-			?.trim()
-			.replace(/(['"])/g, "")
-			.replace("nodejs", "node")
-			.replace("golang", "go");
+		const cleanedToolName = getCleanedToolName(toolMatch[1]);
 		if (!cleanedToolName) {
 			continue;
 		}

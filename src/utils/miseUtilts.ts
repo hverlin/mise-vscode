@@ -48,3 +48,11 @@ export const idiomaticFileToTool = {
 } as const;
 
 export const idiomaticFiles = new Set(Object.keys(idiomaticFileToTool));
+
+export const getCleanedToolName = (toolName: string) => {
+	return toolName
+		.trim()
+		.replace(/(['"])/g, "")
+		.replace("nodejs", "node")
+		.replace("golang", "go");
+};

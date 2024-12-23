@@ -1,5 +1,3 @@
-import * as os from "node:os";
-import path from "node:path";
 import * as vscode from "vscode";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
@@ -10,6 +8,7 @@ import {
 	MISE_INSTALL_TOOL,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TOOL_DEFINITION,
+	MISE_RELOAD,
 	MISE_REMOVE_TOOL,
 	MISE_USE_TOOL,
 } from "../commands";
@@ -339,6 +338,7 @@ export function registerToolsCommands(
 		),
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
 			await miseService.runMiseToolActionInConsole("install", "Install Tool");
+			await vscode.commands.executeCommand(MISE_RELOAD);
 		}),
 		vscode.commands.registerCommand(
 			MISE_USE_TOOL,

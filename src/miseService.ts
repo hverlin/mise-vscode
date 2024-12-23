@@ -91,6 +91,13 @@ export class MiseService {
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
+	private longCache = createCache({
+		ttl: 60,
+		storage: { type: "memory" },
+	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
+		this.execMiseCommand(command, { setMiseEnv }),
+	);
+
 	async invalidateCache() {
 		await Promise.all([this.dedupeCache.clear(), this.cache.clear()]);
 	}
@@ -695,7 +702,8 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.execMiseCommand("registry", {
+		const { stdout } = await this.longCache.execCmd({
+			command: "registry",
 			setMiseEnv: false,
 		});
 
@@ -714,6 +722,19 @@ export class MiseService {
 			);
 	}
 
+	async miseBackends() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.longCache.execCmd({
+			command: "backends",
+			setMiseEnv: false,
+		});
+
+		return stdout.trim().split("\n");
+	}
+
 	async listRemoteVersions(
 		toolName: string,
 		{ yes = false } = {},
@@ -723,10 +744,10 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand(
-				`ls-remote ${toolName}${yes ? " --yes" : ""}`,
-				{ setMiseEnv: false },
-			);
+			const { stdout } = await this.longCache.execCmd({
+				command: `ls-remote ${toolName}${yes ? " --yes" : ""}`,
+				setMiseEnv: false,
+			});
 			if (yes) {
 				return this.listRemoteVersions(toolName);
 			}

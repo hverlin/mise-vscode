@@ -23,11 +23,13 @@ import {
 import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
+import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
 	updateEnv,
 } from "./providers/envProvider";
+import { showToolVersionInline } from "./providers/inlineToolDecorator";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import {
@@ -35,7 +37,6 @@ import {
 	createHoverProvider,
 } from "./providers/miseTeraCompletionProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
-import { showToolVersionInline } from "./providers/miseToolCompletionProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
 import {
 	MiseTasksProvider,
@@ -300,10 +301,19 @@ export class MiseExtension {
 		context.subscriptions.push(
 			vscode.languages.registerCompletionItemProvider(
 				allTomlFilesSelector,
+				new ToolCompletionProvider(this.miseService),
+				...['"', "'", "="],
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
 				new TeraCompletionProvider(this.miseService),
 				...["{", "%", "|", "."],
 			),
 		);
+
 		context.subscriptions.push(
 			createHoverProvider(allTomlFilesSelector, this.miseService),
 		);

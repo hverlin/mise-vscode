@@ -195,6 +195,7 @@ export function registerEnvsCommands(
 }
 
 let previousEnvs: Map<string, string> = new Map();
+
 function updateEnvironment(
 	context: vscode.ExtensionContext,
 	envs: Map<string, string>,
@@ -215,7 +216,14 @@ function updateEnvironment(
 
 function updateTerminalsEnvs(variablesToRemove: [string, string][]) {
 	const commands = variablesToRemove.map(([name]) => `;unset ${name}`).join("");
-	const commandLine = `${commands};eval "$(mise env)"; clear;`;
+	const isTerminalFocused = vscode.window.activeTerminal !== undefined;
+
+	if (isTerminalFocused) {
+		return vscode.commands.executeCommand("workbench.action.terminal.relaunch");
+	}
+
+	const commandLine = ` ${commands}; eval "$(mise env)"; clear; # mise-vscode: env. updated. Run 'terminal: relaunch active terminal' to remove obsolete env variables.`;
+
 	for (const terminal of vscode.window.terminals) {
 		if (terminal.name.startsWith("mise-watch")) {
 			continue;
@@ -247,9 +255,17 @@ export async function updateEnv(
 		);
 		const shouldUpdateTerminal =
 			variablesToRemove.length > 0 ||
-			[...currentEnvs.entries()].some(
-				([name, value]) => previousEnvs.get(name) !== value,
-			);
+			[...currentEnvs.entries()].some(([name, value]) => {
+				if (!previousEnvs.has(name)) {
+					logger.info(`New env: ${name}=${value}`);
+					return true;
+				}
+				if (previousEnvs.get(name) !== value) {
+					logger.info(`Env changed: ${name}=${value}`);
+					return true;
+				}
+				return false;
+			});
 
 		updateEnvironment(context, currentEnvs, variablesToRemove);
 		if (shouldAutomaticallyReloadTerminalEnv() && shouldUpdateTerminal) {
