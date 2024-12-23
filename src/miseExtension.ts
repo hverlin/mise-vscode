@@ -2,6 +2,7 @@ import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_FMT,
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
 	MISE_OPEN_EXTENSION_SETTINGS,
@@ -316,6 +317,12 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			createHoverProvider(allTomlFilesSelector, this.miseService),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_FMT, () => {
+				this.miseService.miseFmt();
+			}),
 		);
 
 		await vscode.commands.executeCommand(MISE_RELOAD);

@@ -462,6 +462,10 @@ export class MiseService {
 		}
 	}
 
+	async miseFmt() {
+		await this.execMiseCommand("fmt", { setMiseEnv: false });
+	}
+
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal("Mise run");
 		terminal.show();

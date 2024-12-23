@@ -24,3 +24,4 @@ export const MISE_RUN_TASK = "mise.runTask";
 export const MISE_SET_ENV_VARIABLE = "mise.setEnvVariable";
 export const MISE_USE_TOOL = "mise.useTool";
 export const MISE_WATCH_TASK = "mise.watchTask";
+export const MISE_FMT = "mise.fmt";

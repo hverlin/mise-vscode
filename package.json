@@ -425,6 +425,10 @@
 				"command": "mise.setEnvVariable",
 				"title": "Mise: Set Environment Variable",
 				"icon": "$(add)"
+			},
+			{
+				"command": "mise.fmt",
+				"title": "Mise: Run mise fmt"
 			}
 		],
 		"menus": {
