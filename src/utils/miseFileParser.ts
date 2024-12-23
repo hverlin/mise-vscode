@@ -89,10 +89,22 @@ export function findEnvVarPosition(
 	envVarName: string,
 ) {
 	for (const document of documents) {
-		const parser = new TomlParser<MiseTomlType>(document.getText());
-		const range = parser.findRange(parser.parsed.env ?? {}, envVarName);
-		if (range) {
-			return { document, range };
+		if (document.fileName.endsWith("toml")) {
+			const parser = new TomlParser<MiseTomlType>(document.getText());
+			const range = parser.findRange(parser.parsed.env ?? {}, envVarName);
+			if (range) {
+				return { document, range };
+			}
+		} else {
+			const lines = document.getText().split("\n");
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i];
+				if (line?.includes(envVarName)) {
+					const startPos = new vscode.Position(i, line.indexOf(envVarName));
+					const endPos = startPos.translate(0, envVarName.length);
+					return { document, range: new vscode.Range(startPos, endPos) };
+				}
+			}
 		}
 	}
 	return undefined;

@@ -227,8 +227,12 @@ export function registerToolsCommands(
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			MISE_OPEN_TOOL_DEFINITION,
-			async (tool: MiseTool | undefined) => {
+			async (tool: MiseTool | string | undefined) => {
 				let selectedTool = tool;
+				if (typeof selectedTool === "string") {
+					const tools = await miseService.getCurrentTools();
+					selectedTool = tools.find((t) => t.name === tool);
+				}
 				if (!selectedTool) {
 					const tools = await miseService.getCurrentTools();
 					const toolNames = tools.map(

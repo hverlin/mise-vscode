@@ -3,6 +3,7 @@ import {
 	MISE_COPY_ENV_VARIABLE_NAME,
 	MISE_COPY_ENV_VARIABLE_VALUE,
 	MISE_OPEN_ENV_VAR_DEFINITION,
+	MISE_OPEN_TOOL_DEFINITION,
 	MISE_SET_ENV_VARIABLE,
 } from "../commands";
 import {
@@ -34,7 +35,7 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 	}
 
 	async getEnvItems() {
-		const envs = await this.miseService.getEnvs();
+		const envs = await this.miseService.getEnvWithInfo();
 		return envs.map((env) => new EnvItem(env));
 	}
 
@@ -58,9 +59,16 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 }
 
 class EnvItem extends vscode.TreeItem {
-	constructor(public env: MiseEnv) {
+	constructor(public env: MiseEnvWithInfo) {
 		const label = env.value ? `${env.name}=${env.value}` : env.name;
 		super(label, vscode.TreeItemCollapsibleState.None);
+		this.tooltip = [
+			`${env.name}=${env.value}`,
+			env.source ? `source: ${env.source}` : "",
+			env.tool ? `Tool: ${env.tool}` : "",
+		]
+			.filter(Boolean)
+			.join("\n");
 
 		this.contextValue = "envItem";
 		this.command = {
@@ -79,7 +87,7 @@ export function registerEnvsCommands(
 		vscode.commands.registerCommand(
 			MISE_OPEN_ENV_VAR_DEFINITION,
 			async (name: string | undefined) => {
-				const possibleEnvs = await miseService.getEnvs();
+				const possibleEnvs = await miseService.getEnvWithInfo();
 				let selectedName = name;
 				if (!selectedName) {
 					selectedName = await vscode.window.showQuickPick(
@@ -93,20 +101,36 @@ export function registerEnvsCommands(
 					return;
 				}
 
-				const configs = (await miseService.getMiseConfigFiles()).filter((c) =>
-					c.path.endsWith(".toml"),
-				);
+				if (env.source) {
+					const document = await vscode.workspace.openTextDocument(env.source);
+					const needle = findEnvVarPosition([document], env.name);
+					if (needle?.range) {
+						void vscode.window.showTextDocument(needle.document, {
+							selection: needle.range,
+						});
+					}
+				} else if (env.tool) {
+					await vscode.commands.executeCommand(
+						MISE_OPEN_TOOL_DEFINITION,
+						env.tool,
+					);
+				} else {
+					const configs = (await miseService.getMiseConfigFiles()).filter((c) =>
+						c.path.endsWith(".toml"),
+					);
 
-				const documents = await Promise.all(
-					configs.map((config) =>
-						vscode.workspace.openTextDocument(config.path),
-					),
-				);
-				const needle = findEnvVarPosition(documents, env.name);
-				if (needle?.range) {
-					void vscode.window.showTextDocument(needle.document, {
-						selection: needle.range,
-					});
+					const documents = await Promise.all(
+						configs.map((config) =>
+							vscode.workspace.openTextDocument(config.path),
+						),
+					);
+					const needle = findEnvVarPosition(documents, env.name);
+
+					if (needle?.range) {
+						void vscode.window.showTextDocument(needle.document, {
+							selection: needle.range,
+						});
+					}
 				}
 			},
 		),

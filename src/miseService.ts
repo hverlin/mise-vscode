@@ -36,7 +36,7 @@ const STATE_DIR =
 	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
 const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
-const MIN_MISE_VERSION = [2024, 11, 32] as const;
+const MIN_MISE_VERSION = [2024, 12, 2] as const;
 
 function compareVersions(
 	a: readonly [number, number, number],
@@ -186,7 +186,7 @@ export class MiseService {
 				execution,
 			);
 
-			const p = new Promise((resolve, reject) => {
+			const p = new Promise((resolve) => {
 				const disposable = vscode.tasks.onDidEndTask((e) => {
 					if (e.execution.task === task) {
 						vscode.commands.executeCommand(MISE_RELOAD);
@@ -460,6 +460,24 @@ export class MiseService {
 			logger.info("Error fetching mise environments:", error as Error);
 			return [];
 		}
+	}
+
+	async getEnvWithInfo() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.cache.execCmd({
+			command: "env --json-extended",
+		});
+
+		const parsed = JSON.parse(stdout) as Record<string, MiseEnvWithInfo>;
+		return Object.entries(parsed).map(([key, info]) => ({
+			name: key,
+			value: info.value,
+			tool: info?.tool,
+			source: info?.source ? expandPath(info.source) : undefined,
+		}));
 	}
 
 	async miseFmt() {

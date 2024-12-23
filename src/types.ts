@@ -32,3 +32,8 @@ type MiseEnv = {
 	name: string;
 	value: string;
 };
+
+type MiseEnvWithInfo = MiseEnv & {
+	source?: string;
+	tool?: string;
+};

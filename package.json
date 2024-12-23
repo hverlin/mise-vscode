@@ -273,7 +273,7 @@
 			{
 				"view": "miseEnvsView",
 				"contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here.",
-				"when": "config.mise.binPath && config.mise.enable"
+				"when": "config.mise.binPath && config.mise.enable && !mise.envProviderError"
 			},
 			{
 				"view": "miseEnvsView",
