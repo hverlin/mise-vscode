@@ -61,6 +61,7 @@ export const Settings = () => {
 	return (
 		<div>
 			<CustomTable
+				style={{ height: window.innerHeight - 40 }}
 				filterRowElement={
 					<VscodeCheckbox
 						onChange={() => setShowModifiedOnly(!showModifiedOnly)}
@@ -79,6 +80,18 @@ export const Settings = () => {
 						id: "key",
 						header: "Key",
 						accessorKey: "key",
+						cell: ({ row }) => {
+							return (
+								<div>
+									<p style={{ marginBottom: 0 }}>
+										<b>{row.original.key}</b>
+									</p>
+									<p style={{ opacity: 0.8, marginTop: 8 }}>
+										{row.original.description} ({row.original.type})
+									</p>
+								</div>
+							);
+						},
 					},
 					{
 						id: "value",
@@ -97,18 +110,6 @@ export const Settings = () => {
 									<br />
 									default: {defaultValue}
 								</pre>
-							);
-						},
-					},
-					{
-						id: "description",
-						header: "Description",
-						accessorKey: "description",
-						cell: ({ row }) => {
-							return (
-								<>
-									{row.original.description} (type: {row.original.type})
-								</>
 							);
 						},
 					},

@@ -3,6 +3,7 @@ import {
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
 	MISE_RUN_TASK,
+	MISE_SHOW_SETTINGS,
 	MISE_USE_TOOL,
 	MISE_WATCH_TASK,
 } from "../commands";
@@ -61,6 +62,15 @@ function addListToolsCodeLens(range: vscode.Range): vscode.CodeLens {
 		title: "$(list-unordered) List tools",
 		tooltip: "List tools",
 		command: MISE_LIST_ALL_TOOLS,
+		arguments: [],
+	});
+}
+
+function addSettingsListCodeLens(range: vscode.Range): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(gear) View all settings",
+		tooltip: "Show all settings",
+		command: MISE_SHOW_SETTINGS,
 		arguments: [],
 	});
 }
@@ -177,6 +187,14 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			}
 			const trimmedLine = lineContent.trim();
 			if (!trimmedLine) continue;
+
+			if (trimmedLine.trim().startsWith("[settings]")) {
+				const range = new vscode.Range(
+					new vscode.Position(i, 0),
+					new vscode.Position(i, 0),
+				);
+				codeLenses.push(addSettingsListCodeLens(range));
+			}
 
 			if (trimmedLine.trim().startsWith("[tools]")) {
 				const range = new vscode.Range(
