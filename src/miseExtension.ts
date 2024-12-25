@@ -30,7 +30,7 @@ import {
 	registerEnvsCommands,
 	updateEnv,
 } from "./providers/envProvider";
-import { showToolVersionInline } from "./providers/inlineToolDecorator";
+import { addToolInfoToEditor } from "./providers/inlineToolDecorator";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import {
@@ -277,12 +277,18 @@ export class MiseExtension {
 					event.document === vscode.window.activeTextEditor?.document &&
 					event.document.languageId === "toml"
 				) {
-					showToolVersionInline(event.document, this.miseService);
+					addToolInfoToEditor(event.document, this.miseService, context);
 				}
 			}),
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
 				if (editor && editor.document.languageId === "toml") {
-					showToolVersionInline(editor.document, this.miseService);
+					addToolInfoToEditor(editor.document, this.miseService, context);
+				}
+			}),
+			vscode.window.onDidChangeActiveColorTheme(() => {
+				const editor = vscode.window.activeTextEditor;
+				if (editor && editor.document.languageId === "toml") {
+					addToolInfoToEditor(editor.document, this.miseService, context);
 				}
 			}),
 			vscode.workspace.onDidSaveTextDocument((document) => {
@@ -293,9 +299,10 @@ export class MiseExtension {
 		);
 
 		if (vscode.window.activeTextEditor?.document.languageId === "toml") {
-			void showToolVersionInline(
+			void addToolInfoToEditor(
 				vscode.window.activeTextEditor?.document,
 				this.miseService,
+				context,
 			);
 		}
 

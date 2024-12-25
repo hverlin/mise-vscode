@@ -178,15 +178,6 @@ const ActionCell = ({
 
 	return (
 		<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-			<VscodeButton
-				title={"Info"}
-				className="small-button"
-				onClick={() => {
-					onSelect(tool);
-				}}
-			>
-				<i className="codicon codicon-info" />
-			</VscodeButton>
 			{outdatedToolInfo && (
 				<VscodeButton
 					title={"Upgrade"}
@@ -202,6 +193,16 @@ const ActionCell = ({
 					<i className="codicon codicon-arrow-up" />
 				</VscodeButton>
 			)}
+			<VscodeButton
+				title={"Info"}
+				secondary
+				className="small-button"
+				onClick={() => {
+					onSelect(tool);
+				}}
+			>
+				<i className="codicon codicon-info" />
+			</VscodeButton>
 			<VscodeButton
 				title={"Uninstall"}
 				className="small-button"
@@ -224,7 +225,7 @@ export const Tools = () => {
 	const queryClient = useQueryClient();
 	const [selectedTool, setSelectedTool] = useState<MiseTool | null>(null);
 	const [showOutdatedOnly, setShowOutdatedOnly] = useState(false);
-	const [activeOnly, setActiveOnly] = useState(false);
+	const [activeOnly, setActiveOnly] = useState(true);
 
 	const toolsQuery = useQuery({
 		queryKey: ["tools"],

@@ -158,3 +158,11 @@ Time to live in seconds for the mise command cache. Only changed it if some comm
 
 ---
 
+##### `mise.showOutdatedToolGutterDecorations`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show outdated tool gutter decorations in the editor.
+
+---
+

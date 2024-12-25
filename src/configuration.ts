@@ -13,6 +13,7 @@ export const CONFIGURATION_FLAGS = {
 		"configureExtensionsAutomaticallyIgnoreList",
 	enableCodeLens: "enableCodeLens",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
+	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
 	updateEnvAutomatically: "updateEnvAutomatically",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
@@ -99,6 +100,13 @@ export const isCodeLensEnabled = () => {
 
 export const shouldShowToolVersionsDecorations = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.showToolVersionsDecorations, true);
+};
+
+export const shouldShowOutdatedToolGutterDecorations = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.showOutdatedToolGutterDecorations,
+		true,
+	);
 };
 
 export const shouldCheckForNewMiseVersion = () => {

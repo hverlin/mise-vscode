@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import {
 	MISE_INSTALL_ALL,
+	MISE_LIST_ALL_TOOLS,
 	MISE_RUN_TASK,
 	MISE_USE_TOOL,
 	MISE_WATCH_TASK,
@@ -52,6 +53,15 @@ function createAddToolCodeLens(
 		tooltip: "Add tool",
 		command: MISE_USE_TOOL,
 		arguments: [filePath],
+	});
+}
+
+function addListToolsCodeLens(range: vscode.Range): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: "$(list-unordered) List tools",
+		tooltip: "List tools",
+		command: MISE_LIST_ALL_TOOLS,
+		arguments: [],
 	});
 }
 
@@ -174,6 +184,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 					new vscode.Position(i, 0),
 				);
 				codeLenses.push(createAddToolCodeLens(range, document.uri.path));
+				codeLenses.push(addListToolsCodeLens(range));
 				if (await this.miseService.hasMissingTools()) {
 					codeLenses.push(createInstallMissingToolsCodeLens(range));
 				}

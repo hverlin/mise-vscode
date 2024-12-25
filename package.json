@@ -222,6 +222,13 @@
 					"title": "Command TTL cache seconds",
 					"default": 2,
 					"markdownDescription": "Time to live in seconds for the mise command cache. Only changed it if some commands are expensive to run."
+				},
+				"mise.showOutdatedToolGutterDecorations": {
+					"order": 16,
+					"type": "boolean",
+					"title": "Show outdated tool gutter decorations",
+					"default": true,
+					"markdownDescription": "Show outdated tool gutter decorations in the editor."
 				}
 			}
 		},
@@ -540,6 +547,13 @@
 					"command": "mise.copyEnvVariableValue",
 					"group": "2_modification"
 				}
+			],
+			"editor/lineNumber/context": [
+				{
+					"command": "mise.listAllTools",
+					"group": "inline",
+					"when": "editorLineNumber in mise.linesWithOutdatedTools"
+				}
 			]
 		},
 		"taskDefinitions": [
@@ -602,7 +616,7 @@
 		"@types/react": "^18.3.12",
 		"@types/react-dom": "^18.3.1",
 		"@types/vscode": "^1.85.0",
-		"bun": "^1.1.38",
+		"bun": "^1.1.42",
 		"typescript": "^5.6.3"
 	},
 	"packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228",
