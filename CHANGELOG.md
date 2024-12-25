@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.36.0](https://github.com/hverlin/mise-vscode/compare/v0.35.0...v0.36.0) (2024-12-25)
+
+
+### Features
+
+* Add an icon for outdated tools in the editor gutter ([e1d761d](https://github.com/hverlin/mise-vscode/commit/e1d761d97b2394c46399fec58654a368ddd4f554))
+
 ## [0.35.0](https://github.com/hverlin/mise-vscode/compare/v0.34.4...v0.35.0) (2024-12-23)
 
 
