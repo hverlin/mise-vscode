@@ -37,3 +37,8 @@ type MiseEnvWithInfo = MiseEnv & {
 	source?: string;
 	tool?: string;
 };
+
+type MiseSettingInfo = {
+	value: string | number | boolean | string[] | number[] | boolean[] | object;
+	source?: string;
+};

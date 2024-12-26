@@ -3,7 +3,7 @@ import { VscodeCheckbox } from "@vscode-elements/react-elements";
 import React, { useState } from "react";
 import CustomTable from "./components/CustomTable";
 import { flattenJsonSchema, getDefaultForType } from "./settingsSchema";
-import { vscodeClient } from "./webviewVsCodeApi";
+import { toDisplayPath, vscodeClient } from "./webviewVsCodeApi";
 
 export const Settings = () => {
 	const [showModifiedOnly, setShowModifiedOnly] = useState(false);
@@ -11,7 +11,9 @@ export const Settings = () => {
 	const settingsQuery = useQuery({
 		queryKey: ["settings"],
 		queryFn: ({ queryKey }) =>
-			vscodeClient.request({ queryKey }) as Promise<object>,
+			vscodeClient.request({ queryKey }) as Promise<
+				Record<string, MiseSettingInfo>
+			>,
 	});
 
 	const schemaQuery = useQuery({
@@ -35,20 +37,22 @@ export const Settings = () => {
 	}
 
 	const settingValues = Object.entries(settingsQuery.data ?? {})
-		.flatMap(([key, value]) => {
+		.flatMap(([key, { value, source }]) => {
 			if (typeof value === "object" && !Array.isArray(value)) {
 				return Object.entries(value).map(([subKey, subValue]) => ({
 					key: `${key}.${subKey}`,
 					value: subValue,
+					source,
 				}));
 			}
-			return { key, value };
+			return { key, value, source };
 		})
-		.map(({ key, value }) => {
+		.map(({ key, value, source }) => {
 			const schemaDef = schema.find((schema) => schema.key === key);
 			return {
 				key,
 				value,
+				source,
 				description: schemaDef?.description ?? "",
 				type: schemaDef?.type ?? "",
 				defaultValue: schemaDef?.defaultValue
@@ -109,6 +113,12 @@ export const Settings = () => {
 									value: <b>{actual}</b>
 									<br />
 									default: {defaultValue}
+									{row.original.source && (
+										<>
+											<br />
+											source: {toDisplayPath(row.original.source || "")}
+										</>
+									)}
 								</pre>
 							);
 						},

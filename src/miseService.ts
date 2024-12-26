@@ -36,6 +36,22 @@ const STATE_DIR =
 	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
 const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
+const flattenSettings = (obj: object, prefix = "") => {
+	const result: Record<string, MiseSettingInfo> = {};
+
+	for (const [key, value] of Object.entries(obj)) {
+		const newKey = prefix ? `${prefix}.${key}` : key;
+
+		if (value && typeof value === "object" && !("value" in value)) {
+			Object.assign(result, flattenSettings(value, newKey));
+		} else {
+			result[newKey] = value;
+		}
+	}
+
+	return result;
+};
+
 const MIN_MISE_VERSION = [2024, 12, 2] as const;
 
 function compareVersions(
@@ -820,14 +836,10 @@ export class MiseService {
 			return [];
 		}
 
-		const version = await this.getParsedMiseVersion();
-		if (version && isVersionGreaterOrEqualThan(version, [2024, 11, 34])) {
-			const { stdout } = await this.execMiseCommand("settings --all --toml");
-			return parse(stdout);
-		}
-
-		const { stdout } = await this.execMiseCommand("settings");
-		return parse(stdout);
+		const { stdout } = await this.execMiseCommand(
+			"settings --all --json-extended",
+		);
+		return flattenSettings(JSON.parse(stdout));
 	}
 
 	async getTrackedConfigFiles() {

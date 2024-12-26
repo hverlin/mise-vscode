@@ -59,7 +59,7 @@ export const toDisplayPath = (path: string) => {
 	if (!homeDir) {
 		return path;
 	}
-	return path.replace(homeDir, "~");
+	return path?.replace(homeDir, "~");
 };
 
 export const trackedConfigsQueryOptions = queryOptions({
