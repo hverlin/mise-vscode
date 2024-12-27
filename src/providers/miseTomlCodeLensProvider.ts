@@ -68,8 +68,8 @@ function addListToolsCodeLens(range: vscode.Range): vscode.CodeLens {
 
 function addSettingsListCodeLens(range: vscode.Range): vscode.CodeLens {
 	return new vscode.CodeLens(range, {
-		title: "$(gear) View all settings",
-		tooltip: "Show all settings",
+		title: "$(gear) Manage settings",
+		tooltip: "Manage settings",
 		command: MISE_SHOW_SETTINGS,
 		arguments: [],
 	});

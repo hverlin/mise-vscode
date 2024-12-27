@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useMutation } from "@tanstack/react-query";
 
 declare global {
 	interface Window {
@@ -69,3 +69,20 @@ export const trackedConfigsQueryOptions = queryOptions({
 			Array<{ path: string; tools: object }>
 		>,
 });
+
+export const useOpenFileMutation = () =>
+	useMutation({
+		mutationKey: ["openFile"],
+		mutationFn: (path: string) =>
+			vscodeClient.request({ mutationKey: ["openFile"], variables: { path } }),
+	});
+
+export const useEditSettingMutation = () =>
+	useMutation({
+		mutationKey: ["editSetting"],
+		mutationFn: ({ key }: { key: string }) =>
+			vscodeClient.request({
+				mutationKey: ["editSetting"],
+				variables: { key },
+			}),
+	});

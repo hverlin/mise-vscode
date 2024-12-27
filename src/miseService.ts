@@ -19,7 +19,11 @@ import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
 import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
-import { idiomaticFileToTool, idiomaticFiles } from "./utils/miseUtilts";
+import {
+	flattenJsonSchema,
+	idiomaticFileToTool,
+	idiomaticFiles,
+} from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
 	execAsync,
@@ -110,9 +114,20 @@ export class MiseService {
 	private longCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
-		this.execMiseCommand(command, { setMiseEnv }),
-	);
+	})
+		.define("execCmd", ({ command, setMiseEnv } = {}) =>
+			this.execMiseCommand(command, { setMiseEnv }),
+		)
+		.define("fetchSchema", async () => {
+			const res = await fetch(
+				"https://raw.githubusercontent.com/jdx/mise/refs/heads/main/schema/mise.json",
+			);
+			if (!res.ok) {
+				return [];
+			}
+			const json = await res.json();
+			return flattenJsonSchema(json.$defs.settings);
+		});
 
 	async invalidateCache() {
 		await Promise.all([this.dedupeCache.clear(), this.cache.clear()]);
@@ -833,13 +848,17 @@ export class MiseService {
 
 	async getSettings() {
 		if (!this.getMiseBinaryPath()) {
-			return [];
+			return {};
 		}
 
 		const { stdout } = await this.execMiseCommand(
 			"settings --all --json-extended",
 		);
 		return flattenSettings(JSON.parse(stdout));
+	}
+
+	async getSettingsSchema() {
+		return this.longCache.fetchSchema();
 	}
 
 	async getTrackedConfigFiles() {
@@ -946,5 +965,18 @@ export class MiseService {
 		}
 
 		await this.runMiseToolActionInConsole(`install ${toolName}@${version}`);
+	}
+
+	async editSetting(
+		setting: string,
+		{ value, filePath }: { value: string; filePath: string },
+	) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(
+			`config set settings.${setting} "${value}" --file "${filePath}"`,
+		);
 	}
 }

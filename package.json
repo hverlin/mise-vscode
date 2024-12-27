@@ -436,6 +436,10 @@
 			{
 				"command": "mise.fmt",
 				"title": "Mise: Run mise fmt"
+			},
+			{
+				"command": "mise.editSetting",
+				"title": "Mise: Edit Setting"
 			}
 		],
 		"menus": {

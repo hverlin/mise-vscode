@@ -2,6 +2,7 @@ import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_EDIT_SETTING,
 	MISE_FMT,
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
@@ -330,6 +331,90 @@ export class MiseExtension {
 			vscode.commands.registerCommand(MISE_FMT, () => {
 				this.miseService.miseFmt();
 			}),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				MISE_EDIT_SETTING,
+				async (settingName: string) => {
+					const [schema, allSettings] = await Promise.all([
+						this.miseService.getSettingsSchema(),
+						this.miseService.getSettings(),
+					]);
+					let setting = settingName;
+					if (!setting) {
+						const selectedSetting = await vscode.window.showQuickPick(
+							schema.map((s) => ({
+								label: s.key,
+								description: [
+									s.type ? `${s.type}` : "",
+									s.deprecated ? "Deprecated" : "",
+								]
+									.filter(Boolean)
+									.join(" | "),
+								detail: s.description,
+							})),
+							{ placeHolder: "Select a setting" },
+						);
+						if (!selectedSetting) {
+							return;
+						}
+						setting = selectedSetting.label;
+					}
+
+					const settingSchema = schema.find((s) => s.key === setting);
+					if (!settingSchema) {
+						logger.warn(`Setting ${setting} not found in schema`);
+						return;
+					}
+
+					const currentValue = allSettings[setting]?.value;
+
+					const value =
+						settingSchema.type === "boolean"
+							? await vscode.window.showQuickPick(["true", "false"], {
+									placeHolder: `Select new value for ${setting}. Current value: ${currentValue}`,
+								})
+							: settingSchema.enum?.length
+								? await vscode.window.showQuickPick(settingSchema.enum, {
+										placeHolder: `Select new value for ${setting}. Current value: ${currentValue}`,
+									})
+								: settingSchema.type === "array"
+									? await vscode.window.showInputBox({
+											prompt: `Enter new value for ${setting} (comma separated). Current value: ${currentValue}`,
+											value:
+												typeof currentValue === "string"
+													? JSON.parse(currentValue)?.join(",")
+													: "",
+										})
+									: await vscode.window.showInputBox({
+											prompt: `Enter new value for ${setting}`,
+											value:
+												settingSchema.type === "string"
+													? (currentValue?.toString() ?? "")
+													: JSON.stringify(currentValue),
+										});
+
+					if (value === undefined) {
+						return;
+					}
+
+					const file =
+						await this.miseService.getMiseTomlConfigFilePathsEvenIfMissing();
+					const selectedFilePath = await vscode.window.showQuickPick(file, {
+						placeHolder: "Select a configuration file",
+					});
+
+					if (!selectedFilePath) {
+						return;
+					}
+
+					await this.miseService.editSetting(setting, {
+						filePath: selectedFilePath,
+						value,
+					});
+				},
+			),
 		);
 
 		await vscode.commands.executeCommand(MISE_RELOAD);

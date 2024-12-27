@@ -4,6 +4,7 @@ import * as os from "node:os";
 import path from "node:path";
 import * as cheerio from "cheerio";
 import * as vscode from "vscode";
+import { MISE_EDIT_SETTING } from "./commands";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
@@ -57,7 +58,7 @@ export default class WebViewPanel {
 			`Mise: ${this.view === "TOOLS" ? "Tools" : this.view === "SETTINGS" ? "Settings" : "Tracked Configs"}`,
 			column,
 			{
-				retainContextWhenHidden: true,
+				retainContextWhenHidden: false,
 				enableScripts: true,
 				localResourceRoots: [this._extensionUri],
 			},
@@ -107,6 +108,11 @@ export default class WebViewPanel {
 									this.miseService.getSettings(),
 								);
 							}
+							case "settingsSchema": {
+								return executeAction(message, () =>
+									this.miseService.getSettingsSchema(),
+								);
+							}
 							case "trackedConfigs": {
 								return executeAction(message, () =>
 									this.miseService.getTrackedConfigFiles(),
@@ -147,6 +153,14 @@ export default class WebViewPanel {
 									vscode.window.showTextDocument(
 										vscode.Uri.file(message.variables?.path as string),
 										{ preview: true, viewColumn: vscode.ViewColumn.One },
+									),
+								);
+							}
+							case "editSetting": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(
+										MISE_EDIT_SETTING,
+										message.variables?.key,
 									),
 								);
 							}

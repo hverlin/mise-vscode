@@ -1,19 +1,14 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import CustomTable from "./components/CustomTable";
 import {
 	toDisplayPath,
 	trackedConfigsQueryOptions,
-	vscodeClient,
+	useOpenFileMutation,
 } from "./webviewVsCodeApi";
 
 export const TrackedConfigs = () => {
 	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
-
-	const openFileMutation = useMutation({
-		mutationKey: ["openFile"],
-		mutationFn: (path: string) =>
-			vscodeClient.request({ mutationKey: ["openFile"], variables: { path } }),
-	});
+	const openFileMutation = useOpenFileMutation();
 
 	if (trackedConfigQuery.isError) {
 		return <div>Error: {trackedConfigQuery.error.message}</div>;

@@ -242,7 +242,9 @@ function updateTerminalsEnvs(variablesToRemove: [string, string][]) {
 	const commands = variablesToRemove.map(([name]) => `;unset ${name}`).join("");
 	const isTerminalFocused = vscode.window.activeTerminal !== undefined;
 
-	if (isTerminalFocused) {
+	const isMiseTask =
+		vscode.window.activeTerminal?.creationOptions?.name?.includes("mise");
+	if (isTerminalFocused && !isMiseTask) {
 		return vscode.commands.executeCommand("workbench.action.terminal.relaunch");
 	}
 

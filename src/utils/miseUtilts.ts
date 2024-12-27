@@ -56,3 +56,76 @@ export const getCleanedToolName = (toolName: string) => {
 		.replace("nodejs", "node")
 		.replace("golang", "go");
 };
+
+type JSONType = "string" | "boolean" | "number" | "object" | "array";
+
+export type FlattenedProperty = {
+	key: string;
+	type: JSONType;
+	itemsType: JSONType | undefined;
+	enum: string[] | undefined;
+	description: string | undefined;
+	defaultValue: unknown;
+	deprecated?: string;
+};
+
+type PropertyValue = {
+	type?: JSONType;
+	description?: string;
+	default?: unknown;
+	deprecated?: string;
+	items?: { type: JSONType };
+	enum?: string[];
+	properties?: Record<string, PropertyValue>;
+};
+
+type SchemaType = {
+	properties: Record<string, PropertyValue>;
+};
+
+export function flattenJsonSchema(
+	schema: SchemaType,
+	parentKey = "",
+	result: FlattenedProperty[] = [],
+): FlattenedProperty[] {
+	if (!schema.properties) {
+		return result;
+	}
+
+	for (const [key, value] of Object.entries(schema.properties)) {
+		const currentKey = parentKey ? `${parentKey}.${key}` : key;
+
+		if (value.properties) {
+			flattenJsonSchema({ properties: value.properties }, currentKey, result);
+		} else {
+			result.push({
+				key: currentKey,
+				type: value.type ?? "string",
+				itemsType: value.items?.type,
+				description: value.description,
+				defaultValue: value.default,
+				enum: value.enum,
+				...(value.deprecated && { deprecated: value.deprecated }),
+			});
+		}
+	}
+
+	return result;
+}
+
+export function getDefaultForType(type?: string): unknown {
+	switch (type) {
+		case "string":
+			return "";
+		case "boolean":
+			return false;
+		case "number":
+			return 0;
+		case "object":
+			return {};
+		case "array":
+			return [];
+		default:
+			return "";
+	}
+}
