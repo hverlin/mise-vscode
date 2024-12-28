@@ -69,21 +69,29 @@ export const Settings = () => {
 			};
 		});
 
+	const modifiedSettings = settingValues.filter((value) => value.source);
+
 	return (
 		<div>
 			<CustomTable
 				style={{ height: window.innerHeight - 40 }}
 				filterRowElement={
-					<VscodeCheckbox
-						onChange={() => setShowModifiedOnly(!showModifiedOnly)}
-						label="Show modified only"
-						checked={showModifiedOnly ? true : undefined}
-					/>
+					modifiedSettings.length ? (
+						<VscodeCheckbox
+							onChange={() => setShowModifiedOnly(!showModifiedOnly)}
+							label="Show modified only"
+							checked={showModifiedOnly ? true : undefined}
+						/>
+					) : (
+						<></>
+					)
 				}
 				isLoading={settingsQuery.isLoading}
-				data={settingValues.filter(
-					(value) => !showModifiedOnly || value.source,
-				)}
+				data={
+					modifiedSettings.length > 0 && showModifiedOnly
+						? modifiedSettings
+						: settingValues
+				}
 				columns={[
 					{
 						id: "key",
