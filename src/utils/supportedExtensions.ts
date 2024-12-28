@@ -1,10 +1,7 @@
 import * as path from "node:path";
-import { type VSCodeSettingValue, getRootFolderPath } from "../configuration";
+import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
-import {
-	configureSimpleExtension,
-	createMiseToolSymlink,
-} from "./configureExtensionUtil";
+import { configureSimpleExtension } from "./configureExtensionUtil";
 import type { MiseConfig } from "./miseDoctorParser";
 
 type GenerateConfigProps = {
@@ -41,7 +38,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			const envs = await miseService.getEnvs();
 			const virtualEnv = envs?.find((e) => e.name === "VIRTUAL_ENV");
 			if (virtualEnv) {
-				const workspaceRoot = getRootFolderPath();
+				const workspaceRoot = miseService.getCurrentWorkspaceFolderPath();
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
 						? virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
@@ -49,7 +46,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				};
 			}
 
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "python.defaultInterpreterPath",
 				useShims,
 				useSymLinks,
@@ -66,8 +63,9 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			miseConfig,
 			useShims,
 			useSymLinks,
+			miseService,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "deno.path",
 				useShims,
 				useSymLinks,
@@ -80,6 +78,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		extensionId: "charliermarsh.ruff",
 		toolNames: ["ruff"],
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
@@ -90,7 +89,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				: path.join(tool.install_path, "bin", tool.name);
 
 			const configuredPath = useSymLinks
-				? await createMiseToolSymlink(tool.name, interpreterPath)
+				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
 				: interpreterPath;
 
 			return {
@@ -102,18 +101,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		extensionId: "golang.go",
 		toolNames: ["go"],
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
 			useSymLinks,
 		}) => {
 			const goRoot = useSymLinks
-				? await createMiseToolSymlink("goRoot", tool.install_path)
+				? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
 				: tool.install_path;
 
 			const goBin = useShims
 				? useSymLinks
-					? await createMiseToolSymlink(
+					? await miseService.createMiseToolSymlink(
 							"go",
 							path.join(miseConfig.dirs.shims, "go"),
 						)
@@ -122,7 +122,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 
 			const dlvBin = useShims
 				? useSymLinks
-					? await createMiseToolSymlink(
+					? await miseService.createMiseToolSymlink(
 							"dlv",
 							path.join(miseConfig.dirs.shims, "dlv"),
 						)
@@ -142,12 +142,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		extensionId: "oven.bun-vscode",
 		toolNames: ["bun"],
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
 			useSymLinks,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "bun.runtime",
 				useShims,
 				useSymLinks,
@@ -159,10 +160,10 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "oracle.oracle-java",
 		toolNames: ["java"],
-		generateConfiguration: async ({ tool, useSymLinks }) => {
+		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
 			return {
 				"jdk.jdkhome": useSymLinks
-					? await createMiseToolSymlink("java", tool.install_path)
+					? await miseService.createMiseToolSymlink("java", tool.install_path)
 					: tool.install_path,
 			};
 		},
@@ -171,12 +172,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		extensionId: "timonwong.shellcheck",
 		toolNames: ["shellcheck"],
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
 			useSymLinks,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "shellcheck.executablePath",
 				useShims,
 				useSymLinks,
@@ -189,6 +191,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		toolNames: ["node"],
 		extensionId: "ms-vscode.js-debug",
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
@@ -199,7 +202,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				: path.join(tool.install_path, "bin", tool.name);
 
 			const configuredPath = useSymLinks
-				? await createMiseToolSymlink(tool.name, interpreterPath)
+				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
 				: interpreterPath;
 
 			return {
@@ -212,8 +215,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["php", "vfox:version-fox/vfox-php"],
 		extensionId: "vscode.php-language-features",
-		generateConfiguration: async ({ tool, miseConfig, useShims }) => {
-			return configureSimpleExtension({
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
 				configKey: "php.validate.executablePath",
 				binName: "php",
 				useShims,
@@ -227,12 +235,12 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		toolNames: ["php", "vfox:version-fox/vfox-php"],
 		extensionId: "xdebug.php-debug",
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
-			useSymLinks,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "php.debug.executablePath",
 				binName: "php",
 				useShims,
@@ -245,8 +253,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["julia"],
 		extensionId: "julialang.language-julia",
-		generateConfiguration: async ({ tool, miseConfig, useSymLinks }) => {
-			return configureSimpleExtension({
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
 				configKey: "julia.executablePath",
 				useShims: false, // does not work with shims
 				useSymLinks,
@@ -258,11 +271,11 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["erlang"],
 		extensionId: "pgourlain.erlang",
-		generateConfiguration: async ({ tool, miseConfig, useSymLinks }) => {
+		generateConfiguration: async ({ tool, miseService, useSymLinks }) => {
 			const pathToBin = path.join(tool.install_path, "bin");
 			return {
 				"erlang.erlangPath": useSymLinks
-					? await createMiseToolSymlink("erlang", pathToBin)
+					? await miseService.createMiseToolSymlink("erlang", pathToBin)
 					: pathToBin,
 			};
 		},
@@ -289,12 +302,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		toolNames: ["zig"],
 		extensionId: "ziglang.vscode-zig",
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
 			useSymLinks,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "zig.path",
 				useShims,
 				useSymLinks,
@@ -307,12 +321,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		toolNames: ["zls", "ubi:zigtools/zls", "aqua:zigtools/zls"],
 		extensionId: "ziglang.vscode-zig",
 		generateConfiguration: async ({
+			miseService,
 			tool,
 			miseConfig,
 			useShims,
 			useSymLinks,
 		}) => {
-			return configureSimpleExtension({
+			return configureSimpleExtension(miseService, {
 				configKey: "zig.zls.path",
 				binName: "zls",
 				useShims,

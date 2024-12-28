@@ -320,6 +320,10 @@
 				"title": "Mise: Open Menu"
 			},
 			{
+				"command": "mise.selectWorkspaceFolder",
+				"title": "Mise: Select Workspace Folder"
+			},
+			{
 				"command": "mise.runTask",
 				"title": "Mise: Run task",
 				"icon": "$(play)"
@@ -557,6 +561,13 @@
 					"command": "mise.listAllTools",
 					"group": "inline",
 					"when": "editorLineNumber in mise.linesWithOutdatedTools"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "mise.selectWorkspaceFolder",
+					"group": "inline",
+					"when": "explorerResourceIsRoot && treeElementCanCollapse && workspaceFolderCount > 1"
 				}
 			]
 		},

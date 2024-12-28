@@ -14,7 +14,6 @@ import {
 } from "../commands";
 import {
 	getIgnoreList,
-	getRootFolderPath,
 	isMiseExtensionEnabled,
 	shouldUseShims,
 	shouldUseSymLinks,
@@ -48,14 +47,6 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 		return element;
 	}
 
-	async getTools(): Promise<MiseTool[]> {
-		return this.miseService.getCurrentTools();
-	}
-
-	getMiseService(): MiseService {
-		return this.miseService;
-	}
-
 	async getToolsSourceItems() {
 		const [tools, configFiles] = await Promise.all([
 			this.miseService.getCurrentTools(),
@@ -87,6 +78,9 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 			);
 		}
 
+		const currentWorkspaceFolderPath =
+			this.miseService.getCurrentWorkspaceFolderPath();
+
 		return Object.entries(toolsBySource)
 			.sort(([sourceA], [sourceB]) => {
 				// keep original order of config files
@@ -97,7 +91,10 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 				}
 				return sourceA.localeCompare(sourceB);
 			})
-			.map(([source, tools]) => new ToolsSourceItem(source, tools));
+			.map(
+				([source, tools]) =>
+					new ToolsSourceItem(currentWorkspaceFolderPath || "", source, tools),
+			);
 	}
 
 	async getChildren(element?: TreeItem): Promise<TreeItem[]> {
@@ -141,10 +138,11 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 
 class ToolsSourceItem extends vscode.TreeItem {
 	constructor(
+		readonly workspaceFolderPath: string,
 		public readonly source: string,
 		public readonly tools: MiseTool[],
 	) {
-		const pathShown = displayPathRelativeTo(source, getRootFolderPath());
+		const pathShown = displayPathRelativeTo(source, workspaceFolderPath);
 
 		super(
 			pathShown,

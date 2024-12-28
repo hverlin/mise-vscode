@@ -12,13 +12,14 @@ import {
 	MISE_OPEN_LOGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
+	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
+	getCurrentWorkspaceFolder,
 	getMiseEnv,
-	getRootFolder,
 	isMiseExtensionEnabled,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
@@ -27,6 +28,7 @@ import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
 import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
+import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
@@ -56,17 +58,27 @@ import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import WebViewPanel from "./webviewPanel";
 
 export class MiseExtension {
-	private miseService: MiseService = new MiseService();
+	private miseService!: MiseService;
+	private context!: vscode.ExtensionContext;
 	private statusBarItem = vscode.window.createStatusBarItem(
-		vscode.StatusBarAlignment.Right,
-		100,
+		vscode.StatusBarAlignment.Left,
+		0,
 	);
 	private miseFileWatcher: MiseFileWatcher | undefined;
 
 	async activate(context: vscode.ExtensionContext) {
+		this.context = context;
+		this.miseService = new MiseService(context);
 		context.subscriptions.push(this.statusBarItem);
 		this.statusBarItem.show();
 		this.updateStatusBar({ state: "loading" });
+
+		const workspaceDecorationProvider = new WorkspaceDecorationProvider(
+			context,
+		);
+		context.subscriptions.push(
+			vscode.window.registerFileDecorationProvider(workspaceDecorationProvider),
+		);
 
 		await this.resetState();
 
@@ -125,6 +137,7 @@ export class MiseExtension {
 			try {
 				logger.info("Reloading Mise configuration");
 				this.updateStatusBar({ state: "loading" });
+				workspaceDecorationProvider.refresh();
 
 				await this.resetState();
 
@@ -180,6 +193,74 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			vscode.commands.registerCommand(
+				MISE_SELECT_WORKSPACE_FOLDER,
+				async (selectedPath: vscode.Uri) => {
+					if (selectedPath) {
+						const selectedFolder = vscode.workspace.workspaceFolders?.find(
+							(folder) => folder.uri.fsPath === selectedPath.fsPath,
+						);
+
+						if (selectedFolder) {
+							context.workspaceState.update(
+								"selectedWorkspaceFolder",
+								selectedFolder.name,
+							);
+							vscode.commands.executeCommand(MISE_RELOAD);
+						}
+						return;
+					}
+
+					const selectedFolderName = getCurrentWorkspaceFolder(context)?.name;
+					const selectedFolder = await vscode.window.showWorkspaceFolderPick({
+						placeHolder: [
+							"Select a workspace folder to use with Mise",
+							selectedFolderName ? `Current: ${selectedFolderName}` : "",
+						]
+							.filter(Boolean)
+							.join(" "),
+					});
+					if (selectedFolder) {
+						context.workspaceState.update(
+							"selectedWorkspaceFolder",
+							selectedFolder.name,
+						);
+						vscode.commands.executeCommand(MISE_RELOAD);
+					}
+				},
+			),
+		);
+
+		vscode.workspace.onDidChangeWorkspaceFolders(() => {
+			const workspaceFolders = vscode.workspace.workspaceFolders;
+			if (!workspaceFolders?.length) {
+				context.workspaceState.update("selectedWorkspaceFolder", undefined);
+				vscode.commands.executeCommand(MISE_RELOAD);
+				return;
+			}
+
+			const selectedWorkspaceFolderName = context.workspaceState.get(
+				"selectedWorkspaceFolder",
+			);
+
+			const selectedFolder = vscode.workspace.workspaceFolders?.find(
+				(folder) => folder.name === selectedWorkspaceFolderName,
+			);
+
+			if (!selectedWorkspaceFolderName || !selectedFolder) {
+				const firstFolder = workspaceFolders[0];
+				if (!selectedFolder && firstFolder) {
+					context.workspaceState.update(
+						"selectedWorkspaceFolder",
+						firstFolder.name,
+					);
+				}
+			}
+
+			vscode.commands.executeCommand(MISE_RELOAD);
+		});
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
 				MISE_OPEN_FILE,
 				async (uri: string | undefined | { source: string }) => {
 					let selectedUri = uri;
@@ -224,18 +305,20 @@ export class MiseExtension {
 			}),
 		);
 
-		const rootFolder = getRootFolder();
-		if (rootFolder) {
-			const fileTaskRelativePattern = new vscode.RelativePattern(
-				rootFolder,
-				`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
-			);
-			context.subscriptions.push(
-				vscode.languages.registerCodeLensProvider(
-					[{ pattern: fileTaskRelativePattern }, { language: "shellscript" }],
-					new MiseFileTaskCodeLensProvider(this.miseService),
-				),
-			);
+		const rootFolders = vscode.workspace.workspaceFolders;
+		if (rootFolders) {
+			for (const rootFolder of rootFolders) {
+				const fileTaskRelativePattern = new vscode.RelativePattern(
+					rootFolder,
+					`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
+				);
+				context.subscriptions.push(
+					vscode.languages.registerCodeLensProvider(
+						[{ pattern: fileTaskRelativePattern }, { language: "shellscript" }],
+						new MiseFileTaskCodeLensProvider(this.miseService),
+					),
+				);
+			}
 		}
 
 		context.subscriptions.push(
@@ -472,6 +555,13 @@ export class MiseExtension {
 		if (miseEnv) {
 			this.statusBarItem.text += ` (${miseEnv})`;
 		}
+
+		if ((vscode.workspace.workspaceFolders?.length || 0) > 1) {
+			const selectedFolder = getCurrentWorkspaceFolder(this.context);
+			if (selectedFolder) {
+				this.statusBarItem.text += ` [${selectedFolder?.name ?? "?"}]`;
+			}
+		}
 	}
 
 	private async updateStatusBarTooltip() {
@@ -480,19 +570,22 @@ export class MiseExtension {
 			.catch(() => "unknown");
 		this.statusBarItem.tooltip = new MarkdownString("", true);
 		this.statusBarItem.tooltip.isTrusted = true;
-		this.statusBarItem.tooltip.appendMarkdown(
-			`Mise VSCode ${version} - [Command Menu](command:mise.openMenu)
 
-[$(tools) Mise Tools](command:mise.listAllTools)			
+		const selectedFolderName = getCurrentWorkspaceFolder(this.context)?.name;
 
-[$(gear) Mise Settings](command:mise.showSettings)
+		const infoList = [
+			`Mise VSCode ${version} - [Command Menu](command:${MISE_OPEN_MENU})`,
+			(vscode.workspace.workspaceFolders?.length || 0) > 1
+				? `[Select Workspace Folder](command:${MISE_SELECT_WORKSPACE_FOLDER}) [${selectedFolderName}]`
+				: "",
+			`[$(tools) Mise Tools](command:${MISE_LIST_ALL_TOOLS})`,
+			`[$(gear) Mise Settings](command:${MISE_SHOW_SETTINGS})`,
+			`[$(list-unordered) Tracked Configurations](command:${MISE_SHOW_TRACKED_CONFIG})`,
+			`[BinPath: ${displayPathRelativeTo(this.miseService.getMiseBinaryPath() || "Not set", "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
+			`Mise Version: ${miseVersion}`,
+		].filter(Boolean);
 
-[$(list-unordered) Tracked Configurations](command:mise.showTrackedConfig)
-
-[BinPath: ${displayPathRelativeTo(this.miseService.getMiseBinaryPath() || "Not set", "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})
-
-Mise Version: ${miseVersion}`,
-		);
+		this.statusBarItem.tooltip.appendMarkdown(infoList.join("\n\n"));
 	}
 
 	setErrorState(errorMsg: string) {

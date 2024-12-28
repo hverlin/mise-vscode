@@ -1,4 +1,5 @@
-import { readlink } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readlink, rm, symlink } from "node:fs/promises";
 import * as os from "node:os";
 import path from "node:path";
 import { createCache } from "async-cache-dedupe";
@@ -8,13 +9,13 @@ import { MISE_RELOAD } from "./commands";
 import {
 	getCommandTTLCacheSeconds,
 	getConfiguredBinPath,
+	getCurrentWorkspaceFolderPath,
 	getMiseEnv,
-	getRootFolderPath,
 	isMiseExtensionEnabled,
 	shouldCheckForNewMiseVersion,
 	updateBinPath,
 } from "./configuration";
-import { expandPath, isWindows } from "./utils/fileUtils";
+import { expandPath, isWindows, mkdirp } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
@@ -93,9 +94,18 @@ function ensureMiseCommand(
 }
 
 export class MiseService {
+	private readonly context: vscode.ExtensionContext;
+	constructor(context: vscode.ExtensionContext) {
+		this.context = context;
+	}
+
 	private hasVerifiedMiseVersion = false;
 
 	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
+
+	getCurrentWorkspaceFolderPath() {
+		return getCurrentWorkspaceFolderPath(this.context);
+	}
 
 	private dedupeCache = createCache({
 		ttl: 0,
@@ -194,7 +204,9 @@ export class MiseService {
 		const miseCommand = this.createMiseCommand(command, { setMiseEnv });
 		ensureMiseCommand(miseCommand);
 		logger.debug(`> ${miseCommand}`);
-		return execAsync(miseCommand, { cwd: getRootFolderPath() });
+		return execAsync(miseCommand, {
+			cwd: this.getCurrentWorkspaceFolderPath(),
+		});
 	}
 
 	async runMiseToolActionInConsole(
@@ -551,7 +563,7 @@ export class MiseService {
 		if (!terminal || isTerminalClosed(terminal)) {
 			terminal = vscode.window.createTerminal({
 				name,
-				cwd: getRootFolderPath(),
+				cwd: this.getCurrentWorkspaceFolderPath(),
 			});
 
 			vscode.window.onDidCloseTerminal((closedTerminal) => {
@@ -563,13 +575,6 @@ export class MiseService {
 		}
 		this.terminals.set(name, terminal);
 		return terminal;
-	}
-
-	async miseWhich(name: string) {
-		const { stdout } = await this.cache.execCmd({
-			command: `which ${name}`,
-		});
-		return stdout.trim();
 	}
 
 	async binPaths(name: string) {
@@ -632,7 +637,9 @@ export class MiseService {
 
 		const configFiles = new Set<string>();
 		configFiles.add(
-			expandPath(path.join(getRootFolderPath() || "", "mise.toml")),
+			expandPath(
+				path.join(this.getCurrentWorkspaceFolderPath() || "", "mise.toml"),
+			),
 		);
 		configFiles.add(
 			expandPath(path.join(os.homedir(), ".config", "mise", "config.toml")),
@@ -980,5 +987,49 @@ export class MiseService {
 		await this.runMiseToolActionInConsole(
 			`config set settings.${setting} "${value}" --file "${filePath}"`,
 		);
+	}
+
+	async createMiseToolSymlink(binName: string, binPath: string) {
+		const toolsPaths = path.join(
+			this.getCurrentWorkspaceFolderPath() ?? "",
+			".vscode",
+			"mise-tools",
+		);
+
+		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9]/g, "_");
+
+		await mkdirp(toolsPaths);
+		const linkPath = path.join(toolsPaths, sanitizedBinName);
+		const configuredPath = path.join(
+			"${workspaceFolder}",
+			".vscode",
+			"mise-tools",
+			sanitizedBinName,
+		);
+
+		if (existsSync(linkPath)) {
+			logger.debug(
+				`Checking symlink for ${binName}: ${await readlink(linkPath)}: ${binPath}`,
+			);
+			if ((await readlink(linkPath)) === binPath) {
+				return configuredPath;
+			}
+
+			logger.info(
+				`mise-tools/${binPath} was symlinked to a different version. Deleting the old symlink now.`,
+			);
+			await rm(linkPath);
+		}
+
+		await symlink(binPath, linkPath, "dir").catch((err) => {
+			if (err.code === "EEXIST") {
+				logger.info("Symlink already exists for ${binPath}");
+				return;
+			}
+
+			throw err;
+		});
+		logger.info(`New symlink created ${linkPath} -> ${binPath}`);
+		return configuredPath;
 	}
 }

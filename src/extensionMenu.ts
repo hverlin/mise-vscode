@@ -4,6 +4,7 @@ import {
 	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
+	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
 } from "./commands";
@@ -18,7 +19,6 @@ import { logger } from "./utils/logger";
 export function createMenu(miseService: MiseService) {
 	return vscode.commands.registerCommand(MISE_OPEN_MENU, async () => {
 		const miseVersion = await miseService.getVersion();
-
 		const pick = await vscode.window.showQuickPick(
 			[
 				{
@@ -36,6 +36,12 @@ export function createMenu(miseService: MiseService) {
 					detail: "List & manage tracked configurations",
 					iconPath: new vscode.ThemeIcon("list-selection"),
 				},
+				(vscode.workspace.workspaceFolders?.length ?? 0) > 1
+					? {
+							label: "Select workspace",
+							detail: miseService.getCurrentWorkspaceFolderPath(),
+						}
+					: undefined,
 				{ label: "", kind: vscode.QuickPickItemKind.Separator },
 				{ label: "Mise version", detail: miseVersion },
 				{
@@ -62,24 +68,7 @@ export function createMenu(miseService: MiseService) {
 							label: "Enable extension",
 							detail: "Enable the mise extension for this workspace",
 						},
-			] satisfies Array<
-				vscode.QuickPickItem & {
-					label:
-						| "Mise tools"
-						| "Mise settings"
-						| "Tracked configurations"
-						| "Mise version"
-						| "Reload configuration"
-						| "Open extension settings"
-						| "About vscode-mise"
-						| "Disable the mise extension for this workspace"
-						| "Enable extension"
-						| "Install missing tools"
-						| "Install all tools"
-						| "Show logs"
-						| "";
-				}
-			>,
+			].filter((a) => a !== undefined) satisfies Array<vscode.QuickPickItem>,
 			{ title: "Mise - Command menu" },
 		);
 
@@ -95,6 +84,9 @@ export function createMenu(miseService: MiseService) {
 				break;
 			case "Reload configuration":
 				await vscode.commands.executeCommand(MISE_RELOAD);
+				break;
+			case "Select workspace":
+				await vscode.commands.executeCommand(MISE_SELECT_WORKSPACE_FOLDER);
 				break;
 			case "Open extension settings":
 				await vscode.commands.executeCommand(MISE_OPEN_EXTENSION_SETTINGS);
