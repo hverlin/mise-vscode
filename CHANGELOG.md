@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.39.0](https://github.com/hverlin/mise-vscode/compare/v0.38.0...v0.39.0) (2024-12-28)
+
+
+### Features
+
+* multi-root workspaces: add ability to select folder to use with mise ([f18adb3](https://github.com/hverlin/mise-vscode/commit/f18adb348c09d17492f383137ec2dbe3121c4a01))
+
 ## [0.38.0](https://github.com/hverlin/mise-vscode/compare/v0.37.0...v0.38.0) (2024-12-28)
 
 
