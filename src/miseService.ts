@@ -119,10 +119,12 @@ export class MiseService {
 			this.execMiseCommand(command, { setMiseEnv }),
 		)
 		.define("fetchSchema", async () => {
-			const res = await fetch(
-				"https://raw.githubusercontent.com/jdx/mise/refs/heads/main/schema/mise.json",
-			);
+			const res = await fetch("https://mise.jdx.dev/schema/mise.json");
 			if (!res.ok) {
+				logger.warn(
+					`Failed to fetch Mise schema (status: ${res.status})`,
+					await res.text().catch(() => "Unknown error"),
+				);
 				return [];
 			}
 			const json = await res.json();
