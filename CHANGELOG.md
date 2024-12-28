@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.37.0](https://github.com/hverlin/mise-vscode/compare/v0.36.0...v0.37.0) (2024-12-28)
+
+
+### Features
+
+* Add code-lens action to view all mise settings ([62248f1](https://github.com/hverlin/mise-vscode/commit/62248f1feab22a65068824118f78b43ef410ffb6))
+* Improve settings editor ([968da8d](https://github.com/hverlin/mise-vscode/commit/968da8dcb174c9ff5536a38b433c4c16324f5531))
+* preserve webview state ([1a69efb](https://github.com/hverlin/mise-vscode/commit/1a69efbb16115795dfaf07e6228beb5c1836a247))
+* show all settings in settings view if none are modified ([2c284de](https://github.com/hverlin/mise-vscode/commit/2c284decd363bce8e110d866039d2320bb9bf9ff))
+* show source in settings view ([e89d529](https://github.com/hverlin/mise-vscode/commit/e89d5292b166d849ab3b1b401f3fd65cd7008453))
+
 ## [0.36.0](https://github.com/hverlin/mise-vscode/compare/v0.35.0...v0.36.0) (2024-12-25)
 
 
