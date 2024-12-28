@@ -40,5 +40,8 @@ Extensions which have built-in support for `mise`:
 - [Elixir](https://marketplace.visualstudio.com/items?itemName=JakeBecker.elixir-ls)
   will look for `mise` and install the lsp server automatically
 
+Extensions that are not supported:
+- [Rust](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) does not offer to update the cargo path automatically. See [this discussion](https://github.com/hverlin/mise-vscode/discussions/70) for workarounds. 
+
 If you would like to add one, you can open a PR that updates
 [src/utils/supportedExtensions.ts](https://github.com/hverlin/mise-vscode/blob/main/src/utils/supportedExtensions.ts)
