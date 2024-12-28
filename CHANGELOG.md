@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.38.0](https://github.com/hverlin/mise-vscode/compare/v0.37.0...v0.38.0) (2024-12-28)
+
+
+### Features
+
+* Improve status bar tooltip ([2181d17](https://github.com/hverlin/mise-vscode/commit/2181d17f677f9a940a21e198880c0a686c862243))
+
 ## [0.37.0](https://github.com/hverlin/mise-vscode/compare/v0.36.0...v0.37.0) (2024-12-28)
 
 
