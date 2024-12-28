@@ -187,10 +187,30 @@ export async function updateVSCodeSettings(
 	return updatedKeys;
 }
 
-export const getRootFolder = () => {
-	return vscode.workspace.workspaceFolders?.[0];
+export const getCurrentWorkspaceFolder = (context: vscode.ExtensionContext) => {
+	const availableFolders = vscode.workspace.workspaceFolders;
+	if (!availableFolders) {
+		return;
+	}
+
+	const selectedWorkspaceFolder = context.workspaceState.get(
+		"selectedWorkspaceFolder",
+	);
+	if (!selectedWorkspaceFolder) {
+		return availableFolders[0];
+	}
+
+	const foundFolder = availableFolders.find(
+		(folder) => folder.name === selectedWorkspaceFolder,
+	);
+	if (foundFolder) {
+		return foundFolder;
+	}
+	return availableFolders[0];
 };
 
-export const getRootFolderPath = () => {
-	return getRootFolder()?.uri.fsPath;
+export const getCurrentWorkspaceFolderPath = (
+	context: vscode.ExtensionContext,
+) => {
+	return getCurrentWorkspaceFolder(context)?.uri.fsPath;
 };

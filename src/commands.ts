@@ -26,3 +26,4 @@ export const MISE_USE_TOOL = "mise.useTool";
 export const MISE_WATCH_TASK = "mise.watchTask";
 export const MISE_FMT = "mise.fmt";
 export const MISE_EDIT_SETTING = "mise.editSetting";
+export const MISE_SELECT_WORKSPACE_FOLDER = "mise.selectWorkspaceFolder";

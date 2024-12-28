@@ -9,7 +9,7 @@ import {
 	MISE_RUN_TASK,
 	MISE_WATCH_TASK,
 } from "../commands";
-import { getRootFolderPath, isMiseExtensionEnabled } from "../configuration";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
 	displayPathRelativeTo,
@@ -46,6 +46,9 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 
 	async getTasksSourceGroupItems() {
+		const currentWorkspaceFolderPath =
+			this.miseService.getCurrentWorkspaceFolderPath();
+
 		const [tasks, configFiles] = await Promise.all([
 			this.miseService.getTasks(),
 			this.miseService.getMiseConfigFiles(),
@@ -59,7 +62,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 			const expandedPath = expandPath(configFile.path);
 			const isRelativeToWorkspace = expandedPath.startsWith(
-				getRootFolderPath() || "",
+				currentWorkspaceFolderPath || "",
 			);
 			if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
 				groupedTasks[expandedPath] = [];
@@ -67,7 +70,12 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		}
 
 		return Object.entries(groupedTasks).map(
-			([source, tasks]) => new TasksSourceGroupItem(source, tasks),
+			([source, tasks]) =>
+				new TasksSourceGroupItem(
+					currentWorkspaceFolderPath || "",
+					source,
+					tasks,
+				),
 		);
 	}
 
@@ -256,10 +264,11 @@ type TreeNode = TasksSourceGroupItem | TaskItem;
 
 class TasksSourceGroupItem extends vscode.TreeItem {
 	constructor(
+		readonly currentWorkspaceFolderPath: string,
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 	) {
-		const pathShown = displayPathRelativeTo(source, getRootFolderPath());
+		const pathShown = displayPathRelativeTo(source, currentWorkspaceFolderPath);
 
 		super(`${pathShown} (${tasks.length} tasks)`);
 		this.tooltip = `Source: ${source}`;
@@ -439,7 +448,7 @@ export function registerTasksCommands(
 				return;
 			}
 
-			const rootPath = getRootFolderPath();
+			const rootPath = miseService.getCurrentWorkspaceFolderPath();
 			const taskDir = path.join(rootPath ?? "", taskSource);
 			const taskFile = vscode.Uri.file(`${taskDir}/${taskName}`);
 

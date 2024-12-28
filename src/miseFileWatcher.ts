@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getRootFolder, isMiseExtensionEnabled } from "./configuration";
+import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 import {
@@ -34,40 +34,42 @@ export class MiseFileWatcher {
 	private async initializeFileWatcher() {
 		this.dispose();
 
-		const rootFolder = getRootFolder();
-		if (!rootFolder) {
+		const rootFolders = vscode.workspace.workspaceFolders;
+		if (!rootFolders?.length) {
 			return;
 		}
 
-		this.fileWatchers.push(
-			vscode.workspace.createFileSystemWatcher(
-				new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
-			),
-		);
-
-		const configFiles = await this.miseService.getMiseConfigFiles();
-		for (const file of configFiles) {
+		for (const rootFolder of rootFolders) {
 			this.fileWatchers.push(
 				vscode.workspace.createFileSystemWatcher(
-					new vscode.RelativePattern(vscode.Uri.file(file.path), "*"),
+					new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
+				),
+			);
+
+			const configFiles = await this.miseService.getMiseConfigFiles();
+			for (const file of configFiles) {
+				this.fileWatchers.push(
+					vscode.workspace.createFileSystemWatcher(
+						new vscode.RelativePattern(vscode.Uri.file(file.path), "*"),
+					),
+				);
+			}
+
+			this.fileWatchers.push(
+				vscode.workspace.createFileSystemWatcher(
+					new vscode.RelativePattern(rootFolder, `{${idiomaticFiles}}`),
+				),
+			);
+
+			this.fileWatchers.push(
+				vscode.workspace.createFileSystemWatcher(
+					new vscode.RelativePattern(
+						rootFolder,
+						`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
+					),
 				),
 			);
 		}
-
-		this.fileWatchers.push(
-			vscode.workspace.createFileSystemWatcher(
-				new vscode.RelativePattern(rootFolder, `{${idiomaticFiles}}`),
-			),
-		);
-
-		this.fileWatchers.push(
-			vscode.workspace.createFileSystemWatcher(
-				new vscode.RelativePattern(
-					rootFolder,
-					`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
-				),
-			),
-		);
 
 		for (const watcher of this.fileWatchers) {
 			this.context.subscriptions.push(watcher);
