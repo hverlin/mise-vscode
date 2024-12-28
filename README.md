@@ -16,13 +16,13 @@ Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`)
 > - Like make, it manages tasks used to build and test projects.
 
 This VSCode extension provides an easy way to manage `mise`
-[tasks](https://github.com/hverlin/mise-vscode/wiki/Tasks),
-[tools](https://github.com/hverlin/mise-vscode/wiki/Tools), and
-[environment variables](https://github.com/hverlin/mise-vscode/wiki/Environment-variables)
+[tasks](https://hverlin.github.io/mise-vscode/reference/tasks/),
+[tools](https://hverlin.github.io/mise-vscode/reference/tools/), and
+[environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
 directly from your editor.
 
 It can automatically
-[configure other extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)
+[configure other extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
 to use tools provided by `mise` in your current project.
 
 [![mise-extension.png](screenshots/mise-extension.png)](https://hverlin.github.io/mise-vscode/)
