@@ -96,13 +96,6 @@ Note that this extension is tested against the latest version of `mise`. If you
 encounter an issue, make sure to update `mise` first with `mise self-update` or
 using your package manager.
 
-### Known Issues
-
-- Workspaces with multiple folders are not yet supported. Only the first
-  workspace folder is used.
-- Windows is partially supported. Some features may not work as expected. Please
-  report any issues you encounter.
-
 ## Ecosystem
 
 - See [intellij-mise](https://github.com/134130/intellij-mise) if you are
