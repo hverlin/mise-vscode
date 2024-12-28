@@ -1,5 +1,6 @@
 import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
+import { version } from "../package.json";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
 	MISE_EDIT_SETTING,
@@ -49,6 +50,7 @@ import {
 	registerToolsCommands,
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
+import { displayPathRelativeTo } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import WebViewPanel from "./webviewPanel";
@@ -473,9 +475,23 @@ export class MiseExtension {
 	}
 
 	private async updateStatusBarTooltip() {
-		const version = await this.miseService.getVersion().catch(() => "unknown");
-		this.statusBarItem.tooltip = new MarkdownString(
-			`Mise - click to open menu\n\nVersion: ${version}\n\nBinPath: ${this.miseService.getMiseBinaryPath()}`,
+		const miseVersion = await this.miseService
+			.getVersion()
+			.catch(() => "unknown");
+		this.statusBarItem.tooltip = new MarkdownString("", true);
+		this.statusBarItem.tooltip.isTrusted = true;
+		this.statusBarItem.tooltip.appendMarkdown(
+			`Mise VSCode ${version} - [Command Menu](command:mise.openMenu)
+
+[$(tools) Mise Tools](command:mise.listAllTools)			
+
+[$(gear) Mise Settings](command:mise.showSettings)
+
+[$(list-unordered) Tracked Configurations](command:mise.showTrackedConfig)
+
+[BinPath: ${displayPathRelativeTo(this.miseService.getMiseBinaryPath() || "Not set", "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})
+
+Mise Version: ${miseVersion}`,
 		);
 	}
 
