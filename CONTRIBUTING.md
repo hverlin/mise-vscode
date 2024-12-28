@@ -45,11 +45,3 @@ mise generate git-pre-commit --write --task=check
 ```shell
 mise tasks # list all available tasks
 ```
-
-## Roadmap
-
-- [ ] Automatically setup SDKs based on mise tools
-- [ ] Improve UI to install tools
-- [ ] Manage mise settings
-- [ ] Upgrade mise tools
-- ...

@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeCheckbox } from "@vscode-elements/react-elements";
-import React, { useState } from "react";
 import { type FlattenedProperty, getDefaultForType } from "../utils/miseUtilts";
 import CustomTable from "./components/CustomTable";
 import { IconButton } from "./components/IconButton";
+import { useWebviewStore } from "./store";
 import {
 	toDisplayPath,
 	useEditSettingMutation,
@@ -12,7 +12,12 @@ import {
 } from "./webviewVsCodeApi";
 
 export const Settings = () => {
-	const [showModifiedOnly, setShowModifiedOnly] = useState(true);
+	const showModifiedOnly = useWebviewStore(
+		(state) => state.showModifiedSettingsOnly,
+	);
+	const setShowModifiedOnly = useWebviewStore(
+		(state) => state.setShowModifiedSettingsOnly,
+	);
 	const openFileMutation = useOpenFileMutation();
 	const queryClient = useQueryClient();
 

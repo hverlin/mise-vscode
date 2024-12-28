@@ -3,16 +3,14 @@ import { queryOptions, useMutation } from "@tanstack/react-query";
 declare global {
 	interface Window {
 		acquireVsCodeApi(): {
+			getState(): Promise<Record<string, unknown>>;
+			setState(state: Record<string, unknown>): void;
 			postMessage(message: unknown): void;
 		};
 	}
 }
 
-export function getVsCode() {
-	return window.acquireVsCodeApi();
-}
-
-export const vscode = getVsCode();
+export const vscode = window.acquireVsCodeApi();
 
 export const vscodeClient = {
 	async request({

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeButton, VscodeCheckbox } from "@vscode-elements/react-elements";
-import { useState } from "react";
 import CustomTable from "./components/CustomTable";
 import { IconButton } from "./components/IconButton";
+import { useWebviewStore } from "./store";
 import {
 	toDisplayPath,
 	trackedConfigsQueryOptions,
@@ -223,9 +223,17 @@ const ActionCell = ({
 
 export const Tools = () => {
 	const queryClient = useQueryClient();
-	const [selectedTool, setSelectedTool] = useState<MiseTool | null>(null);
-	const [showOutdatedOnly, setShowOutdatedOnly] = useState(false);
-	const [activeOnly, setActiveOnly] = useState(true);
+	const selectedTool = useWebviewStore((state) => state.selectedTool);
+	const setSelectedTool = useWebviewStore((state) => state.setSelectedTool);
+
+	const showOutdatedOnly = useWebviewStore((state) => state.showOutdatedOnly);
+	const setShowOutdatedOnly = useWebviewStore(
+		(state) => state.setShowOutdatedOnly,
+	);
+	const activeOnly = useWebviewStore((state) => state.showActiveToolsOnly);
+	const setActiveOnly = useWebviewStore(
+		(state) => state.setShowActiveToolsOnly,
+	);
 
 	const toolsQuery = useQuery({
 		queryKey: ["tools"],

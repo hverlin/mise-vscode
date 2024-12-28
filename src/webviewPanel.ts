@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import * as os from "node:os";
 import path from "node:path";
 import * as cheerio from "cheerio";
@@ -19,7 +18,7 @@ export default class WebViewPanel {
 	private readonly _extContext: vscode.ExtensionContext;
 	private _disposables: vscode.Disposable[] = [];
 	private readonly miseService: MiseService;
-	private view: PanelView = "TOOLS";
+	private readonly view: PanelView = "TOOLS";
 
 	public static createOrShow(
 		extContext: vscode.ExtensionContext,
