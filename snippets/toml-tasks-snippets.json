@@ -3,7 +3,7 @@
 		"prefix": "task",
 		"description": "Create a new mise task with common options",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_toml_task}]",
 			"${2:description = '${3:Task description}'\n}${4:depends = [${5:'dependency'}]\n}run = \"echo 'running...'\"",
 			"$0"
 		]
@@ -12,7 +12,7 @@
 		"prefix": "task_array",
 		"description": "Create a mise task with multiple commands",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_task}]",
 			"${2:description = '${3:Task description}'\n}${4:depends = [${5:'dependency'}]\n}run = [",
 			"    \"echo 'running step 1...'\",",
 			"    \"echo 'running step 2...'\"",
@@ -29,7 +29,7 @@
 		"prefix": "task_script",
 		"description": "Create a mise task with multiline script",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_script_task}]",
 			"${2:description = '${3:Task description}'\n}run = '''",
 			"#!/usr/bin/env ${4|bash,python,node,bun,-S deno run,ruby,-S uv run --script|}",
 			"",
@@ -42,7 +42,7 @@
 		"prefix": "node_task",
 		"description": "Create a mise task with nodejs",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_node_task}]",
 			"${2:description = '${3:Task description}'\n}run = '''",
 			"#!/usr/bin/env node",
 			"",
@@ -51,11 +51,37 @@
 			"$0"
 		]
 	},
+	"denoTask": {
+		"prefix": "deno_task",
+		"description": "Create a mise task with deno",
+		"body": [
+			"[tasks.${1:my_deno_task}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env -S deno run",
+			"",
+			"${4:console.log('running...')}",
+			"'''",
+			"$0"
+		]
+	},
+	"bunTask": {
+		"prefix": "bun_task",
+		"description": "Create a mise task with bun",
+		"body": [
+			"[tasks.${1:my_bun_task}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env bun",
+			"",
+			"${4:import { $ \\} from \"bun\";\nawait $`echo 'running...'`}",
+			"'''",
+			"$0"
+		]
+	},
 	"pythonTask": {
 		"prefix": "python_task",
 		"description": "Create a mise task with python",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_python_task}]",
 			"${2:description = '${3:Task description}'\n}run = '''",
 			"#!/usr/bin/env python",
 			"",
@@ -64,11 +90,25 @@
 			"$0"
 		]
 	},
+	"uvTask": {
+		"prefix": "uv_run_task",
+		"description": "Create a mise task with uv",
+		"body": [
+			"[tasks.${1:my_uv_task}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env uv run --script",
+			"# /// script\n# dependencies = [\"requests\"]\n# ///",
+			"",
+			"${4:import requests\nresp = requests.get(\"https://peps.python.org/api/peps.json\")\ndata = resp.json()\nprint(data)}",
+			"'''",
+			"$0"
+		]
+	},
 	"rubyTask": {
 		"prefix": "ruby_task",
 		"description": "Create a mise task with ruby",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:my_ruby_task}]",
 			"${2:description = '${3:Task description}'\n}run = '''",
 			"#!/usr/bin/env ruby",
 			"",
@@ -77,37 +117,11 @@
 			"$0"
 		]
 	},
-	"uvTask": {
-		"prefix": "uv_run_task",
-		"description": "Create a mise task with uv",
-		"body": [
-			"[tasks.${1:taskname}]",
-			"${2:description = '${3:Task description}'\n}run = '''",
-			"#!/usr/bin/env uv run --script",
-			"",
-			"${4:puts 'running...'}",
-			"'''",
-			"$0"
-		]
-	},
-	"denoTask": {
-		"prefix": "deno_task",
-		"description": "Create a mise task with deno",
-		"body": [
-			"[tasks.${1:taskname}]",
-			"${2:description = '${3:Task description}'\n}run = '''",
-			"#!/usr/bin/env deno run",
-			"",
-			"${4:console.log('running...')}",
-			"'''",
-			"$0"
-		]
-	},
 	"tomlTaskFull": {
 		"prefix": "task_full",
 		"description": "Create a mise task with all possible options",
 		"body": [
-			"[tasks.${1:taskname}]",
+			"[tasks.${1:task_with_all_options}]",
 			"description = '${2:Task description}'",
 			"depends = [${3:'dependency'}]",
 			"alias = '${4:shortname}'",
