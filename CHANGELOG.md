@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.40.0](https://github.com/hverlin/mise-vscode/compare/v0.39.0...v0.40.0) (2024-12-31)
+
+
+### Features
+
+* Add additional snippets ([3dda6ce](https://github.com/hverlin/mise-vscode/commit/3dda6ce6a2a6bb702296eda9ebe19013d6ffeb4a))
+
 ## [0.39.0](https://github.com/hverlin/mise-vscode/compare/v0.38.0...v0.39.0) (2024-12-28)
 
 
