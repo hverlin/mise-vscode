@@ -9,7 +9,7 @@
 		]
 	},
 	"tomlTaskArray": {
-		"prefix": "taska",
+		"prefix": "task_array",
 		"description": "Create a mise task with multiple commands",
 		"body": [
 			"[tasks.${1:taskname}]",
@@ -26,19 +26,85 @@
 		"body": ["[tasks.${1:taskname}]", "run = \"echo 'running...'\"", "$0"]
 	},
 	"tomlTaskScript": {
-		"prefix": "taskscript",
+		"prefix": "task_script",
 		"description": "Create a mise task with multiline script",
 		"body": [
 			"[tasks.${1:taskname}]",
-			"${2:description = '${3:Task description}'\n}run = \"\"\"",
-			"#!/usr/bin/env ${4|bash,sh,python|}",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env ${4|bash,python,node,bun,-S deno run,ruby,-S uv run --script|}",
+			"",
 			"${5:# your script here}",
-			"\"\"\"",
+			"'''",
+			"$0"
+		]
+	},
+	"nodeTask": {
+		"prefix": "node_task",
+		"description": "Create a mise task with nodejs",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env node",
+			"",
+			"${4:console.log('running...')}",
+			"'''",
+			"$0"
+		]
+	},
+	"pythonTask": {
+		"prefix": "python_task",
+		"description": "Create a mise task with python",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env python",
+			"",
+			"${4:print('running...')}",
+			"'''",
+			"$0"
+		]
+	},
+	"rubyTask": {
+		"prefix": "ruby_task",
+		"description": "Create a mise task with ruby",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env ruby",
+			"",
+			"${4:puts 'running...'}",
+			"'''",
+			"$0"
+		]
+	},
+	"uvTask": {
+		"prefix": "uv_run_task",
+		"description": "Create a mise task with uv",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env uv run --script",
+			"",
+			"${4:puts 'running...'}",
+			"'''",
+			"$0"
+		]
+	},
+	"denoTask": {
+		"prefix": "deno_task",
+		"description": "Create a mise task with deno",
+		"body": [
+			"[tasks.${1:taskname}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env deno run",
+			"",
+			"${4:console.log('running...')}",
+			"'''",
 			"$0"
 		]
 	},
 	"tomlTaskFull": {
-		"prefix": "taskfull",
+		"prefix": "task_full",
 		"description": "Create a mise task with all possible options",
 		"body": [
 			"[tasks.${1:taskname}]",
