@@ -7,6 +7,9 @@ import starlightThemeObsidian from "starlight-theme-obsidian";
 export default defineConfig({
 	site: "https://hverlin.github.io/mise-vscode/",
 	base: "mise-vscode",
+	redirects: {
+		"/getting-started": "/mise-vscode/tutorials/getting-started/",
+	},
 	integrations: [
 		starlight({
 			title: "mise | VSCode",

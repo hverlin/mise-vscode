@@ -69,7 +69,7 @@ This extension lets
 tasks. You can use `mise` tasks in your `launch.json` file.
 
 See the
-[VSCode task integration wiki page](https://hverlin.github.io/mise-vscode/tasks/#vscode-task-integration)
+[VSCode task integration docs section](https://hverlin.github.io/mise-vscode/reference/tasks/#vscode-task-integration)
 for more information.
 
 ## Documentation
