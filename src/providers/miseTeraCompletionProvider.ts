@@ -312,7 +312,7 @@ const isInsideTeraExpression = (
 	);
 };
 
-export const createHoverProvider = (
+export const createTeraHoverProvider = (
 	documentSelector: DocumentSelector,
 	miseService: MiseService,
 ) =>

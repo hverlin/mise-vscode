@@ -39,7 +39,7 @@ import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import {
 	TeraCompletionProvider,
-	createHoverProvider,
+	createTeraHoverProvider,
 } from "./providers/miseTeraCompletionProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
@@ -47,6 +47,7 @@ import {
 	MiseTasksProvider,
 	registerTasksCommands,
 } from "./providers/tasksProvider";
+import { createToolHoverProvider } from "./providers/toolHoverProvider";
 import {
 	MiseToolsProvider,
 	registerToolsCommands,
@@ -409,7 +410,11 @@ export class MiseExtension {
 		);
 
 		context.subscriptions.push(
-			createHoverProvider(allTomlFilesSelector, this.miseService),
+			createTeraHoverProvider(allTomlFilesSelector, this.miseService),
+		);
+
+		context.subscriptions.push(
+			createToolHoverProvider(allTomlFilesSelector, this.miseService),
 		);
 
 		context.subscriptions.push(

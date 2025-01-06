@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { getCleanedToolName } from "../utils/miseUtilts";
 
@@ -13,6 +14,10 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 		document: vscode.TextDocument,
 		position: vscode.Position,
 	) {
+		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
 		const [tools, backends] = await Promise.all([
 			this.miseService.miseRegistry(),
 			this.miseService.miseBackends(),

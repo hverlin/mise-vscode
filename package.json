@@ -525,7 +525,7 @@
 					"group": "2_modification"
 				},
 				{
-					"command": "mise.openToolWebsite",
+					"command": "mise.openToolRepository",
 					"when": "view == miseToolsView",
 					"group": "2_modification"
 				},
