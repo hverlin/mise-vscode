@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.41.0](https://github.com/hverlin/mise-vscode/compare/v0.40.1...v0.41.0) (2025-01-06)
+
+
+### Features
+
+* Add tool hover provider to quickly navigate to the tool backend ([0da6ea6](https://github.com/hverlin/mise-vscode/commit/0da6ea658452331c37d45ed54fa75fbd50109acb))
+
+
+### Bug Fixes
+
+* Add command to open tool repository ([0e63fdc](https://github.com/hverlin/mise-vscode/commit/0e63fdc72c0b3dc0438fa21990634b094b00e188))
+
 ## [0.40.1](https://github.com/hverlin/mise-vscode/compare/v0.40.0...v0.40.1) (2024-12-31)
 
 
