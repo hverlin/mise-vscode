@@ -308,13 +308,11 @@ export const Tools = () => {
 	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
 	const configs = trackedConfigQuery.data || [];
 
-	if (!selectedTool) {
-		return null;
-	}
-
-	const configsWithTool = configs.filter((config) => {
-		return Object.keys(config.tools).includes(selectedTool.name);
-	});
+	const configsWithTool = selectedTool
+		? configs.filter((config) => {
+				return Object.keys(config.tools).includes(selectedTool.name);
+			})
+		: [];
 
 	const outdatedToolsQuery = useQuery({
 		queryKey: ["outdatedTools"],
