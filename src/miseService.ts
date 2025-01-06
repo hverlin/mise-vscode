@@ -759,6 +759,16 @@ export class MiseService {
 		}
 	}
 
+	async miseToolInfo(toolName: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+		const { stdout } = await this.cache.execCmd({
+			command: `tool "${toolName.replace(/"/g, '\\"')}" --json`,
+		});
+		return JSON.parse(stdout) as MiseToolInfo;
+	}
+
 	async miseRegistry() {
 		if (!this.getMiseBinaryPath()) {
 			return [];

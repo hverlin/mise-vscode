@@ -1,14 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import CustomTable from "./components/CustomTable";
-import {
-	toDisplayPath,
-	trackedConfigsQueryOptions,
-	useOpenFileMutation,
-} from "./webviewVsCodeApi";
+import { FileLink } from "./components/FileLink";
+import { trackedConfigsQueryOptions } from "./webviewVsCodeApi";
 
 export const TrackedConfigs = () => {
 	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
-	const openFileMutation = useOpenFileMutation();
 
 	if (trackedConfigQuery.isError) {
 		return <div>Error: {trackedConfigQuery.error.message}</div>;
@@ -17,7 +13,10 @@ export const TrackedConfigs = () => {
 	return (
 		<div>
 			<CustomTable
-				filterRowElement={"Showing tracked config files"}
+				style={{ height: window.innerHeight - 40 }}
+				filterRowElement={
+					<span style={{ opacity: 0.8 }}>Showing tracked config files</span>
+				}
 				isLoading={trackedConfigQuery.isLoading}
 				data={trackedConfigQuery.data || []}
 				columns={[
@@ -25,20 +24,7 @@ export const TrackedConfigs = () => {
 						id: "path",
 						header: "File",
 						accessorKey: "path",
-						cell: ({ row }) => {
-							return (
-								<a
-									href={`#${row.original.path}`}
-									onClick={(e) => {
-										e.preventDefault();
-										openFileMutation.mutate(row.original.path);
-									}}
-									title={row.original.path}
-								>
-									{toDisplayPath(row.original.path)}
-								</a>
-							);
-						},
+						cell: ({ row }) => <FileLink filePath={row.original.path} />,
 					},
 					{
 						id: "tools",

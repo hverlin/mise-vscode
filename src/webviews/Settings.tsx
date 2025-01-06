@@ -2,14 +2,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeCheckbox } from "@vscode-elements/react-elements";
 import { type FlattenedProperty, getDefaultForType } from "../utils/miseUtilts";
 import CustomTable from "./components/CustomTable";
+import { FileLink } from "./components/FileLink";
 import { IconButton } from "./components/IconButton";
 import { useWebviewStore } from "./store";
-import {
-	toDisplayPath,
-	useEditSettingMutation,
-	useOpenFileMutation,
-	vscodeClient,
-} from "./webviewVsCodeApi";
+import { useEditSettingMutation, vscodeClient } from "./webviewVsCodeApi";
 
 export const Settings = () => {
 	const showModifiedOnly = useWebviewStore(
@@ -18,7 +14,6 @@ export const Settings = () => {
 	const setShowModifiedOnly = useWebviewStore(
 		(state) => state.setShowModifiedSettingsOnly,
 	);
-	const openFileMutation = useOpenFileMutation();
 	const queryClient = useQueryClient();
 
 	const settingsQuery = useQuery({
@@ -175,7 +170,7 @@ export const Settings = () => {
 											}}
 										/>
 									</div>
-									{actual !== defaultValue && (
+									{actual !== defaultValue && defaultValue !== undefined && (
 										<div
 											style={{ display: "flex", alignItems: "center", gap: 4 }}
 										>
@@ -189,16 +184,7 @@ export const Settings = () => {
 										<div
 											style={{ display: "flex", alignItems: "center", gap: 4 }}
 										>
-											source{" "}
-											<a
-												href={`file://${source}`}
-												onClick={(e) => {
-													e.preventDefault();
-													openFileMutation.mutate(source);
-												}}
-											>
-												{toDisplayPath(source || "")}
-											</a>
+											source: <FileLink filePath={source} />
 										</div>
 									)}
 								</div>

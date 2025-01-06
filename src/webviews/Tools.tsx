@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeButton, VscodeCheckbox } from "@vscode-elements/react-elements";
 import CustomTable from "./components/CustomTable";
+import { FileLink } from "./components/FileLink";
 import { IconButton } from "./components/IconButton";
 import { useWebviewStore } from "./store";
 import {
@@ -8,6 +9,8 @@ import {
 	trackedConfigsQueryOptions,
 	vscodeClient,
 } from "./webviewVsCodeApi";
+
+import React, { useState } from "react";
 
 const styles = {
 	infoPanel: { padding: "10px" },
@@ -27,15 +30,43 @@ const styles = {
 	},
 	value: {
 		fontSize: "14px",
-		wordBreak: "break-all",
+		wordBreak: "break-word",
 		color: "var(--vscode-foreground)",
+	},
+	toggleButton: {
+		display: "flex",
+		alignItems: "center",
+		gap: "4px",
+		color: "var(--vscode-textLink-foreground)",
+		cursor: "pointer",
+		background: "none",
+		border: "none",
+		padding: "4px 0",
+		marginTop: "0px",
+	},
+	pathContainer: {
+		display: "flex",
+		flexDirection: "column" as const,
+		gap: "6px",
+	},
+	pathItem: {
+		display: "flex",
+		alignItems: "center",
+	},
+	pathInfo: {
+		marginLeft: "8px",
+		opacity: 0.8,
 	},
 } as const;
 
 const ToolInfo = ({
 	onClose,
 	selectedTool,
-}: { selectedTool: MiseTool; onClose: () => void }) => {
+}: {
+	selectedTool: MiseTool;
+	onClose: () => void;
+}) => {
+	const [showAll, setShowAll] = useState(false);
 	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
 	const configs = trackedConfigQuery.data || [];
 
@@ -46,6 +77,11 @@ const ToolInfo = ({
 	const configsWithTool = configs.filter((config) => {
 		return Object.keys(config.tools).includes(selectedTool.name);
 	});
+
+	const displayedConfigs = showAll
+		? configsWithTool
+		: configsWithTool.slice(0, 3);
+	const hasMore = configsWithTool.length > 3;
 
 	return (
 		<div style={styles.infoPanel}>
@@ -61,7 +97,7 @@ const ToolInfo = ({
 					<i className="codicon codicon-tools" />
 					{selectedTool.name}
 				</div>
-				<IconButton iconName={"close"} onClick={onClose} />
+				<IconButton iconName="close" onClick={onClose} />
 			</div>
 
 			<div>
@@ -112,14 +148,37 @@ const ToolInfo = ({
 			{configsWithTool.length > 0 && (
 				<div>
 					<p style={styles.label}>Used in</p>
-					<div style={styles.value}>
-						{configsWithTool
-							.map((config) => {
-								// @ts-ignore
-								const toolInfo = config.tools[selectedTool.name];
-								return `${toDisplayPath(config.path)} (${JSON.stringify(toolInfo)})`;
-							})
-							.join(", ")}
+					<div style={styles.pathContainer}>
+						{displayedConfigs.map((config) => {
+							// @ts-ignore
+							const toolInfo = config.tools[selectedTool.name];
+							return (
+								<span
+									key={config.path + selectedTool.name}
+									style={styles.pathItem}
+								>
+									<FileLink filePath={config.path} />
+									<span style={styles.pathInfo}>
+										({JSON.stringify(toolInfo)})
+									</span>
+								</span>
+							);
+						})}
+
+						{hasMore && (
+							<button
+								type={"button"}
+								onClick={() => setShowAll(!showAll)}
+								style={styles.toggleButton}
+							>
+								<i
+									className={`codicon codicon-chevron-${showAll ? "up" : "down"}`}
+								/>
+								{showAll
+									? "Show less"
+									: `Show ${configsWithTool.length - 3} more`}
+							</button>
+						)}
 					</div>
 				</div>
 			)}
@@ -246,10 +305,28 @@ export const Tools = () => {
 		mutationFn: () => vscodeClient.request({ mutationKey: ["pruneTools"] }),
 	});
 
+	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
+	const configs = trackedConfigQuery.data || [];
+
+	if (!selectedTool) {
+		return null;
+	}
+
+	const configsWithTool = configs.filter((config) => {
+		return Object.keys(config.tools).includes(selectedTool.name);
+	});
+
 	const outdatedToolsQuery = useQuery({
 		queryKey: ["outdatedTools"],
-		queryFn: ({ queryKey }) =>
-			vscodeClient.request({ queryKey }) as Promise<Array<MiseToolUpdate>>,
+		queryFn: ({ queryKey }) => {
+			if (!navigator.onLine) {
+				return [];
+			}
+
+			return vscodeClient.request({ queryKey }) as Promise<
+				Array<MiseToolUpdate>
+			>;
+		},
 	});
 
 	if (toolsQuery.isError) {
@@ -285,7 +362,11 @@ export const Tools = () => {
 				/>
 			)}
 			<CustomTable
-				style={{ height: window.innerHeight - (selectedTool ? 280 : 40) }}
+				style={{
+					height:
+						window.innerHeight -
+						(selectedTool ? (configsWithTool?.length > 3 ? 320 : 280) : 40),
+				}}
 				filterRowElement={
 					<div
 						style={{

@@ -42,3 +42,16 @@ type MiseSettingInfo = {
 	value: string | number | boolean | string[] | number[] | boolean[] | object;
 	source?: string;
 };
+
+type MiseToolInfo = {
+	backend: string;
+	description: string;
+	installed_versions: string[];
+	requested_versions: string[];
+	active_versions: string[];
+	config_source: { type: string; path: string };
+	tool_options: {
+		os: string;
+		install_env: Record<string, string>;
+	};
+};

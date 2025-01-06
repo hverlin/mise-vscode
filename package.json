@@ -320,6 +320,10 @@
 				"title": "Mise: Open Menu"
 			},
 			{
+				"command": "mise.openToolRepository",
+				"title": "Mise: Open Tool Repository"
+			},
+			{
 				"command": "mise.selectWorkspaceFolder",
 				"title": "Mise: Select Workspace Folder"
 			},
@@ -518,6 +522,11 @@
 				{
 					"command": "mise.removeTool",
 					"when": "view == miseToolsView && viewItem == tool-installed",
+					"group": "2_modification"
+				},
+				{
+					"command": "mise.openToolWebsite",
+					"when": "view == miseToolsView",
 					"group": "2_modification"
 				},
 				{

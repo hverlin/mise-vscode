@@ -8,6 +8,7 @@ import {
 	MISE_INSTALL_TOOL,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TOOL_DEFINITION,
+	MISE_OPEN_TOOL_REPOSITORY,
 	MISE_RELOAD,
 	MISE_REMOVE_TOOL,
 	MISE_USE_TOOL,
@@ -27,6 +28,7 @@ import {
 } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
+import { getWebsiteForTool } from "../utils/miseUtilts";
 import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
 
 type TreeItem = ToolsSourceItem | ToolItem;
@@ -464,6 +466,41 @@ export function registerToolsCommands(
 				vscode.window.showInformationMessage(
 					`Copied bin paths to clipboard: ${binPath}`,
 				);
+			},
+		),
+
+		vscode.commands.registerCommand(
+			MISE_OPEN_TOOL_REPOSITORY,
+			async (providedTool: MiseTool | ToolItem | undefined) => {
+				let tool = providedTool;
+				if (!tool) {
+					const tools = await miseService.getCurrentTools();
+					const toolNames = tools.map((tool) => tool.name);
+					const selectedToolName = await vscode.window.showQuickPick(
+						toolNames,
+						{ canPickMany: false, placeHolder: "Select a tool to open" },
+					);
+					tool = tools.find((tool) => tool.name === selectedToolName);
+				}
+
+				if (tool instanceof ToolItem) {
+					tool = tool.tool;
+				}
+
+				if (!tool) {
+					return;
+				}
+
+				const toolInfo = await miseService.miseToolInfo(tool.name);
+				if (!toolInfo) {
+					return;
+				}
+
+				const uri = await getWebsiteForTool(toolInfo);
+				if (!uri) {
+					return;
+				}
+				vscode.env.openExternal(vscode.Uri.parse(uri));
 			},
 		),
 

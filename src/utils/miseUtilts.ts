@@ -126,6 +126,50 @@ export function getDefaultForType(type?: string): unknown {
 		case "array":
 			return [];
 		default:
-			return "";
+			return undefined;
 	}
 }
+
+export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
+	if (!toolInfo?.backend) {
+		return;
+	}
+
+	// backendName:repo
+	const [backendName, repo] = toolInfo.backend.split(":");
+	if (!repo) {
+		return;
+	}
+
+	if (
+		repo.includes("/") &&
+		(backendName === "ubi" ||
+			backendName === "aqua" ||
+			backendName === "asdf" ||
+			backendName === "vfox")
+	) {
+		if (repo?.startsWith("https://")) {
+			return repo;
+		}
+		return `https://github.com/${repo}`;
+	}
+
+	if (backendName === "core") {
+		return `https://mise.jdx.dev/lang/${repo}`;
+	}
+
+	if (backendName === "npm") {
+		return `https://www.npmjs.com/package/${repo}`;
+	}
+
+	if (backendName === "asdf") {
+		const res = await fetch(
+			`https://raw.githubusercontent.com/asdf-vm/asdf-plugins/refs/heads/master/plugins/${repo}`,
+		);
+		const data = await res.text();
+		const url = data.match(/(https:\/\/github.com\/[^"]+)/);
+		if (url?.[1] && typeof url[1] === "string") {
+			return url[1];
+		}
+	}
+};
