@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.0](https://github.com/hverlin/mise-vscode/compare/v0.41.0...v0.42.0) (2025-01-09)
+
+
+### Features
+
+* Add task dependency viewer ([f2e3d28](https://github.com/hverlin/mise-vscode/commit/f2e3d2830043f99176b1d6589b1bbc57fc0ecae0))
+
 ## [0.41.0](https://github.com/hverlin/mise-vscode/compare/v0.40.1...v0.41.0) (2025-01-06)
 
 
