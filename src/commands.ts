@@ -11,6 +11,7 @@ export const MISE_INSTALL_TOOL = "mise.installTool";
 export const MISE_LIST_ALL_TOOLS = "mise.listAllTools";
 export const MISE_SHOW_SETTINGS = "mise.showSettings";
 export const MISE_SHOW_TRACKED_CONFIG = "mise.showTrackedConfig";
+export const MISE_VISUALIZE_TASKS_DEPS = "mise.visualizeTasksDeps";
 export const MISE_OPEN_ENV_VAR_DEFINITION = "mise.openEnvVariableDefinition";
 export const MISE_OPEN_FILE = "mise.openFile";
 export const MISE_OPEN_LOGS = "mise.openLogs";

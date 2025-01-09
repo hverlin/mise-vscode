@@ -437,6 +437,11 @@
 				"icon": "$(list-ordered)"
 			},
 			{
+				"command": "mise.visualizeTasksDeps",
+				"title": "Mise: Visualize Tasks Dependencies",
+				"icon": "$(git-merge)"
+			},
+			{
 				"command": "mise.setEnvVariable",
 				"title": "Mise: Set Environment Variable",
 				"icon": "$(add)"
@@ -459,6 +464,11 @@
 				},
 				{
 					"command": "mise.createFileTask",
+					"when": "view == miseTasksView",
+					"group": "navigation@2"
+				},
+				{
+					"command": "mise.visualizeTasksDeps",
 					"when": "view == miseTasksView",
 					"group": "navigation@2"
 				},
@@ -653,6 +663,8 @@
 		"@vscode/codicons": "^0.0.36",
 		"async-cache-dedupe": "^2.2.0",
 		"cheerio": "^1.0.0",
+		"d3": "^7.9.0",
+		"d3-graphviz": "^5.6.0",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
 		"react-error-boundary": "^4.1.2",

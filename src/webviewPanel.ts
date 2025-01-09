@@ -7,7 +7,20 @@ import { MISE_EDIT_SETTING } from "./commands";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
-type PanelView = "TOOLS" | "SETTINGS" | "TRACKED_CONFIGS";
+type PanelView = "TOOLS" | "SETTINGS" | "TRACKED_CONFIGS" | "TASKS_DEPS";
+
+function panelTitleForView(view: PanelView) {
+	switch (view) {
+		case "TOOLS":
+			return "Tools";
+		case "SETTINGS":
+			return "Settings";
+		case "TRACKED_CONFIGS":
+			return "Tracked Configs";
+		case "TASKS_DEPS":
+			return "Tasks Dependencies";
+	}
+}
 
 export default class WebViewPanel {
 	public static currentPanels: Record<string, WebViewPanel> = {};
@@ -54,7 +67,7 @@ export default class WebViewPanel {
 
 		this._panel = vscode.window.createWebviewPanel(
 			WebViewPanel.viewType,
-			`Mise: ${this.view === "TOOLS" ? "Tools" : this.view === "SETTINGS" ? "Settings" : "Tracked Configs"}`,
+			`Mise: ${panelTitleForView(this.view)}`,
 			column,
 			{
 				retainContextWhenHidden: false,
@@ -115,6 +128,16 @@ export default class WebViewPanel {
 							case "trackedConfigs": {
 								return executeAction(message, () =>
 									this.miseService.getTrackedConfigFiles(),
+								);
+							}
+							case "taskDeps": {
+								return executeAction(message, () =>
+									this.miseService.getTaskDependencies(message.variables.tasks),
+								);
+							}
+							case "tasks": {
+								return executeAction(message, () =>
+									this.miseService.getTasks(),
 								);
 							}
 						}
@@ -180,6 +203,14 @@ export default class WebViewPanel {
 					"workbench.action.webview.reloadWebviewAction",
 				);
 			});
+
+		miseService.subscribeToReloadEvent(() => {
+			this._panel.webview.postMessage({
+				type: "invalidateQueries",
+				requestId: "invalidateQueries",
+				data: null,
+			});
+		});
 	}
 
 	public dispose() {

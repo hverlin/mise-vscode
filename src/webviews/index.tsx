@@ -11,6 +11,12 @@ const queryClient = new QueryClient({
 	defaultOptions: { queries: { retry: 1 } },
 });
 
+window.addEventListener("message", (event) => {
+	if (event.data.type === "invalidateQueries") {
+		void queryClient.invalidateQueries();
+	}
+});
+
 // @ts-ignore
 function Fallback({ error, resetErrorBoundary }) {
 	return (

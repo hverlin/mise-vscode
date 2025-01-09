@@ -95,8 +95,14 @@ function ensureMiseCommand(
 
 export class MiseService {
 	private readonly context: vscode.ExtensionContext;
+	private readonly eventEmitter: vscode.EventEmitter<void>;
 	constructor(context: vscode.ExtensionContext) {
 		this.context = context;
+		this.eventEmitter = new vscode.EventEmitter();
+	}
+
+	subscribeToReloadEvent(listener: () => void): vscode.Disposable {
+		return this.eventEmitter.event(listener);
 	}
 
 	private hasVerifiedMiseVersion = false;
@@ -143,6 +149,7 @@ export class MiseService {
 
 	async invalidateCache() {
 		await Promise.all([this.dedupeCache.clear(), this.cache.clear()]);
+		this.eventEmitter.fire();
 	}
 
 	async initializeMisePath() {
@@ -1041,5 +1048,18 @@ export class MiseService {
 		});
 		logger.info(`New symlink created ${linkPath} -> ${binPath}`);
 		return configuredPath;
+	}
+
+	async getTaskDependencies(tasks: string[] | undefined) {
+		if (!this.getMiseBinaryPath()) {
+			return "";
+		}
+
+		const taskString = tasks ? tasks.map((task) => `"${task}"`).join(" ") : "";
+
+		const { stdout } = await this.cache.execCmd({
+			command: `tasks deps ${taskString} --dot`,
+		});
+		return stdout;
 	}
 }

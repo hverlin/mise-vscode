@@ -15,6 +15,7 @@ import {
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
+	MISE_VISUALIZE_TASKS_DEPS,
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
@@ -343,6 +344,12 @@ export class MiseExtension {
 		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_SHOW_TRACKED_CONFIG, async () => {
 				WebViewPanel.createOrShow(context, this.miseService, "TRACKED_CONFIGS");
+			}),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_VISUALIZE_TASKS_DEPS, async () => {
+				WebViewPanel.createOrShow(context, this.miseService, "TASKS_DEPS");
 			}),
 		);
 
