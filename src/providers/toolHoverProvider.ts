@@ -2,6 +2,7 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { logger } from "../utils/logger";
 import { getWebsiteForTool } from "../utils/miseUtilts";
 
 export const createToolHoverProvider = (
@@ -40,7 +41,7 @@ export const createToolHoverProvider = (
 
 			const toolMatch = document
 				.lineAt(position)
-				.text.match(/['"]?([a-z/-0-9:]*)['"]?\s*=\s*.*/);
+				.text.match(/['"]?([0-9A-Za-z./:\-]*)['"]?\s*=\s*.*/);
 
 			if (!toolMatch) {
 				return;

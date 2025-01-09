@@ -137,21 +137,23 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 
 	// backendName:repo
 	const [backendName, repo] = toolInfo.backend.split(":");
-	if (!repo) {
+	if (!repo || !backendName) {
 		return;
 	}
 
 	if (
 		repo.includes("/") &&
-		(backendName === "ubi" ||
-			backendName === "aqua" ||
-			backendName === "asdf" ||
-			backendName === "vfox")
+		["ubi", "aqua", "asdf", "vfox", "spm"].includes(backendName)
 	) {
-		if (repo?.startsWith("https://")) {
+		let repoName = repo;
+		if (backendName === "ubi") {
+			repoName = repo.split("[")[0] as string;
+		}
+
+		if (repoName?.startsWith("https://")) {
 			return repo;
 		}
-		return `https://github.com/${repo}`;
+		return `https://github.com/${repoName}`;
 	}
 
 	if (backendName === "core") {
@@ -160,6 +162,35 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 
 	if (backendName === "npm") {
 		return `https://www.npmjs.com/package/${repo}`;
+	}
+
+	if (backendName === "cargo") {
+		return `https://crates.io/crates/${repo}`;
+	}
+
+	if (backendName === "gem") {
+		return `https://rubygems.org/gems/${repo}`;
+	}
+
+	if (backendName === "go") {
+		return `https://pkg.go.dev/${repo}`;
+	}
+
+	if (backendName === "pipx") {
+		if (repo.startsWith("git+")) {
+			return repo.replace("git+", "");
+		}
+		if (repo.startsWith("https://")) {
+			return repo;
+		}
+		if (repo.includes("/")) {
+			return `https://github.com/${repo}`;
+		}
+		return `https://pypi.org/project/${repo}`;
+	}
+
+	if (backendName === "dotnet") {
+		return `https://www.nuget.org/packages/${repo}`;
 	}
 
 	if (backendName === "asdf") {
