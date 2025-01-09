@@ -424,7 +424,7 @@ export function registerToolsCommands(
 					: selectedPath;
 
 				await miseService.runMiseToolActionInConsole(
-					`use --path ${normalizedPath} ${selectedToolName}`,
+					`use --path "${normalizedPath}" ${selectedToolName}`,
 					"Use Tool",
 				);
 			},
