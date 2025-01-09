@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.42.1](https://github.com/hverlin/mise-vscode/compare/v0.42.0...v0.42.1) (2025-01-09)
+
+
+### Bug Fixes
+
+* add support additional backends on tool hover ([27c0be5](https://github.com/hverlin/mise-vscode/commit/27c0be5b58d3e9e57c6470b3f39e9bd0a2756f05))
+* use tool command ([8ba2207](https://github.com/hverlin/mise-vscode/commit/8ba220785955f694f1722e71396feb11ee49ef97))
+
 ## [0.42.0](https://github.com/hverlin/mise-vscode/compare/v0.41.0...v0.42.0) (2025-01-09)
 
 
