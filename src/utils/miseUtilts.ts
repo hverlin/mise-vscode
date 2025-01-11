@@ -204,3 +204,11 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 		}
 	}
 };
+
+export function renderDepsArray(deps?: depsArray) {
+	if (!deps) {
+		return "";
+	}
+
+	return deps.map((d) => (typeof d === "string" ? d : d.join(" "))).join(", ");
+}

@@ -19,7 +19,11 @@ import {
 } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findTaskPosition } from "../utils/miseFileParser";
-import { allowedFileTaskDirs, idiomaticFiles } from "../utils/miseUtilts";
+import {
+	allowedFileTaskDirs,
+	idiomaticFiles,
+	renderDepsArray,
+} from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 
@@ -298,6 +302,9 @@ class TaskItem extends vscode.TreeItem {
 			["Task", task.name],
 			["Source", task.source],
 			["Description", task.description],
+			["Depends on", renderDepsArray(task.depends)],
+			["Waits for", renderDepsArray(task.wait_for)],
+			["Post-depends on", renderDepsArray(task.depends_post)],
 		]
 			.filter(([_, value]) => value)
 			.map(([key, value]) => `${key}: ${value}`)

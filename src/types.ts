@@ -1,7 +1,25 @@
+type depsArray = Array<string | string[]>;
+
 type MiseTask = {
 	name: string;
 	source: string;
 	description: string;
+	// TODO: only in 2025.1.4. Force to upgrade mise version and remove the `?` later
+	depends?: depsArray;
+	depends_post?: depsArray;
+	wait_for?: depsArray;
+	env?: Record<string, string>;
+	dir?: string;
+	hide?: boolean;
+	raw?: boolean;
+	sources?: string[];
+	outputs?: string[];
+	shell?: string;
+	quiet?: boolean;
+	silent?: boolean;
+	tools?: Record<string, string>;
+	run?: string[];
+	file?: string;
 };
 
 type MiseToolSource = {

@@ -319,11 +319,7 @@ export class MiseService {
 			const { stdout } = await this.cache.execCmd({
 				command: "tasks ls --json",
 			});
-			return JSON.parse(stdout).map((task: MiseTask) => ({
-				name: task.name,
-				source: task.source,
-				description: task.description,
-			}));
+			return JSON.parse(stdout);
 		} catch (error: unknown) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
 				await this.handleUntrustedFile(error);
