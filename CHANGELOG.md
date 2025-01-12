@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.44.0](https://github.com/hverlin/mise-vscode/compare/v0.43.0...v0.44.0) (2025-01-12)
+
+
+### Features
+
+* Add task hover provider ([caf058c](https://github.com/hverlin/mise-vscode/commit/caf058cecbab4704d9edab42c520cb519fa3ecf8))
+
 ## [0.43.0](https://github.com/hverlin/mise-vscode/compare/v0.42.1...v0.43.0) (2025-01-12)
 
 
