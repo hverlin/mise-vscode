@@ -92,7 +92,7 @@ export async function safeExec(
 		let stdoutBuffer = Buffer.alloc(0);
 		let stderrBuffer = Buffer.alloc(0);
 		let killed = false;
-		let timeoutId: NodeJS.Timeout | undefined;
+		let timeoutId: Timer | null = null;
 
 		const childProcess = spawn(cmd, args, spawnOptions);
 
