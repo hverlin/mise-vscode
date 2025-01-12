@@ -651,7 +651,7 @@
 		"@types/node": "^22.10.5",
 		"@types/react": "^18.3.18",
 		"@types/react-dom": "^18.3.5",
-		"@types/vscode": "^1.96.0",
+		"@types/vscode": "^1.85.0",
 		"bun": "^1.1.43",
 		"typescript": "^5.7.3"
 	},
