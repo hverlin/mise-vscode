@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.43.0](https://github.com/hverlin/mise-vscode/compare/v0.42.1...v0.43.0) (2025-01-12)
+
+
+### Features
+
+* Add task reference provider ([ecac3e4](https://github.com/hverlin/mise-vscode/commit/ecac3e4c4811d842ad667cf3b665dd979b6c14c8))
+* implement "go to definition" for task ([2e23343](https://github.com/hverlin/mise-vscode/commit/2e23343ca201adb92a09e9a6749894f8c3971cfd))
+* show additional information in task tree tooltip ([8860af0](https://github.com/hverlin/mise-vscode/commit/8860af0f8097f724d0d5a0c6d1bfe9f4d3a7b906))
+
 ## [0.42.1](https://github.com/hverlin/mise-vscode/compare/v0.42.0...v0.42.1) (2025-01-09)
 
 
