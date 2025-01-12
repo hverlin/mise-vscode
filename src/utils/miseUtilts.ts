@@ -219,3 +219,9 @@ export function renderDepsArray(deps?: depsArray) {
 
 	return deps.map((d) => (typeof d === "string" ? d : d.join(" "))).join(", ");
 }
+
+export const isMiseTomlFile = (filename: string) => {
+	return (
+		/mise\.[^.]*\.?toml$/.test(filename) || filename.endsWith("config.toml")
+	);
+};

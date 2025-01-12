@@ -19,7 +19,7 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
-		const tasks = await this.miseService.getTasks();
+		const tasks = await this.miseService.getTasks({ includeHidden: true });
 		const codeLenses: vscode.CodeLens[] = [];
 		const existingTask = tasks.find((t) => {
 			if (t.name === path.basename(document.fileName)) {

@@ -1,5 +1,5 @@
 import os from "node:os";
-import vscode from "vscode";
+import vscode, { type Definition } from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
@@ -8,7 +8,7 @@ import {
 	TomlParser,
 	findTaskDefinition,
 } from "../utils/miseFileParser";
-import { DEPENDS_KEYWORDS } from "../utils/miseUtilts";
+import { DEPENDS_KEYWORDS, isMiseTomlFile } from "../utils/miseUtilts";
 
 export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	private miseService: MiseService;
@@ -19,27 +19,15 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	public async provideDefinition(
 		document: vscode.TextDocument,
 		position: vscode.Position,
-	): Promise<vscode.LocationLink[]> {
+	): Promise<vscode.LocationLink[] | Definition | null> {
 		if (!isMiseExtensionEnabled()) {
-			return [];
+			return null;
 		}
 
 		const tasks = await this.miseService.getTasks({ includeHidden: true });
 		const tasksSources = tasks.map((t) => expandPath(t.source));
 		if (!tasksSources.includes(document.uri.fsPath)) {
-			return [];
-		}
-
-		const tomParser = new TomlParser<MiseTomlType>(document.getText());
-
-		const keyAtPosition = tomParser.getKeyAtPosition(position);
-		const keyPath = keyAtPosition?.key ?? [];
-		if (!keyPath.length) {
-			return [];
-		}
-
-		if (!DEPENDS_KEYWORDS.includes(keyPath.at(-1) || "")) {
-			return [];
+			return null;
 		}
 
 		const taskNameRange = document.getWordRangeAtPosition(position, /[\w:-]+/);
@@ -48,6 +36,38 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 		}
 
 		const taskName = document.getText(taskNameRange);
+
+		const tomParser = new TomlParser<MiseTomlType>(document.getText());
+
+		const keyAtPosition = tomParser.getKeyAtPosition(position);
+		const keyPath = keyAtPosition?.key ?? [];
+		if (!keyPath.length) {
+			return null;
+		}
+
+		if (
+			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
+			(keyPath.length === 2 && keyPath[0] === "tasks")
+		) {
+			const task = tasks.find((t) => t.name === taskName);
+			if (!task) {
+				return [];
+			}
+
+			// if on the task definition itself, return itself so that vscode triggers the reference picker
+			return [
+				{
+					targetSelectionRange: new vscode.Range(position, position),
+					targetUri: document.uri,
+					originSelectionRange: taskNameRange,
+					targetRange: new vscode.Range(position, position),
+				},
+			];
+		}
+
+		if (!DEPENDS_KEYWORDS.includes(keyPath.at(-1) || "")) {
+			return null;
+		}
 
 		const task = tasks.find((t) => t.name === taskName);
 		if (!task) {

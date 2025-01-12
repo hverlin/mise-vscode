@@ -10,6 +10,7 @@ import {
 import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
+import { isMiseTomlFile } from "../utils/miseUtilts";
 
 function createRunTaskCodeLens(
 	taskName: string,
@@ -273,11 +274,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
-		const isMiseTomlFile =
-			/mise\.[^.]*\.?toml$/.test(document.fileName) ||
-			document.fileName.endsWith("config.toml");
-
-		if (isMiseTomlFile) {
+		if (isMiseTomlFile(document.fileName)) {
 			return await this.handleMiseTomlFile(document);
 		}
 
