@@ -210,7 +210,17 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 	}
 };
 
-export const DEPENDS_KEYWORDS = ["depends", "wait_for", "depends_post"];
+export const DEPENDS_KEYWORDS = [
+	"depends",
+	"wait_for",
+	"depends_post",
+] as const;
+
+type DEPEND_KEYWORD = (typeof DEPENDS_KEYWORDS)[number];
+
+export function isDependsKeyword(keyword: string): keyword is DEPEND_KEYWORD {
+	return DEPENDS_KEYWORDS.includes(keyword as DEPEND_KEYWORD);
+}
 
 export function renderDepsArray(deps?: depsArray) {
 	if (!deps) {

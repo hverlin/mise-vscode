@@ -48,7 +48,7 @@ description = 'Builds the project in watch mode'
 run = 'rsbuild dev'
 
 [tasks.dev-webviews]
-description = 'Webviews'
+description = 'Render webviews in watch mode.'
 run = 'node --run dev-webviews'
 depends = ['install']
 

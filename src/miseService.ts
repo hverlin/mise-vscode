@@ -127,7 +127,14 @@ export class MiseService {
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
-	private longCache = createCache({
+	private slowCache = createCache({
+		ttl: 60,
+		storage: { type: "memory" },
+	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
+		this.execMiseCommand(command, { setMiseEnv }),
+	);
+
+	private longTTLCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
 	})
@@ -148,7 +155,11 @@ export class MiseService {
 		});
 
 	async invalidateCache() {
-		await Promise.all([this.dedupeCache.clear(), this.cache.clear()]);
+		await Promise.all([
+			this.dedupeCache.clear(),
+			this.slowCache.clear(),
+			this.cache.clear(),
+		]);
 		this.eventEmitter.fire();
 	}
 
@@ -333,6 +344,17 @@ export class MiseService {
 			logger.info("Error fetching mise tasks:", error as Error);
 			return [];
 		}
+	}
+
+	async getAllCachedTasks(): Promise<MiseTask[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const { stdout } = await this.slowCache.execCmd({
+			command: "tasks ls --json --hidden",
+		});
+		return JSON.parse(stdout);
 	}
 
 	async getCurrentConfigFiles(): Promise<string[]> {
@@ -781,7 +803,7 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.longCache.execCmd({
+		const { stdout } = await this.longTTLCache.execCmd({
 			command: "registry",
 			setMiseEnv: false,
 		});
@@ -806,7 +828,7 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.longCache.execCmd({
+		const { stdout } = await this.longTTLCache.execCmd({
 			command: "backends",
 			setMiseEnv: false,
 		});
@@ -823,7 +845,7 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.longCache.execCmd({
+			const { stdout } = await this.longTTLCache.execCmd({
 				command: `ls-remote ${toolName}${yes ? " --yes" : ""}`,
 				setMiseEnv: false,
 			});
@@ -884,7 +906,7 @@ export class MiseService {
 	}
 
 	async getSettingsSchema() {
-		return this.longCache.fetchSchema();
+		return this.longTTLCache.fetchSchema();
 	}
 
 	async getTrackedConfigFiles() {

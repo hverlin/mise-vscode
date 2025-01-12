@@ -29,6 +29,7 @@ import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
+import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
 import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
@@ -370,6 +371,10 @@ export class MiseExtension {
 			vscode.languages.registerReferenceProvider(
 				allTomlFilesSelector,
 				new TaskReferenceProvider(this.miseService),
+			),
+			vscode.languages.registerHoverProvider(
+				allTomlFilesSelector,
+				new TaskHoverProvider(this.miseService),
 			),
 		);
 
