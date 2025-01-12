@@ -644,22 +644,21 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@rsbuild/core": "^1.1.6",
-		"@rsbuild/plugin-react": "^1.0.7",
+		"@rsbuild/core": "^1.1.13",
+		"@rsbuild/plugin-react": "^1.1.0",
 		"@types/bun": "^1.1.16",
-		"@types/node": "^22.9.0",
-		"@types/react": "^18.3.12",
-		"@types/react-dom": "^18.3.1",
-		"@types/vscode": "^1.85.0",
-		"bun": "^1.1.42",
-		"typescript": "^5.6.3"
+		"@types/node": "^22.10.5",
+		"@types/react": "^18.3.18",
+		"@types/react-dom": "^18.3.5",
+		"@types/vscode": "^1.96.0",
+		"bun": "^1.1.43",
+		"typescript": "^5.7.3"
 	},
-	"packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228",
 	"dependencies": {
 		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
 		"@tanstack/match-sorter-utils": "^8.19.4",
-		"@tanstack/react-query": "^5.60.5",
-		"@tanstack/react-table": "^8.20.5",
+		"@tanstack/react-query": "^5.64.0",
+		"@tanstack/react-table": "^8.20.6",
 		"@vscode-elements/react-elements": "^0.8.0",
 		"@vscode/codicons": "^0.0.36",
 		"async-cache-dedupe": "^2.2.0",
@@ -670,6 +669,7 @@
 		"react-dom": "18.3.1",
 		"react-error-boundary": "^4.1.2",
 		"toml-v1": "^1.0.0",
-		"zustand": "^5.0.2"
-	}
+		"zustand": "^5.0.3"
+	},
+	"packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
 }

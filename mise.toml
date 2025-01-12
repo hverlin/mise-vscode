@@ -27,13 +27,13 @@ depends = ['docs:build']
 [tasks.install]
 description = 'Installs dependencies with pnpm'
 run = 'corepack enable && pnpm install'
-sources = ['package.json', 'pnpm-lock.yaml', 'mise.toml']
+sources = ['package.json', 'pnpm-lock.yaml']
 outputs = ['node_modules/.pnpm/lock.yaml']
 
 [tasks.start-vscode]
 description = 'Starts VSCode with the extension loaded'
 run = 'code --inspect-extensions=5858 --extensionDevelopmentPath=$(pwd)'
-sources = ['src/**', 'mise.toml', 'package.json', 'syntaxes/**']
+sources = ['src/**', 'package.json', 'syntaxes/**']
 
 [tasks.watch-vscode]
 run = 'mise watch -t start-vscode'

@@ -13,7 +13,7 @@ export const execAsyncMergeOutput = (
 	stderr: string;
 	error: Error | null;
 }> => {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		exec(command, (error, stdout, stderr) => {
 			resolve({
 				stdout: stdout.toString(),
@@ -89,8 +89,8 @@ export async function safeExec(
 	};
 
 	return new Promise((resolve) => {
-		let stdoutBuffer = Buffer.alloc(0);
-		let stderrBuffer = Buffer.alloc(0);
+		let stdoutBuffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
+		let stderrBuffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
 		let killed = false;
 		let timeoutId: Timer | null = null;
 
