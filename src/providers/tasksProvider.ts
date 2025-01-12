@@ -18,7 +18,7 @@ import {
 	setupTaskFile,
 } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
-import { findTaskPosition } from "../utils/miseFileParser";
+import { findTaskDefinition } from "../utils/miseFileParser";
 import {
 	allowedFileTaskDirs,
 	idiomaticFiles,
@@ -398,22 +398,23 @@ export function registerTasksCommands(
 				const document = await vscode.workspace.openTextDocument(uri);
 				const editor = await vscode.window.showTextDocument(document);
 
-				if (!document.fileName.endsWith(".toml")) {
-					editor.revealRange(
-						new vscode.Range(0, 0, 0, 0),
-						vscode.TextEditorRevealType.InCenter,
-					);
-					editor.selection = new vscode.Selection(0, 0, 0, 0);
-					return;
-				}
-
-				const position = findTaskPosition(document, selectedTask.name);
+				const position = findTaskDefinition(document, selectedTask.name);
 				if (position) {
-					const range = document.lineAt(position.line).range;
-					const startOfLine = new vscode.Position(position.line, 0);
-					const selection = new vscode.Selection(startOfLine, range.end);
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-					editor.selection = selection;
+					if (position.start.isEqual(position.end)) {
+						editor.selection = new vscode.Selection(
+							position.start,
+							position.start,
+						);
+						editor.revealRange(
+							new vscode.Range(position.start, position.start),
+						);
+					} else {
+						const startOfLine = new vscode.Position(position.start.line, 0);
+						const range = document.lineAt(position.start.line).range;
+						const selection = new vscode.Selection(startOfLine, range.end);
+						editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+						editor.selection = selection;
+					}
 				} else {
 					vscode.window.showWarningMessage(
 						`Could not locate task "${selectedTask.name}" in ${document.fileName}`,

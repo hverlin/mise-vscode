@@ -28,6 +28,7 @@ import {
 import { createMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
+import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
 import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import {
@@ -360,6 +361,13 @@ export class MiseExtension {
 				allTomlFilesSelector,
 				new MiseCompletionProvider(this.miseService),
 				...['"', "'", "[", ","],
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.languages.registerDefinitionProvider(
+				allTomlFilesSelector,
+				new TaskDefinitionProvider(this.miseService),
 			),
 		);
 

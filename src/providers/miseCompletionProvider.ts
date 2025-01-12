@@ -24,9 +24,9 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 			return [];
 		}
 
-		const tasks = await this.miseService.getTasks();
+		const tasks = await this.miseService.getTasks({ includeHidden: true });
 		if (!this.tasksCache.length && tasks.length) {
-			this.tasksCache = await this.miseService.getTasks();
+			this.tasksCache = tasks;
 		}
 
 		return this.tasksCache
@@ -50,7 +50,7 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 	}
 
 	private isDependsArrayContext(lineText: string, position: number): boolean {
-		const dependsMatch = /(depends|wait_for)\s*=/.test(lineText);
+		const dependsMatch = /(depends|wait_for|depends_post)\s*=/.test(lineText);
 		if (!dependsMatch) {
 			return false;
 		}

@@ -49,6 +49,11 @@ export const idiomaticFileToTool = {
 
 export const idiomaticFiles = new Set(Object.keys(idiomaticFileToTool));
 
+export const TOOLS_MAPPING = [
+	["node", "nodejs"] as const,
+	["go", "golang"] as const,
+] as const;
+
 export const getCleanedToolName = (toolName: string) => {
 	return toolName
 		.trim()
@@ -204,6 +209,8 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 		}
 	}
 };
+
+export const DEPENDS_KEYWORDS = ["depends", "wait_for", "depends_post"];
 
 export function renderDepsArray(deps?: depsArray) {
 	if (!deps) {

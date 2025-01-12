@@ -310,14 +310,18 @@ export class MiseService {
 		await this.cache.execCmd({ command: "trust", setMiseEnv: false });
 	}
 
-	async getTasks(): Promise<MiseTask[]> {
+	async getTasks(
+		{ includeHidden }: { includeHidden?: boolean } = {
+			includeHidden: false,
+		},
+	): Promise<MiseTask[]> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "tasks ls --json",
+				command: includeHidden ? "tasks ls --json --hidden" : "tasks ls --json",
 			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
