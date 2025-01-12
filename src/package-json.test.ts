@@ -1,4 +1,3 @@
-// @ts-ignore
 import { describe, expect, test } from "bun:test";
 import { SUPPORTED_EXTENSIONS } from "./utils/supportedExtensions";
 

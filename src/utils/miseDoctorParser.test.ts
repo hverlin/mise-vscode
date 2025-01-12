@@ -1,4 +1,3 @@
-// @ts-ignore
 import { describe, expect, test } from "bun:test";
 import { type MiseConfig, parseMiseConfig } from "./miseDoctorParser";
 
@@ -147,7 +146,7 @@ No warnings found
 1. new mise version 2024.11.19 available, currently on 2024.11.18
 `;
 
-		const expected: MiseConfig = {
+		const expected = {
 			dirs: { shims: "" },
 			problems: {
 				newMiseVersionAvailable: {
@@ -155,7 +154,7 @@ No warnings found
 					latestVersion: "2024.11.19",
 				},
 			},
-		};
+		} satisfies MiseConfig;
 
 		const result = parseMiseConfig(input);
 		expect(result.problems).toEqual(expected.problems);
