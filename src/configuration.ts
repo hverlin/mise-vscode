@@ -20,6 +20,7 @@ export const CONFIGURATION_FLAGS = {
 	teraAutoCompletion: "teraAutoCompletion",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
+	showNotificationIfMissingTools: "showNotificationIfMissingTools",
 } as const;
 
 const getExtensionConfig = () => {
@@ -127,6 +128,13 @@ export const shouldAutomaticallyReloadTerminalEnv = () => {
 export const shouldAutomaticallyTrustMiseConfigFiles = () => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.automaticallyTrustMiseConfigFiles,
+		true,
+	);
+};
+
+export const shouldShowNotificationIfMissingTools = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.showNotificationIfMissingTools,
 		true,
 	);
 };

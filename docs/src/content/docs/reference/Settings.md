@@ -118,6 +118,14 @@ Check if a new mise version is available on startup.
 
 ---
 
+##### `mise.showNotificationIfMissingTools`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show notification if tools are not installed.
+
+---
+
 ##### `mise.updateEnvAutomatically`
 - **Type:** `boolean`
 - **Default:** `true`

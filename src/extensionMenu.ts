@@ -1,6 +1,8 @@
 import vscode from "vscode";
 import {
+	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
+	MISE_MISSING_TOOLS_MENU,
 	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
@@ -110,3 +112,19 @@ export function createMenu(miseService: MiseService) {
 		}
 	});
 }
+
+export const createMissingToolsMenu = () =>
+	vscode.commands.registerCommand(MISE_MISSING_TOOLS_MENU, async () => {
+		const pick = await vscode.window.showQuickPick(
+			[{ label: "Install all missing tools" }],
+			{ title: "Mise - Missing tools" },
+		);
+
+		switch (pick?.label) {
+			case "Install all missing tools":
+				await vscode.commands.executeCommand(MISE_INSTALL_ALL);
+				break;
+			default:
+				break;
+		}
+	});

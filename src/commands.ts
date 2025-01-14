@@ -17,6 +17,7 @@ export const MISE_OPEN_ENV_VAR_DEFINITION = "mise.openEnvVariableDefinition";
 export const MISE_OPEN_FILE = "mise.openFile";
 export const MISE_OPEN_LOGS = "mise.openLogs";
 export const MISE_OPEN_MENU = "mise.openMenu";
+export const MISE_MISSING_TOOLS_MENU = "mise.openMissingToolsMenu";
 export const MISE_OPEN_EXTENSION_SETTINGS = "mise.openExtensionSettings";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";

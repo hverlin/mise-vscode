@@ -14,3 +14,10 @@ export function uniqBy<T>(array: T[], iteratee: (value: T) => string): T[] {
 
 	return Array.from(seen.values());
 }
+
+export const truncateStr = (str: string, maxLen: number) => {
+	if (str.length <= maxLen) {
+		return str;
+	}
+	return `${str.slice(0, maxLen)}...`;
+};

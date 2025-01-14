@@ -5,8 +5,8 @@ import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
 	MISE_EDIT_SETTING,
 	MISE_FMT,
-	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
+	MISE_MISSING_TOOLS_MENU,
 	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_FILE,
 	MISE_OPEN_LOGS,
@@ -24,8 +24,9 @@ import {
 	isMiseExtensionEnabled,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
+	shouldShowNotificationIfMissingTools,
 } from "./configuration";
-import { createMenu } from "./extensionMenu";
+import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
@@ -58,6 +59,7 @@ import {
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { displayPathRelativeTo } from "./utils/fileUtils";
+import { truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import WebViewPanel from "./webviewPanel";
@@ -69,6 +71,11 @@ export class MiseExtension {
 		vscode.StatusBarAlignment.Left,
 		0,
 	);
+	private missingToolBarItem = vscode.window.createStatusBarItem(
+		vscode.StatusBarAlignment.Left,
+		0,
+	);
+
 	private miseFileWatcher: MiseFileWatcher | undefined;
 
 	async activate(context: vscode.ExtensionContext) {
@@ -105,7 +112,10 @@ export class MiseExtension {
 		);
 		this.miseFileWatcher.initialize();
 
-		context.subscriptions.push(createMenu(this.miseService));
+		context.subscriptions.push(
+			createMenu(this.miseService),
+			createMissingToolsMenu(),
+		);
 		this.statusBarItem.command = MISE_OPEN_MENU;
 
 		const tasksProvider = new MiseTasksProvider(this.miseService);
@@ -622,21 +632,40 @@ export class MiseExtension {
 	}
 
 	private checkForMissingMiseTools() {
+		if (!isMiseExtensionEnabled()) {
+			return;
+		}
+
+		if (!shouldShowNotificationIfMissingTools()) {
+			return;
+		}
+
 		this.miseService.getCurrentTools().then(async (tools) => {
 			const missingTools = tools.filter((tool) => !tool.installed);
-			if (missingTools.length > 0) {
-				const selection = await vscode.window.showWarningMessage(
-					`Mise: Missing tools: ${missingTools
-						.map(
-							(tool) => tool.name + (tool.version ? ` (${tool.version})` : ""),
-						)
-						.join(", ")}`,
-					{ title: "Install missing tools", command: MISE_INSTALL_ALL },
-				);
-				if (selection?.command) {
-					await vscode.commands.executeCommand(selection.command);
+
+			if (!missingTools.length) {
+				if (this.missingToolBarItem) {
+					this.missingToolBarItem.hide();
 				}
+				return;
 			}
+
+			if (!this.missingToolBarItem) {
+				this.missingToolBarItem = vscode.window.createStatusBarItem(
+					vscode.StatusBarAlignment.Left,
+					0,
+				);
+			}
+			const list = missingTools
+				.map((tool) => tool.name + (tool.version ? ` (${tool.version})` : ""))
+				.join(", ");
+
+			this.missingToolBarItem.text = `Missing tools: ${truncateStr(list, 50)}`;
+			this.missingToolBarItem.color = new vscode.ThemeColor("errorForeground");
+			this.missingToolBarItem.show();
+
+			this.missingToolBarItem.tooltip = "Mise: Click to install missing tools";
+			this.missingToolBarItem.command = MISE_MISSING_TOOLS_MENU;
 		});
 	}
 }
