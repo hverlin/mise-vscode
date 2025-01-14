@@ -62,9 +62,12 @@ ${taskDepsDot}
 				))}
 			</VscodeMultiSelect>
 			{taskDepsQuery.isPending ? (
-				"..."
+				<div style={{ padding: "10px 0" }}>Loading...</div>
 			) : taskDepsQuery.error ? (
-				<div>Error: {taskDepsQuery.error.message}</div>
+				<div style={{ padding: "10px 0" }}>
+					Error: {/* @ts-ignore */}
+					{taskDepsQuery.error?.stderr ?? JSON.stringify(taskDepsQuery.error)}
+				</div>
 			) : (
 				<Graphviz
 					dot={dotString}

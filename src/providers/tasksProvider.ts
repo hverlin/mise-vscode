@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import {
 	MISE_CREATE_FILE_TASK,
 	MISE_CREATE_TOML_TASK,
+	MISE_CREATE_TOML_TASK_TOP_MENU,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
 	MISE_RUN_TASK,
@@ -481,6 +482,12 @@ export function registerTasksCommands(
 			await vscode.commands.executeCommand("workbench.action.files.save");
 			taskProvider.refresh();
 		}),
+		vscode.commands.registerCommand(
+			MISE_CREATE_TOML_TASK_TOP_MENU,
+			async () => {
+				vscode.commands.executeCommand(MISE_CREATE_TOML_TASK);
+			},
+		),
 		vscode.commands.registerCommand(
 			MISE_CREATE_TOML_TASK,
 			async (path: string | TasksSourceGroupItem | undefined) => {

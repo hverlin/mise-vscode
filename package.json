@@ -348,6 +348,11 @@
 				"icon": "$(add)"
 			},
 			{
+				"command": "mise.createTomlTaskTopMenu",
+				"title": "Mise: Create Toml Task",
+				"icon": "$(add)"
+			},
+			{
 				"command": "mise.openToolDefinition",
 				"title": "Mise: Open Tool Definition"
 			},
@@ -404,6 +409,11 @@
 				"icon": "$(add)"
 			},
 			{
+				"command": "mise.useToolTopMenu",
+				"title": "Mise: Use Tool",
+				"icon": "$(add)"
+			},
+			{
 				"command": "mise.configureSdkPath",
 				"title": "Mise: Configure extension sdk path..."
 			},
@@ -456,9 +466,19 @@
 			}
 		],
 		"menus": {
+			"commandPalette": [
+				{
+					"command": "mise.createTomlTaskTopMenu",
+					"when": "false"
+				},
+				{
+					"command": "mise.useToolTopMenu",
+					"when": "false"
+				}
+			],
 			"view/title": [
 				{
-					"command": "mise.createTomlTask",
+					"command": "mise.createTomlTaskTopMenu",
 					"when": "view == miseTasksView",
 					"group": "navigation@1"
 				},
@@ -478,7 +498,7 @@
 					"group": "navigation@1"
 				},
 				{
-					"command": "mise.useTool",
+					"command": "mise.useToolTopMenu",
 					"when": "view == miseToolsView",
 					"group": "navigation@2"
 				},

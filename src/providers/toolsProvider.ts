@@ -12,6 +12,7 @@ import {
 	MISE_RELOAD,
 	MISE_REMOVE_TOOL,
 	MISE_USE_TOOL,
+	MISE_USE_TOOL_TOP_MENU,
 } from "../commands";
 import {
 	getIgnoreList,
@@ -343,6 +344,9 @@ export function registerToolsCommands(
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
 			await miseService.runMiseToolActionInConsole("install", "Install Tool");
 			await vscode.commands.executeCommand(MISE_RELOAD);
+		}),
+		vscode.commands.registerCommand(MISE_USE_TOOL_TOP_MENU, async () => {
+			await vscode.commands.executeCommand(MISE_USE_TOOL);
 		}),
 		vscode.commands.registerCommand(
 			MISE_USE_TOOL,
