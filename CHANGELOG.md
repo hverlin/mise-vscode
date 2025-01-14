@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.45.0](https://github.com/hverlin/mise-vscode/compare/v0.44.0...v0.45.0) (2025-01-14)
+
+
+### Features
+
+* Use a status bar item instead of a notification for missing tools ([e92824e](https://github.com/hverlin/mise-vscode/commit/e92824e78ece2ec156f5391874903515605c0c10))
+
+
+### Bug Fixes
+
+* ensure top menu actions always show a file picker ([c9ef8ab](https://github.com/hverlin/mise-vscode/commit/c9ef8abe38161f894d1eb87b13bdb91b430addac))
+
 ## [0.44.0](https://github.com/hverlin/mise-vscode/compare/v0.43.0...v0.44.0) (2025-01-12)
 
 
