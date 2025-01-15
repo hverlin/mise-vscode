@@ -114,7 +114,8 @@
 				"mise.binPath": {
 					"order": 2,
 					"type": "string",
-					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nSee https://mise.jdx.dev/getting-started.html to install mise."
+					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nIf set to `mise` (default), it will use `mise` available in `PATH`.\n\nSee https://mise.jdx.dev/getting-started.html to install mise.",
+					"default": "mise"
 				},
 				"mise.miseEnv": {
 					"order": 3,

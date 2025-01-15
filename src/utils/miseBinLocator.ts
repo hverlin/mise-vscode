@@ -6,6 +6,7 @@ import { safeExec } from "./shell";
 
 export async function resolveMisePath(): Promise<string> {
 	const configuredPath = getConfiguredBinPath();
+	logger.debug(`Configured mise path: ${configuredPath}`);
 
 	if (configuredPath) {
 		if (await isValidBinary(configuredPath)) {

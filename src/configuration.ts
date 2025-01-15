@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { deepMerge } from "@std/collections";
 import * as vscode from "vscode";
+import { logger } from "./utils/logger";
 
 export const CONFIGURATION_FLAGS = {
 	enable: "enable",
@@ -72,6 +73,8 @@ export const getConfiguredBinPath = (): string | undefined => {
 };
 
 export const updateBinPath = async (binPath: string) => {
+	logger.info(`Updating bin path to: ${binPath}`);
+
 	await getExtensionConfig().update(
 		CONFIGURATION_FLAGS.binPath,
 		binPath,

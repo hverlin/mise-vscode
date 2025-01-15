@@ -32,7 +32,11 @@ Enable/disable mise extension.
 
 ##### `mise.binPath`
 - **Type:** `string`
+- **Default:** `"mise"`
+
 Path to the mise binary (automatically detected on startup).
+
+If set to `mise` (default), it will use `mise` available in `PATH`.
 
 See https://mise.jdx.dev/getting-started.html to install mise.
 
