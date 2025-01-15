@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.1](https://github.com/hverlin/mise-vscode/compare/v0.45.0...v0.45.1) (2025-01-15)
+
+
+### Bug Fixes
+
+* set mise.binPath to `mise` by default ([c382d5a](https://github.com/hverlin/mise-vscode/commit/c382d5a3d4a1b961d23a701079a045bf245da237))
+
 ## [0.45.0](https://github.com/hverlin/mise-vscode/compare/v0.44.0...v0.45.0) (2025-01-14)
 
 
