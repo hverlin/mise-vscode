@@ -510,6 +510,23 @@
 				{
 					"command": "mise.openMissingToolsMenu",
 					"when": "false"
+				},
+				{
+					"command": "mise.showAllEnvVarValues",
+					"when": "false"
+				},
+				{
+					"command": "mise.hideAllEnvVarValues",
+					"when": "false"
+				},
+				{
+					"command": "mise.showEnvVariableValue",
+					"when": "false"
+
+				},
+				{
+					"command": "mise.hideEnvVariableValue",
+					"when": "false"
 				}
 			],
 			"view/title": [
