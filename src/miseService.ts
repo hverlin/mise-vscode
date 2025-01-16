@@ -548,7 +548,7 @@ export class MiseService {
 		const parsed = JSON.parse(stdout) as Record<string, MiseEnvWithInfo>;
 		return Object.entries(parsed).map(([key, info]) => ({
 			name: key,
-			value: info.value,
+			value: info.value ?? "",
 			tool: info?.tool,
 			source: info?.source ? expandPath(info.source) : undefined,
 		}));
