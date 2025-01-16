@@ -13,7 +13,7 @@ export async function resolveMisePath(): Promise<string> {
 			return configuredPath;
 		}
 		logger.warn(
-			`Configured mise path ${configuredPath} is invalid. Trying to resolve another path...`,
+			`Configured mise path "${configuredPath}" is invalid. Trying to resolve another path...`,
 		);
 	}
 
@@ -25,15 +25,17 @@ export async function resolveMisePath(): Promise<string> {
 		const result = await safeExec("where.exe", ["mise"]);
 		logger.info(`where mise: ${result.stdout}`);
 		const firstEntry = result.stdout.split("\r\n")?.[0];
-		if (firstEntry) {
-			return firstEntry.trim();
+		const miseLocation = firstEntry?.trim();
+		if (miseLocation && (await isValidBinary(miseLocation))) {
+			return miseLocation;
 		}
 	}
 
 	const result = await safeExec("which", ["mise"]);
-	logger.info(`which mise: ${result.stdout}`);
-	if (result.stdout) {
-		return result.stdout.trim();
+	const miseLocation = result.stdout?.trim();
+	logger.info(`which mise: ${miseLocation}`);
+	if (miseLocation && (await isValidBinary(miseLocation))) {
+		return miseLocation;
 	}
 
 	//  Check common installation locations
