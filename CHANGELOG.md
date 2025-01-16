@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.3](https://github.com/hverlin/mise-vscode/compare/v0.45.2...v0.45.3) (2025-01-16)
+
+
+### Bug Fixes
+
+* check if `mise` is valid binary when on PATH ([b008a9c](https://github.com/hverlin/mise-vscode/commit/b008a9c1a825a6923cebc3017df0a293c4b89b2d))
+
 ## [0.45.2](https://github.com/hverlin/mise-vscode/compare/v0.45.1...v0.45.2) (2025-01-16)
 
 
