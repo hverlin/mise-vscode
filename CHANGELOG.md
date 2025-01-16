@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.1](https://github.com/hverlin/mise-vscode/compare/v0.46.0...v0.46.1) (2025-01-16)
+
+
+### Bug Fixes
+
+* Remove environment values commands from command palette ([d13945a](https://github.com/hverlin/mise-vscode/commit/d13945a63ff4c7834ef3f3574048a0fdceb3157c))
+
 ## [0.46.0](https://github.com/hverlin/mise-vscode/compare/v0.45.3...v0.46.0) (2025-01-16)
 
 
