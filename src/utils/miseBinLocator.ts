@@ -18,12 +18,9 @@ export async function resolveMisePath(): Promise<string> {
 	}
 
 	// Check if mise is in the PATH
-	const result = await safeExec("which", ["mise"]);
-	logger.info(`which mise: ${result.stdout}`);
-	if (result.stdout) {
-		return result.stdout.trim();
-	}
+	// the default value (`mise`) should already be enough for most cases
 
+	// check for win32 first, as `which` (see https://github.com/hverlin/mise-vscode/issues/84)
 	if (process.platform === "win32") {
 		const result = await safeExec("where.exe", ["mise"]);
 		logger.info(`where mise: ${result.stdout}`);
@@ -31,6 +28,12 @@ export async function resolveMisePath(): Promise<string> {
 		if (firstEntry) {
 			return firstEntry.trim();
 		}
+	}
+
+	const result = await safeExec("which", ["mise"]);
+	logger.info(`which mise: ${result.stdout}`);
+	if (result.stdout) {
+		return result.stdout.trim();
 	}
 
 	//  Check common installation locations
