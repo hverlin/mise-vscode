@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.2](https://github.com/hverlin/mise-vscode/compare/v0.46.1...v0.46.2) (2025-01-16)
+
+
+### Bug Fixes
+
+* Do not show undefined if an env value is missing from mise env json output ([a6e3be2](https://github.com/hverlin/mise-vscode/commit/a6e3be25100ff41e6443e24f1fd1cd7acf258379))
+
 ## [0.46.1](https://github.com/hverlin/mise-vscode/compare/v0.46.0...v0.46.1) (2025-01-16)
 
 
