@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.2](https://github.com/hverlin/mise-vscode/compare/v0.45.1...v0.45.2) (2025-01-16)
+
+
+### Bug Fixes
+
+* check for `where.exe mise` first ([7db6449](https://github.com/hverlin/mise-vscode/commit/7db6449d2be5dcc5d4ec044d8bbf7ca692347d57))
+
 ## [0.45.1](https://github.com/hverlin/mise-vscode/compare/v0.45.0...v0.45.1) (2025-01-15)
 
 
