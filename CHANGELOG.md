@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.0](https://github.com/hverlin/mise-vscode/compare/v0.45.3...v0.46.0) (2025-01-16)
+
+
+### Features
+
+* Add ability to show/hide environment variables ([3ac7141](https://github.com/hverlin/mise-vscode/commit/3ac71413bc75594f5d1014af4a2acb758a4a6d81))
+
 ## [0.45.3](https://github.com/hverlin/mise-vscode/compare/v0.45.2...v0.45.3) (2025-01-16)
 
 
