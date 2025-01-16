@@ -124,7 +124,7 @@ export class MiseExtension {
 
 		registerTasksCommands(context, tasksProvider);
 		registerToolsCommands(context, this.miseService);
-		registerEnvsCommands(context, this.miseService);
+		registerEnvsCommands(context, envsProvider, this.miseService);
 
 		vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 		vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);

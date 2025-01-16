@@ -2,9 +2,13 @@ import * as vscode from "vscode";
 import {
 	MISE_COPY_ENV_VARIABLE_NAME,
 	MISE_COPY_ENV_VARIABLE_VALUE,
+	MISE_HIDE_ALL_ENV_VAR_VALUES,
+	MISE_HIDE_ENV_VARIABLE_VALUE,
 	MISE_OPEN_ENV_VAR_DEFINITION,
 	MISE_OPEN_TOOL_DEFINITION,
 	MISE_SET_ENV_VARIABLE,
+	MISE_SHOW_ALL_ENV_VAR_VALUES,
+	MISE_SHOW_ENV_VARIABLE_VALUE,
 } from "../commands";
 import {
 	isMiseExtensionEnabled,
@@ -24,10 +28,57 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 		EnvItem | undefined | null | void
 	> = this._onDidChangeTreeData.event;
 
-	constructor(private miseService: MiseService) {}
+	private makeAllItemVisible = false;
+	private visibleItems: Map<string, boolean> = new Map();
+
+	constructor(private miseService: MiseService) {
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.showAllEnvVarValues",
+			false,
+		);
+	}
 
 	refresh(): void {
 		this._onDidChangeTreeData.fire();
+	}
+
+	showItem(name: string) {
+		this.visibleItems.set(name, true);
+		this.refresh();
+	}
+
+	hideItem(name: string) {
+		this.visibleItems.set(name, false);
+		this.refresh();
+	}
+
+	showAllItems() {
+		for (const [name] of this.visibleItems) {
+			this.visibleItems.delete(name);
+		}
+
+		this.makeAllItemVisible = true;
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.showAllEnvVarValues",
+			true,
+		);
+		this.refresh();
+	}
+
+	hideItems() {
+		for (const [name] of this.visibleItems) {
+			this.visibleItems.delete(name);
+		}
+
+		this.makeAllItemVisible = false;
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.showAllEnvVarValues",
+			false,
+		);
+		this.refresh();
 	}
 
 	getTreeItem(element: EnvItem): vscode.TreeItem {
@@ -36,7 +87,14 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 
 	async getEnvItems() {
 		const envs = await this.miseService.getEnvWithInfo();
-		return envs.map((env) => new EnvItem(env));
+		return envs.map(
+			(env) =>
+				new EnvItem(env, {
+					isVisible: this.visibleItems.has(env.name)
+						? this.visibleItems.get(env.name) === true
+						: this.makeAllItemVisible,
+				}),
+		);
 	}
 
 	async getChildren(): Promise<EnvItem[]> {
@@ -59,8 +117,15 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 }
 
 class EnvItem extends vscode.TreeItem {
-	constructor(public env: MiseEnvWithInfo) {
-		const label = env.value ? `${env.name}=${env.value}` : env.name;
+	constructor(
+		public env: MiseEnvWithInfo,
+		{ isVisible }: { isVisible: boolean },
+	) {
+		const label = env.value
+			? isVisible
+				? `${env.name}=${env.value}`
+				: `${env.name}=●●●●●●●●`
+			: env.name;
 		super(label, vscode.TreeItemCollapsibleState.None);
 		this.tooltip = [
 			`${env.name}=${env.value}`,
@@ -70,7 +135,7 @@ class EnvItem extends vscode.TreeItem {
 			.filter(Boolean)
 			.join("\n");
 
-		this.contextValue = "envItem";
+		this.contextValue = isVisible ? "visibleEnvItem" : "hiddenEnvItem";
 		this.command = {
 			command: MISE_OPEN_ENV_VAR_DEFINITION,
 			arguments: [this.env.name],
@@ -81,6 +146,7 @@ class EnvItem extends vscode.TreeItem {
 
 export function registerEnvsCommands(
 	context: vscode.ExtensionContext,
+	envProvider: MiseEnvsProvider,
 	miseService: MiseService,
 ) {
 	context.subscriptions.push(
@@ -215,6 +281,32 @@ export function registerEnvsCommands(
 				});
 			},
 		),
+		vscode.commands.registerCommand(
+			MISE_SHOW_ENV_VARIABLE_VALUE,
+			(name: EnvItem) => {
+				if (!name?.env?.value) {
+					return;
+				}
+
+				envProvider.showItem(name.env.name);
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_HIDE_ENV_VARIABLE_VALUE,
+			(name: EnvItem) => {
+				if (!name?.env?.value) {
+					return;
+				}
+
+				envProvider.hideItem(name.env.name);
+			},
+		),
+		vscode.commands.registerCommand(MISE_SHOW_ALL_ENV_VAR_VALUES, () => {
+			envProvider.showAllItems();
+		}),
+		vscode.commands.registerCommand(MISE_HIDE_ALL_ENV_VAR_VALUES, () => {
+			envProvider.hideItems();
+		}),
 	);
 }
 

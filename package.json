@@ -475,6 +475,26 @@
 			{
 				"command": "mise.editSetting",
 				"title": "Mise: Edit Setting"
+			},
+			{
+				"command": "mise.showAllEnvVarValues",
+				"title": "Mise: Show All Environment Variable Values",
+				"icon": "$(eye)"
+			},
+			{
+				"command": "mise.hideAllEnvVarValues",
+				"title": "Mise: Hide All Environment Variable Values",
+				"icon": "$(eye-closed)"
+			},
+			{
+				"command": "mise.showEnvVariableValue",
+				"title": "Mise: Show Environment Variable Value",
+				"icon": "$(eye)"
+			},
+			{
+				"command": "mise.hideEnvVariableValue",
+				"title": "Mise: Hide Environment Variable Value",
+				"icon": "$(eye-closed)"
 			}
 		],
 		"menus": {
@@ -524,9 +544,19 @@
 					"group": "navigation@3"
 				},
 				{
+					"command": "mise.showAllEnvVarValues",
+					"when": "view == miseEnvsView && !mise.showAllEnvVarValues",
+					"group": "navigation@1"
+				},
+				{
+					"command": "mise.hideAllEnvVarValues",
+					"when": "view == miseEnvsView && mise.showAllEnvVarValues",
+					"group": "navigation@1"
+				},
+				{
 					"command": "mise.setEnvVariable",
 					"when": "view == miseEnvsView",
-					"group": "navigation@1"
+					"group": "navigation@2"
 				},
 				{
 					"command": "mise.refreshEntry",
@@ -601,12 +631,22 @@
 					"group": "2_modification"
 				},
 				{
+					"when": "view == miseEnvsView && (viewItem == hiddenEnvItem)",
+					"command": "mise.showEnvVariableValue",
+					"group": "inline"
+				},
+				{
+					"when": "view == miseEnvsView && viewItem == visibleEnvItem",
+					"command": "mise.hideEnvVariableValue",
+					"group": "inline"
+				},
+				{
 					"command": "mise.copyEnvVariableName",
-					"when": "view == miseEnvsView && viewItem == envItem",
+					"when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
 					"group": "2_modification"
 				},
 				{
-					"when": "view == miseEnvsView && viewItem == envItem",
+					"when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
 					"command": "mise.copyEnvVariableValue",
 					"group": "2_modification"
 				}

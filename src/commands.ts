@@ -32,3 +32,7 @@ export const MISE_FMT = "mise.fmt";
 export const MISE_EDIT_SETTING = "mise.editSetting";
 export const MISE_SELECT_WORKSPACE_FOLDER = "mise.selectWorkspaceFolder";
 export const MISE_OPEN_TOOL_REPOSITORY = "mise.openToolRepository";
+export const MISE_SHOW_ALL_ENV_VAR_VALUES = "mise.showAllEnvVarValues";
+export const MISE_HIDE_ALL_ENV_VAR_VALUES = "mise.hideAllEnvVarValues";
+export const MISE_SHOW_ENV_VARIABLE_VALUE = "mise.showEnvVariableValue";
+export const MISE_HIDE_ENV_VARIABLE_VALUE = "mise.hideEnvVariableValue";
