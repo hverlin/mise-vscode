@@ -60,7 +60,7 @@ to use tools provided by `mise` in your current project.
 
 ### Environment Variables
 
-- 🌍 View [mise environment variables](https://mise.jdx.dev/environments.html)
+- ⚙️ View [mise environment variables](https://mise.jdx.dev/environments/)
 - 📍 Quick navigation to environment variable definitions
 - 🔄 Automatically load environment variables from `mise.toml` files in VS Code
 
