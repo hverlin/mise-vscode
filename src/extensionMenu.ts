@@ -112,6 +112,9 @@ export function createMenu(miseService: MiseService) {
 			case "Show mise-vscode extension logs":
 				logger.show();
 				break;
+			case "Mise version":
+				await vscode.commands.executeCommand(MISE_DOCTOR);
+				break;
 			case "Mise Doctor":
 				await vscode.commands.executeCommand(MISE_DOCTOR);
 				break;
