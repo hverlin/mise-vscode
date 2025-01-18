@@ -58,7 +58,7 @@ export function createMenu(miseService: MiseService) {
 				},
 				{
 					iconPath: new vscode.ThemeIcon("output"),
-					label: "Show logs",
+					label: "Show mise-vscode extension logs",
 				},
 				{
 					iconPath: new vscode.ThemeIcon("bug"),
@@ -109,7 +109,7 @@ export function createMenu(miseService: MiseService) {
 			case "Enable extension":
 				await enableExtensionForWorkspace();
 				break;
-			case "Show logs":
+			case "Show mise-vscode extension logs":
 				logger.show();
 				break;
 			case "Mise Doctor":
