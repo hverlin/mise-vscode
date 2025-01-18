@@ -16,14 +16,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      - name: Enable Corepack
+        run: corepack enable
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
-      - run: corepack enable && pnpm i --frozen-lockfile
+      - run: pnpm i --frozen-lockfile
       - run: node --run lint
       - run: node --run ts-check
       - run: node --run test
@@ -53,6 +54,6 @@ jobs:
           version: 1.0
 
       - run: curl https://mise.run | sh
-      - run: corepack enable && pnpm i --frozen-lockfile
+      - run: pnpm i --frozen-lockfile
       - run: node --run build
       - run: xvfb-run -a node --run e2e-tests
