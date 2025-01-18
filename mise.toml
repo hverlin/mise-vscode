@@ -85,3 +85,7 @@ run = 'node --run test'
 [tasks.check]
 description = "Lint, type-check, and test the project"
 depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
+
+[tasks.e2e-test-action]
+tools = { act = 'latest' }
+run = 'act push -j e2e-tests'

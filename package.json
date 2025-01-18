@@ -755,7 +755,8 @@
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
-		"test": "bun test"
+		"test": "bun test",
+		"e2e-tests": "vscode-test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -767,7 +768,10 @@
 		"@types/react": "^18.3.18",
 		"@types/react-dom": "^18.3.5",
 		"@types/vscode": "^1.85.0",
+		"@vscode/test-cli": "^0.0.10",
+		"@vscode/test-electron": "^2.4.1",
 		"bun": "^1.1.43",
+		"tsx": "^4.19.2",
 		"typescript": "^5.7.3"
 	},
 	"dependencies": {
