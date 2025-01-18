@@ -1,5 +1,6 @@
 import vscode from "vscode";
 import {
+	MISE_DOCTOR,
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
 	MISE_MISSING_TOOLS_MENU,
@@ -60,6 +61,10 @@ export function createMenu(miseService: MiseService) {
 					label: "Show logs",
 				},
 				{
+					iconPath: new vscode.ThemeIcon("bug"),
+					label: "Mise Doctor",
+				},
+				{
 					iconPath: new vscode.ThemeIcon("info"),
 					label: "About vscode-mise",
 				},
@@ -106,6 +111,9 @@ export function createMenu(miseService: MiseService) {
 				break;
 			case "Show logs":
 				logger.show();
+				break;
+			case "Mise Doctor":
+				await vscode.commands.executeCommand(MISE_DOCTOR);
 				break;
 			default:
 				break;

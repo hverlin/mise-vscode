@@ -3,6 +3,7 @@ import vscode, { MarkdownString } from "vscode";
 import { version } from "../package.json";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_DOCTOR,
 	MISE_EDIT_SETTING,
 	MISE_FMT,
 	MISE_LIST_ALL_TOOLS,
@@ -30,6 +31,7 @@ import {
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
+import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
 import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
@@ -390,6 +392,23 @@ export class MiseExtension {
 		);
 
 		registerTomlFileLinks(context);
+
+		context.subscriptions.push(
+			vscode.workspace.registerTextDocumentContentProvider(
+				"mise",
+				new MiseTextDocumentContentProvider(this.miseService),
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_DOCTOR, async () => {
+				await vscode.window.showTextDocument(
+					await vscode.workspace.openTextDocument(
+						vscode.Uri.parse("mise:/MISE_DOCTOR"),
+					),
+				);
+			}),
+		);
 
 		context.subscriptions.push(
 			vscode.workspace.onDidChangeTextDocument((event) => {

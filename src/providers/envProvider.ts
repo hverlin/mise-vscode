@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import {
 	MISE_COPY_ENV_VARIABLE_NAME,
 	MISE_COPY_ENV_VARIABLE_VALUE,
+	MISE_DISPLAY_PATH,
 	MISE_HIDE_ALL_ENV_VAR_VALUES,
 	MISE_HIDE_ENV_VARIABLE_VALUE,
 	MISE_OPEN_ENV_VAR_DEFINITION,
@@ -136,11 +137,14 @@ class EnvItem extends vscode.TreeItem {
 			.join("\n");
 
 		this.contextValue = isVisible ? "visibleEnvItem" : "hiddenEnvItem";
-		this.command = {
-			command: MISE_OPEN_ENV_VAR_DEFINITION,
-			arguments: [this.env.name],
-			title: "Copy name",
-		};
+		this.command =
+			env.name === "PATH"
+				? { command: MISE_DISPLAY_PATH, title: "Display PATH" }
+				: {
+						command: MISE_OPEN_ENV_VAR_DEFINITION,
+						arguments: [this.env.name],
+						title: "Copy name",
+					};
 	}
 }
 
@@ -167,7 +171,14 @@ export function registerEnvsCommands(
 					return;
 				}
 
-				if (env.source) {
+				logger.debug(env);
+
+				if (env.tool) {
+					await vscode.commands.executeCommand(
+						MISE_OPEN_TOOL_DEFINITION,
+						env.tool,
+					);
+				} else if (env.source) {
 					const document = await vscode.workspace.openTextDocument(env.source);
 					const needle = findEnvVarPosition([document], env.name);
 					if (needle?.range) {
@@ -175,11 +186,6 @@ export function registerEnvsCommands(
 							selection: needle.range,
 						});
 					}
-				} else if (env.tool) {
-					await vscode.commands.executeCommand(
-						MISE_OPEN_TOOL_DEFINITION,
-						env.tool,
-					);
 				} else {
 					const configs = (await miseService.getMiseConfigFiles()).filter((c) =>
 						c.path.endsWith(".toml"),
@@ -306,6 +312,13 @@ export function registerEnvsCommands(
 		}),
 		vscode.commands.registerCommand(MISE_HIDE_ALL_ENV_VAR_VALUES, () => {
 			envProvider.hideItems();
+		}),
+		vscode.commands.registerCommand(MISE_DISPLAY_PATH, async () => {
+			await vscode.window.showTextDocument(
+				await vscode.workspace.openTextDocument(
+					vscode.Uri.parse("mise:/MISE_PATH"),
+				),
+			);
 		}),
 	);
 }

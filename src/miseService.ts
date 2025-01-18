@@ -664,6 +664,13 @@ export class MiseService {
 		return parseMiseConfig(stdout);
 	}
 
+	async miseDoctor() {
+		const { stdout, stderr } = await execAsyncMergeOutput(
+			this.createMiseCommand("doctor", { setMiseEnv: false }) ?? "",
+		);
+		return `${stdout}\n${stderr}`;
+	}
+
 	async getMiseConfigFiles() {
 		if (!this.getMiseBinaryPath()) {
 			return [];

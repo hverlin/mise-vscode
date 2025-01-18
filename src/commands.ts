@@ -36,3 +36,5 @@ export const MISE_SHOW_ALL_ENV_VAR_VALUES = "mise.showAllEnvVarValues";
 export const MISE_HIDE_ALL_ENV_VAR_VALUES = "mise.hideAllEnvVarValues";
 export const MISE_SHOW_ENV_VARIABLE_VALUE = "mise.showEnvVariableValue";
 export const MISE_HIDE_ENV_VARIABLE_VALUE = "mise.hideEnvVariableValue";
+export const MISE_DISPLAY_PATH = "mise.displayPath";
+export const MISE_DOCTOR = "mise.doctor";

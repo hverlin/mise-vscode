@@ -502,6 +502,14 @@
 				"command": "mise.hideEnvVariableValue",
 				"title": "Mise: Hide Environment Variable Value",
 				"icon": "$(eye-closed)"
+			},
+			{
+				"command": "mise.displayPath",
+				"title": "Mise: Display PATH variable"
+			},
+			{
+				"command": "mise.doctor",
+				"title": "Mise: Run mise doctor"
 			}
 		],
 		"menus": {
@@ -532,6 +540,14 @@
 				},
 				{
 					"command": "mise.hideEnvVariableValue",
+					"when": "false"
+				},
+				{
+					"command": "mise.displayPath",
+					"when": "false"
+				},
+				{
+					"command": "mise.doctor",
 					"when": "false"
 				}
 			],
