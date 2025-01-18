@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.47.0](https://github.com/hverlin/mise-vscode/compare/v0.46.2...v0.47.0) (2025-01-18)
+
+
+### Features
+
+* Add additional to skip auto-updating mise bin path ([84ed5b7](https://github.com/hverlin/mise-vscode/commit/84ed5b7b5ab8353a345c00326b03c07e58c0f66b))
+* Add support for showing mise PATH/doctor ([44350d8](https://github.com/hverlin/mise-vscode/commit/44350d858c11d566ca1360241a090636897a1b56))
+* Show run command if no description in task tree ([722f958](https://github.com/hverlin/mise-vscode/commit/722f9584c0e82412f1af852cb56801312ac9e735))
+
 ## [0.46.2](https://github.com/hverlin/mise-vscode/compare/v0.46.1...v0.46.2) (2025-01-16)
 
 
