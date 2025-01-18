@@ -18,6 +18,7 @@ import {
 	setupMiseToml,
 	setupTaskFile,
 } from "../utils/fileUtils";
+import { truncateStr } from "../utils/fn";
 import { logger } from "../utils/logger";
 import { findTaskDefinition } from "../utils/miseFileParser";
 import {
@@ -299,19 +300,22 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 class TaskItem extends vscode.TreeItem {
 	constructor(public readonly task: MiseTask) {
 		super(task.name, vscode.TreeItemCollapsibleState.None);
+		const runInfo = task.run?.join(" ");
 		this.tooltip = [
 			["Task", task.name],
-			["Source", task.source],
 			["Description", task.description],
+			["Source", task.source],
+			["Directory", task.dir],
 			["Depends on", renderDepsArray(task.depends)],
 			["Waits for", renderDepsArray(task.wait_for)],
 			["Post-depends on", renderDepsArray(task.depends_post)],
+			["Run", runInfo ? truncateStr(runInfo, 120) : ""],
 		]
 			.filter(([_, value]) => value)
 			.map(([key, value]) => `${key}: ${value}`)
 			.join("\n");
 
-		this.description = task.description;
+		this.description = (task.description || task.run?.join(" ")) ?? "";
 
 		this.iconPath = new vscode.ThemeIcon("tasklist");
 
