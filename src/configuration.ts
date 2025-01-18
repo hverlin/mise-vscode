@@ -22,6 +22,7 @@ export const CONFIGURATION_FLAGS = {
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
 	showNotificationIfMissingTools: "showNotificationIfMissingTools",
+	autoDetectMiseBinPath: "autoDetectMiseBinPath",
 } as const;
 
 const getExtensionConfig = () => {
@@ -148,6 +149,10 @@ export const isTeraAutoCompletionEnabled = () => {
 
 export const getCommandTTLCacheSeconds = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.commandTTLCacheSeconds, 1);
+};
+
+export const shouldAutoDetectMiseBinPath = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.autoDetectMiseBinPath, true);
 };
 
 export type VSCodeSettingValue =

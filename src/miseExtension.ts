@@ -19,6 +19,7 @@ import {
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
+	getConfiguredBinPath,
 	getCurrentWorkspaceFolder,
 	getMiseEnv,
 	isMiseExtensionEnabled,
@@ -610,6 +611,11 @@ export class MiseExtension {
 
 		const selectedFolderName = getCurrentWorkspaceFolder(this.context)?.name;
 
+		let miseBinPath = getConfiguredBinPath() || "Not set";
+		if (!this.miseService.hasValidMiseBinPath) {
+			miseBinPath += " (invalid)";
+		}
+
 		const infoList = [
 			`Mise VSCode ${version} - [Command Menu](command:${MISE_OPEN_MENU})`,
 			(vscode.workspace.workspaceFolders?.length || 0) > 1
@@ -618,8 +624,8 @@ export class MiseExtension {
 			`[$(tools) Mise Tools](command:${MISE_LIST_ALL_TOOLS})`,
 			`[$(gear) Mise Settings](command:${MISE_SHOW_SETTINGS})`,
 			`[$(list-unordered) Tracked Configurations](command:${MISE_SHOW_TRACKED_CONFIG})`,
-			`[BinPath: ${displayPathRelativeTo(this.miseService.getMiseBinaryPath() || "Not set", "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
-			`Mise Version: ${miseVersion}`,
+			`[BinPath: ${displayPathRelativeTo(miseBinPath, "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
+			miseVersion ? `Mise Version: ${miseVersion}` : "",
 		].filter(Boolean);
 
 		this.statusBarItem.tooltip.appendMarkdown(infoList.join("\n\n"));

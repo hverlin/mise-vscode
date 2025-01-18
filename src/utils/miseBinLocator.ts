@@ -1,6 +1,9 @@
 import * as os from "node:os";
 import * as path from "node:path";
-import { getConfiguredBinPath } from "../configuration";
+import {
+	getConfiguredBinPath,
+	shouldAutoDetectMiseBinPath,
+} from "../configuration";
 import { logger } from "./logger";
 import { safeExec } from "./shell";
 
@@ -8,12 +11,21 @@ export async function resolveMisePath(): Promise<string> {
 	const configuredPath = getConfiguredBinPath();
 	logger.debug(`Configured mise path: ${configuredPath}`);
 
+	const autoDetectMiseBinPath = shouldAutoDetectMiseBinPath();
 	if (configuredPath) {
 		if (await isValidBinary(configuredPath)) {
 			return configuredPath;
 		}
-		logger.warn(
-			`Configured mise path "${configuredPath}" is invalid. Trying to resolve another path...`,
+		if (autoDetectMiseBinPath) {
+			logger.warn(
+				`Configured mise path "${configuredPath}" is invalid. Trying to resolve another path...`,
+			);
+		}
+	}
+
+	if (!autoDetectMiseBinPath) {
+		throw new Error(
+			`Auto-detection of mise binary is disabled and currently configured path ${configuredPath} is invalid`,
 		);
 	}
 

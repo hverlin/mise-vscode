@@ -36,39 +36,53 @@ export class MiseFileWatcher {
 
 		const rootFolders = vscode.workspace.workspaceFolders;
 		if (!rootFolders?.length) {
+			logger.info(
+				"No workspace folders found, skipping file watcher initialization",
+			);
 			return;
 		}
 
+		const patterns = [];
 		for (const rootFolder of rootFolders) {
-			this.fileWatchers.push(
-				vscode.workspace.createFileSystemWatcher(
-					new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
-				),
+			const miseStandardConfigsPattern = new vscode.RelativePattern(
+				rootFolder,
+				`{${misePatterns}}`,
 			);
+			patterns.push(miseStandardConfigsPattern);
 
 			const configFiles = await this.miseService.getMiseConfigFiles();
 			for (const file of configFiles) {
-				this.fileWatchers.push(
-					vscode.workspace.createFileSystemWatcher(
-						new vscode.RelativePattern(vscode.Uri.file(file.path), "*"),
-					),
+				const miseDetectedConfigs = new vscode.RelativePattern(
+					vscode.Uri.file(file.path),
+					"*",
 				);
+				patterns.push(miseDetectedConfigs);
 			}
 
-			this.fileWatchers.push(
-				vscode.workspace.createFileSystemWatcher(
-					new vscode.RelativePattern(rootFolder, `{${idiomaticFiles}}`),
-				),
+			const idiomaticFilesPattern = new vscode.RelativePattern(
+				rootFolder,
+				`{${[...idiomaticFiles].join(",")}}`,
 			);
+			patterns.push(idiomaticFilesPattern);
 
-			this.fileWatchers.push(
-				vscode.workspace.createFileSystemWatcher(
-					new vscode.RelativePattern(
-						rootFolder,
-						`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
-					),
-				),
+			const taskDirsPattern = new vscode.RelativePattern(
+				rootFolder,
+				`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
 			);
+			patterns.push(taskDirsPattern);
+
+			const tasksSources = await this.miseService.getAllCachedTasksSources();
+			for (const taskSource of tasksSources) {
+				const taskSourcePattern = new vscode.RelativePattern(
+					vscode.Uri.file(taskSource),
+					"*",
+				);
+				patterns.push(taskSourcePattern);
+			}
+		}
+
+		for (const pattern of patterns) {
+			this.fileWatchers.push(vscode.workspace.createFileSystemWatcher(pattern));
 		}
 
 		for (const watcher of this.fileWatchers) {
@@ -78,7 +92,8 @@ export class MiseFileWatcher {
 			watcher.onDidDelete(this.handleFileChange.bind(this));
 		}
 
-		logger.info("File watcher initialized");
+		logger.info("File watchers initialized");
+		logger.debug(patterns.map((p) => [p.baseUri.fsPath, p.pattern]));
 	}
 
 	private async handleFileChange(uri: vscode.Uri) {

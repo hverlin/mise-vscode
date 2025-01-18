@@ -106,6 +106,11 @@ export class MiseService {
 	}
 
 	private hasVerifiedMiseVersion = false;
+	private _hasValidMiseBinPath = false;
+	private invalidMisePathErrorShown = false;
+	get hasValidMiseBinPath(): boolean {
+		return this._hasValidMiseBinPath;
+	}
 
 	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
 
@@ -169,9 +174,10 @@ export class MiseService {
 		}
 
 		let miseBinaryPath = "mise";
+		const previousPath = getConfiguredBinPath();
+
 		try {
 			miseBinaryPath = await resolveMisePath();
-			const previousPath = getConfiguredBinPath();
 			if (previousPath !== miseBinaryPath) {
 				logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
 				await updateBinPath(miseBinaryPath);
@@ -183,15 +189,19 @@ export class MiseService {
 				}
 			}
 		} catch (error) {
-			void showSettingsNotification(
-				"Mise binary not found. Please configure the binary path.",
-				{ settingsKey: "mise.binPath", type: "error" },
-			);
-			logger.info(
-				`Failed to resolve mise binary path: ${error instanceof Error ? error?.message : String(error)}`,
-			);
+			if (!this.invalidMisePathErrorShown) {
+				void showSettingsNotification(
+					"Invalid configured mise bin path. Please configure the binary path.",
+					{ settingsKey: "mise.binPath", type: "error" },
+				);
+				this.invalidMisePathErrorShown = true;
+			}
+			logger.info("Failed to resolve mise binary path", error);
+			this._hasValidMiseBinPath = false;
+			return;
 		}
 
+		this._hasValidMiseBinPath = true;
 		if (!this.hasVerifiedMiseVersion) {
 			const version = await this.getVersion();
 			if (!version || version.includes("not configured")) {
@@ -266,6 +276,10 @@ export class MiseService {
 	}
 
 	public getMiseBinaryPath(): string | undefined {
+		if (!this._hasValidMiseBinPath) {
+			return;
+		}
+
 		return getConfiguredBinPath();
 	}
 
@@ -355,6 +369,11 @@ export class MiseService {
 			command: "tasks ls --json --hidden",
 		});
 		return JSON.parse(stdout);
+	}
+
+	async getAllCachedTasksSources(): Promise<string[]> {
+		const tasks = await this.getAllCachedTasks();
+		return [...new Set(tasks.map((task) => task.source))];
 	}
 
 	async getCurrentConfigFiles(): Promise<string[]> {
@@ -639,7 +658,7 @@ export class MiseService {
 
 		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "");
 		if (stderr) {
-			logger.info(miseCmd, stderr);
+			logger.debug(miseCmd, stderr);
 		}
 
 		return parseMiseConfig(stdout);
@@ -703,7 +722,11 @@ export class MiseService {
 
 		const { stdout, stderr } = await execAsyncMergeOutput(miseCommand ?? "");
 		if (stderr) {
-			logger.info(`Mise stderr: ${stderr.trim()}`);
+			if (stderr.includes("run mise self-update")) {
+				logger.debug(`Mise version stderr: ${stderr.trim()}`);
+			} else {
+				logger.info(`Mise version stderr: ${stderr.trim()}`);
+			}
 		}
 		return stdout.trim();
 	}
@@ -760,11 +783,20 @@ export class MiseService {
 		const newMiseVersionAvailable =
 			miseConfig.problems?.newMiseVersionAvailable;
 		if (newMiseVersionAvailable) {
+			const ignoreVersion = this.context.globalState.get<string>(
+				"mise.ignoreNewVersion",
+			);
+
+			if (ignoreVersion === newMiseVersionAvailable.latestVersion) {
+				return;
+			}
+
 			const canSelfUpdate = await this.canSelfUpdate();
 			const suggestion = await vscode.window.showInformationMessage(
 				`New Mise version available ${newMiseVersionAvailable?.latestVersion}. (Current: ${newMiseVersionAvailable?.currentVersion})`,
 				canSelfUpdate ? "Update Mise" : "How to update Mise",
 				"Show changelog",
+				"Ignore this update",
 			);
 
 			if (suggestion === "How to update Mise") {
@@ -784,6 +816,13 @@ export class MiseService {
 					),
 				);
 				await this.checkNewMiseVersion();
+			}
+
+			if (suggestion === "Ignore this update") {
+				this.context.globalState.update(
+					"mise.ignoreNewVersion",
+					newMiseVersionAvailable.latestVersion,
+				);
 			}
 		}
 	}

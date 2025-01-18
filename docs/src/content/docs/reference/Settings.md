@@ -178,3 +178,11 @@ Show outdated tool gutter decorations in the editor.
 
 ---
 
+##### `mise.autoDetectMiseBinPath`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Auto-detect mise bin path on startup.
+
+---
+

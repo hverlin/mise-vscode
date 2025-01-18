@@ -237,6 +237,13 @@
 					"title": "Show outdated tool gutter decorations",
 					"default": true,
 					"markdownDescription": "Show outdated tool gutter decorations in the editor."
+				},
+				"mise.autoDetectMiseBinPath": {
+					"order": 17,
+					"type": "boolean",
+					"title": "Auto-detect mise bin path",
+					"default": true,
+					"markdownDescription": "Auto-detect mise bin path on startup."
 				}
 			}
 		},
