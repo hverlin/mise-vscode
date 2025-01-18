@@ -6,7 +6,7 @@ const _dirname = new URL(".", import.meta.url).pathname;
 
 const pageContent = `---
 title: Extension Settings
-description: VSCode mise extension settings
+description: VS Code mise extension settings
 sidebar:
     order: 305
 tableOfContents:

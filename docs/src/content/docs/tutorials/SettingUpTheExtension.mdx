@@ -1,0 +1,56 @@
+---
+title: Setting Up The Extension
+description: Important information to get started with mise in VS Code
+sidebar:
+    order: 100
+---
+
+## Important defaults
+
+There are a few important defaults that you should be aware of when using this extension. For most users, the default settings should work fine but you might want to change them depending on your needs.
+
+### Finding the `mise` executable
+
+By default, the extension will try to find the `mise` executable on the `PATH`. Otherwise, it will try a few common locations and update the [`mise.binPath`](/mise-vscode/reference/settings/#misebinpath) setting automatically.
+
+This might not work for you so make sure to update it manually if needed. You can also turn off the automatic detection if needed
+
+### Automatic configuration of VS Code extensions
+
+By default, this extension will modify your `.vscode/settings.json` file so that [other extensions](/mise-vscode/reference/supported-extensions/) you use will use the tools you installed with `mise`.
+
+**This might be a problem if you are sharing the `.vscode/settings.json` file with others.** (e.g., in a Git repository)
+
+- This can be [turned off](/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) if you don't want this behavior.
+- Alternatively, you can configure the extension to create symlinks to tools so that the settings points to a relative path in your project. Use [`mise.configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks) for this.
+
+<details>
+<summary>About sharing `.vscode/settings.json`</summary>
+
+If you are sharing the `.vscode/settings.json` file with others, you might think that the default value of this extension is not a good idea.
+
+However, there are some challenges with sharing `.vscode/settings.json`:
+  - If you use extensions other members of your team don't have, you won't be able to update the settings file without conflicts.
+  - If you would like some settings to be different for different members of your team, you won't be able to do so.
+
+Ideally, VS Code should support a `settings.local.json` file that would be ignored by git. See [this issue](https://github.com/microsoft/vscode/issues/40233) for more information.
+
+If you want to share some settings with others, a good workaround is to create a `settings.shared.json` file that other can use as a reference. You can also create a `mise` task to populate the `settings.json` file with the content of `settings.shared.json` if needed.
+
+</details>
+
+### Automatic loading of environment variables
+
+The extension will load the environment variables provided by `mise` and update the VS Code process with them.
+
+This is generally a useful feature, though it might have unwanted side effects among which:
+- showing a warning icon indicating that you need to restart your terminal when some environment variables are updated
+- if you use the VS Code terminal and leave the current directory (with e.g. `cd ..`), the environment variables will still be there (whereas if it's off, `mise` will unload the environment variables when you leave the directory)
+You can [turn this off](/mise-vscode/reference/settings/#miseupdateenvautomatically) if needed.
+
+
+### Additional notes
+
+The extension will prompt you if a new mise version is available to help to be up-to-date. You can [turn this off](/mise-vscode/reference/settings/#misecheckfornewmiseversion) if you don't want to see this message.
+
+I try to not show too many notifications in general. If there is one that you would like to ignore and cannot find a way to do so, please let me know by opening an issue.

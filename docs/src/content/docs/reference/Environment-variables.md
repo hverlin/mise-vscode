@@ -15,7 +15,7 @@ variable to find where it's defined.
 ## Loading environment variables
 
 `mise-vscode` will automatically load all the environment variables provided by
-`mise env` in the current VSCode process. (similar to the `direnv` VSCode
+`mise env` in the current VS Code process. (similar to the `direnv` VS Code
 extension.
 
 The variables will be provided to any newly created terminals, even if `mise` is

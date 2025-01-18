@@ -44,10 +44,10 @@ Press enter.
 
 ![img.png](../../../assets/tasks-command-palette.png)
 
-### VSCode task integration
+### VS Code task integration
 
 This extension lets
-[VSCode tasks](https://code.visualstudio.com/docs/editor/tasks) use `mise`
+[VS Code tasks](https://code.visualstudio.com/docs/editor/tasks) use `mise`
 tasks. You can use `mise` tasks in your `launch.json` file. This allows you to
 create your own shortcuts to run tasks
 

@@ -32,6 +32,9 @@ to use tools provided by `mise` in your current project.
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
+> [!NOTE]
+> Note that there are [some important defaults](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to be aware of whe using this extension.
+
 ## ✨ Features
 
 ### Task Management
@@ -41,6 +44,9 @@ to use tools provided by `mise` in your current project.
   or the activity bar (arguments are supported)
 - 📝 View task definitions
 - ➕ Create new toml & file tasks
+- 🔗 Go to definition, find references 
+- ⚡ Autocompletion of task dependencies
+- 🕸️ View graph of task dependencies
 
 ### Tool Management
 
@@ -77,6 +83,8 @@ for more information.
 https://hverlin.github.io/mise-vscode/
 
 - [Getting Started](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
+- [Important Defaults](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
+- [FAQ](https://hverlin.github.io/mise-vscode/explanations/faq/)
 - Reference
   - [Tools](https://hverlin.github.io/mise-vscode/reference/tools/)
   - [Environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
@@ -84,6 +92,16 @@ https://hverlin.github.io/mise-vscode/
   - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
   - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
   - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
+- Guides
+  - [Bun setup](https://hverlin.github.io/mise-vscode/guides/bun/)
+  - [Deno setup](https://hverlin.github.io/mise-vscode/guides/deno/)
+  - [Flutter setup](https://hverlin.github.io/mise-vscode/guides/flutter/)
+  - [Go setup](https://hverlin.github.io/mise-vscode/guides/golang/)
+  - [Java setup](https://hverlin.github.io/mise-vscode/guides/java/)
+  - [Julia setup](https://hverlin.github.io/mise-vscode/guides/julia/)
+  - [Node.JS setup](https://hverlin.github.io/mise-vscode/guides/node/)
+  - [PHP setup](https://hverlin.github.io/mise-vscode/guides/php/)
+  - [Python setup](https://hverlin.github.io/mise-vscode/guides/python/)
 
 ## Bug Reports / Feature Requests / Contributing
 

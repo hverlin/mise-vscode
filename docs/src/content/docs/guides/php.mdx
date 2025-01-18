@@ -82,7 +82,7 @@ This will compile and install the latest version of PHP on your system (note tha
 ## Default PHP support
 
 The default [PHP support](https://code.visualstudio.com/docs/languages/php) in `vscode` is limited to syntax highlighting and basic code completion. It also runs the `php` linter on save by default.
-`mise-vscode` will configure the `php.validate.executablePath` allowing VSCode to run the PHP linter.
+`mise-vscode` will configure the `php.validate.executablePath` allowing VS Code to run the PHP linter.
 
 ![PHP setup](./php-example-1.png)
 
@@ -90,19 +90,19 @@ You can find the default `php` extension by searching for `@builtin php-language
 
 ## PHP debugger setup
 
-If you wan to run and debug PHP files from VSCode, you will need to install additional extensions.
+If you wan to run and debug PHP files from VS Code, you will need to install additional extensions.
 The extension supported by `mise-vscode` is [PHP X-Debug extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug)
 
 If you install it, `mise-vscode` will automatically configure the `php.debug.executablePath` setting in your workspace settings.
 
 ### Running PHP files
-You should now be able to run PHP files from VSCode.
+You should now be able to run PHP files from VS Code.
 
 ![PHP run example](./php-run.png)
 
 ### Debugging PHP files
 
-You will need to install `xdebug`. Open a terminal in VSCode and run the following command:
+You will need to install `xdebug`. Open a terminal in VS Code and run the following command:
 ```shell
 pecl install xdebug
 ```
@@ -115,7 +115,7 @@ You should add "zend_extension=/home/dev/.local/share/mise/installs/vfox-version
 
 Open the `php.ini` file (you can find it by running `php --ini`) and add the line to the end of the file.
 
-You can now debug PHP files from VSCode:
+You can now debug PHP files from VS Code:
 - Go to the debug view in the sidebar
 - Create the default `launch.json` file
 - The default target "Launch currently open script" should allows you to run and debug PHP files.
@@ -133,7 +133,7 @@ php artisan serve
 
 Open http://127.0.0.1:8000/ in your browser to see the Laravel welcome page.
 
-You can now open the `example-app` folder in VSCode.
+You can now open the `example-app` folder in VS Code.
 
 To enable debugging, update your `php.ini` (use `php --ini` to find it) file with the following:
 
