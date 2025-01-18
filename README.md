@@ -85,23 +85,17 @@ https://hverlin.github.io/mise-vscode/
 - [Getting Started](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
 - [Important Defaults](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
 - [FAQ](https://hverlin.github.io/mise-vscode/explanations/faq/)
-- Reference
-  - [Tools](https://hverlin.github.io/mise-vscode/reference/tools/)
-  - [Environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
-  - [Tasks](https://hverlin.github.io/mise-vscode/reference/tasks/)
-  - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
-  - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
-  - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
-- Guides
-  - [Bun setup](https://hverlin.github.io/mise-vscode/guides/bun/)
-  - [Deno setup](https://hverlin.github.io/mise-vscode/guides/deno/)
-  - [Flutter setup](https://hverlin.github.io/mise-vscode/guides/flutter/)
-  - [Go setup](https://hverlin.github.io/mise-vscode/guides/golang/)
-  - [Java setup](https://hverlin.github.io/mise-vscode/guides/java/)
-  - [Julia setup](https://hverlin.github.io/mise-vscode/guides/julia/)
-  - [Node.JS setup](https://hverlin.github.io/mise-vscode/guides/node/)
-  - [PHP setup](https://hverlin.github.io/mise-vscode/guides/php/)
-  - [Python setup](https://hverlin.github.io/mise-vscode/guides/python/)
+
+### Reference
+- [Tools](https://hverlin.github.io/mise-vscode/reference/tools/)
+- [Environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
+- [Tasks](https://hverlin.github.io/mise-vscode/reference/tasks/)
+- [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
+- [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
+- [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
+
+### Guides
+Setup for [Bun](https://hverlin.github.io/mise-vscode/guides/bun/), [Deno](https://hverlin.github.io/mise-vscode/guides/deno/), [Flutter](https://hverlin.github.io/mise-vscode/guides/flutter/), [Go](https://hverlin.github.io/mise-vscode/guides/golang/), [Java](https://hverlin.github.io/mise-vscode/guides/java/), [Julia](https://hverlin.github.io/mise-vscode/guides/julia/), [Node.JS](https://hverlin.github.io/mise-vscode/guides/node/), [PHP](https://hverlin.github.io/mise-vscode/guides/php/), [Python](https://hverlin.github.io/mise-vscode/guides/python/)
 
 ## Bug Reports / Feature Requests / Contributing
 
