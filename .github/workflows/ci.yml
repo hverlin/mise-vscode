@@ -21,9 +21,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
 
       - run: corepack enable && pnpm i --frozen-lockfile
       - run: node --run lint
       - run: node --run ts-check
       - run: node --run test
       - run: node --run build
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - run: sudo apt update
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: 'libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libgtk-3-0 libx11-xcb1 libxcb-dri3-0 libxss1 xvfb dbus-x11'
+          version: 1.0
+
+      - run: curl https://mise.run | sh
+      - run: corepack enable && pnpm i --frozen-lockfile
+      - run: node --run build
+      - run: xvfb-run -a node --run e2e-tests
