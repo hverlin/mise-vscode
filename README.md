@@ -64,6 +64,8 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 🔧 Configure your other VSCode extensions to use tools provided by `mise`
   ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/))
 
+https://github.com/user-attachments/assets/c2ad5e60-f011-46a4-8e1b-1da4264f0d09
+
 ### [Environment Variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
 
 - ⚙️ View [mise environment variables](https://mise.jdx.dev/environments/)
