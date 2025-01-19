@@ -44,7 +44,7 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📚 Autocompletion for `mise.toml` files
 - 🔗 Go to definition, find references for mise tasks
 
-### [Task Management]((https://hverlin.github.io/mise-vscode/reference/tasks/))
+### [Task Management](https://hverlin.github.io/mise-vscode/reference/tasks/)
 
 - 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
 - ⚡ Run tasks directly from, `mise.toml` files, file tasks, the command palette
