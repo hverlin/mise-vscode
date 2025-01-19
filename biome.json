@@ -7,7 +7,14 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": [".astro", "node_modules", "dist", ".vscode", "package.json"]
+		"ignore": [
+			".astro",
+			"node_modules",
+			"dist",
+			".vscode",
+			"package.json",
+			".vscode-test"
+		]
 	},
 	"formatter": {
 		"enabled": true,

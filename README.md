@@ -33,22 +33,28 @@ to use tools provided by `mise` in your current project.
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
 > [!NOTE]
-> Note that there are [some important defaults](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to be aware of whe using this extension.
+> The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your setup.
 
 ## ✨ Features
 
-### Task Management
+The mise-vscode extension integrates mise's core functionality into VS Code, helping you manage your development environment directly from the editor. You can handle task running, tool versions, and environment variables through a simple interface. Here's what's available:
+
+### [mise.toml Language Support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
+- 📝 Syntax highlighting for `mise.toml` files (and [tera templates](https://mise.jdx.dev/templates.html))
+- 📚 Autocompletion for `mise.toml` files
+- 🔗 Go to definition, find references for mise tasks
+
+### [Task Management]((https://hverlin.github.io/mise-vscode/reference/tasks/))
 
 - 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
 - ⚡ Run tasks directly from, `mise.toml` files, file tasks, the command palette
   or the activity bar (arguments are supported)
 - 📝 View task definitions
 - ➕ Create new toml & file tasks
-- 🔗 Go to definition, find references 
 - ⚡ Autocompletion of task dependencies
 - 🕸️ View graph of task dependencies
 
-### Tool Management
+### [Tool Management](https://hverlin.github.io/mise-vscode/reference/tools/)
 
 - 🧰 View all [mise tools](https://mise.jdx.dev/dev-tools/) (python, node, jq,
   etc.) in the sidebar
@@ -58,7 +64,7 @@ to use tools provided by `mise` in your current project.
 - 🔧 Configure your other VSCode extensions to use tools provided by `mise`
   ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/))
 
-### Environment Variables
+### [Environment Variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
 
 - ⚙️ View [mise environment variables](https://mise.jdx.dev/environments/)
 - 📍 Quick navigation to environment variable definitions
@@ -78,12 +84,10 @@ See the
 [VSCode task integration docs section](https://hverlin.github.io/mise-vscode/reference/tasks/#vscode-task-integration)
 for more information.
 
-## Documentation
-
-https://hverlin.github.io/mise-vscode/
+## [Documentation](https://hverlin.github.io/mise-vscode/)
 
 - [Getting Started](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
-- [Important Defaults](https://hverlin.github.io/mise-vscode/tutorials/getting-started/)
+- [Important Defaults](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/)
 - [FAQ](https://hverlin.github.io/mise-vscode/explanations/faq/)
 
 ### Reference

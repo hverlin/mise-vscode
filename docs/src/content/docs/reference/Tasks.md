@@ -24,20 +24,20 @@ Using the command palette: `cmd|ctrl+shift+p` and search for
 
 You have several ways to run a task with the extension:
 
-### Use the run task code lens action
+### Using the run task code lens action
 
 ![task-code-lens.png](../../../assets/task-code-lens.png)
 
 Click on the run button to run the task. If some option/arguments are required,
 you will be prompted to enter them.
 
-### Use the mise activity bar
+### Using the mise activity bar
 
 ![task-run-activity-bar.png](../../../assets/task-run-activity-bar.png)
 
 Click on the run action, or use right-click -> run task
 
-### Use the command palette
+### Using the command palette
 
 Using the command palette: `cmd|ctrl+shift+p`, search for `Mise: run task`.
 Press enter.
@@ -77,7 +77,7 @@ create your own shortcuts to run tasks
 - `watchexecArgs`: Arguments to pass to `watchexec`. (example: `--clear`) | use
   `watchexec --help` for more information
 
-## Create tasks
+## Creating a task
 
 ### Using the activity bar
 
@@ -85,7 +85,13 @@ You can create a file task or a toml task directly from the activity bar
 
 ![create-file-task.png](../../../assets/create-file-task.png)
 
-### Use the command palette
+### Using the command palette
 
 Using the command palette: `cmd|ctrl+shift+p`, search for
 `Mise: Create File task` or `Mise: Create Toml Task`
+
+## Task dependencies
+
+You can visualize the dependencies of a task by using the `Mise: Visualize Tasks Dependencies` command.
+
+![screenshot showing the task dependencies view](./task-dependencies.png)
