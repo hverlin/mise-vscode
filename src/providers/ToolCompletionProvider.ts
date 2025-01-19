@@ -75,7 +75,7 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 		}
 
 		const toolMatch = linePrefix.match(
-			/([a-z/'"-0-9:]*)\s*=\s*(["']?)([^"']*)$/,
+			/([a-zA-Z/'"\-0-9:]*)\s*=\s*(["']?)([^"']*)$/,
 		);
 		if (!toolMatch) {
 			return [];

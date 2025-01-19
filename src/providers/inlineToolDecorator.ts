@@ -63,7 +63,7 @@ export async function showToolVersionInline(
 				continue;
 			}
 
-			const toolMatch = trimmedLine.match(/^([a-z/'"-0-9:]*)\s*=\s.*/);
+			const toolMatch = trimmedLine.match(/^([a-zA-z/'"\-0-9:]*)\s*=\s.*/);
 			if (!toolMatch || !toolMatch[1]) {
 				continue;
 			}
