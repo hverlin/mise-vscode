@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.47.1](https://github.com/hverlin/mise-vscode/compare/v0.47.0...v0.47.1) (2025-01-19)
+
+
+### Bug Fixes
+
+* file watcher should also watch for env sources ([89a443e](https://github.com/hverlin/mise-vscode/commit/89a443ec1ab3b0eaaa1c69a96e1c975e49e7058b))
+* update inline tool regex ([13413e9](https://github.com/hverlin/mise-vscode/commit/13413e9e44de30eee17a99e0cebbe1e95c1bbdbd))
+
 ## [0.47.0](https://github.com/hverlin/mise-vscode/compare/v0.46.2...v0.47.0) (2025-01-18)
 
 
