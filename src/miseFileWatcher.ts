@@ -1,6 +1,8 @@
+import path from "node:path";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
+import { expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
@@ -50,35 +52,40 @@ export class MiseFileWatcher {
 			);
 			patterns.push(miseStandardConfigsPattern);
 
-			const configFiles = await this.miseService.getMiseConfigFiles();
-			for (const file of configFiles) {
+			const [configFiles, tasksSources, envs] = await Promise.all([
+				this.miseService.getMiseConfigFiles(),
+				this.miseService.getAllCachedTasksSources(),
+				this.miseService.getEnvWithInfo(),
+			]);
+
+			const envSources = envs
+				.map((env) => env.source ?? "")
+				.filter((source) => source !== "");
+
+			const filesToWatch = [
+				...new Set([
+					...configFiles.map((c) => c.path),
+					...tasksSources,
+					...envSources,
+					...idiomaticFiles
+						.values()
+						.map((f) => expandPath(path.join(rootFolder.uri.fsPath, f))),
+				]),
+			];
+
+			for (const file of filesToWatch) {
 				const miseDetectedConfigs = new vscode.RelativePattern(
-					vscode.Uri.file(file.path),
+					vscode.Uri.file(file),
 					"*",
 				);
 				patterns.push(miseDetectedConfigs);
 			}
-
-			const idiomaticFilesPattern = new vscode.RelativePattern(
-				rootFolder,
-				`{${[...idiomaticFiles].join(",")}}`,
-			);
-			patterns.push(idiomaticFilesPattern);
 
 			const taskDirsPattern = new vscode.RelativePattern(
 				rootFolder,
 				`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
 			);
 			patterns.push(taskDirsPattern);
-
-			const tasksSources = await this.miseService.getAllCachedTasksSources();
-			for (const taskSource of tasksSources) {
-				const taskSourcePattern = new vscode.RelativePattern(
-					vscode.Uri.file(taskSource),
-					"*",
-				);
-				patterns.push(taskSourcePattern);
-			}
 		}
 
 		for (const pattern of patterns) {
