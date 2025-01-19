@@ -25,7 +25,7 @@ It can automatically
 [configure other extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
 to use tools provided by `mise` in your current project.
 
-[![mise-extension.png](screenshots/mise-extension.png)](https://hverlin.github.io/mise-vscode/)
+[![mise-vscode screenshot](screenshots/mise-vscode-screenshot.png)](https://hverlin.github.io/mise-vscode/)
 
 ## Installation
 
