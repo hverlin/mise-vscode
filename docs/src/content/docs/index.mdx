@@ -9,16 +9,79 @@ sidebar:
 hero:
   tagline: Supercharge your Visual Studio Code experience with <a href='https://mise.jdx.dev'>mise</a> (mise-en-place)
   actions:
-    - text: Get started 
+    - text: Get started
       link: /mise-vscode/tutorials/getting-started
       icon: right-arrow
-    - text: Install mise VSCode
+    - text: Install from Marketplace
       link: https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode
+      icon: external
+      variant: minimal
+    - text: Install from Open VSX
+      link: https://open-vsx.org/extension/hverlin/mise-vscode
       icon: external
       variant: minimal
 ---
 
 ![]( ../../../../screenshots/mise-vscode-screenshot.png)
 
-import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
+## Features
+
+<CardGrid stagger>
+  <Card title="Tool Management" icon="puzzle" to="/mise-vscode/reference/tools">
+    View and manage all your mise tools directly in VS Code. Install, remove, or switch versions with a click. The extension automatically configures other VS Code extensions to use your mise-managed tools.
+    [Learn&nbsp;More&nbsp;→](/mise-vscode/reference/tools)
+  </Card>
+  <Card title="Task Runner" icon="list-format">
+    Run mise tasks directly from mise.toml files, the command palette, or activity bar. Create new tasks easily with built-in snippets and view task dependencies in a visual graph.
+    [Learn&nbsp;More&nbsp;→](/mise-vscode/reference/tasks)
+  </Card>
+  <Card title="Environment Variables" icon="setting">
+    View mise environment variables right in VS Code with quick navigation to their definitions. Environment variables from mise.toml files are automatically loaded into your editor.
+    [Learn&nbsp;More&nbsp;→](/mise-vscode/reference/environment-variables)
+  </Card>
+  <Card title="Mise TOML support" icon="document">
+    Full mise.toml support including syntax highlighting, autocompletion, go-to-definition, and find references. Also includes support for Tera templates and task snippets.
+    [Learn&nbsp;More&nbsp;→](/mise-vscode/reference/misetoml-language-support)
+  </Card>
+</CardGrid>
+
+
+### Integrated with VS Code
+
+<video
+  controls={true}
+  src="https://github.com/user-attachments/assets/c2ad5e60-f011-46a4-8e1b-1da4264f0d09"></video>
+
+
+<CardGrid>
+  <Card title="Works with VS Code Tasks" icon="open-book">
+    Use mise tasks in your `launch.json` configurations. Seamlessly integrate with VS Code's built-in task system.
+  </Card>
+  <Card title="Tool Integration" icon="setting">
+    Automatically configures popular VS Code extensions to use your mise-managed tools.
+    [Supported Extensions →](/mise-vscode/reference/supported-extensions)
+  </Card>
+</CardGrid>
+
+
+## Quick Links
+
+<CardGrid>
+  <Card title="Getting Started" icon="rocket">
+    Easy to set up
+    [Begin Setup →](/mise-vscode/tutorials/getting-started)
+  </Card>
+  <Card title="Important defaults" icon="setting">
+    Important settings to customize
+    [Configure →](/mise-vscode/tutorials/settinguptheextension)
+  </Card>
+  <Card title="Language Guides" icon="open-book">
+    Language-specific setup guides for [Python](/mise-vscode/guides/python), [Node.js](/mise-vscode/guides/node), [Go](/mise-vscode/guides/golang), [Java](/mise-vscode/guides/java), [Flutter](/mise-vscode/guides/flutter), and more.
+  </Card>
+  <Card title="FAQ" icon="information">
+    Common questions and troubleshooting
+    [Read FAQ →](/mise-vscode/explanations/faq)
+  </Card>
+</CardGrid>
