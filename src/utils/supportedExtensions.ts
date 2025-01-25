@@ -48,7 +48,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 
 			return configureSimpleExtension(miseService, {
 				configKey: "python.defaultInterpreterPath",
-				useShims,
+				useShims: false, // https://github.com/hverlin/mise-vscode/issues/93
 				useSymLinks,
 				tool,
 				miseConfig,
