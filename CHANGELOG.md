@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.2](https://github.com/hverlin/mise-vscode/compare/v0.47.1...v0.47.2) (2025-01-25)
+
+
+### Bug Fixes
+
+* do not use shims for python.defaultInterpreterPath ([16ef641](https://github.com/hverlin/mise-vscode/commit/16ef6413557ce13fc226b4896439f7dd98123cd2))
+
 ## [0.47.1](https://github.com/hverlin/mise-vscode/compare/v0.47.0...v0.47.1) (2025-01-19)
 
 
