@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.4](https://github.com/hverlin/mise-vscode/compare/v0.47.3...v0.47.4) (2025-01-26)
+
+
+### Bug Fixes
+
+* useSymLinks does not work with deno ([38f05fe](https://github.com/hverlin/mise-vscode/commit/38f05fe3b74dce1789a171a3330b9c8ecd9f9507))
+
 ## [0.47.3](https://github.com/hverlin/mise-vscode/compare/v0.47.2...v0.47.3) (2025-01-26)
 
 
