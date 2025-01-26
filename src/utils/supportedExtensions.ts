@@ -61,13 +61,12 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			tool,
 			miseConfig,
 			useShims,
-			useSymLinks,
 			miseService,
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "deno.path",
 				useShims,
-				useSymLinks,
+				useSymLinks: false, // disabled until https://github.com/denoland/vscode_deno/pull/1245 is merged
 				tool,
 				miseConfig,
 			});
