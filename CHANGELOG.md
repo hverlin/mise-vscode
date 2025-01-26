@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.3](https://github.com/hverlin/mise-vscode/compare/v0.47.2...v0.47.3) (2025-01-26)
+
+
+### Bug Fixes
+
+* ensure we are on the correct file before displaying gutter icons in the active editor ([3e7b086](https://github.com/hverlin/mise-vscode/commit/3e7b086ca88c2fc4c491323eb9cccb729b3a2144))
+
 ## [0.47.2](https://github.com/hverlin/mise-vscode/compare/v0.47.1...v0.47.2) (2025-01-25)
 
 
