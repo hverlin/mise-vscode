@@ -31,7 +31,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: async ({
 			tool,
 			miseConfig,
-			useShims,
 			miseService,
 			useSymLinks,
 		}) => {

@@ -26,12 +26,11 @@ export async function showToolVersionInline(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
-	const currentFile = expandPath(document.uri.fsPath);
-
 	const [files, tools] = await Promise.all([
 		miseService.getCurrentConfigFiles(),
 		miseService.getCurrentTools({ useCache: false }),
 	]);
+	const currentFile = expandPath(document.uri.fsPath);
 	if (!files.includes(currentFile)) {
 		return;
 	}
@@ -82,6 +81,18 @@ export async function showToolVersionInline(
 					after: { color: "rgba(136,136,136,0.63)" },
 				});
 
+			const activeTextEditor = vscode.window.activeTextEditor;
+			if (!activeTextEditor) {
+				return;
+			}
+
+			const currentFileInActiveEditor = expandPath(
+				activeTextEditor?.document.uri.fsPath,
+			);
+			if (currentFile !== currentFileInActiveEditor) {
+				return;
+			}
+
 			vscode.window.activeTextEditor?.setDecorations(
 				// @ts-ignore
 				activeDecorationsPerFileAndTool[currentFile][cleanedToolName],
@@ -115,14 +126,13 @@ export async function showToolVersionInline(
 export async function showOutdatedToolsGutterIcons(
 	document: vscode.TextDocument,
 	miseService: MiseService,
-	context: vscode.ExtensionContext,
 ): Promise<void> {
-	const currentFile = expandPath(document.uri.fsPath);
-
 	const [files, outdatedTools] = await Promise.all([
 		miseService.getCurrentConfigFiles(),
 		miseService.getOutdatedTools(),
 	]);
+
+	const currentFile = expandPath(document.uri.fsPath);
 	if (!files.includes(currentFile)) {
 		return;
 	}
@@ -179,6 +189,13 @@ export async function showOutdatedToolsGutterIcons(
 				return;
 			}
 
+			const currentFileInActiveEditor = expandPath(
+				activeTextEditor?.document.uri.fsPath,
+			);
+			if (currentFile !== currentFileInActiveEditor) {
+				return;
+			}
+
 			const gutterIconPath = vscode.Uri.parse(
 				getSvgIcon(
 					vscode.window.activeColorTheme.kind,
@@ -228,9 +245,8 @@ export async function addToolInfoToEditor(
 	}
 
 	if (shouldShowOutdatedToolGutterDecorations()) {
-		showOutdatedToolsGutterIcons(document, miseService, context).catch(
-			(error) =>
-				logger.info("Error while showing outdated tools gutter icons", error),
+		showOutdatedToolsGutterIcons(document, miseService).catch((error) =>
+			logger.info("Error while showing outdated tools gutter icons", error),
 		);
 	}
 
