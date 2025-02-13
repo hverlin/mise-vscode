@@ -26,7 +26,7 @@ depends = ['docs:build']
 
 [tasks.install]
 description = 'Installs dependencies with pnpm'
-run = 'corepack enable && pnpm install'
+run = 'npx corepack enable && pnpm install'
 sources = ['package.json', 'pnpm-lock.yaml']
 outputs = ['node_modules/.pnpm/lock.yaml']
 
