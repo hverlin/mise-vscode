@@ -348,6 +348,9 @@ export function registerTasksCommands(
 						taskProvider.getTasksNames(),
 						{ placeHolder: "Select a task to run" },
 					);
+					if (!name) {
+						return;
+					}
 				}
 
 				if (typeof name !== "string") {
