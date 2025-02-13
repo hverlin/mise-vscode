@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.5](https://github.com/hverlin/mise-vscode/compare/v0.47.4...v0.47.5) (2025-02-13)
+
+
+### Bug Fixes
+
+* Do not show an error message if the user does not select a task to run ([86c9787](https://github.com/hverlin/mise-vscode/commit/86c9787f4b828b05aef91d79d636e7f98d09a7bc))
+
 ## [0.47.4](https://github.com/hverlin/mise-vscode/compare/v0.47.3...v0.47.4) (2025-01-26)
 
 
