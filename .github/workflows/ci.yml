@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Enable Corepack
-        run: corepack enable
+        run: npm i -g --force corepack && corepack enable
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Enable Corepack
-        run: corepack enable
+        run: npm i -g --force corepack && corepack enable
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
