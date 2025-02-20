@@ -34,6 +34,7 @@ outputs = ['node_modules/.pnpm/lock.yaml']
 description = 'Starts VSCode with the extension loaded'
 run = 'code --inspect-extensions=5858 --extensionDevelopmentPath=$(pwd)'
 sources = ['src/**', 'package.json', 'syntaxes/**']
+wait_for = ['install']
 
 [tasks.watch-vscode]
 run = 'mise watch -t start-vscode'

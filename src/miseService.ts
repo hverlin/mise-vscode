@@ -482,6 +482,11 @@ export class MiseService {
 		const { stdout } = await this.cache.execCmd({
 			command: bump ? "outdated --bump --json" : "outdated --json",
 		});
+
+		if (!stdout) {
+			return [];
+		}
+
 		return Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
 			const foundTool = tool as {
 				name: string;
