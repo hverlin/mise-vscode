@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.6](https://github.com/hverlin/mise-vscode/compare/v0.47.5...v0.47.6) (2025-02-20)
+
+
+### Bug Fixes
+
+* Handle empty output for mise outdated ([fd62c2d](https://github.com/hverlin/mise-vscode/commit/fd62c2d2c3b3f60a84056fd5ad16bb4d408e895f))
+
 ## [0.47.5](https://github.com/hverlin/mise-vscode/compare/v0.47.4...v0.47.5) (2025-02-13)
 
 
