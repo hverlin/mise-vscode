@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
 import { configureSimpleExtension } from "./configureExtensionUtil";
+import { isWindows } from "./fileUtils";
 import type { MiseConfig } from "./miseDoctorParser";
 
 type GenerateConfigProps = {
@@ -47,6 +48,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 
 			return configureSimpleExtension(miseService, {
 				configKey: "python.defaultInterpreterPath",
+				windowsPath: "python.exe",
 				useShims: false, // https://github.com/hverlin/mise-vscode/issues/93
 				useSymLinks,
 				tool,
@@ -83,8 +85,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useSymLinks,
 		}) => {
 			const interpreterPath = useShims
-				? path.join(miseConfig.dirs.shims, tool.name)
-				: path.join(tool.install_path, "bin", tool.name);
+				? path.join(miseConfig.dirs.shims, isWindows ? "ruff.cmd" : "ruff")
+				: path.join(tool.install_path, "bin", isWindows ? "ruff.exe" : "ruff");
 
 			const configuredPath = useSymLinks
 				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
@@ -109,22 +111,26 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
 				: tool.install_path;
 
+			const shimPath = path.join(
+				miseConfig.dirs.shims,
+				isWindows ? "go.cmd" : "go",
+			);
+
 			const goBin = useShims
 				? useSymLinks
-					? await miseService.createMiseToolSymlink(
-							"go",
-							path.join(miseConfig.dirs.shims, "go"),
-						)
-					: path.join(miseConfig.dirs.shims, "go")
+					? await miseService.createMiseToolSymlink("go", shimPath)
+					: shimPath
 				: path.join(tool.install_path, "bin", "go");
+
+			const dlvShimPath = path.join(
+				miseConfig.dirs.shims,
+				isWindows ? "dlv.cmd" : "dlv",
+			);
 
 			const dlvBin = useShims
 				? useSymLinks
-					? await miseService.createMiseToolSymlink(
-							"dlv",
-							path.join(miseConfig.dirs.shims, "dlv"),
-						)
-					: path.join(miseConfig.dirs.shims, "dlv")
+					? await miseService.createMiseToolSymlink("dlv", dlvShimPath)
+					: dlvShimPath
 				: path.join(tool.install_path, "bin", "dlv");
 
 			return {
@@ -178,6 +184,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "shellcheck.executablePath",
+				windowsPath: "shellcheck.exe",
 				useShims,
 				useSymLinks,
 				tool,
@@ -196,8 +203,11 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useSymLinks,
 		}) => {
 			const interpreterPath = useShims
-				? path.join(miseConfig.dirs.shims, tool.name)
-				: path.join(tool.install_path, "bin", tool.name);
+				? path.join(miseConfig.dirs.shims, isWindows ? "node.cmd" : "node")
+				: path.join(
+						tool.install_path,
+						isWindows ? "node.exe" : path.join("bin", "node"),
+					);
 
 			const configuredPath = useSymLinks
 				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
@@ -328,6 +338,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.zls.path",
 				binName: "zls",
+				windowsPath: "zls.exe",
 				useShims,
 				useSymLinks,
 				tool,

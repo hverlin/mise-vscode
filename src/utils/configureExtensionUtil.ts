@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { ConfigurationTarget } from "vscode";
 import { updateVSCodeSettings } from "../configuration";
 import type { MiseService } from "../miseService";
+import { isWindows } from "./fileUtils";
 import { logger } from "./logger";
 import type { MiseConfig } from "./miseDoctorParser";
 import type { ConfigurableExtension } from "./supportedExtensions";
@@ -16,6 +17,7 @@ export async function configureSimpleExtension(
 		tool,
 		miseConfig,
 		binName = tool.name,
+		windowsPath,
 	}: {
 		configKey: string;
 		useShims: boolean;
@@ -23,11 +25,19 @@ export async function configureSimpleExtension(
 		tool: MiseTool;
 		miseConfig: MiseConfig;
 		binName?: string;
+		windowsPath?: string;
 	},
 ) {
 	const updatedValue = useShims
-		? path.join(miseConfig.dirs.shims, binName)
-		: path.join(tool.install_path, "bin", binName);
+		? path.join(miseConfig.dirs.shims, isWindows ? `${binName}.cmd` : binName)
+		: path.join(
+				tool.install_path,
+				isWindows
+					? windowsPath
+						? windowsPath
+						: path.join("bin", `${binName}.exe`)
+					: path.join("bin", binName),
+			);
 
 	const configuredPath = useSymLinks
 		? await miseService.createMiseToolSymlink(binName, updatedValue)
