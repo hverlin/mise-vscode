@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.7](https://github.com/hverlin/mise-vscode/compare/v0.47.6...v0.47.7) (2025-02-26)
+
+
+### Bug Fixes
+
+* Use correct paths when configuring some of the supported extensions on Windows ([db66e31](https://github.com/hverlin/mise-vscode/commit/db66e312be0a8c8c636c690eb80dfea8607e99cf))
+
 ## [0.47.6](https://github.com/hverlin/mise-vscode/compare/v0.47.5...v0.47.6) (2025-02-20)
 
 
