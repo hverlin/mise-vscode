@@ -1,5 +1,7 @@
 [tools]
+pkl = "latest"
 node = '22'
+hk = "latest"
 
 [env]
 _.path = ["./docs/node_modules/.bin", "./node_modules/.bin"]
@@ -63,21 +65,19 @@ depends = ['dev-extension', 'dev-webviews', 'watch-vscode']
 
 [tasks.ts-check]
 description = 'Type-check the project'
-run = 'node --run ts-check'
-sources = ['src/**/*.ts']
+run = 'hk check --linter tsc -a'
 
 [tasks.biome-lint]
 description = 'Lint the project with biome'
-run = 'node --run lint'
-sources = ['src/**/*.ts']
+run = 'hk check --linter biome -a'
 
 [tasks.lint]
 description = 'Lint the project + type-check'
-depends = ['ts-check', 'biome-lint']
+run = 'hk check'
 
 [tasks.lint-fix]
 description = 'Lint the project + type-check and fix issues'
-run = 'node --run lint-fix'
+run = 'hk fix'
 
 [tasks.test]
 description = 'Run tests (with bun)'
