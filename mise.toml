@@ -34,7 +34,7 @@ outputs = ['node_modules/.pnpm/lock.yaml']
 
 [tasks.start-vscode]
 description = 'Starts VSCode with the extension loaded'
-run = 'code --inspect-extensions=5858 --extensionDevelopmentPath=$(pwd)'
+run = 'code --inspect-extensions=5858 --extensionDevelopmentPath={{cwd}}'
 sources = ['src/**', 'package.json', 'syntaxes/**']
 wait_for = ['install']
 
@@ -43,7 +43,7 @@ run = 'mise watch -t start-vscode'
 
 [tasks.start-vscode-inspect-brk]
 description = 'Starts VSCode with the extension loaded. Pauses on the first line of the extension'
-run = 'code --inspect-brk-extensions=5858 --extensionDevelopmentPath=$(pwd)'
+run = 'code --inspect-brk-extensions=5858 --extensionDevelopmentPath={{cwd}}'
 
 [tasks.dev-extension]
 depends = ['install']
