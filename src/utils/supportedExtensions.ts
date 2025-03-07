@@ -1,8 +1,7 @@
 import * as path from "node:path";
 import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
-import { configureSimpleExtension } from "./configureExtensionUtil";
-import { isWindows } from "./fileUtils";
+import { configureSimpleExtension, getConfiguredBinPath } from "./configureExtensionUtil";
 import type { MiseConfig } from "./miseDoctorParser";
 
 type GenerateConfigProps = {
@@ -22,7 +21,7 @@ export type ConfigurableExtension = {
 		useShims,
 		useSymLinks,
 		miseService,
-	}: GenerateConfigProps) => Promise<Record<string, VSCodeSettingValue>>;
+	}: GenerateConfigProps) => Promise<Record<string, VSCodeSettingValue | undefined>>;
 };
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
@@ -48,7 +47,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 
 			return configureSimpleExtension(miseService, {
 				configKey: "python.defaultInterpreterPath",
-				windowsPath: "python.exe",
 				useShims: false, // https://github.com/hverlin/mise-vscode/issues/93
 				useSymLinks,
 				tool,
@@ -67,6 +65,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "deno.path",
+				// if use `deno`，it will be `deno.exe` on windows
+				windowsExtOptional: true,
 				useShims,
 				useSymLinks: false, // disabled until https://github.com/denoland/vscode_deno/pull/1245 is merged
 				tool,
@@ -84,16 +84,27 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useShims,
 			useSymLinks,
 		}) => {
-			const interpreterPath = useShims
-				? path.join(miseConfig.dirs.shims, isWindows ? "ruff.cmd" : "ruff")
-				: path.join(tool.install_path, "bin", isWindows ? "ruff.exe" : "ruff");
+			const x = {
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
 
-			const configuredPath = useSymLinks
-				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
-				: interpreterPath;
-
+				valueTransformer: (bin: string) => {
+					return [bin]
+				},
+			}
 			return {
-				"ruff.path": [configuredPath],
+				...await configureSimpleExtension(miseService, {
+					...x,
+					configKey: "ruff.path",
+					binName: "ruff",
+				}),
+				...await configureSimpleExtension(miseService, {
+					...x,
+					configKey: "ruff.interpreter",
+					binName: "python",
+				})
 			};
 		},
 	},
@@ -111,34 +122,42 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
 				: tool.install_path;
 
-			const shimPath = path.join(
-				miseConfig.dirs.shims,
-				isWindows ? "go.cmd" : "go",
-			);
-
-			const goBin = useShims
-				? useSymLinks
-					? await miseService.createMiseToolSymlink("go", shimPath)
-					: shimPath
-				: path.join(tool.install_path, "bin", "go");
-
-			const dlvShimPath = path.join(
-				miseConfig.dirs.shims,
-				isWindows ? "dlv.cmd" : "dlv",
-			);
-
-			const dlvBin = useShims
-				? useSymLinks
-					? await miseService.createMiseToolSymlink("dlv", dlvShimPath)
-					: dlvShimPath
-				: path.join(tool.install_path, "bin", "dlv");
+			const x = function (name: string, optional: boolean = false) {
+				return getConfiguredBinPath(miseService, {
+					useShims,
+					useSymLinks,
+					tool,
+					miseConfig,
+					binName: name,
+					// if use `go.cmd`, error EINVAL,
+					windowsShimOnlyEXE: true,
+					windowsExtOptional: optional
+				})
+			}
+			const merge = function (arr: Array<[string, string | undefined]>): Record<string, string> {
+				return arr
+					.map(([k, p]) => {
+						if (p === undefined) {
+							return undefined
+						}
+						return { [k]: p }
+					})
+					.filter((a) => a !== undefined)
+					.reduce((a, b) => ({ ...a, ...b }), {})
+			}
 
 			return {
 				"go.goroot": goRoot,
-				"go.alternateTools": {
-					go: goBin,
-					dlv: dlvBin,
-				},
+				"go.alternateTools": merge([
+					["go", await x("go", true)],
+					// if `dlv.exe` not exist in `GOBIN`
+					// Go extension will install dlv.exe to `GOBIN`
+					// but it will use `dlv.exe` in `shims`
+					// if use `dlv`, it will use dlv.exe in `GOBIN`
+					["dlv", await x("dlv")],
+					// like `dlv`
+					["gopls", await x("gopls")],
+				])
 			};
 		},
 	},
@@ -184,7 +203,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "shellcheck.executablePath",
-				windowsPath: "shellcheck.exe",
 				useShims,
 				useSymLinks,
 				tool,
@@ -202,22 +220,21 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useShims,
 			useSymLinks,
 		}) => {
-			const interpreterPath = useShims
-				? path.join(miseConfig.dirs.shims, isWindows ? "node.cmd" : "node")
-				: path.join(
-						tool.install_path,
-						isWindows ? "node.exe" : path.join("bin", "node"),
-					);
-
-			const configuredPath = useSymLinks
-				? await miseService.createMiseToolSymlink(tool.name, interpreterPath)
-				: interpreterPath;
-
-			return {
-				"debug.javascript.defaultRuntimeExecutable": {
-					"pwa-node": configuredPath,
-				},
-			};
+			return configureSimpleExtension(miseService, {
+				configKey: "debug.javascript.defaultRuntimeExecutable",
+				useShims,
+				// support `.cmd`
+				windowsShimOnlyEXE: false,
+				windowsExtOptional: true,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: (bin: string) => {
+					return {
+						"pwa-node": bin,
+					}
+				}
+			});
 		},
 	},
 	{
@@ -338,7 +355,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.zls.path",
 				binName: "zls",
-				windowsPath: "zls.exe",
 				useShims,
 				useSymLinks,
 				tool,
