@@ -637,6 +637,17 @@ export class MiseService {
 		return stdout.trim().split("\n");
 	}
 
+	async which(name: string): Promise<string | undefined> {
+		const { stdout } = await this.cache.execCmd({
+			command: `which ${name}`,
+		});
+		const out = stdout.trim();
+		if (out === "") {
+			return undefined
+		}
+		return out
+	}
+
 	async getAllBinsForTool(toolName: string) {
 		const binDirs = await this.binPaths(toolName);
 		return (
@@ -944,6 +955,16 @@ export class MiseService {
 			{ setMiseEnv: false },
 		);
 	}
+	async getSetting(key: string): Promise<string | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined
+		}
+
+		const { stdout } = await this.execMiseCommand(
+			`settings get --quiet --silent ${key}`,
+		);
+		return stdout;
+	}
 
 	async getSettings() {
 		if (!this.getMiseBinaryPath()) {
@@ -1079,14 +1100,15 @@ export class MiseService {
 		);
 	}
 
-	async createMiseToolSymlink(binName: string, binPath: string) {
+	async createMiseToolSymlink(binName: string, binPath: string,
+		targetType: 'dir' | 'file' = 'dir') {
 		const toolsPaths = path.join(
 			this.getCurrentWorkspaceFolderPath() ?? "",
 			".vscode",
 			"mise-tools",
 		);
 
-		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9]/g, "_");
+		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9.]/g, "_");
 
 		await mkdirp(toolsPaths);
 		const linkPath = path.join(toolsPaths, sanitizedBinName);
@@ -1111,7 +1133,7 @@ export class MiseService {
 			await rm(linkPath);
 		}
 
-		await symlink(binPath, linkPath, "dir").catch((err) => {
+		await symlink(binPath, linkPath, targetType).catch((err) => {
 			if (err.code === "EEXIST") {
 				logger.info("Symlink already exists for ${binPath}");
 				return;

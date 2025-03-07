@@ -1,7 +1,9 @@
 import * as path from "node:path";
+import { existsSync } from "node:fs";
 import * as vscode from "vscode";
 import { ConfigurationTarget } from "vscode";
 import { updateVSCodeSettings } from "../configuration";
+import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
 import { isWindows } from "./fileUtils";
 import { logger } from "./logger";
@@ -13,39 +15,120 @@ export async function configureSimpleExtension(
 	{
 		configKey,
 		useShims,
+		// nodejs on windows default allow only `.exe`, no `.cmd`
+		// https://github.com/jdx/mise/discussions/4360
+		windowsShimOnlyEXE = true,
+		windowsExtOptional = false,
 		useSymLinks,
 		tool,
 		miseConfig,
 		binName = tool.name,
-		windowsPath,
+		valueTransformer,
 	}: {
 		configKey: string;
 		useShims: boolean;
+		windowsShimOnlyEXE?: boolean;
+		windowsExtOptional?: boolean,
 		useSymLinks: boolean;
 		tool: MiseTool;
 		miseConfig: MiseConfig;
 		binName?: string;
-		windowsPath?: string;
+		valueTransformer?: (bin: string) => VSCodeSettingValue | undefined,
 	},
 ) {
-	const updatedValue = useShims
-		? path.join(miseConfig.dirs.shims, isWindows ? `${binName}.cmd` : binName)
-		: path.join(
-				tool.install_path,
-				isWindows
-					? windowsPath
-						? windowsPath
-						: path.join("bin", `${binName}.exe`)
-					: path.join("bin", binName),
-			);
+	const bin = await getConfiguredBinPath(miseService, {
+		useShims,
+		windowsShimOnlyEXE,
+		windowsExtOptional,
+		useSymLinks,
+		tool,
+		miseConfig,
+		binName,
+	})
 
-	const configuredPath = useSymLinks
-		? await miseService.createMiseToolSymlink(binName, updatedValue)
-		: updatedValue;
+	if (bin === undefined) {
+		return {}
+	}
+	if (valueTransformer !== undefined) {
+		return {
+			[configKey]: valueTransformer(bin),
+		};
+	} else {
+		return {
+			[configKey]: bin,
+		};
+	}
+}
 
-	return {
-		[configKey]: configuredPath,
-	};
+export async function getConfiguredBinPath(
+	miseService: MiseService,
+	{
+		useShims,
+		windowsShimOnlyEXE,
+		windowsExtOptional,
+		useSymLinks,
+		tool,
+		miseConfig,
+		binName = tool.name,
+	}: {
+		useShims: boolean;
+		// extension in windows, it only support `.exe`
+		windowsShimOnlyEXE: boolean;
+		// extension in windows, the `.exe` ext is optional
+		// this help extension like `Deno` make no difference to linux/unix  in `settings.json`
+		windowsExtOptional: boolean,
+
+		useSymLinks: boolean;
+		tool: MiseTool;
+		miseConfig: MiseConfig;
+		binName: string;
+	},
+): Promise<string | undefined> {
+	var updatedPath = ""
+	if (useShims) {
+		var shimPath = path.join(miseConfig.dirs.shims, binName);
+		if (isWindows) {
+			const mode = (await miseService.getSetting("windows_shim_mode"))?.trim();
+			if (mode === "file" && windowsShimOnlyEXE) {
+				logger.error(`extension tool ${binName}` + " only support `exe` in windows, " +
+					"change mise setting `windows_shim_mode` to `symlink` or `hardlink`")
+				return undefined
+			}
+
+			shimPath = shimPath + (mode === "file" ? ".cmd" : ".exe")
+		}
+		if (!existsSync(shimPath)) {
+			return undefined
+		}
+		updatedPath = shimPath
+	} else {
+		// let mise handle path
+		// python:
+		// 	 windows: `python.exe`
+		//   linux: `bin/python`
+		// ruff:
+		//   windows: `ruff.exe`
+		//   linux: `ruff-x86_64-unknown-linux-musl/ruff`
+		const binPath = await miseService.which(binName)
+		if (binPath === undefined) {
+			return undefined
+		}
+		updatedPath = binPath
+	}
+
+	if (useSymLinks) {
+		// some extension like `Deno` `Go` will add `.exe` to binName,
+		// cannot use `deno`, must `deno.exe`.
+		// shim name maybe `node.cmd`, keep `.cmd` suffix
+		// so keep ext same with target path
+		const ext = path.extname(updatedPath)
+		const symName = isWindows ? `${binName}${ext}` : binName
+		updatedPath = await miseService.createMiseToolSymlink(symName, updatedPath, 'file');
+	}
+	if (isWindows && windowsExtOptional) {
+		updatedPath = updatedPath.replace(/\.[^/\\.]+$/, "")
+	}
+	return updatedPath
 }
 
 export async function configureExtension({
@@ -86,10 +169,16 @@ export async function configureExtension({
 	});
 
 	const updatedKeys = await updateVSCodeSettings(
-		Object.entries(extConfig).map(([key, value]) => ({
-			key,
-			value,
-		})),
+		Object.entries(extConfig)
+			.map(([key, value]) => {
+				if (value !== undefined) {
+					return { key, value };
+				} else {
+					return undefined;
+				}
+			})
+			.filter(x => x !== undefined)
+		,
 		ConfigurationTarget.Workspace,
 	);
 
