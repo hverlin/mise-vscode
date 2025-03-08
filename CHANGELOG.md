@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.47.8](https://github.com/hverlin/mise-vscode/compare/v0.47.7...v0.47.8) (2025-03-08)
+
+
+### Bug Fixes
+
+* **mise:** getSetting use cache ([d0d630b](https://github.com/hverlin/mise-vscode/commit/d0d630b64bfa6e1baae5379521c045e773851251))
+* **task:** replace $(pwd) with {{cwd}} ([34c2f2d](https://github.com/hverlin/mise-vscode/commit/34c2f2de99ddf725a7f0d345c658b8f26c4160c6))
+* **test:** fix test on windows ([dd89b7b](https://github.com/hverlin/mise-vscode/commit/dd89b7b5808e4e34cd5af4a703d6c44bf9b5c5a5))
+
 ## [0.47.7](https://github.com/hverlin/mise-vscode/compare/v0.47.6...v0.47.7) (2025-02-26)
 
 
