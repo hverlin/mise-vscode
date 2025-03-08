@@ -19,7 +19,7 @@ type MiseConfig = {
 	};
 };
 
-function parseMiseConfig(content: string): MiseConfig {
+function parseMiseConfigRaw(content: string): MiseConfig {
 	const result: MiseConfig = { dirs: { shims: "" }, problems: {} };
 	const lines: string[] = content.split("\n");
 
@@ -79,17 +79,19 @@ function parseMiseConfig(content: string): MiseConfig {
 			currentSection = null;
 		}
 	}
-
-	for (const [key, value] of Object.entries(result.dirs)) {
-		if (!value) {
-			continue;
-		}
-
-		result.dirs[key] = expandPath(value);
-	}
-
 	return result;
 }
 
-export { parseMiseConfig };
+function parseMiseConfig(content: string): MiseConfig {
+	const cfg = parseMiseConfigRaw(content);
+	for (const [key, value] of Object.entries(cfg.dirs)) {
+		if (!value) {
+			continue;
+		}
+		cfg.dirs[key] = expandPath(value);
+	}
+	return cfg;
+}
+
+export { parseMiseConfig, parseMiseConfigRaw };
 export type { MiseConfig, MiseDirs };

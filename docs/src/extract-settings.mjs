@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import packageJson from "../../package.json";
 
-const _dirname = new URL(".", import.meta.url).pathname;
+const _dirname = path.parse(fileURLToPath(import.meta.url)).dir;
 
 const pageContent = `---
 title: Extension Settings

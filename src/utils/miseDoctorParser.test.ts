@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type MiseConfig, parseMiseConfig } from "./miseDoctorParser";
+import { type MiseConfig, parseMiseConfigRaw } from "./miseDoctorParser";
 
 describe("mise doctor parser", () => {
 	test("should parse dirs section correctly", () => {
@@ -24,7 +24,7 @@ shell:
 			},
 		};
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -36,7 +36,7 @@ shell:
   /bin/zsh`;
 
 		const expected: MiseConfig = { dirs: { shims: "" } };
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -47,7 +47,7 @@ shell:
 
 		const expected: MiseConfig = { dirs: { shims: "" } };
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -70,7 +70,7 @@ dirs:
 			},
 		};
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -90,7 +90,7 @@ dirs:
 			},
 		};
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -124,7 +124,7 @@ config_files:
 			},
 		};
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.dirs).toEqual(expected.dirs);
 	});
 
@@ -156,7 +156,7 @@ No warnings found
 			},
 		} satisfies MiseConfig;
 
-		const result = parseMiseConfig(input);
+		const result = parseMiseConfigRaw(input);
 		expect(result.problems).toEqual(expected.problems);
 	});
 });
