@@ -132,6 +132,16 @@ export class MiseService {
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
+	async cacheExec({
+		command,
+		setMiseEnv,
+	}: {
+		command: string;
+		setMiseEnv?: boolean;
+	}) {
+		return this.cache.execCmd({ command, setMiseEnv });
+	}
+
 	private slowCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
@@ -643,9 +653,9 @@ export class MiseService {
 		});
 		const out = stdout.trim();
 		if (out === "") {
-			return undefined
+			return undefined;
 		}
-		return out
+		return out;
 	}
 
 	async getAllBinsForTool(toolName: string) {
@@ -957,12 +967,12 @@ export class MiseService {
 	}
 	async getSetting(key: string): Promise<string | undefined> {
 		if (!this.getMiseBinaryPath()) {
-			return undefined
+			return undefined;
 		}
 
-		const { stdout } = await this.execMiseCommand(
-			`settings get --quiet --silent ${key}`,
-		);
+		const { stdout } = await this.cacheExec({
+			command: `settings get --quiet --silent ${key}`,
+		});
 		return stdout;
 	}
 
@@ -1100,8 +1110,11 @@ export class MiseService {
 		);
 	}
 
-	async createMiseToolSymlink(binName: string, binPath: string,
-		targetType: 'dir' | 'file' = 'dir') {
+	async createMiseToolSymlink(
+		binName: string,
+		binPath: string,
+		targetType: "dir" | "file" = "dir",
+	) {
 		const toolsPaths = path.join(
 			this.getCurrentWorkspaceFolderPath() ?? "",
 			".vscode",
