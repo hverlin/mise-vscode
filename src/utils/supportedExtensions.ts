@@ -1,7 +1,11 @@
 import * as path from "node:path";
 import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
-import { configureSimpleExtension, getConfiguredBinPath } from "./configureExtensionUtil";
+import {
+	configureSimpleExtension,
+	getConfiguredBinPath,
+} from "./configureExtensionUtil";
+import { mergeArrays } from "./fn";
 import type { MiseConfig } from "./miseDoctorParser";
 
 type GenerateConfigProps = {
@@ -21,7 +25,9 @@ export type ConfigurableExtension = {
 		useShims,
 		useSymLinks,
 		miseService,
-	}: GenerateConfigProps) => Promise<Record<string, VSCodeSettingValue | undefined>>;
+	}: GenerateConfigProps) => Promise<
+		Record<string, VSCodeSettingValue | undefined>
+	>;
 };
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
@@ -84,27 +90,28 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useShims,
 			useSymLinks,
 		}) => {
-			const x = {
-				useShims,
-				useSymLinks,
-				tool,
-				miseConfig,
-
-				valueTransformer: (bin: string) => {
-					return [bin]
-				},
-			}
-			return {
-				...await configureSimpleExtension(miseService, {
-					...x,
+			const [ruffBin, ruffInterpreter] = await Promise.all([
+				configureSimpleExtension(miseService, {
+					useShims,
+					useSymLinks,
+					tool,
+					miseConfig,
 					configKey: "ruff.path",
 					binName: "ruff",
 				}),
-				...await configureSimpleExtension(miseService, {
-					...x,
+				configureSimpleExtension(miseService, {
+					useShims,
+					useSymLinks,
+					tool,
+					miseConfig,
 					configKey: "ruff.interpreter",
 					binName: "python",
-				})
+				}),
+			]);
+
+			return {
+				...ruffBin,
+				...ruffInterpreter,
 			};
 		},
 	},
@@ -122,42 +129,35 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
 				: tool.install_path;
 
-			const x = function (name: string, optional: boolean = false) {
-				return getConfiguredBinPath(miseService, {
+			const getConfiguredGoBin = (name: string, { optional = false } = {}) =>
+				getConfiguredBinPath(miseService, {
 					useShims,
 					useSymLinks,
 					tool,
 					miseConfig,
 					binName: name,
-					// if use `go.cmd`, error EINVAL,
-					windowsShimOnlyEXE: true,
-					windowsExtOptional: optional
-				})
-			}
-			const merge = function (arr: Array<[string, string | undefined]>): Record<string, string> {
-				return arr
-					.map(([k, p]) => {
-						if (p === undefined) {
-							return undefined
-						}
-						return { [k]: p }
-					})
-					.filter((a) => a !== undefined)
-					.reduce((a, b) => ({ ...a, ...b }), {})
-			}
+					windowsShimOnlyEXE: true, // if use `go.cmd`, error EINVAL,
+					windowsExtOptional: optional,
+				});
+
+			const [goBin, dlvBin, goplsBin] = await Promise.all([
+				getConfiguredGoBin("go", { optional: true }),
+				// if `dlv.exe` not exist in `GOBIN`
+				// Go extension will install dlv.exe to `GOBIN`
+				// but it will use `dlv.exe` in `shims`
+				// if use `dlv`, it will use dlv.exe in `GOBIN`
+				getConfiguredGoBin("dlv"),
+				// like `dlv`
+				getConfiguredGoBin("gopls"),
+			]);
 
 			return {
 				"go.goroot": goRoot,
-				"go.alternateTools": merge([
-					["go", await x("go", true)],
-					// if `dlv.exe` not exist in `GOBIN`
-					// Go extension will install dlv.exe to `GOBIN`
-					// but it will use `dlv.exe` in `shims`
-					// if use `dlv`, it will use dlv.exe in `GOBIN`
-					["dlv", await x("dlv")],
-					// like `dlv`
-					["gopls", await x("gopls")],
-				])
+				"go.alternateTools": mergeArrays([
+					["go", goBin],
+					["dlv", dlvBin],
+					["gopls", goplsBin],
+				]),
 			};
 		},
 	},
@@ -232,8 +232,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				valueTransformer: (bin: string) => {
 					return {
 						"pwa-node": bin,
-					}
-				}
+					};
+				},
 			});
 		},
 	},

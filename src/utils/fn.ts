@@ -21,3 +21,15 @@ export const truncateStr = (str: string, maxLen: number) => {
 	}
 	return `${str.slice(0, maxLen)}...`;
 };
+
+export const mergeArrays = (
+	arr: Array<[string, string | undefined]>,
+): Record<string, string> => {
+	const result: Record<string, string> = {};
+	for (const [k, p] of arr) {
+		if (p !== undefined) {
+			result[k] = p;
+		}
+	}
+	return result;
+};
