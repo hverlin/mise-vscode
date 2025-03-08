@@ -132,16 +132,6 @@ export class MiseService {
 		this.execMiseCommand(command, { setMiseEnv }),
 	);
 
-	async cacheExec({
-		command,
-		setMiseEnv,
-	}: {
-		command: string;
-		setMiseEnv?: boolean;
-	}) {
-		return this.cache.execCmd({ command, setMiseEnv });
-	}
-
 	private slowCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
@@ -648,14 +638,21 @@ export class MiseService {
 	}
 
 	async which(name: string): Promise<string | undefined> {
-		const { stdout } = await this.cache.execCmd({
-			command: `which ${name}`,
-		});
-		const out = stdout.trim();
-		if (out === "") {
+		try {
+			const { stdout } = await this.cache.execCmd({ command: `which ${name}` });
+
+			const out = stdout.trim();
+			if (out === "") {
+				return undefined;
+			}
+
+			return out;
+		} catch (e) {
+			if (!(e as Error)?.message?.includes("it is not currently active")) {
+				logger.info(`Error running which ${name}`, e);
+			}
 			return undefined;
 		}
-		return out;
 	}
 
 	async getAllBinsForTool(toolName: string) {
@@ -970,8 +967,9 @@ export class MiseService {
 			return undefined;
 		}
 
-		const { stdout } = await this.cacheExec({
+		const { stdout } = await this.cache.execCmd({
 			command: `settings get --quiet --silent ${key}`,
+			setMiseEnv: undefined,
 		});
 		return stdout;
 	}
