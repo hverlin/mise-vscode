@@ -71,7 +71,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "deno.path",
-				// if use `deno`，it will be `deno.exe` on windows
+				// extension is `deno.exe` on windows
 				windowsExtOptional: true,
 				useShims,
 				useSymLinks: false, // disabled until https://github.com/denoland/vscode_deno/pull/1245 is merged
@@ -223,7 +223,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			return configureSimpleExtension(miseService, {
 				configKey: "debug.javascript.defaultRuntimeExecutable",
 				useShims,
-				// support `.cmd`
+				// NodeJS on windows only allows `.exe`, no `.cmd` by default. See https://github.com/jdx/mise/discussions/4360
 				windowsShimOnlyEXE: false,
 				windowsExtOptional: true,
 				useSymLinks,
