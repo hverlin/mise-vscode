@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.47.9](https://github.com/hverlin/mise-vscode/compare/v0.47.8...v0.47.9) (2025-03-09)
+
+
+### Bug Fixes
+
+* ruff path type error ([5febcbb](https://github.com/hverlin/mise-vscode/commit/5febcbb9b69cedc45a82c1a0ae0a26c223a0e5d1))
+
 ## [0.47.8](https://github.com/hverlin/mise-vscode/compare/v0.47.7...v0.47.8) (2025-03-08)
 
 
