@@ -98,6 +98,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 					miseConfig,
 					configKey: "ruff.path",
 					binName: "ruff",
+					valueTransformer: (bin: string) => [bin],
 				}),
 				configureSimpleExtension(miseService, {
 					useShims,
@@ -106,6 +107,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 					miseConfig,
 					configKey: "ruff.interpreter",
 					binName: "python",
+					valueTransformer: (bin: string) => [bin],
 				}),
 			]);
 
