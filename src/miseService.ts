@@ -19,7 +19,7 @@ import { expandPath, isWindows, mkdirp } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { resolveMisePath } from "./utils/miseBinLocator";
-import { type MiseConfig, parseMiseConfig } from "./utils/miseDoctorParser";
+import { expandConfig } from "./utils/miseDoctorParser";
 import {
 	flattenJsonSchema,
 	idiomaticFileToTool,
@@ -674,17 +674,32 @@ export class MiseService {
 		).flat();
 	}
 
+	async miseVersion() {
+		const { stdout } = await this.cache.execCmd({
+			command: "version --json",
+		});
+
+		const version = JSON.parse(stdout) as MiseVersion;
+		// "version": "2025.3.2 windows-x64 (2025-03-07)",
+		const current = version.version.split(" ")[0] ?? "";
+		return {
+			raw: version,
+			latest: version.latest,
+			current: current,
+			newVersionAvailable: version.latest !== current,
+		};
+	}
+
 	async getMiseConfiguration(): Promise<MiseConfig> {
-		const miseCmd = this.createMiseCommand("doctor", {
+		const miseCmd = this.createMiseCommand("doctor --json", {
 			setMiseEnv: false,
 		});
 
-		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "");
+		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "{}");
 		if (stderr) {
 			logger.debug(miseCmd, stderr);
 		}
-
-		return parseMiseConfig(stdout);
+		return expandConfig(JSON.parse(stdout));
 	}
 
 	async miseDoctor() {
@@ -809,21 +824,19 @@ export class MiseService {
 			return;
 		}
 
-		const miseConfig = await this.getMiseConfiguration();
-		const newMiseVersionAvailable =
-			miseConfig.problems?.newMiseVersionAvailable;
-		if (newMiseVersionAvailable) {
+		const miseVersion = await this.miseVersion();
+		if (miseVersion.newVersionAvailable) {
 			const ignoreVersion = this.context.globalState.get<string>(
 				"mise.ignoreNewVersion",
 			);
 
-			if (ignoreVersion === newMiseVersionAvailable.latestVersion) {
+			if (ignoreVersion === miseVersion.latest) {
 				return;
 			}
 
 			const canSelfUpdate = await this.canSelfUpdate();
 			const suggestion = await vscode.window.showInformationMessage(
-				`New Mise version available ${newMiseVersionAvailable?.latestVersion}. (Current: ${newMiseVersionAvailable?.currentVersion})`,
+				`New Mise version available ${miseVersion.latest}. (Current: ${miseVersion.current})`,
 				canSelfUpdate ? "Update Mise" : "How to update Mise",
 				"Show changelog",
 				"Ignore this update",
@@ -851,7 +864,7 @@ export class MiseService {
 			if (suggestion === "Ignore this update") {
 				this.context.globalState.update(
 					"mise.ignoreNewVersion",
-					newMiseVersionAvailable.latestVersion,
+					miseVersion.latest,
 				);
 			}
 		}
