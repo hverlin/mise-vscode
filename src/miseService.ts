@@ -57,7 +57,7 @@ const flattenSettings = (obj: object, prefix = "") => {
 	return result;
 };
 
-const MIN_MISE_VERSION = [2024, 12, 2] as const;
+const MIN_MISE_VERSION = [2025, 1, 5] as const;
 
 function compareVersions(
 	a: readonly [number, number, number],
