@@ -29,6 +29,18 @@ export type ConfigurableExtension = {
 	>;
 };
 
+const generateJavaConfiguration =
+	(keyName: string) => async (config: GenerateConfigProps) => {
+		return {
+			[keyName]: config.useSymLinks
+				? await config.miseService.createMiseToolSymlink(
+						"java",
+						config.tool.install_path,
+					)
+				: config.tool.install_path,
+		};
+	};
+
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "ms-python.python",
@@ -184,13 +196,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "oracle.oracle-java",
 		toolNames: ["java"],
-		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
-			return {
-				"jdk.jdkhome": useSymLinks
-					? await miseService.createMiseToolSymlink("java", tool.install_path)
-					: tool.install_path,
-			};
-		},
+		generateConfiguration: generateJavaConfiguration("jdk.jdkhome"),
+	},
+	{
+		extensionId: "redhat.java",
+		toolNames: ["java"],
+		generateConfiguration: generateJavaConfiguration("java.jdt.ls.java.home"),
+	},
+	{
+		extensionId: "salesforce.salesforcedx-vscode-apex",
+		toolNames: ["java"],
+		generateConfiguration: generateJavaConfiguration(
+			"salesforcedx-vscode-apex.java.home",
+		),
 	},
 	{
 		extensionId: "timonwong.shellcheck",
