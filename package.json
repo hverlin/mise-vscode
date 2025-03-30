@@ -141,6 +141,8 @@
 							"golang.go",
 							"oven.bun-vscode",
 							"oracle.oracle-java",
+							"redhat.java",
+							"salesforce.salesforcedx-vscode-apex",
 							"timonwong.shellcheck",
 							"ms-vscode.js-debug",
 							"vscode.php-language-features",
