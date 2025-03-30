@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.48.0](https://github.com/hverlin/mise-vscode/compare/v0.47.9...v0.48.0) (2025-03-30)
+
+
+### Features
+
+* bump version ([5ab2866](https://github.com/hverlin/mise-vscode/commit/5ab2866f70de40dd56d7aee8ecdbed3ac409cce4))
+* Update min_mise_version to v2025.1.5 ([cc277be](https://github.com/hverlin/mise-vscode/commit/cc277bec5911f66f0fcdd73d5b543913a3d6cc14))
+
 ## [0.47.9](https://github.com/hverlin/mise-vscode/compare/v0.47.8...v0.47.9) (2025-03-09)
 
 
