@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.49.0](https://github.com/hverlin/mise-vscode/compare/v0.48.0...v0.49.0) (2025-03-31)
+
+
+### Features
+
+* add support for Java in Gradle extension ([#114](https://github.com/hverlin/mise-vscode/issues/114)) ([a289576](https://github.com/hverlin/mise-vscode/commit/a289576b2170f9e254705bb816bd9be33716705d))
+
 ## [0.48.0](https://github.com/hverlin/mise-vscode/compare/v0.47.9...v0.48.0) (2025-03-30)
 
 
