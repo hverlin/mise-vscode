@@ -142,6 +142,7 @@
 							"oven.bun-vscode",
 							"oracle.oracle-java",
 							"redhat.java",
+							"vscjava.vscode-gradle",
 							"salesforce.salesforcedx-vscode-apex",
 							"timonwong.shellcheck",
 							"ms-vscode.js-debug",
