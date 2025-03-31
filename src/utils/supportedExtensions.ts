@@ -204,6 +204,13 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		generateConfiguration: generateJavaConfiguration("java.jdt.ls.java.home"),
 	},
 	{
+		extensionId: "vscjava.vscode-gradle",
+		toolNames: ["java"],
+		generateConfiguration: generateJavaConfiguration(
+			"java.import.gradle.java.home",
+		),
+	},
+	{
 		extensionId: "salesforce.salesforcedx-vscode-apex",
 		toolNames: ["java"],
 		generateConfiguration: generateJavaConfiguration(
