@@ -1,5 +1,4 @@
 amends "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Builtins.pkl"
 
 min_hk_version = "0.8.2"
 
@@ -8,7 +7,11 @@ local linters = new Mapping<String, Step> {
     check = "tsc --noEmit"
     glob = List("*.js", "*.ts")
   }
-  ["biome"] = Builtins.biome
+  ["biome"] {
+    fix = "biome check --fix"
+    check = "biome check"
+    glob = List("*.js", "*.ts", "*.json")
+  }
 }
 
 hooks {
