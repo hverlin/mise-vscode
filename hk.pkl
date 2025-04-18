@@ -1,25 +1,26 @@
-amends "package://github.com/jdx/hk/releases/download/v0.5.0/hk@0.5.0#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Builtins.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v0.5.0/hk@0.5.0#/builtins/biome.pkl"
+min_hk_version = "0.8.2"
 
-min_hk_version = "0.5.0"
-
-local class Tsc extends Linter {
-  glob = List("**/*.{ts,tsx}")
-  check = "tsc --noEmit"
-}
-
-linters {
-  ["tsc"] = new Tsc {}
-  ["biome"] = new biome.Biome {}
+local linters = new Mapping<String, Step> {
+  ["tsc"] = Builtins.tsc
+  ["biome"] = Builtins.biome
 }
 
 hooks {
   ["pre-commit"] {
-    ["fix"] = new Fix {}
+    fix = true
+    steps = linters
   }
   ["pre-push"] {
-    ["check"] = new Check {}
+    steps = linters
+  }
+  ["fix"] {
+    steps = linters
+  }
+  ["check"] {
+    steps = linters
   }
 }
 

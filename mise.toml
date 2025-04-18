@@ -1,10 +1,10 @@
 [tools]
 pkl = "latest"
 node = '22'
-hk = "latest"
+hk = "0.8.2"
 
 [env]
-_.path = ["./docs/node_modules/.bin", "./node_modules/.bin"]
+_.path = ["./node_modules/.bin"]
 
 [tasks."docs:extractSettings"]
 run = 'bun src/extract-settings.mjs'
