@@ -699,7 +699,14 @@ export class MiseService {
 		if (stderr) {
 			logger.debug(miseCmd, stderr);
 		}
-		return expandConfig(JSON.parse(stdout));
+
+		try {
+			const miseConfig = JSON.parse(stdout) as MiseConfig;
+			return expandConfig(miseConfig);
+		} catch (error) {
+			logger.error(`Error parsing mise configuration: ${stdout}`, error);
+			return {} as MiseConfig;
+		}
 	}
 
 	async miseDoctor() {

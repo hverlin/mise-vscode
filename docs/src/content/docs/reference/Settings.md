@@ -70,6 +70,9 @@ List of extensions that should not be configured automatically.
 - `golang.go`
 - `oven.bun-vscode`
 - `oracle.oracle-java`
+- `redhat.java`
+- `vscjava.vscode-gradle`
+- `salesforce.salesforcedx-vscode-apex`
 - `timonwong.shellcheck`
 - `ms-vscode.js-debug`
 - `vscode.php-language-features`
