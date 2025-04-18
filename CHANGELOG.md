@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.49.1](https://github.com/hverlin/mise-vscode/compare/v0.49.0...v0.49.1) (2025-04-18)
+
+
+### Bug Fixes
+
+* improve error message when failing to parse mise configuration ([902162a](https://github.com/hverlin/mise-vscode/commit/902162a9117c22631030c37a1dfe0ba72278d2a9))
+
 ## [0.49.0](https://github.com/hverlin/mise-vscode/compare/v0.48.0...v0.49.0) (2025-03-31)
 
 
