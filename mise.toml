@@ -66,12 +66,12 @@ depends = ['dev-extension', 'dev-webviews', 'watch-vscode']
 [tasks.ts-check]
 description = 'Type-check the project'
 depends = ['install']
-run = 'hk check --linter tsc -a'
+run = 'hk check --step tsc -a'
 
 [tasks.biome-lint]
 description = 'Lint the project with biome'
 depends = ['install']
-run = 'hk check --linter biome -a'
+run = 'hk check --step biome -a'
 
 [tasks.lint]
 description = 'Lint the project + type-check'

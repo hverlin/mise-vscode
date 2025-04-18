@@ -33,13 +33,16 @@ mise run test
 ```shell
 mise run lint
 mise run lint-fix # to fix lint issues
+mise run lint-fix -a # to fix lint in non-updated files
+
 mise run check # lint-fix + tests
 ```
 
-If you want to run the linter on every commit, you can create a pre-commit hook:
-```shell
-mise generate git-pre-commit --write --task=check
+You can install the git hooks with
+```sh
+hk install --mise
 ```
+https://hk.jdx.dev/mise_integration.html#hk-install-mise
 
 ## Other commands
 ```shell

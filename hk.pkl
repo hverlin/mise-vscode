@@ -4,7 +4,10 @@ import "package://github.com/jdx/hk/releases/download/v0.8.2/hk@0.8.2#/Builtins.
 min_hk_version = "0.8.2"
 
 local linters = new Mapping<String, Step> {
-  ["tsc"] = Builtins.tsc
+  ["tsc"] {
+    check = "tsc --noEmit"
+    glob = List("*.js", "*.ts")
+  }
   ["biome"] = Builtins.biome
 }
 
