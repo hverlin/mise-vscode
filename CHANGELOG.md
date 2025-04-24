@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.49.2](https://github.com/hverlin/mise-vscode/compare/v0.49.1...v0.49.2) (2025-04-24)
+
+
+### Bug Fixes
+
+* Revert "get mise config use `--json` option" ([#118](https://github.com/hverlin/mise-vscode/issues/118)) ([e7112c8](https://github.com/hverlin/mise-vscode/commit/e7112c8d2379899c13f8929fc0de50f79bafaa6d))
+
 ## [0.49.1](https://github.com/hverlin/mise-vscode/compare/v0.49.0...v0.49.1) (2025-04-18)
 
 
