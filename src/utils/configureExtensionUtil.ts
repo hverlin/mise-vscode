@@ -7,6 +7,7 @@ import type { VSCodeSettingValue } from "../configuration";
 import type { MiseService } from "../miseService";
 import { isWindows } from "./fileUtils";
 import { logger } from "./logger";
+import type { MiseConfig } from "./miseDoctorParser";
 import type { ConfigurableExtension } from "./supportedExtensions";
 
 export async function configureSimpleExtension(

@@ -6,6 +6,7 @@ import {
 	getConfiguredBinPath,
 } from "./configureExtensionUtil";
 import { mergeArrays } from "./fn";
+import type { MiseConfig } from "./miseDoctorParser";
 
 type GenerateConfigProps = {
 	tool: MiseTool;

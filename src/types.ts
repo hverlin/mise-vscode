@@ -73,33 +73,3 @@ type MiseToolInfo = {
 		install_env: Record<string, string>;
 	};
 };
-
-type MiseDirs = {
-	data?: string;
-	config?: string;
-	cache?: string;
-	state?: string;
-	shims: string;
-	[key: string]: string | undefined;
-};
-
-type MiseConfig = {
-	dirs: MiseDirs;
-};
-
-/*
-	{
-		"version": "2025.3.2 windows-x64 (2025-03-07)",
-		"latest": "2025.3.2",
-		"os": "windows",
-		"arch": "x64",
-		"build_time": "2025-03-07 16:41:51 +00:00"
-	}
-*/
-type MiseVersion = {
-	version: string;
-	latest: string;
-	os: string;
-	arch: string;
-	build_time: string;
-};
