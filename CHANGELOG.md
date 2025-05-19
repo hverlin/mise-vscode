@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.50.0](https://github.com/hverlin/mise-vscode/compare/v0.49.2...v0.50.0) (2025-05-19)
+
+
+### Features
+
+* add support for extension 'signageos.signageos-vscode-sops' ([#123](https://github.com/hverlin/mise-vscode/issues/123)) ([0c29a35](https://github.com/hverlin/mise-vscode/commit/0c29a350654a5e438af21844a2120213175a6463))
+
 ## [0.49.2](https://github.com/hverlin/mise-vscode/compare/v0.49.1...v0.49.2) (2025-04-24)
 
 
