@@ -33,6 +33,7 @@ If you want to configure it manually, search for
 | [dart](https://marketplace.visualstudio.com/items?itemName=Dart-Code.dart-code)           | `dart.sdkPath`                                                                                                 | Does not work with shims or symlinks                                                                                        |
 | [flutter](https://marketplace.visualstudio.com/items?itemName=dart-code.flutter)          | `dart.flutterSdkPath`                                                                                          | Does not work with shims or symlinks                                                                                        |
 | [zig](https://marketplace.visualstudio.com/items?itemName=ziglang.vscode-zig)             | `zig.path`, `zig.zls.path` (install [zls](https://mise.jdx.dev/lang/zig.html#zig-language-server) with `mise`) |                                                                                                                             |
+| [sops](https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops) | `sops.binPath`                                                                              |                                                                                                                             |
 
 Extensions which have built-in support for `mise`:
 

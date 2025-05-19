@@ -389,6 +389,25 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["sops"],
+		extensionId: "signageos.signageos-vscode-sops",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "sops.binPath",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
