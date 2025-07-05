@@ -210,10 +210,14 @@ export class MiseService {
 			const hasValidMiseVersion = await this.hasValidMiseVersion();
 			if (!hasValidMiseVersion) {
 				const canSelfUpdate = await this.canSelfUpdate();
+				const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();
+
 				const selection = await vscode.window.showErrorMessage(
 					`Mise version ${version} is not supported. Please update to a supported version.`,
 					{ modal: true },
-					canSelfUpdate ? "Run mise self-update" : "open mise website",
+					canSelfUpdate && !isSelfUpdateDisabled
+						? "Run mise self-update"
+						: "open mise website",
 				);
 				this.hasVerifiedMiseVersion = true;
 				if (selection === "Run mise self-update") {
@@ -221,7 +225,7 @@ export class MiseService {
 				}
 				if (selection === "open mise website") {
 					await vscode.env.openExternal(
-						vscode.Uri.parse("https://mise.jdx.dev/cli/self-update.html"),
+						vscode.Uri.parse("https://mise.jdx.dev/installing-mise.html"),
 					);
 				}
 			}
@@ -774,6 +778,7 @@ export class MiseService {
 		return [year, minor, patch] as [number, number, number];
 	}
 
+	// Checks whether the mise binary has the self-update command
 	async canSelfUpdate() {
 		if (!this.getMiseBinaryPath()) {
 			return false;
@@ -783,6 +788,47 @@ export class MiseService {
 			await this.execMiseCommand("self-update --help");
 			return true;
 		} catch (e) {
+			return false;
+		}
+	}
+
+	// Checks for the presence of the `.disable-self-update` sentinel file in the Mise lib
+	// dir, to determine if self-update is disabled (ie installed using a package manager).
+	// It's a re-implementation of the `is_available()` function from `SelfUpdate`.
+	// https://github.com/jdx/mise/blob/863505d4089126780c2352fb1218c6550c3cf9d8/src/cli/self_update.rs#L100
+	isSelfUpdateDisabled(): boolean {
+		logger.info("Checking if self-update is disabled...");
+		try {
+			const miseBinPath = this.getMiseBinaryPath();
+			logger.info(`miseBinPath: ${miseBinPath}`);
+			if (!miseBinPath) {
+				return false; // Default to allowing self-update if we can't determine the path
+			}
+
+			// Get canonical path of the mise binary
+			const canonicalPath = require("node:fs").realpathSync(miseBinPath);
+
+			// Get parent directory, then parent of that (two levels up)
+			const parentDir = path.dirname(canonicalPath);
+			const grandParentDir = path.dirname(parentDir);
+
+			// Check for sentinel files that disable self-update
+			const disablePaths = [
+				path.join(grandParentDir, "lib", ".disable-self-update"), // kept for compatibility
+				path.join(grandParentDir, "lib", "mise", ".disable-self-update"),
+			];
+
+			for (const disablePath of disablePaths) {
+				if (existsSync(disablePath)) {
+					logger.info(`Self-update disabled by sentinel file: ${disablePath}`);
+					return true;
+				}
+			}
+
+			return false;
+		} catch (error) {
+			// If filesystem operations fail, fall back to allowing self-update
+			logger.debug(`Failed to check for self-update disable files: ${error}`);
 			return false;
 		}
 	}
@@ -822,6 +868,12 @@ export class MiseService {
 			}
 
 			const canSelfUpdate = await this.canSelfUpdate();
+			const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();
+
+			if (isSelfUpdateDisabled) {
+				return;
+			}
+
 			const suggestion = await vscode.window.showInformationMessage(
 				`New Mise version available ${newMiseVersionAvailable?.latestVersion}. (Current: ${newMiseVersionAvailable?.currentVersion})`,
 				canSelfUpdate ? "Update Mise" : "How to update Mise",
