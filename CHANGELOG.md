@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.50.1](https://github.com/hverlin/mise-vscode/compare/v0.50.0...v0.50.1) (2025-07-05)
+
+
+### Bug Fixes
+
+* Hide update button if `self-update` is not available ([#129](https://github.com/hverlin/mise-vscode/issues/129)) ([af320fe](https://github.com/hverlin/mise-vscode/commit/af320fe3f1144a87de5c25ff0f72cfc396fe3621))
+
 ## [0.50.0](https://github.com/hverlin/mise-vscode/compare/v0.49.2...v0.50.0) (2025-05-19)
 
 
