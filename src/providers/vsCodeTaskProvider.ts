@@ -6,7 +6,7 @@ import type { MiseService } from "../miseService";
 export class VsCodeTaskProvider {
 	private readonly provider: vscode.Disposable;
 
-	constructor(private readonly miseService: MiseService) {
+	constructor(readonly miseService: MiseService) {
 		this.provider = vscode.tasks.registerTaskProvider("mise", {
 			provideTasks: async () => {
 				if (!isMiseExtensionEnabled()) {
