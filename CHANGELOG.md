@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.51.0](https://github.com/hverlin/mise-vscode/compare/v0.50.1...v0.51.0) (2025-07-21)
+
+
+### Features
+
+* Update open repository action to handle the new backends supported by mise (github, gitlab, http) ([27b166f](https://github.com/hverlin/mise-vscode/commit/27b166f66bcae6575a0e12bfbb1ffaeac4e8d522))
+
 ## [0.50.1](https://github.com/hverlin/mise-vscode/compare/v0.50.0...v0.50.1) (2025-07-05)
 
 
