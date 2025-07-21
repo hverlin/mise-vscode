@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.51.1](https://github.com/hverlin/mise-vscode/compare/v0.51.0...v0.51.1) (2025-07-21)
+
+
+### Bug Fixes
+
+* ziglang extension does not support shims or symlinks ([#131](https://github.com/hverlin/mise-vscode/issues/131)) ([4e0de85](https://github.com/hverlin/mise-vscode/commit/4e0de858b6464b08073fa8f560440f9a19b3676e))
+
 ## [0.51.0](https://github.com/hverlin/mise-vscode/compare/v0.50.1...v0.51.0) (2025-07-21)
 
 
