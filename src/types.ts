@@ -71,5 +71,7 @@ type MiseToolInfo = {
 	tool_options: {
 		os: string;
 		install_env: Record<string, string>;
+		api_url?: string;
+		url?: string;
 	};
 };

@@ -161,6 +161,32 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 		return `https://github.com/${repoName}`;
 	}
 
+	if (backendName === "github") {
+		if (toolInfo.tool_options.api_url) {
+			const url = new URL(toolInfo.tool_options.api_url);
+			return `${url.protocol}//${url.hostname}/${repo}`;
+		}
+
+		return `https://github.com/${repo}`;
+	}
+
+	if (backendName === "gitlab") {
+		if (toolInfo.tool_options.api_url) {
+			const url = new URL(toolInfo.tool_options.api_url);
+			return `${url.protocol}//${url.hostname}/${repo}`;
+		}
+
+		return `https://gitlab.com/${repo}`;
+	}
+
+	if (backendName === "http") {
+		if (toolInfo.tool_options.url) {
+			return toolInfo.tool_options.url;
+		}
+
+		return "https://mise.jdx.dev/dev-tools/backends/http.html";
+	}
+
 	if (backendName === "core") {
 		return `https://mise.jdx.dev/lang/${repo}`;
 	}
