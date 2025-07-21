@@ -4,6 +4,7 @@ import { useState } from "react";
 import CustomTable from "./components/CustomTable";
 import { FileLink } from "./components/FileLink";
 import { IconButton } from "./components/IconButton";
+import { useWindowSize } from "./components/UseWindowSize";
 import { useWebviewStore } from "./store";
 import {
 	toDisplayPath,
@@ -281,6 +282,8 @@ const ActionCell = ({
 
 export const Tools = () => {
 	const queryClient = useQueryClient();
+	const windowSize = useWindowSize();
+
 	const selectedTool = useWebviewStore((state) => state.selectedTool);
 	const setSelectedTool = useWebviewStore((state) => state.setSelectedTool);
 
@@ -361,7 +364,7 @@ export const Tools = () => {
 			<CustomTable
 				style={{
 					height:
-						window.innerHeight -
+						windowSize.height -
 						(selectedTool ? (configsWithTool?.length > 3 ? 320 : 280) : 40),
 				}}
 				filterRowElement={
@@ -421,7 +424,11 @@ export const Tools = () => {
 								<a
 									href="#"
 									onClick={(_e) => {
-										setSelectedTool(row.original);
+										if (selectedTool === row.original) {
+											setSelectedTool(null);
+										} else {
+											setSelectedTool(row.original);
+										}
 									}}
 								>
 									{row.original.name}
@@ -492,7 +499,13 @@ export const Tools = () => {
 										outdatedTool.name === props.row.original.name &&
 										outdatedTool.version === props.row.original.version,
 								)}
-								onSelect={setSelectedTool}
+								onSelect={(tool) => {
+									if (selectedTool === tool) {
+										setSelectedTool(null);
+									} else {
+										setSelectedTool(tool);
+									}
+								}}
 								tool={props.row.original}
 							/>
 						),

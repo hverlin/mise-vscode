@@ -21,8 +21,8 @@ importers:
         specifier: ^8.20.6
         version: 8.20.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vscode-elements/react-elements':
-        specifier: ^1.15.0
-        version: 1.15.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^1.15.1
+        version: 1.15.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vscode/codicons':
         specifier: ^0.0.36
         version: 0.0.36
@@ -1321,8 +1321,8 @@ packages:
   '@vscode-elements/elements@1.15.0':
     resolution: {integrity: sha512-H+Ky/NqqhgaqdyoFR0np1OSL4n9x4acNR3jRHKP8x8jXGj8Gtw3ZoGV0PAMiVYKeyhwW0Yz3RRONtp6S49cMFA==}
 
-  '@vscode-elements/react-elements@1.15.0':
-    resolution: {integrity: sha512-SMq95/Zq5L+uDejh73oBUiWy2HB1IGB9LHklbXes1+IEVlr44vziC6iOIazK1hUpDyv39MTCD9aFim45uc/dvg==}
+  '@vscode-elements/react-elements@1.15.1':
+    resolution: {integrity: sha512-AePFOL39rvAaeC7t1ZOVc05ixBK6F3NAaST5kgRpP0K9h+XFA2x8RBZpdvYsEtX3lu/wtW71qqdA6Z3xskuiWA==}
     peerDependencies:
       react: 17 || 18 || 19
       react-dom: 17 || 18 || 19
@@ -4642,7 +4642,7 @@ snapshots:
     dependencies:
       lit: 3.2.1
 
-  '@vscode-elements/react-elements@1.15.0(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@vscode-elements/react-elements@1.15.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@lit/react': 1.0.7(@types/react@18.3.18)
       '@vscode-elements/elements': 1.15.0

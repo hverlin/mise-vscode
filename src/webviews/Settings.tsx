@@ -4,6 +4,7 @@ import { type FlattenedProperty, getDefaultForType } from "../utils/miseUtilts";
 import CustomTable from "./components/CustomTable";
 import { FileLink } from "./components/FileLink";
 import { IconButton } from "./components/IconButton";
+import { useWindowSize } from "./components/UseWindowSize";
 import { useWebviewStore } from "./store";
 import { useEditSettingMutation, vscodeClient } from "./webviewVsCodeApi";
 
@@ -15,6 +16,7 @@ export const Settings = () => {
 		(state) => state.setShowModifiedSettingsOnly,
 	);
 	const queryClient = useQueryClient();
+	const windowSize = useWindowSize();
 
 	const settingsQuery = useQuery({
 		queryKey: ["settings"],
@@ -74,7 +76,7 @@ export const Settings = () => {
 	return (
 		<div>
 			<CustomTable
-				style={{ height: window.innerHeight - 40 }}
+				style={{ height: windowSize.height - 40 }}
 				filterRowElement={
 					modifiedSettings.length ? (
 						<VscodeCheckbox

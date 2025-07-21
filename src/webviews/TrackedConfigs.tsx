@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import CustomTable from "./components/CustomTable";
 import { FileLink } from "./components/FileLink";
+import { useWindowSize } from "./components/UseWindowSize";
 import { trackedConfigsQueryOptions } from "./webviewVsCodeApi";
 
 export const TrackedConfigs = () => {
+	const windowSize = useWindowSize();
 	const trackedConfigQuery = useQuery(trackedConfigsQueryOptions);
 
 	if (trackedConfigQuery.isError) {
@@ -13,7 +15,7 @@ export const TrackedConfigs = () => {
 	return (
 		<div>
 			<CustomTable
-				style={{ height: window.innerHeight - 40 }}
+				style={{ height: windowSize.height - 40 }}
 				filterRowElement={
 					<span style={{ opacity: 0.8 }}>Showing tracked config files</span>
 				}

@@ -783,7 +783,7 @@
 		"@tanstack/match-sorter-utils": "^8.19.4",
 		"@tanstack/react-query": "^5.64.0",
 		"@tanstack/react-table": "^8.20.6",
-		"@vscode-elements/react-elements": "^1.15.0",
+		"@vscode-elements/react-elements": "^1.15.1",
 		"@vscode/codicons": "^0.0.36",
 		"async-cache-dedupe": "^2.2.0",
 		"cheerio": "^1.0.0",
