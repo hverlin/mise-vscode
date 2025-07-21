@@ -362,8 +362,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		}) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.path",
-				useShims,
-				useSymLinks,
+				useShims: false,
+				useSymLinks: false,
 				tool,
 				miseConfig,
 			});
@@ -382,8 +382,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.zls.path",
 				binName: "zls",
-				useShims,
-				useSymLinks,
+				useShims: false,
+				useSymLinks: false,
 				tool,
 				miseConfig,
 			});
