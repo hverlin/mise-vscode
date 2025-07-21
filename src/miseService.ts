@@ -22,8 +22,8 @@ import { resolveMisePath } from "./utils/miseBinLocator";
 import { expandConfig } from "./utils/miseDoctorParser";
 import {
 	flattenJsonSchema,
-	idiomaticFileToTool,
 	idiomaticFiles,
+	idiomaticFileToTool,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
@@ -401,11 +401,7 @@ export class MiseService {
 	}
 
 	async getCurrentTools(
-		{
-			useCache,
-		}: {
-			useCache?: boolean;
-		} = { useCache: true },
+		{ useCache }: { useCache?: boolean } = { useCache: true },
 	): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
@@ -509,7 +505,7 @@ export class MiseService {
 		});
 	}
 
-	async useRmTool(filename: string, toolName: string) {
+	async rmUseTool(filename: string, toolName: string) {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
@@ -1023,7 +1019,11 @@ export class MiseService {
 		filePath,
 		name,
 		value,
-	}: { filePath: string; name: string; value: string }) {
+	}: {
+		filePath: string;
+		name: string;
+		value: string;
+	}) {
 		await this.execMiseCommand(
 			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(
 				/"/g,
@@ -1194,6 +1194,7 @@ export class MiseService {
 		await mkdirp(toolsPaths);
 		const linkPath = path.join(toolsPaths, sanitizedBinName);
 		const configuredPath = path.join(
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
 			"${workspaceFolder}",
 			".vscode",
 			"mise-tools",
@@ -1216,7 +1217,7 @@ export class MiseService {
 
 		await symlink(binPath, linkPath, targetType).catch((err) => {
 			if (err.code === "EEXIST") {
-				logger.info("Symlink already exists for ${binPath}");
+				logger.info(`Symlink already exists for ${binPath}`);
 				return;
 			}
 

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { VscodeButton, VscodeCheckbox } from "@vscode-elements/react-elements";
+import { useState } from "react";
 import CustomTable from "./components/CustomTable";
 import { FileLink } from "./components/FileLink";
 import { IconButton } from "./components/IconButton";
@@ -9,8 +10,6 @@ import {
 	trackedConfigsQueryOptions,
 	vscodeClient,
 } from "./webviewVsCodeApi";
-
-import React, { useState } from "react";
 
 const styles = {
 	infoPanel: { padding: "10px" },
@@ -382,14 +381,14 @@ export const Tools = () => {
 						<VscodeCheckbox
 							label={"Active only"}
 							checked={activeOnly}
-							onChange={(e) => {
+							onChange={(_e) => {
 								setActiveOnly(!activeOnly);
 							}}
 						/>
 						<VscodeCheckbox
 							label={"Outdated tools"}
 							checked={showOutdatedOnly}
-							onChange={(e) => {
+							onChange={(_e) => {
 								setShowOutdatedOnly(!showOutdatedOnly);
 							}}
 						/>
@@ -418,10 +417,10 @@ export const Tools = () => {
 						accessorKey: "name",
 						cell: ({ row }) => {
 							return (
-								// biome-ignore lint/a11y/useValidAnchor: <explanation>
+								// biome-ignore lint/a11y/useValidAnchor: todo
 								<a
 									href="#"
-									onClick={(e) => {
+									onClick={(_e) => {
 										setSelectedTool(row.original);
 									}}
 								>

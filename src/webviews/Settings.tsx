@@ -83,6 +83,7 @@ export const Settings = () => {
 							checked={showModifiedOnly ? true : undefined}
 						/>
 					) : (
+						// biome-ignore lint/complexity/noUselessFragments: expected empty fragment
 						<></>
 					)
 				}

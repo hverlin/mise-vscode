@@ -1,6 +1,6 @@
 // @ts-ignore
 import { type GraphvizOptions, graphviz } from "d3-graphviz";
-import React, { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 interface IGraphvizProps {
 	dot: string;

@@ -57,7 +57,8 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				const workspaceRoot = miseService.getCurrentWorkspaceFolderPath();
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
-						? virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
+						? // biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+							virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
 						: virtualEnv.value,
 				};
 			}
@@ -352,13 +353,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["zig"],
 		extensionId: "ziglang.vscode-zig",
-		generateConfiguration: async ({
-			miseService,
-			tool,
-			miseConfig,
-			useShims,
-			useSymLinks,
-		}) => {
+		generateConfiguration: async ({ miseService, tool, miseConfig }) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.path",
 				useShims: false,
@@ -371,13 +366,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["zls", "ubi:zigtools/zls", "aqua:zigtools/zls"],
 		extensionId: "ziglang.vscode-zig",
-		generateConfiguration: async ({
-			miseService,
-			tool,
-			miseConfig,
-			useShims,
-			useSymLinks,
-		}) => {
+		generateConfiguration: async ({ miseService, tool, miseConfig }) => {
 			return configureSimpleExtension(miseService, {
 				configKey: "zig.zls.path",
 				binName: "zls",

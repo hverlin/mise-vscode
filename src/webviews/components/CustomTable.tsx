@@ -1,15 +1,14 @@
+import { rankItem } from "@tanstack/match-sorter-utils";
 import {
 	type ColumnDef,
 	type FilterFn,
-	type SortingState,
 	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
 	getSortedRowModel,
+	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
-
-import { rankItem } from "@tanstack/match-sorter-utils";
 
 import {
 	VscodeTable,

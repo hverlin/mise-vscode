@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
-	type TaskUsageSpec,
 	parseTaskInfo,
 	parseUsageSpecLine,
+	type TaskUsageSpec,
 } from "./taskInfoParser";
 
 describe("parseUsageSpecLine", () => {

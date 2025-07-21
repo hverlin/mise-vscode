@@ -31,25 +31,24 @@ import {
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
-import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
-import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
-import { TaskHoverProvider } from "./providers/TaskHoverProvider";
-import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
-import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
-import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
 	updateEnv,
 } from "./providers/envProvider";
 import { addToolInfoToEditor } from "./providers/inlineToolDecorator";
+import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import {
-	TeraCompletionProvider,
 	createTeraHoverProvider,
+	TeraCompletionProvider,
 } from "./providers/miseTeraCompletionProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
+import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
+import { TaskHoverProvider } from "./providers/TaskHoverProvider";
+import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
+import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
 import {
 	MiseTasksProvider,
@@ -61,6 +60,7 @@ import {
 	registerToolsCommands,
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
+import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import { displayPathRelativeTo } from "./utils/fileUtils";
 import { truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";

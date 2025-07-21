@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
 import type {
 	CancellationToken,
 	CompletionContext,
 	Position,
 	TextDocument,
 } from "vscode";
+import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 
 export class MiseCompletionProvider implements vscode.CompletionItemProvider {
@@ -16,7 +16,7 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 	async provideCompletionItems(
 		document: TextDocument,
 		position: Position,
-		token: CancellationToken,
+		_token: CancellationToken,
 		context: CompletionContext,
 	) {
 		const lineText = document.lineAt(position.line).text;

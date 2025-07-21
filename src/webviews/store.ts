@@ -1,5 +1,5 @@
 import { create } from "zustand/index";
-import { type StorageValue, persist } from "zustand/middleware";
+import { persist, type StorageValue } from "zustand/middleware";
 import { vscode } from "./webviewVsCodeApi";
 
 interface WebviewStore {

@@ -4,9 +4,9 @@ import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import {
+	findTaskDefinition,
 	type MiseTomlType,
 	TomlParser,
-	findTaskDefinition,
 } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
 

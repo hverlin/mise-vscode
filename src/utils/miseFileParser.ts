@@ -1,4 +1,4 @@
-import { SourceTracker, parse } from "toml-v1";
+import { parse, SourceTracker } from "toml-v1";
 import * as vscode from "vscode";
 import { logger } from "./logger";
 import { TOOLS_MAPPING } from "./miseUtilts";
@@ -124,7 +124,7 @@ export class TomlParser<T extends object> {
 		let keySource: { start: number; end: number };
 		try {
 			keySource = this.sourceTracker.getKeySource(obj, needle);
-		} catch (e) {
+		} catch (_e) {
 			return undefined;
 		}
 

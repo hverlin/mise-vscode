@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/correctness/noUnusedVariables: export types */
+
 type depsArray = Array<string | string[]>;
 
 type MiseTask = {

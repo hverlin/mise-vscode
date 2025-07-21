@@ -238,7 +238,7 @@ export async function showOutdatedToolsGutterIcons(
 export async function addToolInfoToEditor(
 	document: vscode.TextDocument,
 	miseService: MiseService,
-	context: vscode.ExtensionContext,
+	_context: vscode.ExtensionContext,
 ): Promise<void> {
 	if (!isMiseExtensionEnabled()) {
 		return;

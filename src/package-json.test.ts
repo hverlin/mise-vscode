@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { SUPPORTED_EXTENSIONS } from "./utils/supportedExtensions";
-
 import packageJson from "../package.json";
+import { SUPPORTED_EXTENSIONS } from "./utils/supportedExtensions";
 
 describe("package.json configuration tests", () => {
 	test("ignore list should be correct", () => {

@@ -1,4 +1,4 @@
-import { type SpawnOptions, exec, spawn } from "node:child_process";
+import { exec, type SpawnOptions, spawn } from "node:child_process";
 import { platform } from "node:os";
 import { promisify } from "node:util";
 import * as vscode from "vscode";

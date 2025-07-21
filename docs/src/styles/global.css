@@ -21,12 +21,10 @@
 	height: 100%;
 	background:
 		linear-gradient(215deg, var(--sl-hero-color), transparent 40%),
-		radial-gradient(var(--sl-hero-color), transparent 40%) no-repeat -60vw -40vh / 150vw 200vh,
-		radial-gradient(var(--sl-hero-color), transparent 65%) no-repeat 50% calc(
-			100% +
-			20rem
-		) /
-		150rem 30rem;
+		radial-gradient(var(--sl-hero-color), transparent 40%) no-repeat -60vw -40vh
+		/ 150vw 200vh,
+		radial-gradient(var(--sl-hero-color), transparent 65%) no-repeat 50%
+		calc(100% + 20rem) / 150rem 30rem;
 }
 
 [data-has-hero] header {

@@ -301,7 +301,7 @@ export function registerToolsCommands(
 						},
 					);
 					if (removeToolFromConfigFile === "Yes") {
-						await miseService.useRmTool(
+						await miseService.rmUseTool(
 							expandPath(tool.source?.path || ""),
 							tool.name,
 						);

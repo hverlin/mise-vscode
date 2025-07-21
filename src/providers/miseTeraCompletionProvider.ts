@@ -1,9 +1,8 @@
-import * as vscode from "vscode";
 import type { DocumentSelector } from "vscode";
+import * as vscode from "vscode";
 import { isTeraAutoCompletionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
-import { logger } from "../utils/logger";
 import {
 	teraFilters,
 	teraFunctions,

@@ -77,6 +77,7 @@ run = 'cargo test {{arg(name="file")}}'
 \`\`\`
 `,
 		),
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
 		insertText: 'arg(name="$1"${2:, i=${3:1}}${4:}${5:, default="$6"})',
 	},
 	{
@@ -98,6 +99,7 @@ run = 'cargo test {{option(name="file")}}'
 # -> cargo test my-test-file
 \`\`\``,
 		),
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
 		insertText: 'option(name="$1"${2:}${4:, default="$5"})',
 	},
 	{
