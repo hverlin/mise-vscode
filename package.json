@@ -153,7 +153,8 @@
 							"Dart-Code.dart-code",
 							"dart-code.flutter",
 							"ziglang.vscode-zig",
-							"signageos.signageos-vscode-sops"
+							"signageos.signageos-vscode-sops",
+							"biomejs.biome"
 						]
 					},
 					"markdownDescription": "List of extensions that should not be configured automatically."

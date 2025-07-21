@@ -34,6 +34,7 @@ If you want to configure it manually, search for
 | [flutter](https://marketplace.visualstudio.com/items?itemName=dart-code.flutter)          | `dart.flutterSdkPath`                                                                                          | Does not work with shims or symlinks                                                                                        |
 | [zig](https://marketplace.visualstudio.com/items?itemName=ziglang.vscode-zig)             | `zig.path`, `zig.zls.path` (install [zls](https://mise.jdx.dev/lang/zig.html#zig-language-server) with `mise`) |                                                                                                                             |
 | [sops](https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops) | `sops.binPath`                                                                              |                                                                                                                             |
+| [Biome](https://marketplace.visualstudio.com/items?itemName=biomejs.biome)                | `biome.lsp.bin`                                                                                                |                                                                                                                             |
 
 Extensions which have built-in support for `mise`:
 
