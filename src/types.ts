@@ -87,6 +87,7 @@ type MiseDirs = {
 
 type MiseConfig = {
 	dirs: MiseDirs;
+	self_update_available?: boolean;
 };
 
 /*

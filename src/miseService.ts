@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readlink, rm, symlink } from "node:fs/promises";
+import { readlink, realpath, rm, symlink } from "node:fs/promises";
 import * as os from "node:os";
 import path from "node:path";
 import { createCache } from "async-cache-dedupe";
@@ -210,14 +210,11 @@ export class MiseService {
 			const hasValidMiseVersion = await this.hasValidMiseVersion();
 			if (!hasValidMiseVersion) {
 				const canSelfUpdate = await this.canSelfUpdate();
-				const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();
 
 				const selection = await vscode.window.showErrorMessage(
 					`Mise version ${version} is not supported. Please update to a supported version.`,
 					{ modal: true },
-					canSelfUpdate && !isSelfUpdateDisabled
-						? "Run mise self-update"
-						: "open mise website",
+					canSelfUpdate ? "Run mise self-update" : "open mise website",
 				);
 				this.hasVerifiedMiseVersion = true;
 				if (selection === "Run mise self-update") {
@@ -800,26 +797,32 @@ export class MiseService {
 		return [year, minor, patch] as [number, number, number];
 	}
 
-	// Checks whether the mise binary has the self-update command
+	// Checks whether the mise binary can self-update.
 	async canSelfUpdate() {
 		if (!this.getMiseBinaryPath()) {
 			return false;
 		}
 
-		try {
-			await this.execMiseCommand("self-update --help");
-			return true;
-		} catch (e) {
-			return false;
+		const miseConfig = await this.getMiseConfiguration();
+		if (miseConfig.self_update_available != null) {
+			logger.debug(
+				"self_update_available value from mise dr:",
+				miseConfig.self_update_available,
+			);
+			return !miseConfig.self_update_available;
 		}
+
+		const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();
+		return !isSelfUpdateDisabled;
 	}
 
 	// Checks for the presence of the `.disable-self-update` sentinel file in the Mise lib
 	// dir, to determine if self-update is disabled (ie installed using a package manager).
 	// It's a re-implementation of the `is_available()` function from `SelfUpdate`.
 	// https://github.com/jdx/mise/blob/863505d4089126780c2352fb1218c6550c3cf9d8/src/cli/self_update.rs#L100
-	isSelfUpdateDisabled(): boolean {
+	async isSelfUpdateDisabled(): Promise<boolean> {
 		logger.info("Checking if self-update is disabled...");
+
 		try {
 			const miseBinPath = this.getMiseBinaryPath();
 			logger.info(`miseBinPath: ${miseBinPath}`);
@@ -828,7 +831,7 @@ export class MiseService {
 			}
 
 			// Get canonical path of the mise binary
-			const canonicalPath = require("node:fs").realpathSync(miseBinPath);
+			const canonicalPath = await realpath(miseBinPath);
 
 			// Get parent directory, then parent of that (two levels up)
 			const parentDir = path.dirname(canonicalPath);
@@ -888,11 +891,6 @@ export class MiseService {
 			}
 
 			const canSelfUpdate = await this.canSelfUpdate();
-			const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();
-
-			if (isSelfUpdateDisabled) {
-				return;
-			}
 
 			const suggestion = await vscode.window.showInformationMessage(
 				`New Mise version available ${miseVersion.latest}. (Current: ${miseVersion.current})`,
