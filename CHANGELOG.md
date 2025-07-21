@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.52.0](https://github.com/hverlin/mise-vscode/compare/v0.51.1...v0.52.0) (2025-07-21)
+
+
+### Features
+
+* get mise config use `--json` option" ([#118](https://github.com/hverlin/mise-vscode/issues/118)) ([fb4932c](https://github.com/hverlin/mise-vscode/commit/fb4932c468801a0c45f5aecb01cb7d843500459e))
+* use mise dr --json to check if mise can self update ([d804507](https://github.com/hverlin/mise-vscode/commit/d804507c3b80b4ac38a5eda2a7893839a93d4aa6))
+
+
+### Bug Fixes
+
+* ensure tools list is resized correctly when closing terminal ([b40c6cb](https://github.com/hverlin/mise-vscode/commit/b40c6cbbf6050f1de65c2626471ccb43d105c9fd))
+
 ## [0.51.1](https://github.com/hverlin/mise-vscode/compare/v0.51.0...v0.51.1) (2025-07-21)
 
 
