@@ -86,6 +86,37 @@ List of extensions that should not be configured automatically.
 
 ---
 
+##### `mise.configureExtensionsAutomaticallyIncludeList`
+- **Type:** `array` (array of `string`)
+- **Default:** `[]`
+
+List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list.
+
+**Available options:**
+
+- `all`
+- `ms-python.python`
+- `denoland.vscode-deno`
+- `charliermarsh.ruff`
+- `golang.go`
+- `oven.bun-vscode`
+- `oracle.oracle-java`
+- `redhat.java`
+- `vscjava.vscode-gradle`
+- `salesforce.salesforcedx-vscode-apex`
+- `timonwong.shellcheck`
+- `ms-vscode.js-debug`
+- `vscode.php-language-features`
+- `xdebug.php-debug`
+- `julialang.language-julia`
+- `pgourlain.erlang`
+- `Dart-Code.dart-code`
+- `dart-code.flutter`
+- `ziglang.vscode-zig`
+- `signageos.signageos-vscode-sops`
+
+---
+
 ##### `mise.configureExtensionsUseShims`
 - **Type:** `boolean`
 - **Default:** `true`

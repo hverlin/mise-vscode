@@ -12,10 +12,11 @@ If you want to configure it manually, search for
 `Mise: Configure extension sdk path...` in the command palette.
 
 - By default, the extensions are automatically configured to use `mise shims`.
-  You can disable this feature in the settings
+  You can [disable this feature in the settings](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims).
 - If you want to share your `.vscode/settings.json` file with others, you can
   enable `configureExtensionsUseSymLinks`. This will create a folder in your
   `.vscode` directory with a symlink to the tools installed by `mise`.
+- If you want to disable the automatic configuration of extensions, see the [set-up guide](/mise-vscode/tutorials/settinguptheextension/).
 
 | Extension                                                                                 | Settings                                                                                                       | Comment                                                                                                                     |
 |-------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
