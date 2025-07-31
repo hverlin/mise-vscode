@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.53.0](https://github.com/hverlin/mise-vscode/compare/v0.52.0...v0.53.0) (2025-07-31)
+
+
+### Features
+
+* Add mise.configureExtensionsAutomaticallyIncludeList setting ([4bc3544](https://github.com/hverlin/mise-vscode/commit/4bc35443c3a3ce6baa8e03504815628057a8e784))
+
+
+### Bug Fixes
+
+* Fix doc for mise.configureExtensionsAutomaticallyIncludeList setting ([1545dbf](https://github.com/hverlin/mise-vscode/commit/1545dbf51c614ae4f0f6b6c123526030fb44b5c8))
+
 ## [0.52.0](https://github.com/hverlin/mise-vscode/compare/v0.51.1...v0.52.0) (2025-07-21)
 
 

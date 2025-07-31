@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "0.52.0",
+	"version": "0.53.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -161,7 +161,9 @@
 				"mise.configureExtensionsAutomaticallyIncludeList": {
 					"order": 5.1,
 					"type": "array",
-					"default": ["all"],
+					"default": [
+						"all"
+					],
 					"items": {
 						"type": "string",
 						"enum": [
