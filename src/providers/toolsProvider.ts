@@ -16,6 +16,7 @@ import {
 } from "../commands";
 import {
 	getIgnoreList,
+	getIncludeList,
 	isMiseExtensionEnabled,
 	shouldUseShims,
 	shouldUseSymLinks,
@@ -617,7 +618,10 @@ export function registerToolsCommands(
 		),
 		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SKD_PATHS, async () => {
 			await miseService.miseReshim();
+
 			const ignoreList = getIgnoreList();
+			const includeList = getIncludeList();
+
 			const tools = await miseService.getCurrentTools();
 			const configurableTools = tools.filter((tool) => {
 				const configurableExtensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
@@ -628,9 +632,20 @@ export function registerToolsCommands(
 				}
 
 				return configurableExtensions.some((configurableExtension) => {
-					return ignoreList.includes(configurableExtension.extensionId)
-						? false
-						: vscode.extensions.getExtension(configurableExtension.extensionId);
+					if (ignoreList.includes(configurableExtension.extensionId)) {
+						return false;
+					}
+
+					if (
+						!includeList.includes(configurableExtension.extensionId) &&
+						!includeList.includes("all")
+					) {
+						return false;
+					}
+
+					return vscode.extensions.getExtension(
+						configurableExtension.extensionId,
+					);
 				});
 			});
 

@@ -158,6 +158,37 @@
 					},
 					"markdownDescription": "List of extensions that should not be configured automatically."
 				},
+				"mise.configureExtensionsAutomaticallyIncludeList": {
+					"order": 5.1,
+					"type": "array",
+					"default": ["all"],
+					"items": {
+						"type": "string",
+						"enum": [
+							"all",
+							"ms-python.python",
+							"denoland.vscode-deno",
+							"charliermarsh.ruff",
+							"golang.go",
+							"oven.bun-vscode",
+							"oracle.oracle-java",
+							"redhat.java",
+							"vscjava.vscode-gradle",
+							"salesforce.salesforcedx-vscode-apex",
+							"timonwong.shellcheck",
+							"ms-vscode.js-debug",
+							"vscode.php-language-features",
+							"xdebug.php-debug",
+							"julialang.language-julia",
+							"pgourlain.erlang",
+							"Dart-Code.dart-code",
+							"dart-code.flutter",
+							"ziglang.vscode-zig",
+							"signageos.signageos-vscode-sops"
+						]
+					},
+					"markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."
+				},
 				"mise.configureExtensionsUseShims": {
 					"order": 6,
 					"type": "boolean",

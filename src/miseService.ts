@@ -805,7 +805,7 @@ export class MiseService {
 				"self_update_available value from mise dr:",
 				miseConfig.self_update_available,
 			);
-			return !miseConfig.self_update_available;
+			return miseConfig.self_update_available;
 		}
 
 		const isSelfUpdateDisabled = await this.isSelfUpdateDisabled();

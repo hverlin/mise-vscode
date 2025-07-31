@@ -35,9 +35,67 @@ However, there are some challenges with sharing `.vscode/settings.json`:
 
 Ideally, VS Code should support a `settings.local.json` file that would be ignored by git. See [this issue](https://github.com/microsoft/vscode/issues/40233) for more information.
 
-If you want to share some settings with others, a good workaround is to create a `settings.shared.json` file that other can use as a reference. You can also create a `mise` task to populate the `settings.json` file with the content of `settings.shared.json` if needed.
+If you want to share some settings with others, here are some good workarounds:
+  - Git ignore the `.vscode/settings.json` file. Create a `settings.shared.json` file that other can use as a reference. Set up a `mise` task to populate your `settings.json` file with the content of `settings.shared.json` if needed.
+  - Use extension such as [workspace-config-plus](https://github.com/swellaby/vscode-workspace-config-plus) to have a `settings.local.json` file that is ignored by git.
 
 </details>
+
+#### Controlling which extensions are configured automatically
+
+You can control which supported extensions are automatically configured by mise-vscode using the following settings in your VS Code settings (user or workspace):
+
+- [`mise.configureExtensionsAutomaticallyIgnoreList`](/mise-vscode/reference/settings/#miseconfigureextensionsautomaticallyignorelist): List of extensions that should **not** be configured automatically.
+- [`mise.configureExtensionsAutomaticallyIncludeList`](/mise-vscode/reference/settings/#miseconfigureextensionsautomaticallyincludelist): List of extensions that **should** be configured automatically.
+
+**How it works:**
+- If the **include** list is set and non-empty, only extensions in this list are considered for automatic configuration.
+- If both **include** and **ignore** lists are set, the ignore list takes precedence (extensions in the ignore list are always excluded).
+- If the **include** list contains `"all"`, all supported extensions are considered (except those in the ignore list).
+- If the **include** list is empty or not set, no extensions are configured automatically, and the extension will not modify your `.vscode/settings.json` file.
+- If [`mise.configureExtensionsAutomatically`](/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) is set to `false`, no extensions will be configured automatically, regardless of the include or ignore lists.
+
+You can find the full list of supported extensions in the [Supported Extensions](/mise-vscode/reference/supported-extensions/) documentation.
+
+Example usage in your `settings.json`:
+
+```json
+{
+  "mise.configureExtensionsAutomaticallyIncludeList": ["ms-python.python", "golang.go"],
+  "mise.configureExtensionsAutomaticallyIgnoreList": ["denoland.vscode-deno"]
+}
+```
+
+This will configure only Python and Go extensions, and will always ignore Deno, even if it is in the include list.
+
+#### Advanced: Fine-grained control with user and workspace settings
+
+You can take advantage of VS Code's user and workspace settings to control which extensions are configured automatically at different levels.
+For example, you can set a global default at the **user** level and then override it at the **workspace** level for specific projects.
+
+This allows you to have a flexible setup where you can control which extensions are configured automatically based on your needs.
+
+To do this, set the `mise.configureExtensionsAutomaticallyIncludeList` to an empty array at the **user** level, and then specify the desired extensions at the **workspace** level in your `.vscode/settings.json` file.
+
+**User settings (`settings.json`):**
+```json
+{
+  "mise.configureExtensionsAutomaticallyIncludeList": []
+}
+```
+
+**Workspace settings (`.vscode/settings.json`):**
+```json
+{
+    "mise.configureExtensionsAutomaticallyIncludeList": [
+        "denoland.vscode-deno"
+    ]
+}
+```
+
+With this setup, only the deno extensions will be configured automatically for your project. However, if you open another project that does not specify the `mise.configureExtensionsAutomaticallyIncludeList`, no extensions will be configured automatically.
+
+**Note that updating this setting might require you to reload the VS Code window for the changes to take effect.**
 
 ### Automatic loading of environment variables
 

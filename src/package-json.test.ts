@@ -17,4 +17,19 @@ describe("package.json configuration tests", () => {
 
 		expect(ignoreListOptions).toEqual(supportedExtensionNames);
 	});
+
+	test("include list should be correct", () => {
+		const supportedExtensionNames = [
+			...new Set(
+				SUPPORTED_EXTENSIONS.map((extension) => extension.extensionId),
+			),
+		];
+
+		const includeListOptions =
+			packageJson.contributes.configuration.properties[
+				"mise.configureExtensionsAutomaticallyIncludeList"
+			].items.enum;
+
+		expect(includeListOptions).toEqual(["all"].concat(supportedExtensionNames));
+	});
 });

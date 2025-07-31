@@ -33,7 +33,10 @@ to use tools provided by `mise` in your current project.
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
 > [!NOTE]
-> The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your setup.
+> The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your set-up.
+> For example, you can choose to disable automatic configuration of other extensions or change the path to the `mise` binary.
+> 
+> You can access the settings by clicking on the mise extension indicator in the status bar.
 
 ## ✨ Features
 
@@ -62,7 +65,7 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📱 Show tools which are not installed or active
 - 📦 Install/Remove/Use tools directly from the sidebar
 - 🔧 Configure your other VSCode extensions to use tools provided by `mise`
-  ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/))
+  ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)). See the [set-up guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) for more information.
 
 <video src="https://github.com/user-attachments/assets/c2ad5e60-f011-46a4-8e1b-1da4264f0d09"></video>
 

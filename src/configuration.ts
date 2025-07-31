@@ -12,6 +12,8 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsUseSymLinks: "configureExtensionsUseSymLinks",
 	configureExtensionsAutomaticallyIgnoreList:
 		"configureExtensionsAutomaticallyIgnoreList",
+	configureExtensionsAutomaticallyIncludeList:
+		"configureExtensionsAutomaticallyIncludeList",
 	enableCodeLens: "enableCodeLens",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
@@ -39,6 +41,13 @@ export const getConfOrElse = <T>(
 export const getIgnoreList = (): string[] => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIgnoreList,
+		[],
+	);
+};
+
+export const getIncludeList = (): string[] => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIncludeList,
 		[],
 	);
 };
