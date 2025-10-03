@@ -129,7 +129,11 @@ Use shims when configuring extensions. When shims are not used, note that you wi
 - **Type:** `boolean`
 - **Default:** `false`
 
-Create symlinks in your `.vscode` folder that links to the `mise` bin. This is useful if you share the `.vscode/settings.json` file with others.
+Create symlinks in your `.vscode` folder that links to the `mise` bin.
+
+This is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:
+- every user must have the extension installed
+- the directory `.vscode/mise-tools` must be excluded from version control.
 
 ---
 
