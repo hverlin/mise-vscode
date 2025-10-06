@@ -1,7 +1,7 @@
 [tools]
-pkl = "latest"
+pkl = "0.29.1"
 node = '22'
-hk = "0.8.2"
+hk = "1.18.1"
 
 [env]
 _.path = ["./node_modules/.bin"]
