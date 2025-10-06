@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.54.0](https://github.com/hverlin/mise-vscode/compare/v0.53.0...v0.54.0) (2025-10-06)
+
+
+### Features
+
+* Do not require even-better-toml to be installed anymore ([225f1e9](https://github.com/hverlin/mise-vscode/commit/225f1e969d98d5506d44893032e1e9a77cd5d22e))
+
 ## [0.53.0](https://github.com/hverlin/mise-vscode/compare/v0.52.0...v0.53.0) (2025-07-31)
 
 
