@@ -48,9 +48,6 @@
 		"workspaceContains:mise/config.toml",
 		"onLanguage"
 	],
-	"extensionDependencies": [
-		"tamasfe.even-better-toml"
-	],
 	"capabilities": {
 		"untrustedWorkspaces": {
 			"supported": false,

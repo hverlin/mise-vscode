@@ -7,9 +7,12 @@ sidebar:
 
 ### Syntax Highlighting for TOML
 
-[Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)
-is automatically installed as a dependency to handle syntax highlighting for
-TOML files.
+For the best experience with syntax highlighting and autocompletion in `mise.toml` files, you should install one of these TOML extensions:
+
+- [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) (recommended)
+- [Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
+
+The extension will notify you on startup if neither is installed.
 
 `mise-vscode` provides syntax highlighting for `tera` used for
 [templating](https://mise.jdx.dev/templates.html) in `mise.toml` files

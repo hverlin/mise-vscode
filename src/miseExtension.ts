@@ -65,6 +65,7 @@ import { displayPathRelativeTo } from "./utils/fileUtils";
 import { truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
+import { checkTomlExtensions } from "./utils/tomlExtensionCheck";
 import WebViewPanel from "./webviewPanel";
 
 export class MiseExtension {
@@ -560,6 +561,10 @@ export class MiseExtension {
 		);
 
 		await vscode.commands.executeCommand(MISE_RELOAD);
+
+		setTimeout(() => {
+			checkTomlExtensions(context);
+		}, 2000);
 
 		setTimeout(async () => {
 			void this.miseService.checkNewMiseVersion();
