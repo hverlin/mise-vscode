@@ -62,14 +62,15 @@ export class MiseFileWatcher {
 				.map((env) => env.source ?? "")
 				.filter((source) => source !== "");
 
+			const idiomaticFilesValues = [...idiomaticFiles.values()];
 			const filesToWatch = [
 				...new Set([
 					...configFiles.map((c) => c.path),
 					...tasksSources,
 					...envSources,
-					...idiomaticFiles
-						.values()
-						.map((f) => expandPath(path.join(rootFolder.uri.fsPath, f))),
+					...idiomaticFilesValues.map((f) =>
+						expandPath(path.join(rootFolder.uri.fsPath, f)),
+					),
 				]),
 			];
 

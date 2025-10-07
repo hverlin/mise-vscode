@@ -88,9 +88,17 @@ description = 'Run tests (with bun)'
 depends = ['install']
 run = 'node --run test'
 
+[tasks.e2e-tests]
+run = 'node --run e2e-tests'
+depends = ['install']
+
 [tasks.check]
 description = "Lint, type-check, and test the project"
 depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
+
+[tasks.check-all]
+description = "Lint, type-check, test, build docs, and run e2e tests"
+depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings', 'docs:build', 'e2e-tests']
 
 [tasks.e2e-test-action]
 tools = { act = 'latest' }
