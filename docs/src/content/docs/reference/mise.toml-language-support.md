@@ -7,6 +7,7 @@ sidebar:
 
 ### Syntax Highlighting for TOML
 
+This extension provides basic syntax highlighting for `mise.toml/mise.lock` files.
 For the best experience with syntax highlighting and autocompletion in `mise.toml` files, you should install one of these TOML extensions:
 
 - [Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
