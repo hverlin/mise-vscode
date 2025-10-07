@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.0](https://github.com/hverlin/mise-vscode/compare/v0.55.0...v0.56.0) (2025-10-07)
+
+
+### Features
+
+* Add syntax highlighting for toml ([ec14289](https://github.com/hverlin/mise-vscode/commit/ec14289a0a5e44d90a4c1556aade9708e8550f3b))
+
 ## [0.55.0](https://github.com/hverlin/mise-vscode/compare/v0.54.0...v0.55.0) (2025-10-07)
 
 
