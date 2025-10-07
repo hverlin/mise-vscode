@@ -150,7 +150,8 @@
 							"Dart-Code.dart-code",
 							"dart-code.flutter",
 							"ziglang.vscode-zig",
-							"signageos.signageos-vscode-sops"
+							"signageos.signageos-vscode-sops",
+							"joselitofilho.ginkgotestexplorer"
 						]
 					},
 					"markdownDescription": "List of extensions that should not be configured automatically."
@@ -183,7 +184,8 @@
 							"Dart-Code.dart-code",
 							"dart-code.flutter",
 							"ziglang.vscode-zig",
-							"signageos.signageos-vscode-sops"
+							"signageos.signageos-vscode-sops",
+							"joselitofilho.ginkgotestexplorer"
 						]
 					},
 					"markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."
