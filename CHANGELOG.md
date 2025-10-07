@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.55.0](https://github.com/hverlin/mise-vscode/compare/v0.54.0...v0.55.0) (2025-10-07)
+
+
+### Features
+
+* add support for extension joselitofilho.ginkgotestexplorer ([#147](https://github.com/hverlin/mise-vscode/issues/147)) ([943966b](https://github.com/hverlin/mise-vscode/commit/943966b42328b1000add5f2f21c4e0407fba7720))
+
 ## [0.54.0](https://github.com/hverlin/mise-vscode/compare/v0.53.0...v0.54.0) (2025-10-06)
 
 
