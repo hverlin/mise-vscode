@@ -1,7 +1,7 @@
 :root {
-	--sl-color-accent-high: hsl(210, 79%, 75%);
-	--sl-color-accent: hsl(210, 61%, 66%);
-	--sl-color-accent-low: hsl(210, 55%, 57%);
+	/*--sl-color-accent-high: hsl(210, 79%, 75%);*/
+	/*--sl-color-accent: hsl(210, 61%, 66%);*/
+	/*--sl-color-accent-low: hsl(210, 55%, 57%);*/
 	--sl-hero-color: hsla(210, 61%, 66%, 30%);
 }
 
@@ -36,4 +36,8 @@
 
 [data-has-hero] .hero > img {
 	filter: drop-shadow(0 0 3rem var(--sl-hero-color));
+}
+
+.group-label {
+	text-transform: uppercase;
 }
