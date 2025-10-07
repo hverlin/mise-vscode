@@ -396,6 +396,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["ginkgo"],
+		extensionId: "joselitofilho.ginkgotestexplorer",
+		generateConfiguration: async ({ miseService, tool, miseConfig }) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "ginkgotestexplorer.ginkgoPath",
+				useShims: false,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<

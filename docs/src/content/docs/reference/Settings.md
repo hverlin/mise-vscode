@@ -83,6 +83,7 @@ List of extensions that should not be configured automatically.
 - `dart-code.flutter`
 - `ziglang.vscode-zig`
 - `signageos.signageos-vscode-sops`
+- `joselitofilho.ginkgotestexplorer`
 
 ---
 
