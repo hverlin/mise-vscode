@@ -150,7 +150,7 @@ const ToolInfo = ({
 					<p style={styles.label}>Used in</p>
 					<div style={styles.pathContainer}>
 						{displayedConfigs.map((config) => {
-							// @ts-ignore
+							// @ts-expect-error
 							const toolInfo = config.tools[selectedTool.name];
 							return (
 								<span

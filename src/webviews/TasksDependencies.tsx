@@ -51,7 +51,7 @@ ${taskDepsDot}
 			<VscodeMultiSelect
 				key={tasksQuery.data?.join(",")}
 				onChange={(e) => {
-					// @ts-ignore
+					// @ts-expect-error
 					setSelectedOptions(e.target?.value ?? []);
 				}}
 			>

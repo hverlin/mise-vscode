@@ -17,7 +17,7 @@ window.addEventListener("message", (event) => {
 	}
 });
 
-// @ts-ignore
+// @ts-expect-error
 function Fallback({ error, resetErrorBoundary }) {
 	return (
 		<div role="alert">

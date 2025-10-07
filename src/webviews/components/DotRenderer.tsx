@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error
 import { type GraphvizOptions, graphviz } from "d3-graphviz";
 import { useEffect, useMemo } from "react";
 

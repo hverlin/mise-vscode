@@ -89,7 +89,6 @@ export default function CustomTable<T>({
 			<VscodeTable
 				resizable
 				bordered-columns
-				// @ts-ignore
 				zebra
 				responsive
 				breakpoint={500}

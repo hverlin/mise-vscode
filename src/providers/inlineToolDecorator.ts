@@ -75,7 +75,6 @@ export async function showToolVersionInline(
 			const toolInfo = tools.find((t) => t.name === cleanedToolName);
 
 			updatedToolNames.add(cleanedToolName);
-			// @ts-ignore
 			activeDecorationsPerFileAndTool[currentFile][cleanedToolName] ??=
 				vscode.window.createTextEditorDecorationType({
 					after: { color: "rgba(136,136,136,0.63)" },
@@ -94,7 +93,6 @@ export async function showToolVersionInline(
 			}
 
 			vscode.window.activeTextEditor?.setDecorations(
-				// @ts-ignore
 				activeDecorationsPerFileAndTool[currentFile][cleanedToolName],
 				[
 					{

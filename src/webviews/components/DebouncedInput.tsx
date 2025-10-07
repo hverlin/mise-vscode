@@ -28,9 +28,9 @@ export function DebouncedInput({
 	return (
 		<VscodeTextfield
 			{...props}
-			// @ts-ignore
+			// @ts-expect-error
 			value={value}
-			// @ts-ignore
+			// @ts-expect-error
 			onInput={(e) => setValue(e.target.value)}
 		/>
 	);

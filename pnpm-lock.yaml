@@ -58,8 +58,8 @@ importers:
         version: 5.0.3(@types/react@18.3.18)(react@18.3.1)
     devDependencies:
       '@biomejs/biome':
-        specifier: 2.1.2
-        version: 2.1.2
+        specifier: 2.2.5
+        version: 2.2.5
       '@rsbuild/core':
         specifier: ^1.4.8
         version: 1.4.8
@@ -97,29 +97,29 @@ importers:
         specifier: ^4.19.2
         version: 4.19.2
       typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
+        specifier: ^5.9.3
+        version: 5.9.3
 
   docs:
     dependencies:
       '@astrojs/starlight':
         specifier: ^0.29.3
-        version: 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+        version: 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       astro:
         specifier: ^4.16.18
-        version: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
+        version: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
       sharp:
         specifier: ^0.32.5
         version: 0.32.6
       starlight-image-zoom:
         specifier: ^0.9.0
-        version: 0.9.0(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))
+        version: 0.9.0(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))
       starlight-links-validator:
         specifier: ^0.13.4
-        version: 0.13.4(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+        version: 0.13.4(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       starlight-theme-obsidian:
         specifier: ^0.0.9
-        version: 0.0.9(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))(starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))
+        version: 0.0.9(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))(starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))
 
 packages:
 
@@ -248,55 +248,55 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@biomejs/biome@2.1.2':
-    resolution: {integrity: sha512-yq8ZZuKuBVDgAS76LWCfFKHSYIAgqkxVB3mGVVpOe2vSkUTs7xG46zXZeNPRNVjiJuw0SZ3+J2rXiYx0RUpfGg==}
+  '@biomejs/biome@2.2.5':
+    resolution: {integrity: sha512-zcIi+163Rc3HtyHbEO7CjeHq8DjQRs40HsGbW6vx2WI0tg8mYQOPouhvHSyEnCBAorfYNnKdR64/IxO7xQ5faw==}
     engines: {node: '>=14.21.3'}
     hasBin: true
 
-  '@biomejs/cli-darwin-arm64@2.1.2':
-    resolution: {integrity: sha512-leFAks64PEIjc7MY/cLjE8u5OcfBKkcDB0szxsWUB4aDfemBep1WVKt0qrEyqZBOW8LPHzrFMyDl3FhuuA0E7g==}
+  '@biomejs/cli-darwin-arm64@2.2.5':
+    resolution: {integrity: sha512-MYT+nZ38wEIWVcL5xLyOhYQQ7nlWD0b/4mgATW2c8dvq7R4OQjt/XGXFkXrmtWmQofaIM14L7V8qIz/M+bx5QQ==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [darwin]
 
-  '@biomejs/cli-darwin-x64@2.1.2':
-    resolution: {integrity: sha512-Nmmv7wRX5Nj7lGmz0FjnWdflJg4zii8Ivruas6PBKzw5SJX/q+Zh2RfnO+bBnuKLXpj8kiI2x2X12otpH6a32A==}
+  '@biomejs/cli-darwin-x64@2.2.5':
+    resolution: {integrity: sha512-FLIEl73fv0R7dI10EnEiZLw+IMz3mWLnF95ASDI0kbx6DDLJjWxE5JxxBfmG+udz1hIDd3fr5wsuP7nwuTRdAg==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [darwin]
 
-  '@biomejs/cli-linux-arm64-musl@2.1.2':
-    resolution: {integrity: sha512-qgHvafhjH7Oca114FdOScmIKf1DlXT1LqbOrrbR30kQDLFPEOpBG0uzx6MhmsrmhGiCFCr2obDamu+czk+X0HQ==}
+  '@biomejs/cli-linux-arm64-musl@2.2.5':
+    resolution: {integrity: sha512-5Ov2wgAFwqDvQiESnu7b9ufD1faRa+40uwrohgBopeY84El2TnBDoMNXx6iuQdreoFGjwW8vH6k68G21EpNERw==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
 
-  '@biomejs/cli-linux-arm64@2.1.2':
-    resolution: {integrity: sha512-NWNy2Diocav61HZiv2enTQykbPP/KrA/baS7JsLSojC7Xxh2nl9IczuvE5UID7+ksRy2e7yH7klm/WkA72G1dw==}
+  '@biomejs/cli-linux-arm64@2.2.5':
+    resolution: {integrity: sha512-5DjiiDfHqGgR2MS9D+AZ8kOfrzTGqLKywn8hoXpXXlJXIECGQ32t+gt/uiS2XyGBM2XQhR6ztUvbjZWeccFMoQ==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [linux]
 
-  '@biomejs/cli-linux-x64-musl@2.1.2':
-    resolution: {integrity: sha512-xlB3mU14ZUa3wzLtXfmk2IMOGL+S0aHFhSix/nssWS/2XlD27q+S6f0dlQ8WOCbYoXcuz8BCM7rCn2lxdTrlQA==}
+  '@biomejs/cli-linux-x64-musl@2.2.5':
+    resolution: {integrity: sha512-AVqLCDb/6K7aPNIcxHaTQj01sl1m989CJIQFQEaiQkGr2EQwyOpaATJ473h+nXDUuAcREhccfRpe/tu+0wu0eQ==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
 
-  '@biomejs/cli-linux-x64@2.1.2':
-    resolution: {integrity: sha512-Km/UYeVowygTjpX6sGBzlizjakLoMQkxWbruVZSNE6osuSI63i4uCeIL+6q2AJlD3dxoiBJX70dn1enjQnQqwA==}
+  '@biomejs/cli-linux-x64@2.2.5':
+    resolution: {integrity: sha512-fq9meKm1AEXeAWan3uCg6XSP5ObA6F/Ovm89TwaMiy1DNIwdgxPkNwxlXJX8iM6oRbFysYeGnT0OG8diCWb9ew==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [linux]
 
-  '@biomejs/cli-win32-arm64@2.1.2':
-    resolution: {integrity: sha512-G8KWZli5ASOXA3yUQgx+M4pZRv3ND16h77UsdunUL17uYpcL/UC7RkWTdkfvMQvogVsAuz5JUcBDjgZHXxlKoA==}
+  '@biomejs/cli-win32-arm64@2.2.5':
+    resolution: {integrity: sha512-xaOIad4wBambwJa6mdp1FigYSIF9i7PCqRbvBqtIi9y29QtPVQ13sDGtUnsRoe6SjL10auMzQ6YAe+B3RpZXVg==}
     engines: {node: '>=14.21.3'}
     cpu: [arm64]
     os: [win32]
 
-  '@biomejs/cli-win32-x64@2.1.2':
-    resolution: {integrity: sha512-9zajnk59PMpjBkty3bK2IrjUsUHvqe9HWwyAWQBjGLE7MIBjbX2vwv1XPEhmO2RRuGoTkVx3WCanHrjAytICLA==}
+  '@biomejs/cli-win32-x64@2.2.5':
+    resolution: {integrity: sha512-F/jhuXCssPFAuciMhHKk00xnCAxJRS/pUzVfXYmOMUp//XW7mO6QeCjsjvnm8L4AO/dG2VOB0O+fJPiJ2uXtIw==}
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
@@ -3280,8 +3280,8 @@ packages:
     resolution: {integrity: sha512-G6zXWS1dLj6eagy6sVhOMQiLtJdxQBHIA9Z6HFUNLOlr6MFOgzV8wvmidtPONfPtEUv0uZsy77XJNzTAfwPDaA==}
     engines: {node: '>=16'}
 
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -3542,12 +3542,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/mdx@3.1.9(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))':
+  '@astrojs/mdx@3.1.9(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))':
     dependencies:
       '@astrojs/markdown-remark': 5.3.0
       '@mdx-js/mdx': 3.1.0(acorn@8.14.0)
       acorn: 8.14.0
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
       es-module-lexer: 1.5.4
       estree-util-visit: 2.0.0
       gray-matter: 4.0.3
@@ -3572,16 +3572,16 @@ snapshots:
       stream-replace-string: 2.0.0
       zod: 3.24.0
 
-  '@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))':
+  '@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))':
     dependencies:
-      '@astrojs/mdx': 3.1.9(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      '@astrojs/mdx': 3.1.9(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       '@astrojs/sitemap': 3.2.1
       '@pagefind/default-ui': 1.2.0
       '@types/hast': 3.0.4
       '@types/js-yaml': 4.0.9
       '@types/mdast': 4.0.4
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
-      astro-expressive-code: 0.38.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
+      astro-expressive-code: 0.38.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       bcp-47: 2.1.0
       hast-util-from-html: 2.0.3
       hast-util-select: 6.0.3
@@ -3740,39 +3740,39 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@biomejs/biome@2.1.2':
+  '@biomejs/biome@2.2.5':
     optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 2.1.2
-      '@biomejs/cli-darwin-x64': 2.1.2
-      '@biomejs/cli-linux-arm64': 2.1.2
-      '@biomejs/cli-linux-arm64-musl': 2.1.2
-      '@biomejs/cli-linux-x64': 2.1.2
-      '@biomejs/cli-linux-x64-musl': 2.1.2
-      '@biomejs/cli-win32-arm64': 2.1.2
-      '@biomejs/cli-win32-x64': 2.1.2
+      '@biomejs/cli-darwin-arm64': 2.2.5
+      '@biomejs/cli-darwin-x64': 2.2.5
+      '@biomejs/cli-linux-arm64': 2.2.5
+      '@biomejs/cli-linux-arm64-musl': 2.2.5
+      '@biomejs/cli-linux-x64': 2.2.5
+      '@biomejs/cli-linux-x64-musl': 2.2.5
+      '@biomejs/cli-win32-arm64': 2.2.5
+      '@biomejs/cli-win32-x64': 2.2.5
 
-  '@biomejs/cli-darwin-arm64@2.1.2':
+  '@biomejs/cli-darwin-arm64@2.2.5':
     optional: true
 
-  '@biomejs/cli-darwin-x64@2.1.2':
+  '@biomejs/cli-darwin-x64@2.2.5':
     optional: true
 
-  '@biomejs/cli-linux-arm64-musl@2.1.2':
+  '@biomejs/cli-linux-arm64-musl@2.2.5':
     optional: true
 
-  '@biomejs/cli-linux-arm64@2.1.2':
+  '@biomejs/cli-linux-arm64@2.2.5':
     optional: true
 
-  '@biomejs/cli-linux-x64-musl@2.1.2':
+  '@biomejs/cli-linux-x64-musl@2.2.5':
     optional: true
 
-  '@biomejs/cli-linux-x64@2.1.2':
+  '@biomejs/cli-linux-x64@2.2.5':
     optional: true
 
-  '@biomejs/cli-win32-arm64@2.1.2':
+  '@biomejs/cli-win32-arm64@2.2.5':
     optional: true
 
-  '@biomejs/cli-win32-x64@2.1.2':
+  '@biomejs/cli-win32-x64@2.2.5':
     optional: true
 
   '@ctrl/tinycolor@4.1.0': {}
@@ -4722,18 +4722,18 @@ snapshots:
 
   astring@1.9.0: {}
 
-  astro-expressive-code@0.38.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)):
+  astro-expressive-code@0.38.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)):
     dependencies:
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
       rehype-expressive-code: 0.38.3
 
-  astro-integration-kit@0.16.1(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)):
+  astro-integration-kit@0.16.1(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)):
     dependencies:
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
       pathe: 1.1.2
       recast: 0.23.9
 
-  astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3):
+  astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.1
@@ -4786,7 +4786,7 @@ snapshots:
       semver: 7.6.3
       shiki: 1.24.2
       tinyexec: 0.3.1
-      tsconfck: 3.1.4(typescript@5.8.3)
+      tsconfck: 3.1.4(typescript@5.9.3)
       unist-util-visit: 5.0.0
       vfile: 6.0.3
       vite: 5.4.11(@types/node@22.10.5)
@@ -4796,7 +4796,7 @@ snapshots:
       yargs-parser: 21.1.1
       zod: 3.24.0
       zod-to-json-schema: 3.23.5(zod@3.24.0)
-      zod-to-ts: 1.2.0(typescript@5.8.3)(zod@3.24.0)
+      zod-to-ts: 1.2.0(typescript@5.9.3)(zod@3.24.0)
     optionalDependencies:
       sharp: 0.33.5
     transitivePeerDependencies:
@@ -7175,18 +7175,18 @@ snapshots:
 
   stackframe@1.3.4: {}
 
-  starlight-image-zoom@0.9.0(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))):
+  starlight-image-zoom@0.9.0(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))):
     dependencies:
-      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       rehype-raw: 7.0.0
       unist-util-visit: 5.0.0
       unist-util-visit-parents: 6.0.1
 
-  starlight-links-validator@0.13.4(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)):
+  starlight-links-validator@0.13.4(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)):
     dependencies:
-      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       '@types/picomatch': 2.3.3
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
       github-slugger: 2.0.0
       hast-util-from-html: 2.0.1
       hast-util-has-property: 3.0.0
@@ -7196,21 +7196,21 @@ snapshots:
       picomatch: 4.0.2
       unist-util-visit: 5.0.0
 
-  starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)):
+  starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)):
     dependencies:
       '@types/d3': 7.4.3
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
-      astro-integration-kit: 0.16.1(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
+      astro-integration-kit: 0.16.1(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
       d3: 7.9.0
       micromatch: 4.0.8
     optionalDependencies:
-      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
 
-  starlight-theme-obsidian@0.0.9(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))(starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))):
+  starlight-theme-obsidian@0.0.9(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))(starlight-site-graph@0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))):
     dependencies:
-      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
-      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)
-      starlight-site-graph: 0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.8.3))
+      '@astrojs/starlight': 0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
+      astro: 4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)
+      starlight-site-graph: 0.1.10(@astrojs/starlight@0.29.3(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3)))(astro@4.16.18(@types/node@22.10.5)(rollup@4.28.1)(typescript@5.9.3))
 
   stdin-discarder@0.1.0:
     dependencies:
@@ -7360,9 +7360,9 @@ snapshots:
 
   trough@2.2.0: {}
 
-  tsconfck@3.1.4(typescript@5.8.3):
+  tsconfck@3.1.4(typescript@5.9.3):
     optionalDependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   tslib@2.8.1: {}
 
@@ -7379,7 +7379,7 @@ snapshots:
 
   type-fest@4.30.0: {}
 
-  typescript@5.8.3: {}
+  typescript@5.9.3: {}
 
   undici-types@5.26.5: {}
 
@@ -7574,9 +7574,9 @@ snapshots:
     dependencies:
       zod: 3.24.0
 
-  zod-to-ts@1.2.0(typescript@5.8.3)(zod@3.24.0):
+  zod-to-ts@1.2.0(typescript@5.9.3)(zod@3.24.0):
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
       zod: 3.24.0
 
   zod@3.24.0: {}

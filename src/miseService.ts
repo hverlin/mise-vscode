@@ -64,11 +64,11 @@ function compareVersions(
 	b: readonly [number, number, number],
 ) {
 	for (let i = 0; i < a.length; i++) {
-		// @ts-ignore
+		// @ts-expect-error
 		if (a[i] > b[i]) {
 			return 1;
 		}
-		// @ts-ignore
+		// @ts-expect-error
 		if (a[i] < b[i]) {
 			return -1;
 		}
@@ -1096,7 +1096,7 @@ export class MiseService {
 							return {
 								path: trackedConfigPath,
 								tools: {
-									// @ts-ignore
+									// @ts-expect-error
 									[idiomaticFileToTool[idiomaticFile]]: content
 										.toString()
 										.trim(),
