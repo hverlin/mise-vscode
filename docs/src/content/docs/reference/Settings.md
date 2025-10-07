@@ -115,6 +115,7 @@ List of extensions that should be configured automatically. If both include and 
 - `dart-code.flutter`
 - `ziglang.vscode-zig`
 - `signageos.signageos-vscode-sops`
+- `joselitofilho.ginkgotestexplorer`
 
 ---
 

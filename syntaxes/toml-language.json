@@ -1,0 +1,161 @@
+{
+	"version": "1.0.0",
+	"scopeName": "source.toml",
+	"information_for_contributors": [
+		"Copied from TOMBI (MIT). https://github.com/tombi-toml/tombi/blob/main/editors/vscode/syntaxes/toml.tmLanguage.json MIT License\n\nCopyright (c) 2024 tombi-toml\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+	],
+	"patterns": [
+		{
+			"include": "#comment"
+		},
+		{
+			"include": "#value"
+		}
+	],
+	"repository": {
+		"comment": {
+			"captures": {
+				"1": {
+					"name": "comment.line.number-sign.toml"
+				},
+				"2": {
+					"name": "punctuation.definition.comment.toml"
+				}
+			},
+			"comment": "Comments",
+			"match": "\\s*((#).*)$"
+		},
+		"value": {
+			"patterns": [
+				{
+					"name": "string.quoted.triple.basic.block.toml",
+					"begin": "\"\"\"",
+					"end": "\"\"\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						}
+					]
+				},
+				{
+					"name": "string.quoted.single.basic.line.toml",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						}
+					]
+				},
+				{
+					"name": "string.quoted.triple.literal.block.toml",
+					"begin": "'''",
+					"end": "'''"
+				},
+				{
+					"name": "string.quoted.single.literal.line.toml",
+					"begin": "'",
+					"end": "'"
+				},
+				{
+					"captures": {
+						"1": {
+							"name": "constant.other.datetime.offset.toml"
+						}
+					},
+					"match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T| ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
+				},
+				{
+					"captures": {
+						"1": {
+							"name": "constant.other.datetime.local.toml"
+						}
+					},
+					"match": "(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?)"
+				},
+				{
+					"name": "constant.other.date.local.toml",
+					"match": "\\d{4}\\-\\d{2}\\-\\d{2}"
+				},
+				{
+					"name": "constant.other.time.local.toml",
+					"match": "\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
+				},
+				{
+					"match": "(?<!\\w)(true|false)(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.language.boolean.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)([\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))(?:(?:\\.([0-9]+))?[eE][\\+\\-]?[1-9]_?[0-9]*|(?:\\.[0-9_]*)))(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.float.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)((?:[\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))))(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.integer.dec.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)([\\+\\-]?inf)(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.float.inf.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)([\\+\\-]?nan)(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.float.nan.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)((?:0x(([0-9a-fA-F](([0-9a-fA-F]|_[0-9a-fA-F])+)?))))(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.integer.hex.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)(0o[0-7](_?[0-7])*)(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.integer.oct.toml"
+						}
+					}
+				},
+				{
+					"match": "(?<!\\w)(0b[01](_?[01])*)(?!\\w)",
+					"captures": {
+						"1": {
+							"name": "constant.numeric.integer.bin.toml"
+						}
+					}
+				}
+			]
+		}
+	}
+}

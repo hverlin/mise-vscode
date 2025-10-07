@@ -55,6 +55,17 @@
 		}
 	},
 	"contributes": {
+		"languages": [
+			{
+				"id": "toml",
+				"aliases": ["TOML", "toml"],
+				"extensions": [".toml"],
+                "filenames": [
+                    "mise.lock"
+                ],
+				"configuration": "./syntaxes/toml-language-configuration.json"
+			}
+		],
 		"tomlValidation": [
 			{
 				"fileMatch": [
@@ -73,6 +84,11 @@
 			}
 		],
 		"grammars": [
+          {
+            "language": "toml",
+            "scopeName": "source.toml",
+            "path": "./syntaxes/toml-language.json"
+          },
 			{
 				"injectTo": [
 					"source.toml"
