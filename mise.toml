@@ -7,16 +7,28 @@ hk = "1.18.1"
 _.path = ["./node_modules/.bin"]
 CODE_CMD = "code"
 
+### Main tasks
+
 [tasks.dev]
 description = 'Starts the project in watch mode and opens the extension in VSCode'
 depends = ['dev-extension', 'dev-webviews', 'start-vscode']
+
+[tasks.check]
+description = "Lint, type-check, and test the project"
+depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
+
+[tasks.check-all]
+description = "Lint, type-check, test, build docs, and run e2e tests"
+depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings', 'docs:build', 'e2e-tests']
+
+#####################
 
 [tasks."docs:extractSettings"]
 run = 'bun src/extract-settings.mjs'
 dir = "{{config_root}}/docs"
 
 [tasks."docs:dev"]
-alias = 'doc    s'
+alias = 'docs'
 description = 'Builds the documentation'
 run = 'exec node --run dev'
 dir = "{{config_root}}/docs"
@@ -93,14 +105,6 @@ run = 'node --run test'
 [tasks.e2e-tests]
 run = 'node --run e2e-tests'
 depends = ['install']
-
-[tasks.check]
-description = "Lint, type-check, and test the project"
-depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
-
-[tasks.check-all]
-description = "Lint, type-check, test, build docs, and run e2e tests"
-depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings', 'docs:build', 'e2e-tests']
 
 [tasks.e2e-test-action]
 tools = { act = 'latest' }

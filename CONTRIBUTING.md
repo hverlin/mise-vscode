@@ -36,6 +36,7 @@ mise run lint-fix # to fix lint issues
 mise run lint-fix -a # to fix lint in non-updated files
 
 mise run check # lint-fix + tests
+mise run check-all # mise check + e2e tests
 ```
 
 You can install the git hooks with
