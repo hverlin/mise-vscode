@@ -1,6 +1,6 @@
 [tools]
 pkl = "0.29.1"
-node = '22'
+node = '24'
 hk = "1.18.1"
 
 [env]
