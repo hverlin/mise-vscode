@@ -36,6 +36,7 @@ If you want to configure it manually, search for
 | [zig](https://marketplace.visualstudio.com/items?itemName=ziglang.vscode-zig)             | `zig.path`, `zig.zls.path` (install [zls](https://mise.jdx.dev/lang/zig.html#zig-language-server) with `mise`) | Does not work with shims or symlinks                                                                                        |
 | [sops](https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops) | `sops.binPath`                                                                                               |                                                                                                                             |
 | [ginkgo test explorer](https://marketplace.visualstudio.com/items?itemName=joselitofilho.ginkgotestexplorer) | `ginkgotestexplorer.ginkgoPath`                                                                                               |                                                                                                                             |
+| [buf](https://marketplace.visualstudio.com/items?itemName=bufbuild.vscode-buf)            | `buf.commandLine.path`                                                                                         |                                                                                                                             |
 
 Extensions which have built-in support for `mise`:
 
@@ -44,7 +45,7 @@ Extensions which have built-in support for `mise`:
   will look for `mise` and install the lsp server automatically
 
 Extensions that are not supported:
-- [Rust](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) does not offer to update the cargo path automatically. See [this discussion](https://github.com/hverlin/mise-vscode/discussions/70) for workarounds. 
+- [Rust](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) does not offer to update the cargo path automatically. See [this discussion](https://github.com/hverlin/mise-vscode/discussions/70) for workarounds.
 
 If you would like to add one, you can open a PR that updates
 [src/utils/supportedExtensions.ts](https://github.com/hverlin/mise-vscode/blob/main/src/utils/supportedExtensions.ts)

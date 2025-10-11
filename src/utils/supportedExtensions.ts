@@ -409,6 +409,25 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["buf", "aqua:bufbuild/buf", "ubi:bufbuild/buf", "asdf:truepay/asdf-buf"],
+		extensionId: "bufbuild.vscode-buf",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "buf.commandLine.path",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
