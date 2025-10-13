@@ -2,7 +2,7 @@
 	"version": "1.0.0",
 	"scopeName": "source.toml",
 	"information_for_contributors": [
-		"Copied from TOMBI (MIT). https://github.com/tombi-toml/tombi/blob/main/editors/vscode/syntaxes/toml.tmLanguage.json MIT License\n\nCopyright (c) 2024 tombi-toml\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+		"Adapted from TOMBI (MIT). https://github.com/tombi-toml/tombi/blob/main/editors/vscode/syntaxes/toml.tmLanguage.json MIT License\n\nCopyright (c) 2024 tombi-toml\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
 	],
 	"patterns": [
 		{
@@ -27,6 +27,22 @@
 		},
 		"value": {
 			"patterns": [
+				{
+					"name": "string.quoted.triple.basic.run.block.toml",
+					"begin": "\\s*run\\s*=\\s*\"\"\"",
+					"end": "\"\"\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						},
+						{ "include": "source.shell" }
+					]
+				},
 				{
 					"name": "string.quoted.triple.basic.block.toml",
 					"begin": "\"\"\"",
@@ -56,6 +72,12 @@
 							"name": "invalid.illegal.escape.toml"
 						}
 					]
+				},
+				{
+					"name": "string.quoted.triple.literal.run.block.toml",
+					"begin": "\\s*run\\s*=\\s*'''",
+					"end": "'''",
+					"patterns": [{ "include": "source.shell" }]
 				},
 				{
 					"name": "string.quoted.triple.literal.block.toml",
