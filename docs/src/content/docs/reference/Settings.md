@@ -84,6 +84,7 @@ List of extensions that should not be configured automatically.
 - `ziglang.vscode-zig`
 - `signageos.signageos-vscode-sops`
 - `joselitofilho.ginkgotestexplorer`
+- `bufbuild.vscode-buf`
 
 ---
 
@@ -116,6 +117,7 @@ List of extensions that should be configured automatically. If both include and 
 - `ziglang.vscode-zig`
 - `signageos.signageos-vscode-sops`
 - `joselitofilho.ginkgotestexplorer`
+- `bufbuild.vscode-buf`
 
 ---
 
