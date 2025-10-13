@@ -82,10 +82,6 @@
 					"**/mise/config.toml"
 				],
 				"url": "https://mise.jdx.dev/schema/mise.json"
-			},
-			{
-				"regexMatch": "task[s]?.toml",
-				"url": "https://mise.jdx.dev/schema/mise-task.json"
 			}
 		],
 		"grammars": [

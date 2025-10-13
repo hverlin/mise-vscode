@@ -20,15 +20,16 @@ The extension will notify you on startup if neither is installed.
 
 ![mise-toml-language-support.png](../../../assets/mise-toml-language-support.png)
 
-### Code completion
+#### tasks_config.includes
 
-This extension will
-[provide two JSON schemas](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml#completion-and-validation-with-json-schema)
-for code completion
+If you use [`tasks_config.includes`](https://mise.jdx.dev/tasks/task-configuration.html#task-config-includes) to include some additional tasks files, add the following at the top of your file to get auto-completion and validation from `tombi` or `even-better-toml`.
 
-- In `mise.*toml` files, https://mise.jdx.dev/schema/mise.json is automatically
-  used
-- In `*task[s]?.toml` files, it's using https://mise.jdx.dev/schema/mise-task.json
+```toml
+#:schema https://mise.jdx.dev/schema/mise-task.json
+
+[build]
+run = "echo Hello, World!"
+```
 
 #### Autocompletion for tools 
 
