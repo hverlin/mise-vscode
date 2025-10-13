@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.57.0](https://github.com/hverlin/mise-vscode/compare/v0.56.0...v0.57.0) (2025-10-13)
+
+
+### Features
+
+* add biome extension support (disabled by default) ([fadf28d](https://github.com/hverlin/mise-vscode/commit/fadf28d108daae4a838e6bfd4a5c264c36a5574c))
+* add buf extension support ([1724350](https://github.com/hverlin/mise-vscode/commit/172435000c5127903b41a1e0a0a0d4fe6264130e))
+
+
+### Bug Fixes
+
+* remove task[s]/toml auto-schema injection ([e510db3](https://github.com/hverlin/mise-vscode/commit/e510db351fb24750e8811b4c2b758d0cd46fb347))
+
 ## [0.56.0](https://github.com/hverlin/mise-vscode/compare/v0.55.0...v0.56.0) (2025-10-07)
 
 
