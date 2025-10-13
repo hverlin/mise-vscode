@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.59.0](https://github.com/hverlin/mise-vscode/compare/v0.58.0...v0.59.0) (2025-10-13)
+
+
+### Features
+
+* add a way to dismiss missing tools warning ([5c0cf81](https://github.com/hverlin/mise-vscode/commit/5c0cf817e284dc014e67adc8511d51ba63caa10b))
+
 ## [0.58.0](https://github.com/hverlin/mise-vscode/compare/v0.57.0...v0.58.0) (2025-10-13)
 
 
