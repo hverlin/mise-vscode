@@ -433,6 +433,24 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["biome", "aqua:biomejs/biome"],
+		extensionId: "biomejs.biome",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "biome.lsp.bin",
+				useShims,
+				useSymLinks: false, // https://github.com/biomejs/biome-vscode/issues/721
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<

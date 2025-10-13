@@ -145,7 +145,7 @@
 				"mise.configureExtensionsAutomaticallyIgnoreList": {
 					"order": 5,
 					"type": "array",
-					"default": [],
+					"default": ["biomejs.biome"],
 					"items": {
 						"type": "string",
 						"enum": [
@@ -169,7 +169,8 @@
 							"ziglang.vscode-zig",
 							"signageos.signageos-vscode-sops",
 							"joselitofilho.ginkgotestexplorer",
-                            "bufbuild.vscode-buf"
+                            "bufbuild.vscode-buf",
+                            "biomejs.biome"
 						]
 					},
 					"markdownDescription": "List of extensions that should not be configured automatically."
@@ -204,7 +205,8 @@
 							"ziglang.vscode-zig",
 							"signageos.signageos-vscode-sops",
 							"joselitofilho.ginkgotestexplorer",
-                            "bufbuild.vscode-buf"
+                            "bufbuild.vscode-buf",
+                            "biomejs.biome"
 						]
 					},
 					"markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."
