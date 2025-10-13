@@ -18,6 +18,8 @@ export const MISE_OPEN_FILE = "mise.openFile";
 export const MISE_OPEN_LOGS = "mise.openLogs";
 export const MISE_OPEN_MENU = "mise.openMenu";
 export const MISE_MISSING_TOOLS_MENU = "mise.openMissingToolsMenu";
+export const MISE_DISMISS_MISSING_TOOLS_WARNING =
+	"mise.dismissMissingToolsWarning";
 export const MISE_OPEN_EXTENSION_SETTINGS = "mise.openExtensionSettings";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";

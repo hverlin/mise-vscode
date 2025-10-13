@@ -1,5 +1,6 @@
 import vscode from "vscode";
 import {
+	MISE_DISMISS_MISSING_TOOLS_WARNING,
 	MISE_DOCTOR,
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
@@ -127,13 +128,21 @@ export function createMenu(miseService: MiseService) {
 export const createMissingToolsMenu = () =>
 	vscode.commands.registerCommand(MISE_MISSING_TOOLS_MENU, async () => {
 		const pick = await vscode.window.showQuickPick(
-			[{ label: "Install all missing tools" }],
+			[
+				{ label: "Install all missing tools" },
+				{ label: "Ignore this warning" },
+			],
 			{ title: "Mise - Missing tools" },
 		);
 
 		switch (pick?.label) {
 			case "Install all missing tools":
 				await vscode.commands.executeCommand(MISE_INSTALL_ALL);
+				break;
+			case "Ignore this warning":
+				await vscode.commands.executeCommand(
+					MISE_DISMISS_MISSING_TOOLS_WARNING,
+				);
 				break;
 			default:
 				break;

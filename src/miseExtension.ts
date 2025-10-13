@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import { version } from "../package.json";
 import {
 	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_DISMISS_MISSING_TOOLS_WARNING,
 	MISE_DOCTOR,
 	MISE_EDIT_SETTING,
 	MISE_FMT,
@@ -121,6 +123,33 @@ export class MiseExtension {
 			createMissingToolsMenu(),
 		);
 		this.statusBarItem.command = MISE_OPEN_MENU;
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				MISE_DISMISS_MISSING_TOOLS_WARNING,
+				async () => {
+					const tools = await this.miseService.getCurrentTools();
+					const missingTools = tools.filter((tool) => !tool.installed);
+					const hash = this.generateMissingToolsHash(missingTools);
+
+					const dismissedHashes = this.context.workspaceState.get<string[]>(
+						"dismissedMissingToolsHashes",
+						[],
+					);
+
+					if (!dismissedHashes.includes(hash)) {
+						dismissedHashes.push(hash);
+						await context.workspaceState.update(
+							"dismissedMissingToolsHashes",
+							dismissedHashes,
+						);
+					}
+
+					this.missingToolBarItem.hide();
+					logger.info("Dismissed missing tools warning");
+				},
+			),
+		);
 
 		const tasksProvider = new MiseTasksProvider(this.miseService);
 		const toolsProvider = new MiseToolsProvider(this.miseService);
@@ -680,6 +709,19 @@ export class MiseExtension {
 				return;
 			}
 
+			const currentHash = this.generateMissingToolsHash(missingTools);
+			const dismissedHashes = this.context.workspaceState.get<string[]>(
+				"dismissedMissingToolsHashes",
+				[],
+			);
+
+			if (dismissedHashes.includes(currentHash)) {
+				if (this.missingToolBarItem) {
+					this.missingToolBarItem.hide();
+				}
+				return;
+			}
+
 			if (!this.missingToolBarItem) {
 				this.missingToolBarItem = vscode.window.createStatusBarItem(
 					vscode.StatusBarAlignment.Left,
@@ -697,5 +739,13 @@ export class MiseExtension {
 			this.missingToolBarItem.tooltip = "Mise: Click to install missing tools";
 			this.missingToolBarItem.command = MISE_MISSING_TOOLS_MENU;
 		});
+	}
+
+	private generateMissingToolsHash(tools: MiseTool[]) {
+		const hash = createHash("sha256");
+		tools.forEach((tool) => {
+			hash.update(tool.name + (tool.version || ""));
+		});
+		return hash.digest("hex");
 	}
 }
