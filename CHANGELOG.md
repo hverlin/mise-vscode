@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.58.0](https://github.com/hverlin/mise-vscode/compare/v0.57.0...v0.58.0) (2025-10-13)
+
+
+### Features
+
+* add shell syntax highlighting in string blocks by default ([fe34692](https://github.com/hverlin/mise-vscode/commit/fe3469224a84bc8139627fef014a52230cdd046c))
+
 ## [0.57.0](https://github.com/hverlin/mise-vscode/compare/v0.56.0...v0.57.0) (2025-10-13)
 
 
