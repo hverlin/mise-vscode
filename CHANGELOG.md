@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.61.0](https://github.com/hverlin/mise-vscode/compare/v0.60.0...v0.61.0) (2025-11-02)
+
+
+### Features
+
+* add kdl syntax highlighting in toml tasks ([e1f74de](https://github.com/hverlin/mise-vscode/commit/e1f74debb03cd1e80abdec4e3ed8312d22b660ed))
+* add partial support for vscode web ([6c07fe9](https://github.com/hverlin/mise-vscode/commit/6c07fe9371ffd02efc83a1f070ed9d509f29cd72))
+
 ## [0.60.0](https://github.com/hverlin/mise-vscode/compare/v0.59.0...v0.60.0) (2025-11-02)
 
 
