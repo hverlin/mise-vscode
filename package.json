@@ -104,6 +104,10 @@
 				"path": "./syntaxes/usage-kdl.json"
 			},
 			{
+				"scopeName": "source.mise.shell",
+				"path": "./syntaxes/shell.json"
+			},
+			{
 				"injectTo": [
 					"source.toml"
 				],

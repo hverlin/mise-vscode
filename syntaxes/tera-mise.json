@@ -81,7 +81,7 @@
 				"2": { "name": "comment.line.shebang.script" }
 			},
 			"end": "(?='''|\"\"\")",
-			"patterns": [{ "include": "source.shell" }]
+			"patterns": [{ "include": "source.mise.shell" }]
 		}
 	],
 	"repository": {
