@@ -8,15 +8,13 @@ sidebar:
 List of extensions that can be automatically configured to use tools from
 `mise`.
 
-If you want to configure it manually, search for
-`Mise: Configure extension sdk path...` in the command palette.
-
-- By default, the extensions are automatically configured to use `mise shims`.
-  You can [disable this feature in the settings](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims).
+- By default, Mise VSCode will not modify your `.vscode/settings.json` file. If you want to enable the automatic configuration of extensions, see the [set-up guide](/mise-vscode/tutorials/settinguptheextension/).
+- If you want to configure one extension manually, search for `Mise: Configure extension sdk path...` in the command palette.
+- When automatic configuration is enabled, the extensions are configured to use `mise shims`.
+  You can [update this feature in the settings](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims).
 - If you want to share your `.vscode/settings.json` file with others, you can
-  enable `configureExtensionsUseSymLinks`. This will create a folder in your
+  enable [`configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks). This will create a folder in your
   `.vscode` directory with a symlink to the tools installed by `mise`.
-- If you want to disable the automatic configuration of extensions, see the [set-up guide](/mise-vscode/tutorials/settinguptheextension/).
 
 | Extension                                                                                                    | Settings                                                                                                       | Comment                                                                                                                                                   |
 |--------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
