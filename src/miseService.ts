@@ -580,7 +580,7 @@ export class MiseService {
 	}
 
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
-		const terminal = this.getOrCreateTerminal("Mise run");
+		const terminal = this.getOrCreateTerminal(`run ${taskName}`);
 		terminal.show();
 
 		const runTaskCmd = isWindows
@@ -592,7 +592,7 @@ export class MiseService {
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {
-		const terminalName = `mise-watch ${taskName}`;
+		const terminalName = `watch ${taskName}`;
 		const previousTerminal = this.terminals.get(terminalName);
 		if (previousTerminal) {
 			previousTerminal.dispose();
