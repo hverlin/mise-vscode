@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.60.0](https://github.com/hverlin/mise-vscode/compare/v0.59.0...v0.60.0) (2025-11-02)
+
+
+### Features
+
+* allow running tasks in parallel ([#157](https://github.com/hverlin/mise-vscode/issues/157)) ([d71c925](https://github.com/hverlin/mise-vscode/commit/d71c925a2ce7bdb94050076eaac904fe5d167170))
+
 ## [0.59.0](https://github.com/hverlin/mise-vscode/compare/v0.58.0...v0.59.0) (2025-10-13)
 
 
