@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/hverlin/mise-vscode/compare/v1.0.0...v1.0.1) (2025-11-02)
+
+
+### Bug Fixes
+
+* add custom shell syntax to prevent syntax highlighting from leaking ([6ea63a8](https://github.com/hverlin/mise-vscode/commit/6ea63a844f870bf81e5909c7c04ec2341185988b))
+
 ## [1.0.0](https://github.com/hverlin/mise-vscode/compare/v0.61.0...v1.0.0) (2025-11-02)
 
 
