@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/hverlin/mise-vscode/compare/v0.61.0...v1.0.0) (2025-11-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* Set mise.configureExtensionsAutomatically to false by default
+
+### Features
+
+* Set mise.configureExtensionsAutomatically to false by default ([cf33381](https://github.com/hverlin/mise-vscode/commit/cf3338165f708cacc3ebdb6a3930e1587488e6bc))
+
 ## [0.61.0](https://github.com/hverlin/mise-vscode/compare/v0.60.0...v0.61.0) (2025-11-02)
 
 
