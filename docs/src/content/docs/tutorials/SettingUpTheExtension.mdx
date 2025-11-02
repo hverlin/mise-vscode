@@ -17,19 +17,19 @@ This might not work for you so make sure to update it manually if needed. You ca
 
 ### Automatic configuration of VS Code extensions
 
-By default, this extension will modify your `.vscode/settings.json` file so that [other extensions](/mise-vscode/reference/supported-extensions/) you use will use the tools you installed with `mise`.
+In order for some VS Code extensions to use the tools installed by `mise`, they need to be configured to point to the correct tool paths.
+This is usually done by updating your workspace's `.vscode/settings.json` file with the correct paths to the tools installed by `mise` or by ensuring that VS Code reads your `PATH` (see [IDE Integration documentation](https://mise.jdx.dev/ide-integration.html#adding-shims-to-path-default-shell)).
 
-**This might be a problem if you are sharing the `.vscode/settings.json` file with others.** (e.g., in a Git repository)
+By default, this extension **will not** automatically modify your `.vscode/settings.json` file.
 
-- This can be [turned off](/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) if you don't want this behavior.
-- Alternatively, you can configure the extension to create symlinks to tools so that the settings points to a relative path in your project. Use [`mise.configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks) for this.
+You can [enable automatic configuration](/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) so that [other extensions](/mise-vscode/reference/supported-extensions/) you use will automatically use the tools you installed with `mise`.
+
+**If you enable this feature and are sharing the `.vscode/settings.json` file with others** (e.g., in a Git repository), you may want to configure the extension to create symlinks to tools so that the settings point to a relative path in your project. Use [`mise.configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks) for this. Note that I consider that sharing the `.vscode/settings.json` file is not a good idea in general (see details below).
 
 <details>
 <summary>About sharing `.vscode/settings.json`</summary>
 
-If you are sharing the `.vscode/settings.json` file with others, you might think that the default value of this extension is not a good idea.
-
-However, there are some challenges with sharing `.vscode/settings.json`:
+If you enable automatic configuration and are sharing the `.vscode/settings.json` file with others, be aware of some challenges:
   - If you use extensions other members of your team don't have, you won't be able to update the settings file without conflicts.
   - If you would like some settings to be different for different members of your team, you won't be able to do so.
 

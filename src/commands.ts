@@ -1,4 +1,4 @@
-export const MISE_CONFIGURE_ALL_SKD_PATHS = "mise.configureAllSdkPaths";
+export const MISE_CONFIGURE_ALL_SDK_PATHS = "mise.configureAllSdkPaths";
 export const MISE_CONFIGURE_SDK_PATH = "mise.configureSdkPath";
 export const MISE_COPY_ENV_VARIABLE_NAME = "mise.copyEnvVariableName";
 export const MISE_COPY_ENV_VARIABLE_VALUE = "mise.copyEnvVariableValue";
@@ -40,3 +40,4 @@ export const MISE_SHOW_ENV_VARIABLE_VALUE = "mise.showEnvVariableValue";
 export const MISE_HIDE_ENV_VARIABLE_VALUE = "mise.hideEnvVariableValue";
 export const MISE_DISPLAY_PATH = "mise.displayPath";
 export const MISE_DOCTOR = "mise.doctor";
+export const MISE_ENABLE_AUTO_CONFIGURATION = "mise.enableAutoConfiguration";

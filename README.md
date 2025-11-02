@@ -44,7 +44,7 @@ The extension will notify you if neither is installed.
 
 > [!NOTE]
 > The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your set-up.
-> For example, you can choose to disable automatic configuration of other extensions or change the path to the `mise` binary.
+> For example, you can choose to enable/disable automatic configuration of other extensions or change the path to the `mise` binary.
 > 
 > You can access the settings by clicking on the mise extension indicator in the status bar.
 

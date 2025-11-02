@@ -59,6 +59,14 @@ export const shouldConfigureExtensionsAutomatically = (): boolean => {
 	);
 };
 
+export const enableAutoConfiguration = async () => {
+	return getExtensionConfig().update(
+		CONFIGURATION_FLAGS.configureExtensionsAutomatically,
+		true,
+		vscode.ConfigurationTarget.Global,
+	);
+};
+
 export const shouldUseShims = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.configureExtensionsUseShims, true);
 };

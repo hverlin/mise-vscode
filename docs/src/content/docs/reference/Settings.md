@@ -50,9 +50,11 @@ Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)
 
 ##### `mise.configureExtensionsAutomatically`
 - **Type:** `boolean`
-- **Default:** `true`
+- **Default:** `false`
 
-Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))
+Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).
+
+This will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured.
 
 ---
 
@@ -143,11 +145,11 @@ This is useful if you share the `.vscode/settings.json` file with others. When t
 
 ---
 
-##### `mise.enableCodeLens`
+##### `mise.checkForNewMiseVersion`
 - **Type:** `boolean`
 - **Default:** `true`
 
-Show run/add tool code lens indicators in the editor.
+Check if a new mise version is available on startup.
 
 ---
 
@@ -159,11 +161,11 @@ Show tool versions in the editor. (requires reload)
 
 ---
 
-##### `mise.checkForNewMiseVersion`
+##### `mise.enableCodeLens`
 - **Type:** `boolean`
 - **Default:** `true`
 
-Check if a new mise version is available on startup.
+Show run/add tool code lens indicators in the editor.
 
 ---
 
@@ -195,7 +197,7 @@ Update terminal environment variables automatically based on the mise configurat
 - **Type:** `boolean`
 - **Default:** `true`
 
-Enable experimental Tera auto-completion in `mise.toml` files.
+Enable Tera auto-completion in `mise.toml` files.
 
 ---
 

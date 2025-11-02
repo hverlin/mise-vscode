@@ -119,6 +119,34 @@
 				}
 			}
 		],
+		"walkthroughs": [
+			{
+				"id": "mise-getting-started",
+				"title": "Mise VSCode setup",
+				"description": "Important steps to get started with the Mise VSCode extension.",
+                "when": "!isWeb",
+                "steps": [
+					{
+						"id": "auto-configure",
+						"title": "Auto-Configure Extensions",
+						"description": "Choose whether to automatically configure VSCode extensions to use tools from mise.\n[Open settings](command:mise.openExtensionSettings)",
+						"media": {
+							"markdown": "walkthrough/auto-configure.md"
+						},
+                        "when": "!isWeb"
+					},
+					{
+						"id": "explore",
+						"title": "Tips for using Mise VSCode",
+						"description": "Open the mise panel to see tools, tasks and environment variables.\n[Open Mise Panel](command:workbench.view.extension.mise-panel)",
+						"media": {
+							"markdown": "walkthrough/explore.md"
+						},
+                        "when": "!isWeb"
+					}
+				]
+			}
+		],
 		"snippets": [
 			{
 				"language": "toml",
@@ -152,8 +180,8 @@
 				"mise.configureExtensionsAutomatically": {
 					"order": 4,
 					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions))"
+					"default": false,
+					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).\n\nThis will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured."
 				},
 				"mise.configureExtensionsAutomaticallyIgnoreList": {
 					"order": 5,
@@ -240,13 +268,13 @@
 					"default": false,
 					"markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control."
 				},
-				"mise.enableCodeLens": {
-					"order": 8,
-					"type": "boolean",
-					"title": "Enable code lens",
-					"default": true,
-					"markdownDescription": "Show run/add tool code lens indicators in the editor."
-				},
+                "mise.checkForNewMiseVersion": {
+                  "order": 8,
+                  "type": "boolean",
+                  "title": "Check for new mise version",
+                  "default": true,
+                  "markdownDescription": "Check if a new mise version is available on startup."
+                },
 				"mise.showToolVersionsDecorations": {
 					"order": 9,
 					"type": "boolean",
@@ -254,13 +282,13 @@
 					"default": true,
 					"markdownDescription": "Show tool versions in the editor. (requires reload)"
 				},
-				"mise.checkForNewMiseVersion": {
-					"order": 10,
-					"type": "boolean",
-					"title": "Check for new mise version",
-					"default": true,
-					"markdownDescription": "Check if a new mise version is available on startup."
-				},
+                "mise.enableCodeLens": {
+                  "order": 10,
+                  "type": "boolean",
+                  "title": "Enable code lens",
+                  "default": true,
+                  "markdownDescription": "Show run/add tool code lens indicators in the editor."
+                },
 				"mise.showNotificationIfMissingTools": {
 					"order": 11,
 					"type": "boolean",
@@ -287,7 +315,7 @@
 					"type": "boolean",
 					"title": "Enable Tera auto-completion",
 					"default": true,
-					"markdownDescription": "Enable experimental Tera auto-completion in `mise.toml` files."
+					"markdownDescription": "Enable Tera auto-completion in `mise.toml` files."
 				},
 				"mise.automaticallyTrustMiseConfigFiles": {
 					"order": 15,

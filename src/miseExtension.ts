@@ -3,10 +3,11 @@ import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import { version } from "../package.json";
 import {
-	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_CONFIGURE_ALL_SDK_PATHS,
 	MISE_DISMISS_MISSING_TOOLS_WARNING,
 	MISE_DOCTOR,
 	MISE_EDIT_SETTING,
+	MISE_ENABLE_AUTO_CONFIGURATION,
 	MISE_FMT,
 	MISE_LIST_ALL_TOOLS,
 	MISE_MISSING_TOOLS_MENU,
@@ -22,6 +23,7 @@ import {
 } from "./commands";
 import {
 	CONFIGURATION_FLAGS,
+	enableAutoConfiguration,
 	getConfiguredBinPath,
 	getCurrentWorkspaceFolder,
 	getMiseEnv,
@@ -151,6 +153,19 @@ export class MiseExtension {
 			),
 		);
 
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				MISE_ENABLE_AUTO_CONFIGURATION,
+				async () => {
+					await enableAutoConfiguration();
+					logger.info("Auto-configuration enabled");
+					await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
+					vscode.window.showInformationMessage(
+						"Mise auto-configuration has been enabled and extensions have been configured.",
+					);
+				},
+			),
+		);
 		const tasksProvider = new MiseTasksProvider(this.miseService);
 		const toolsProvider = new MiseToolsProvider(this.miseService);
 		const envsProvider = new MiseEnvsProvider(this.miseService);
@@ -219,7 +234,7 @@ export class MiseExtension {
 					shouldConfigureExtensionsAutomatically() &&
 					isMiseExtensionEnabled()
 				) {
-					await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SKD_PATHS);
+					await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
 				}
 
 				this.updateStatusBar({ state: "ready" });

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import {
-	MISE_CONFIGURE_ALL_SKD_PATHS,
+	MISE_CONFIGURE_ALL_SDK_PATHS,
 	MISE_CONFIGURE_SDK_PATH,
 	MISE_COPY_TOOL_BIN_PATH,
 	MISE_COPY_TOOL_INSTALL_PATH,
@@ -616,7 +616,7 @@ export function registerToolsCommands(
 				}
 			},
 		),
-		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SKD_PATHS, async () => {
+		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SDK_PATHS, async () => {
 			await miseService.miseReshim();
 
 			const ignoreList = getIgnoreList();
