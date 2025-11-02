@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "0.61.0",
+	"version": "1.0.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -124,8 +124,8 @@
 				"id": "mise-getting-started",
 				"title": "Mise VSCode setup",
 				"description": "Important steps to get started with the Mise VSCode extension.",
-                "when": "!isWeb",
-                "steps": [
+				"when": "!isWeb",
+				"steps": [
 					{
 						"id": "auto-configure",
 						"title": "Auto-Configure Extensions",
@@ -133,7 +133,7 @@
 						"media": {
 							"markdown": "walkthrough/auto-configure.md"
 						},
-                        "when": "!isWeb"
+						"when": "!isWeb"
 					},
 					{
 						"id": "explore",
@@ -142,7 +142,7 @@
 						"media": {
 							"markdown": "walkthrough/explore.md"
 						},
-                        "when": "!isWeb"
+						"when": "!isWeb"
 					}
 				]
 			}
@@ -268,13 +268,13 @@
 					"default": false,
 					"markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control."
 				},
-                "mise.checkForNewMiseVersion": {
-                  "order": 8,
-                  "type": "boolean",
-                  "title": "Check for new mise version",
-                  "default": true,
-                  "markdownDescription": "Check if a new mise version is available on startup."
-                },
+				"mise.checkForNewMiseVersion": {
+					"order": 8,
+					"type": "boolean",
+					"title": "Check for new mise version",
+					"default": true,
+					"markdownDescription": "Check if a new mise version is available on startup."
+				},
 				"mise.showToolVersionsDecorations": {
 					"order": 9,
 					"type": "boolean",
@@ -282,13 +282,13 @@
 					"default": true,
 					"markdownDescription": "Show tool versions in the editor. (requires reload)"
 				},
-                "mise.enableCodeLens": {
-                  "order": 10,
-                  "type": "boolean",
-                  "title": "Enable code lens",
-                  "default": true,
-                  "markdownDescription": "Show run/add tool code lens indicators in the editor."
-                },
+				"mise.enableCodeLens": {
+					"order": 10,
+					"type": "boolean",
+					"title": "Enable code lens",
+					"default": true,
+					"markdownDescription": "Show run/add tool code lens indicators in the editor."
+				},
 				"mise.showNotificationIfMissingTools": {
 					"order": 11,
 					"type": "boolean",
