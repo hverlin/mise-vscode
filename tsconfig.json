@@ -21,6 +21,7 @@
 		".vscode-test",
 		"rsbuild.config.ts",
 		"rsbuild.webviews.config.ts",
+		"rslib.browser.config.ts",
 		"dist",
 		"bun-preload-test.ts",
 		"docs"

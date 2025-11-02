@@ -1,14 +1,13 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import { logger } from "./utils/logger";
 
 /**
  * Browser/web extension entry point.
  */
 export async function activate(_context: vscode.ExtensionContext) {
-    console.log('test')
-    try {
+	try {
 		logger.info(
-			"Mise extension activated successfully (browser mode) - syntax highlighting enabled"
+			"Mise extension activated successfully (browser mode) - syntax highlighting enabled",
 		);
 	} catch (error) {
 		logger.error("Error while activating Mise extension (browser mode)", error);
@@ -16,9 +15,6 @@ export async function activate(_context: vscode.ExtensionContext) {
 	}
 }
 
-// biome-ignore lint/suspicious/noEmptyBlockStatements: required by VSCode extension API
 export function deactivate() {
 	logger.info("Deactivating Mise extension (browser mode)");
 }
-
-

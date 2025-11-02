@@ -5,7 +5,7 @@ hk = "1.18.1"
 
 [env]
 _.path = ["./node_modules/.bin"]
-CODE_CMD = "npx @vscode/test-web"
+CODE_CMD = "code"
 
 ### Main tasks
 

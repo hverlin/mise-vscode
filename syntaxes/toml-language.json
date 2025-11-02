@@ -44,6 +44,22 @@
 					]
 				},
 				{
+					"name": "string.quoted.triple.basic.usage.block.toml",
+					"begin": "\\s*usage\\s*=\\s*\"\"\"",
+					"end": "\"\"\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						},
+						{ "include": "source.usage.kdl" }
+					]
+				},
+				{
 					"name": "string.quoted.triple.basic.block.toml",
 					"begin": "\"\"\"",
 					"end": "\"\"\"",
@@ -78,6 +94,12 @@
 					"begin": "\\s*run\\s*=\\s*'''",
 					"end": "'''",
 					"patterns": [{ "include": "source.shell" }]
+				},
+				{
+					"name": "string.quoted.triple.literal.usage.block.toml",
+					"begin": "\\s*usage\\s*=\\s*'''",
+					"end": "'''",
+					"patterns": [{ "include": "source.usage.kdl" }]
 				},
 				{
 					"name": "string.quoted.triple.literal.block.toml",

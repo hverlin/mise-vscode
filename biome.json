@@ -14,7 +14,8 @@
 			"!**/dist",
 			"!**/.vscode",
 			"!**/package.json",
-			"!**/.vscode-test"
+			"!**/.vscode-test",
+			"!**/.vscode-test-web"
 		]
 	},
 	"formatter": {

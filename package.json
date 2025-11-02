@@ -74,7 +74,10 @@
 					"mise.lock"
 				],
 				"configuration": "./syntaxes/toml-language-configuration.json"
-			}
+			},
+            {
+              "id": "usage-kdl"
+            }
 		],
 		"tomlValidation": [
 			{
@@ -95,6 +98,11 @@
 				"scopeName": "source.toml",
 				"path": "./syntaxes/toml-language.json"
 			},
+            {
+                "language": "usage-kdl",
+                "scopeName": "source.usage.kdl",
+                "path": "./syntaxes/usage-kdl.json"
+            },
 			{
 				"injectTo": [
 					"source.toml"
