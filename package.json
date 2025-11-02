@@ -3,7 +3,7 @@
 	"displayName": "Mise VSCode",
 	"publisher": "hverlin",
 	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "0.60.0",
+	"version": "0.61.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/hverlin/mise-vscode"
@@ -75,9 +75,9 @@
 				],
 				"configuration": "./syntaxes/toml-language-configuration.json"
 			},
-            {
-              "id": "usage-kdl"
-            }
+			{
+				"id": "usage-kdl"
+			}
 		],
 		"tomlValidation": [
 			{
@@ -98,11 +98,11 @@
 				"scopeName": "source.toml",
 				"path": "./syntaxes/toml-language.json"
 			},
-            {
-                "language": "usage-kdl",
-                "scopeName": "source.usage.kdl",
-                "path": "./syntaxes/usage-kdl.json"
-            },
+			{
+				"language": "usage-kdl",
+				"scopeName": "source.usage.kdl",
+				"path": "./syntaxes/usage-kdl.json"
+			},
 			{
 				"injectTo": [
 					"source.toml"
