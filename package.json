@@ -34,6 +34,7 @@
 	],
 	"icon": "resources/icon.png",
 	"main": "./dist/extension.js",
+	"browser": "./dist/browser/browser.js",
 	"activationEvents": [
 		"onTaskType:mise",
 		"workspaceContains:.config/mise/**/config.*.toml",
@@ -52,6 +53,10 @@
 		"untrustedWorkspaces": {
 			"supported": false,
 			"description": "This extension requires a trusted workspace because it can execute code in the workspace."
+		},
+		"virtualWorkspaces": {
+			"supported": "limited",
+			"description": "syntax highlighting only"
 		}
 	},
 	"contributes": {
@@ -371,15 +376,18 @@
 			"mise-panel": [
 				{
 					"id": "miseTasksView",
-					"name": "Tasks"
+					"name": "Tasks",
+					"when": "!isWeb"
 				},
 				{
 					"id": "miseToolsView",
-					"name": "Tools"
+					"name": "Tools",
+					"when": "!isWeb"
 				},
 				{
 					"id": "miseEnvsView",
-					"name": "Environment Variables"
+					"name": "Environment Variables",
+					"when": "!isWeb"
 				}
 			]
 		},
@@ -387,188 +395,222 @@
 			{
 				"command": "mise.refreshEntry",
 				"title": "Mise: Reload configuration",
-				"icon": "$(refresh)"
+				"icon": "$(refresh)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openMenu",
-				"title": "Mise: Open Menu"
+				"title": "Mise: Open Menu",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openMissingToolsMenu",
-				"title": "Mise: Open Missing Tools Menu"
+				"title": "Mise: Open Missing Tools Menu",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openToolRepository",
-				"title": "Mise: Open Tool Repository"
+				"title": "Mise: Open Tool Repository",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.selectWorkspaceFolder",
-				"title": "Mise: Select Workspace Folder"
+				"title": "Mise: Select Workspace Folder",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.runTask",
 				"title": "Mise: Run task",
-				"icon": "$(play)"
+				"icon": "$(play)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.watchTask",
 				"title": "Mise: Run Task in Watch Mode",
-				"icon": "$(watch)"
+				"icon": "$(watch)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.createFileTask",
 				"title": "Mise: Create File Task",
-				"icon": "$(new-file)"
+				"icon": "$(new-file)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.createTomlTask",
 				"title": "Mise: Create Toml Task",
-				"icon": "$(add)"
+				"icon": "$(add)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.createTomlTaskTopMenu",
 				"title": "Mise: Create Toml Task",
-				"icon": "$(add)"
+				"icon": "$(add)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openToolDefinition",
-				"title": "Mise: Open Tool Definition"
+				"title": "Mise: Open Tool Definition",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openTaskDefinition",
-				"title": "Mise: Open Task Definition"
+				"title": "Mise: Open Task Definition",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openEnvVariableDefinition",
-				"title": "Mise: Find Environment Variable Definition"
+				"title": "Mise: Find Environment Variable Definition",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openFile",
-				"title": "Mise: Open File"
+				"title": "Mise: Open File",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.removeTool",
-				"title": "Mise: Remove Tool"
+				"title": "Mise: Remove Tool",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.copyToolInstallPath",
 				"title": "Mise: Copy Tool Install Path",
-				"context": [
-					"miseToolsView"
-				]
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.copyToolBinPaths",
 				"title": "Mise: Copy Tool Bin Paths",
-				"context": [
-					"miseToolsView"
-				]
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.copyEnvVariableName",
-				"title": "Mise: Copy Environment Variable Name"
+				"title": "Mise: Copy Environment Variable Name",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.copyEnvVariableValue",
-				"title": "Mise: Copy Environment Variable Value"
+				"title": "Mise: Copy Environment Variable Value",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.installTool",
-				"title": "Mise: Install Tool"
+				"title": "Mise: Install Tool",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.installAll",
 				"title": "Mise: Run mise install",
-				"icon": "$(cloud-download)"
+				"icon": "$(cloud-download)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.useTool",
 				"title": "Mise: Run mise use",
-				"icon": "$(add)"
+				"icon": "$(add)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.useToolTopMenu",
 				"title": "Mise: Use Tool",
-				"icon": "$(add)"
+				"icon": "$(add)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.configureSdkPath",
-				"title": "Mise: Configure extension sdk path..."
+				"title": "Mise: Configure extension sdk path...",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.configureAllSdkPaths",
-				"title": "Mise: Configure all extension sdk paths"
+				"title": "Mise: Configure all extension sdk paths",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openExtensionSettings",
 				"title": "Mise: Open extension settings",
-				"icon": "$(tools)"
+				"icon": "$(tools)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.openLogs",
 				"title": "Mise: Show extension logs",
-				"icon": "$(list-unordered)"
+				"icon": "$(list-unordered)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.listAllTools",
 				"title": "Mise: List all Tools",
-				"icon": "$(list-ordered)"
+				"icon": "$(list-ordered)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.showSettings",
 				"title": "Mise: Show mise settings",
-				"icon": "$(list-ordered)"
+				"icon": "$(list-ordered)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.showTrackedConfig",
 				"title": "Mise: Show mise tracked configurations",
-				"icon": "$(list-ordered)"
+				"icon": "$(list-ordered)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.visualizeTasksDeps",
 				"title": "Mise: Visualize Tasks Dependencies",
-				"icon": "$(git-merge)"
+				"icon": "$(git-merge)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.setEnvVariable",
 				"title": "Mise: Set Environment Variable",
-				"icon": "$(add)"
+				"icon": "$(add)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.fmt",
-				"title": "Mise: Run mise fmt"
+				"title": "Mise: Run mise fmt",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.editSetting",
-				"title": "Mise: Edit Setting"
+				"title": "Mise: Edit Setting",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.showAllEnvVarValues",
 				"title": "Mise: Show All Environment Variable Values",
-				"icon": "$(eye)"
+				"icon": "$(eye)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.hideAllEnvVarValues",
 				"title": "Mise: Hide All Environment Variable Values",
-				"icon": "$(eye-closed)"
+				"icon": "$(eye-closed)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.showEnvVariableValue",
 				"title": "Mise: Show Environment Variable Value",
-				"icon": "$(eye)"
+				"icon": "$(eye)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.hideEnvVariableValue",
 				"title": "Mise: Hide Environment Variable Value",
-				"icon": "$(eye-closed)"
+				"icon": "$(eye-closed)",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.displayPath",
-				"title": "Mise: Display PATH variable"
+				"title": "Mise: Display PATH variable",
+				"enablement": "!isWeb"
 			},
 			{
 				"command": "mise.doctor",
-				"title": "Mise: Run mise doctor"
+				"title": "Mise: Run mise doctor",
+				"enablement": "!isWeb"
 			}
 		],
 		"menus": {
@@ -809,8 +851,9 @@
 	},
 	"scripts": {
 		"dev-extension": "rsbuild dev",
+		"dev-browser": "rslib build -c rslib.browser.config.ts --watch --config-loader jiti",
 		"dev-webviews": "rsbuild dev -c rsbuild.webviews.config.ts",
-		"build": "rsbuild build && rsbuild build -c rsbuild.webviews.config.ts",
+		"build": "rsbuild build && rslib build -c rslib.browser.config.ts --config-loader jiti && rsbuild build -c rsbuild.webviews.config.ts",
 		"ts-check": "tsc --noEmit",
 		"lint-fix": "biome check --fix",
 		"lint": "biome ci",
@@ -821,6 +864,7 @@
 		"@biomejs/biome": "2.2.5",
 		"@rsbuild/core": "^1.5.13",
 		"@rsbuild/plugin-react": "^1.4.1",
+		"@rslib/core": "^0.17.0",
 		"@types/bun": "^1.2.23",
 		"@types/micromatch": "^4.0.9",
 		"@types/node": "^22.10.5",
@@ -834,6 +878,7 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
+		"@rsbuild/plugin-node-polyfill": "^1.4.2",
 		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
 		"@tanstack/match-sorter-utils": "^8.19.4",
 		"@tanstack/react-query": "^5.90.2",

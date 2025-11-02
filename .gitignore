@@ -1,6 +1,7 @@
 .idea
 .vscode/**
 .vscode-test/**
+.vscode-test-web/
 node_modules
 mise.local.toml
 dist/
