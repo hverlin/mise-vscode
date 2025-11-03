@@ -1,0 +1,6 @@
+[tasks.test-e2e]
+description = "Test task for e2e testing"
+run = "echo 'Hello from mise test task'"
+
+[tasks.echo-hello]
+run = "echo 'Hello, World!'"
