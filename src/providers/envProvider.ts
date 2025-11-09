@@ -372,9 +372,17 @@ export async function updateEnv(
 		return;
 	}
 
+	const miseEnvs = await miseService.getEnvs();
+	if (!miseEnvs || miseEnvs.length === 0) {
+		logger.info(
+			"No envs returned from miseService.getEnvs(). Skipping updating env.",
+		);
+		return;
+	}
+
 	const currentEnvs = new Map(
-		(await miseService.getEnvs())
-			.filter(({ name }) => name !== "PATH")
+		miseEnvs
+			.filter(({ name }) => name.toUpperCase() !== "PATH")
 			.map(({ name, value }) => [name, value]),
 	);
 
