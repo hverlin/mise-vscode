@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/hverlin/mise-vscode/compare/v1.0.1...v1.0.2) (2025-11-09)
+
+
+### Bug Fixes
+
+* remove unused kdl language configuration ([c89a340](https://github.com/hverlin/mise-vscode/commit/c89a3408d71cd2d57394473609dc9779f369272c))
+* skip updating env if no env. variables are returned from mise env ([91c2fcc](https://github.com/hverlin/mise-vscode/commit/91c2fcc9b5ef5e9419e16c6ed431dd3fbe42e221))
+
 ## [1.0.1](https://github.com/hverlin/mise-vscode/compare/v1.0.0...v1.0.1) (2025-11-02)
 
 
