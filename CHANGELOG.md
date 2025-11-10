@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/hverlin/mise-vscode/compare/v1.0.2...v1.1.0) (2025-11-10)
+
+
+### Features
+
+* add status bar notification for invalid Mise configuration files ([1aa5980](https://github.com/hverlin/mise-vscode/commit/1aa5980a51a1b2cd4dd5e45aa58f097d533c1e45))
+
 ## [1.0.2](https://github.com/hverlin/mise-vscode/compare/v1.0.1...v1.0.2) (2025-11-09)
 
 
