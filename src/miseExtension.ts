@@ -65,7 +65,7 @@ import {
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
-import { displayPathRelativeTo } from "./utils/fileUtils";
+import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
@@ -80,6 +80,10 @@ export class MiseExtension {
 		0,
 	);
 	private missingToolBarItem = vscode.window.createStatusBarItem(
+		vscode.StatusBarAlignment.Left,
+		0,
+	);
+	private invalidMiseConfigStatusBarItem = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Left,
 		0,
 	);
@@ -245,6 +249,7 @@ export class MiseExtension {
 				});
 			}
 
+			void this.checkForInvalidMiseConfigFiles();
 			await this.updateStatusBarTooltip();
 		});
 
@@ -650,6 +655,7 @@ export class MiseExtension {
 		}
 
 		const icon = state === "loading" ? "$(sync~spin)" : "$(terminal)";
+		this.statusBarItem.color = undefined;
 
 		this.statusBarItem.text = `${icon} Mise`;
 		if (state === "disabled") {
@@ -703,6 +709,63 @@ export class MiseExtension {
 		this.statusBarItem.text = "$(error) Mise";
 		this.statusBarItem.color = new vscode.ThemeColor("errorForeground");
 		this.statusBarItem.tooltip = errorMsg;
+	}
+
+	private async checkForInvalidMiseConfigFiles() {
+		const resetStatusBar = () => {
+			this.invalidMiseConfigStatusBarItem.hide();
+			this.invalidMiseConfigStatusBarItem.command = undefined;
+			this.invalidMiseConfigStatusBarItem.tooltip = undefined;
+			this.invalidMiseConfigStatusBarItem.text = "";
+		};
+
+		try {
+			await this.miseService.getMiseConfigFiles();
+			resetStatusBar();
+		} catch (error) {
+			if (!(error instanceof Error)) {
+				resetStatusBar();
+				return;
+			}
+
+			if (error.message.includes("mise ERROR error parsing config file")) {
+				const filePathMatch = error.message.match(
+					/error parsing config file: (.*?\.toml)/,
+				);
+				const invalidMiseCfgFile = filePathMatch?.[1];
+				if (invalidMiseCfgFile) {
+					const filePath = expandPath(invalidMiseCfgFile);
+					this.invalidMiseConfigStatusBarItem.text = `Invalid Mise config: ${filePath}`;
+					this.invalidMiseConfigStatusBarItem.color = new vscode.ThemeColor(
+						"errorForeground",
+					);
+					const errorParts = error.message.split(
+						"mise ERROR error parsing config file:",
+						2,
+					);
+					const mainError = errorParts[1]
+						? `Error parsing config file: ${errorParts[1]}`
+						: error.message;
+
+					const cleanedError = mainError.split(
+						"mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information",
+					)[0];
+
+					this.invalidMiseConfigStatusBarItem.tooltip =
+						cleanedError?.replace(/mise ERROR /g, "").trim() || error.message;
+
+					this.invalidMiseConfigStatusBarItem.command = {
+						title: "Open Invalid Mise Config File",
+						command: MISE_OPEN_FILE,
+						arguments: [filePath],
+					};
+					this.invalidMiseConfigStatusBarItem.show();
+					this.setErrorState(
+						`Mise configuration file is invalid: ${filePath}. Please fix or remove this file.`,
+					);
+				}
+			}
+		}
 	}
 
 	private checkForMissingMiseTools() {
