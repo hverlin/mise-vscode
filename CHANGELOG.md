@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/hverlin/mise-vscode/compare/v1.1.0...v1.2.0) (2025-11-12)
+
+
+### Features
+
+* add configuration option to include PATH when updating VS Code environment variables using mise env ([6de2595](https://github.com/hverlin/mise-vscode/commit/6de2595d820d225f8e83b6fb2faae680f84e11ad))
+
 ## [1.1.0](https://github.com/hverlin/mise-vscode/compare/v1.0.2...v1.1.0) (2025-11-10)
 
 
