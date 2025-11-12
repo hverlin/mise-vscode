@@ -15,6 +15,7 @@ import {
 	isMiseExtensionEnabled,
 	shouldAutomaticallyReloadTerminalEnv,
 	shouldUpdateEnv,
+	shouldUpdateEnvAutomaticallyIncludePATH,
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
@@ -381,9 +382,11 @@ export async function updateEnv(
 	}
 
 	const currentEnvs = new Map(
-		miseEnvs
-			.filter(({ name }) => name.toUpperCase() !== "PATH")
-			.map(({ name, value }) => [name, value]),
+		shouldUpdateEnvAutomaticallyIncludePATH()
+			? miseEnvs.map(({ name, value }) => [name, value])
+			: miseEnvs
+					.filter(({ name }) => name.toUpperCase() !== "PATH")
+					.map(({ name, value }) => [name, value]),
 	);
 
 	if (previousEnvs.size === 0) {

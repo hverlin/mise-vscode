@@ -303,6 +303,13 @@
 					"default": true,
 					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, other extensions might not see all mise environment variables."
 				},
+                "mise.updateEnvAutomaticallyIncludePath": {
+                    "order": 12.1,
+                    "type": "boolean",
+                    "title": "Include PATH when updating environment variables",
+                    "default": false,
+                    "markdownDescription": "Include the PATH variable when updating VSCode and terminal environment variables. Disable this if you want to keep your original PATH."
+                },
 				"mise.updateOpenTerminalsEnvAutomatically": {
 					"order": 13,
 					"type": "boolean",

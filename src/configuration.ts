@@ -19,6 +19,7 @@ export const CONFIGURATION_FLAGS = {
 	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
 	updateEnvAutomatically: "updateEnvAutomatically",
+	updateEnvAutomaticallyIncludePATH: "updateEnvAutomaticallyIncludePATH",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 	teraAutoCompletion: "teraAutoCompletion",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
@@ -137,6 +138,13 @@ export const shouldCheckForNewMiseVersion = () => {
 
 export const shouldUpdateEnv = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.updateEnvAutomatically, true);
+};
+
+export const shouldUpdateEnvAutomaticallyIncludePATH = () => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.updateEnvAutomaticallyIncludePATH,
+		true,
+	);
 };
 
 export const shouldAutomaticallyReloadTerminalEnv = () => {
