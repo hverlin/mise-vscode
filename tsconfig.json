@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"esModuleInterop": true,
 		"isolatedModules": true,
-		"lib": ["ES2020", "dom"],
+		"lib": ["ES2022", "dom"],
 		"module": "Preserve",
 		"moduleResolution": "Bundler",
 		"noEmit": true,

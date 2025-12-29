@@ -86,7 +86,6 @@ description = 'Render webviews in watch mode.'
 run = 'node --run dev-webviews'
 depends = ['install']
 
-
 [tasks.dev-reload-vscode]
 description = 'Starts the project in watch mode and opens the extension in VSCode. Reload VSCode on changes'
 depends = ['dev-extension', 'dev-webviews', 'watch-vscode']
@@ -112,7 +111,7 @@ depends = ['install']
 run = 'hk fix'
 
 [tasks.test]
-description = 'Run tests (with bun)'
+description = 'Run tests'
 depends = ['install']
 run = 'node --run test'
 
