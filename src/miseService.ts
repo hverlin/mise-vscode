@@ -347,8 +347,10 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-        command: includeHidden ? 'tasks ls --all --json --hidden' : 'tasks ls --all --json'
-      })
+				command: includeHidden
+					? "tasks ls --all --json --hidden"
+					: "tasks ls --all --json",
+			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
