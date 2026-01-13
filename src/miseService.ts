@@ -345,9 +345,20 @@ export class MiseService {
 			return [];
 		}
 
+		let extraArgs = "";
+
+		if (includeHidden) {
+			extraArgs += " --hidden";
+		}
+
+		// The --all flag was added in 2025.10.3
+		if (await this.hasValidMiseVersion([2025, 10, 3])) {
+			extraArgs += " --all";
+		}
+
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: includeHidden ? "tasks ls --json --hidden" : "tasks ls --json",
+				command: `tasks ls --json ${extraArgs}`,
 			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
@@ -854,7 +865,7 @@ export class MiseService {
 		}
 	}
 
-	async hasValidMiseVersion() {
+	async hasValidMiseVersion(minVersion?: readonly [number, number, number]) {
 		if (!this.getMiseBinaryPath()) {
 			return false;
 		}
@@ -864,7 +875,7 @@ export class MiseService {
 			return false;
 		}
 
-		return isVersionGreaterOrEqualThan(version, MIN_MISE_VERSION);
+		return isVersionGreaterOrEqualThan(version, minVersion ?? MIN_MISE_VERSION);
 	}
 
 	async checkNewMiseVersion() {
