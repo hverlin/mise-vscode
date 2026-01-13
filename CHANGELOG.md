@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/hverlin/mise-vscode/compare/v1.2.0...v1.3.0) (2026-01-13)
+
+
+### Features
+
+* read all tasks from monorepos ([#171](https://github.com/hverlin/mise-vscode/issues/171)) ([8d0194e](https://github.com/hverlin/mise-vscode/commit/8d0194e0efe9ab6f1f055489fd63400f7572ccf7))
+
 ## [1.2.0](https://github.com/hverlin/mise-vscode/compare/v1.1.0...v1.2.0) (2025-11-12)
 
 
