@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/hverlin/mise-vscode/compare/v1.3.0...v1.3.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* replace 'watch' icon with 'eye-watch' icon ([#174](https://github.com/hverlin/mise-vscode/issues/174)) ([4135ad2](https://github.com/hverlin/mise-vscode/commit/4135ad24a00ccdf99dc238bcb0d01e7377c48073))
+
 ## [1.3.0](https://github.com/hverlin/mise-vscode/compare/v1.2.0...v1.3.0) (2026-01-13)
 
 
