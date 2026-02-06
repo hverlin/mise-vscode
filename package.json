@@ -470,7 +470,7 @@
 			{
 				"command": "mise.watchTask",
 				"title": "Mise: Run Task in Watch Mode",
-				"icon": "$(watch)",
+				"icon": "$(eye-watch)",
 				"enablement": "!isWeb"
 			},
 			{

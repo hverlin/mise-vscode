@@ -48,7 +48,7 @@ export class MiseFileTaskCodeLensProvider implements vscode.CodeLensProvider {
 		);
 		codeLenses.push(
 			new vscode.CodeLens(range, {
-				title: "$(watch) Watch",
+				title: "$(eye-watch) Watch",
 				tooltip: `Watch task ${existingTask.name}`,
 				command: MISE_WATCH_TASK,
 				arguments: [existingTask.name],

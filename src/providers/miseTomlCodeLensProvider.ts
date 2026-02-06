@@ -29,7 +29,7 @@ function createWatchTaskCodeLens(
 	range: vscode.Range,
 ): vscode.CodeLens {
 	return new vscode.CodeLens(range, {
-		title: "$(watch) Watch",
+		title: "$(eye-watch) Watch",
 		tooltip: `Watch task ${taskName}`,
 		command: MISE_WATCH_TASK,
 		arguments: [taskName],
