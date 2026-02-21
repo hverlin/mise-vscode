@@ -434,6 +434,31 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
+		toolNames: [
+			"bazel",
+			"aqua:bazelbuild/bazel",
+			"aqua:bazelbuild/bazelisk",
+		],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({ tool }) => {
+			return {
+				"bazel.executable": tool.install_path,
+			};
+		},
+	},
+	{
+		toolNames: [
+			"buildifier",
+			"aqua:bazelbuild/buildtools/buildifier",
+		],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({ tool }) => {
+			return {
+				"bazel.buildifierExecutable": tool.install_path,
+			};
+		},
+	},
+	{
 		toolNames: ["biome", "aqua:biomejs/biome"],
 		extensionId: "biomejs.biome",
 		generateConfiguration: async ({
