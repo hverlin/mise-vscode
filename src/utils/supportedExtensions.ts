@@ -434,31 +434,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: [
-			"bazel",
-			"aqua:bazelbuild/bazel",
-			"aqua:bazelbuild/bazelisk",
-		],
-		extensionId: "bazelbuild.vscode-bazel",
-		generateConfiguration: async ({ tool }) => {
-			return {
-				"bazel.executable": tool.install_path,
-			};
-		},
-	},
-	{
-		toolNames: [
-			"buildifier",
-			"aqua:bazelbuild/buildtools/buildifier",
-		],
-		extensionId: "bazelbuild.vscode-bazel",
-		generateConfiguration: async ({ tool }) => {
-			return {
-				"bazel.buildifierExecutable": tool.install_path,
-			};
-		},
-	},
-	{
 		toolNames: ["biome", "aqua:biomejs/biome"],
 		extensionId: "biomejs.biome",
 		generateConfiguration: async ({
@@ -473,6 +448,64 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				useSymLinks: false, // https://github.com/biomejs/biome-vscode/issues/721
 				tool,
 				miseConfig,
+			});
+		},
+	},
+		{
+		toolNames: [
+			"bazelisk",
+			"aqua:bazelbuild/bazelisk",
+			"npm:@bazel/bazelisk",
+			"asdf:josephtate/asdf-bazelisk",
+		],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "bazel.executable",
+				binName: "bazelisk",
+				useShims: false,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
+					if (bin.startsWith("${workspaceFolder}/")) {
+						return "./" + bin.slice("${workspaceFolder}/".length);
+					}
+					return bin;
+				},
+			});
+		},
+	},
+	{
+		toolNames: [
+			"buildifier",
+			"aqua:bazelbuild/buildtools/buildifier",
+		],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "bazel.buildifierExecutable",
+				binName: "buildifier",
+				useShims: false,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
+					if (bin.startsWith("${workspaceFolder}/")) {
+						return "./" + bin.slice("${workspaceFolder}/".length);
+					}
+					return bin;
+				},
 			});
 		},
 	},
