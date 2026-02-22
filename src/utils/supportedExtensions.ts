@@ -41,6 +41,24 @@ const generateJavaConfiguration =
 		};
 	};
 
+function removeUnsupportedWorkspace(target: string) {
+	// Some plugins fail to resolve ${workspaceFolder}/
+	const prefixVariants = [
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+		"${workspaceFolder}/",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+		"${workspaceFolder}\\",
+	];
+
+	for (const prefix of prefixVariants) {
+		if (target.startsWith(prefix)) {
+			return target.slice(prefix.length);
+		}
+	}
+
+	return target;
+}
+
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "ms-python.python",
@@ -448,6 +466,51 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				useSymLinks: false, // https://github.com/biomejs/biome-vscode/issues/721
 				tool,
 				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: [
+			"bazelisk",
+			"aqua:bazelbuild/bazelisk",
+			"npm:@bazel/bazelisk",
+			"asdf:josephtate/asdf-bazelisk",
+		],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "bazel.executable",
+				binName: "bazelisk",
+				useShims: false,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: removeUnsupportedWorkspace,
+			});
+		},
+	},
+	{
+		toolNames: ["buildifier", "aqua:bazelbuild/buildtools/buildifier"],
+		extensionId: "bazelbuild.vscode-bazel",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "bazel.buildifierExecutable",
+				binName: "buildifier",
+				useShims: false,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: removeUnsupportedWorkspace,
 			});
 		},
 	},
