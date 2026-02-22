@@ -34,17 +34,20 @@ const generateJavaConfiguration =
 		return {
 			[keyName]: config.useSymLinks
 				? await config.miseService.createMiseToolSymlink(
-					"java",
-					config.tool.install_path,
-				)
+						"java",
+						config.tool.install_path,
+					)
 				: config.tool.install_path,
 		};
 	};
 
-function removeUnsupportedWorkspace(target: string) { // Some plugins fail to resolve ${workspaceFolder}/
+function removeUnsupportedWorkspace(target: string) {
+	// Some plugins fail to resolve ${workspaceFolder}/
 	const prefixVariants = [
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
 		"${workspaceFolder}/",
-		"${workspaceFolder}\\"
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+		"${workspaceFolder}\\",
 	];
 
 	for (const prefix of prefixVariants) {
@@ -54,7 +57,7 @@ function removeUnsupportedWorkspace(target: string) { // Some plugins fail to re
 	}
 
 	return target;
-};
+}
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
@@ -73,7 +76,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
 						? // biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-						virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
+							virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
 						: virtualEnv.value,
 				};
 			}
@@ -348,22 +351,16 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: ["dart",
+		toolNames: [
+			"dart",
 			"http:dart",
 			"asdf:mise-plugins/mise-dart",
 			"vfox:version-fox/vfox-dart",
 		],
 		extensionId: "Dart-Code.dart-code",
-		generateConfiguration: async ({
-			miseService,
-			tool,
-			useSymLinks,
-		}) => {
+		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
 			var folderPath = useSymLinks
-				? await miseService.createMiseToolSymlink(
-					"dart",
-					tool.install_path
-				)
+				? await miseService.createMiseToolSymlink("dart", tool.install_path)
 				: tool.install_path;
 
 			return { "dart.sdkPath": removeUnsupportedWorkspace(folderPath) };
@@ -377,21 +374,10 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			"vfox:version-fox/vfox-flutter",
 		],
 		extensionId: "dart-code.flutter",
-		generateConfiguration: async ({
-			miseService,
-			tool,
-			useSymLinks,
-		}) => {
+		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
 			var folderPath = useSymLinks
-				? await miseService.createMiseToolSymlink(
-					"flutter",
-					tool.install_path
-				)
+				? await miseService.createMiseToolSymlink("flutter", tool.install_path)
 				: tool.install_path;
-
-			if (folderPath.startsWith("${workspaceFolder}/")) {
-				folderPath = folderPath.slice("${workspaceFolder}/".length);
-			}
 
 			return { "dart.flutterSdkPath": removeUnsupportedWorkspace(folderPath) };
 		},
