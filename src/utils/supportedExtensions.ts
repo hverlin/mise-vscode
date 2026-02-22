@@ -34,17 +34,20 @@ const generateJavaConfiguration =
 		return {
 			[keyName]: config.useSymLinks
 				? await config.miseService.createMiseToolSymlink(
-					"java",
-					config.tool.install_path,
-				)
+						"java",
+						config.tool.install_path,
+					)
 				: config.tool.install_path,
 		};
 	};
 
-function removeUnsupportedWorkspace(target: string) { // Some plugins fail to resolve ${workspaceFolder}/
+function removeUnsupportedWorkspace(target: string) {
+	// Some plugins fail to resolve ${workspaceFolder}/
 	const prefixVariants = [
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
 		"${workspaceFolder}/",
-		"${workspaceFolder}\\"
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+		"${workspaceFolder}\\",
 	];
 
 	for (const prefix of prefixVariants) {
@@ -54,7 +57,7 @@ function removeUnsupportedWorkspace(target: string) { // Some plugins fail to re
 	}
 
 	return target;
-};
+}
 
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
@@ -73,7 +76,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
 						? // biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-						virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
+							virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
 						: virtualEnv.value,
 				};
 			}
@@ -492,10 +495,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: [
-			"buildifier",
-			"aqua:bazelbuild/buildtools/buildifier",
-		],
+		toolNames: ["buildifier", "aqua:bazelbuild/buildtools/buildifier"],
 		extensionId: "bazelbuild.vscode-bazel",
 		generateConfiguration: async ({
 			miseService,
