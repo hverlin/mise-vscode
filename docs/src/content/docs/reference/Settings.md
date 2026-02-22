@@ -163,6 +163,14 @@ Show tool versions in the editor. (requires reload)
 
 ---
 
+##### `mise.showToolEnvVarsDecorations`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show environment variables contributed by each tool in the editor inline decorations (e.g. `GOBIN`, `GOROOT` for Go).
+
+---
+
 ##### `mise.enableCodeLens`
 - **Type:** `boolean`
 - **Default:** `true`

@@ -284,6 +284,13 @@
           "default": true,
           "markdownDescription": "Show tool versions in the editor. (requires reload)"
         },
+        "mise.showToolEnvVarsDecorations": {
+          "order": 9.1,
+          "type": "boolean",
+          "title": "Show tool environment variables",
+          "default": true,
+          "markdownDescription": "Show environment variables contributed by each tool in the editor inline decorations (e.g. `GOBIN`, `GOROOT` for Go)."
+        },
         "mise.enableCodeLens": {
           "order": 10,
           "type": "boolean",

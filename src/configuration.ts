@@ -17,6 +17,7 @@ export const CONFIGURATION_FLAGS = {
 	enableCodeLens: "enableCodeLens",
 	enableToolLinks: "enableToolLinks",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
+	showToolEnvVarsDecorations: "showToolEnvVarsDecorations",
 	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
 	updateEnvAutomatically: "updateEnvAutomatically",
@@ -128,6 +129,10 @@ export const isToolLinksEnabled = () => {
 
 export const shouldShowToolVersionsDecorations = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.showToolVersionsDecorations, true);
+};
+
+export const shouldShowToolEnvVarsDecorations = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.showToolEnvVarsDecorations, true);
 };
 
 export const shouldShowOutdatedToolGutterDecorations = () => {

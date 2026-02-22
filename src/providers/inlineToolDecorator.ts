@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import {
 	isMiseExtensionEnabled,
 	shouldShowOutdatedToolGutterDecorations,
+	shouldShowToolEnvVarsDecorations,
 	shouldShowToolVersionsDecorations,
 } from "../configuration";
 import type { MiseService } from "../miseService";
@@ -31,10 +32,26 @@ export async function showToolVersionInline(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
-	const [files, tools] = await Promise.all([
+	const showEnvVars = shouldShowToolEnvVarsDecorations();
+	const [files, tools, envsWithInfo] = await Promise.all([
 		miseService.getCurrentConfigFiles(),
 		miseService.getCurrentTools({ useCache: false }),
+		showEnvVars
+			? miseService.getEnvWithInfo().catch(() => [])
+			: Promise.resolve([]),
 	]);
+
+	const envVarsByTool = new Map<string, string[]>();
+	for (const env of envsWithInfo) {
+		if (env.tool && env.name?.toUpperCase() !== "PATH") {
+			const existing = envVarsByTool.get(env.tool);
+			if (existing) {
+				existing.push(env.name);
+			} else {
+				envVarsByTool.set(env.tool, [env.name]);
+			}
+		}
+	}
 	const currentFile = expandPath(document.uri.fsPath);
 	if (!files.includes(currentFile)) {
 		return;
@@ -130,13 +147,22 @@ export async function showToolVersionInline(
 					}
 				}
 
+				const toolEnvVars = envVarsByTool.get(cleanedToolName);
+				const envSuffix = toolEnvVars?.length
+					? ` → ${toolEnvVars.join(", ")}`
+					: "";
+
 				if (isInline) {
 					if (resolvedInstalled) {
-						annotations.push(`${cleanedToolName}: ${resolvedVersion}`);
+						annotations.push(
+							`${cleanedToolName}: ${resolvedVersion}${envSuffix}`,
+						);
 					}
 				} else {
 					annotations.push(
-						resolvedInstalled ? (resolvedVersion ?? "") : "Not installed",
+						resolvedInstalled
+							? `${resolvedVersion ?? ""}${envSuffix}`
+							: "Not installed",
 					);
 				}
 				usedTools.push(cleanedToolName);
