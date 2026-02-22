@@ -34,9 +34,9 @@ const generateJavaConfiguration =
 		return {
 			[keyName]: config.useSymLinks
 				? await config.miseService.createMiseToolSymlink(
-						"java",
-						config.tool.install_path,
-					)
+					"java",
+					config.tool.install_path,
+				)
 				: config.tool.install_path,
 		};
 	};
@@ -58,7 +58,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
 						? // biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-							virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
+						virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
 						: virtualEnv.value,
 				};
 			}
@@ -333,21 +333,56 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: ["dart", "vfox:version-fox/vfox-dart"],
+		toolNames: ["dart",
+			"http:dart",
+			"asdf:mise-plugins/mise-dart",
+			"vfox:version-fox/vfox-dart",
+		],
 		extensionId: "Dart-Code.dart-code",
-		generateConfiguration: async ({ tool }) => {
-			return {
-				"dart.sdkPath": tool.install_path,
-			};
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			useSymLinks,
+		}) => {
+			var folderPath = useSymLinks
+				? await miseService.createMiseToolSymlink(
+					"dart",
+					tool.install_path
+				)
+				: tool.install_path;
+
+			if (folderPath.startsWith("${workspaceFolder}/")) {
+				folderPath = folderPath.slice("${workspaceFolder}/".length);
+			}
+
+			return { "dart.sdkPath": folderPath };
 		},
 	},
 	{
-		toolNames: ["flutter", "vfox:version-fox/vfox-flutter"],
+		toolNames: [
+			"flutter",
+			"http:flutter",
+			"asdf:mise-plugins/mise-flutter",
+			"vfox:version-fox/vfox-flutter",
+		],
 		extensionId: "dart-code.flutter",
-		generateConfiguration: async ({ tool }) => {
-			return {
-				"dart.flutterSdkPath": tool.install_path,
-			};
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			useSymLinks,
+		}) => {
+			var folderPath = useSymLinks
+				? await miseService.createMiseToolSymlink(
+					"flutter",
+					tool.install_path
+				)
+				: tool.install_path;
+
+			if (folderPath.startsWith("${workspaceFolder}/")) {
+				folderPath = folderPath.slice("${workspaceFolder}/".length);
+			}
+
+			return { "dart.flutterSdkPath": folderPath };
 		},
 	},
 	{
