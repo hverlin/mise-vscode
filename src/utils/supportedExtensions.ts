@@ -34,9 +34,9 @@ const generateJavaConfiguration =
 		return {
 			[keyName]: config.useSymLinks
 				? await config.miseService.createMiseToolSymlink(
-						"java",
-						config.tool.install_path,
-					)
+					"java",
+					config.tool.install_path,
+				)
 				: config.tool.install_path,
 		};
 	};
@@ -58,7 +58,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				return {
 					"python.defaultInterpreterPath": workspaceRoot
 						? // biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-							virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
+						virtualEnv.value.replace(workspaceRoot, "${workspaceFolder}")
 						: virtualEnv.value,
 				};
 			}
@@ -451,7 +451,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
-		{
+	{
 		toolNames: [
 			"bazelisk",
 			"aqua:bazelbuild/bazelisk",
@@ -474,7 +474,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				miseConfig,
 				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
 					if (bin.startsWith("${workspaceFolder}/")) {
-						return "./" + bin.slice("${workspaceFolder}/".length);
+						return bin.slice("${workspaceFolder}/".length);
 					}
 					return bin;
 				},
@@ -502,7 +502,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				miseConfig,
 				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
 					if (bin.startsWith("${workspaceFolder}/")) {
-						return "./" + bin.slice("${workspaceFolder}/".length);
+						return bin.slice("${workspaceFolder}/".length);
 					}
 					return bin;
 				},
