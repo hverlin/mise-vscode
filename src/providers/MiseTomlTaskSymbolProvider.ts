@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { MiseTomlType, TomlParser } from "../utils/miseFileParser";
+import { type MiseTomlType, TomlParser } from "../utils/miseFileParser";
 
 type VscodeLike = Pick<
   typeof vscode,
@@ -11,6 +11,7 @@ export class MiseTomlTaskSymbolProvider
   private readonly TRIVIAL_TASK_SYMBOL_KIND;
   private readonly TASK_SECTION_SYMBOL_KIND;
   private readonly SECTION_SYMBOL_KIND;
+  private symbols: vscode.DocumentSymbol[] = [];
 
   constructor(private readonly vscode: VscodeLike) {
     this.vscode = vscode;
@@ -74,13 +75,26 @@ export class MiseTomlTaskSymbolProvider
 
   provideDocumentSymbols(
     document: vscode.TextDocument,
-    _token: vscode.CancellationToken,
+    token: vscode.CancellationToken,
   ): vscode.ProviderResult<vscode.DocumentSymbol[]> {
+    if (token.isCancellationRequested) {
+      return this.symbols;
+    }
     const symbols: vscode.DocumentSymbol[] = [];
 
-    const { parsed, sourceTracker } = new TomlParser<
-      MiseTomlType & { [key: string]: Record<string, any> }
-    >(document.getText());
+    let parsed: MiseTomlType | null = null;
+    let sourceTracker: TomlParser<MiseTomlType>["sourceTracker"] | null = null;
+    try {
+      ({ parsed, sourceTracker } = new TomlParser<
+        MiseTomlType & { [key: string]: Record<string, any> }
+      >(document.getText()));
+    } catch (error) {
+      return this.symbols;
+    }
+
+    if (!parsed) {
+      return this.symbols;
+    }
     const lines = document.getText().split(/\r?\n/);
 
     for (const mainKey in parsed) {
@@ -122,6 +136,7 @@ export class MiseTomlTaskSymbolProvider
         }
       }
     }
+    this.symbols = symbols;
     return symbols;
   }
 }
