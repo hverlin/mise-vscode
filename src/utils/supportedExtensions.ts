@@ -41,6 +41,21 @@ const generateJavaConfiguration =
 		};
 	};
 
+function removeUnsupportedWorkspace(target: string) { // Some plugins fail to resolve ${workspaceFolder}/
+	const prefixVariants = [
+		"${workspaceFolder}/",
+		"${workspaceFolder}\\"
+	];
+
+	for (const prefix of prefixVariants) {
+		if (target.startsWith(prefix)) {
+			return target.slice(prefix.length);
+		}
+	}
+
+	return target;
+};
+
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "ms-python.python",
@@ -351,11 +366,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				)
 				: tool.install_path;
 
-			if (folderPath.startsWith("${workspaceFolder}/")) {
-				folderPath = folderPath.slice("${workspaceFolder}/".length);
-			}
-
-			return { "dart.sdkPath": folderPath };
+			return { "dart.sdkPath": removeUnsupportedWorkspace(folderPath) };
 		},
 	},
 	{
@@ -382,7 +393,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				folderPath = folderPath.slice("${workspaceFolder}/".length);
 			}
 
-			return { "dart.flutterSdkPath": folderPath };
+			return { "dart.flutterSdkPath": removeUnsupportedWorkspace(folderPath) };
 		},
 	},
 	{
