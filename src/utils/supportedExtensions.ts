@@ -41,6 +41,21 @@ const generateJavaConfiguration =
 		};
 	};
 
+function removeUnsupportedWorkspace(target: string) { // Some plugins fail to resolve ${workspaceFolder}/
+	const prefixVariants = [
+		"${workspaceFolder}/",
+		"${workspaceFolder}\\"
+	];
+
+	for (const prefix of prefixVariants) {
+		if (target.startsWith(prefix)) {
+			return target.slice(prefix.length);
+		}
+	}
+
+	return target;
+};
+
 export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		extensionId: "ms-python.python",
@@ -472,12 +487,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				useSymLinks,
 				tool,
 				miseConfig,
-				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
-					if (bin.startsWith("${workspaceFolder}/")) {
-						return bin.slice("${workspaceFolder}/".length);
-					}
-					return bin;
-				},
+				valueTransformer: removeUnsupportedWorkspace,
 			});
 		},
 	},
@@ -500,12 +510,7 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				useSymLinks,
 				tool,
 				miseConfig,
-				valueTransformer: (bin: string) => { // Needed as bazel plugin fails to resolve ${workspaceFolder}/
-					if (bin.startsWith("${workspaceFolder}/")) {
-						return bin.slice("${workspaceFolder}/".length);
-					}
-					return bin;
-				},
+				valueTransformer: removeUnsupportedWorkspace,
 			});
 		},
 	},
