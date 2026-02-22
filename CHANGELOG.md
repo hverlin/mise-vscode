@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/hverlin/mise-vscode/compare/v1.3.1...v1.4.0) (2026-02-22)
+
+
+### Features
+
+* add tool links support in mise configuration files ([32c90b3](https://github.com/hverlin/mise-vscode/commit/32c90b3974d0dab005f97ef3ae70257b8126dc6e))
+
+
+### Bug Fixes
+
+* Clear previous environment variable collection (fix: [#173](https://github.com/hverlin/mise-vscode/issues/173)) ([a76da03](https://github.com/hverlin/mise-vscode/commit/a76da0351a0db27fef61f08e4c11a501794bd352))
+
 ## [1.3.1](https://github.com/hverlin/mise-vscode/compare/v1.3.0...v1.3.1) (2026-02-06)
 
 
