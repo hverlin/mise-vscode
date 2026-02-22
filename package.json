@@ -907,8 +907,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.10",
-		"@rsbuild/core": "^1.6.15",
-		"@rsbuild/plugin-react": "^1.4.2",
+		"@rsbuild/core": "^1.7.3",
+		"@rsbuild/plugin-react": "^1.4.5",
 		"@rslib/core": "^0.19.0",
 		"@types/bun": "^1.3.5",
 		"@types/micromatch": "^4.0.10",
@@ -927,7 +927,7 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@rsbuild/plugin-node-polyfill": "^1.4.2",
+		"@rsbuild/plugin-node-polyfill": "^1.4.4",
 		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
 		"@tanstack/match-sorter-utils": "^8.19.4",
 		"@tanstack/react-query": "^5.90.14",
