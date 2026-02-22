@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/hverlin/mise-vscode/compare/v1.4.0...v1.5.0) (2026-02-22)
+
+
+### Features
+
+* display environment variables contributed by tools in inline decorations ([942b69a](https://github.com/hverlin/mise-vscode/commit/942b69a0a8abbfcf4e16c9fae7731276f6d31fa3))
+
 ## [1.4.0](https://github.com/hverlin/mise-vscode/compare/v1.3.1...v1.4.0) (2026-02-22)
 
 
