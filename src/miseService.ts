@@ -164,6 +164,7 @@ export class MiseService {
 			this.dedupeCache.clear(),
 			this.slowCache.clear(),
 			this.cache.clear(),
+			this.longTTLCache.clear(),
 		]);
 		this.eventEmitter.fire();
 	}
@@ -938,7 +939,7 @@ export class MiseService {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
-		const { stdout } = await this.cache.execCmd({
+		const { stdout } = await this.longTTLCache.execCmd({
 			command: `tool "${toolName.replace(/"/g, '\\"')}" --json`,
 		});
 		return JSON.parse(stdout) as MiseToolInfo;

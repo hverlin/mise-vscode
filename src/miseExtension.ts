@@ -59,6 +59,7 @@ import {
 	registerTasksCommands,
 } from "./providers/tasksProvider";
 import { createToolHoverProvider } from "./providers/toolHoverProvider";
+import { createToolLinkProvider } from "./providers/toolLinkProvider";
 import {
 	MiseToolsProvider,
 	registerToolsCommands,
@@ -66,7 +67,7 @@ import {
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
-import { truncateStr } from "./utils/fn";
+import { debounce, truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { allowedFileTaskDirs } from "./utils/miseUtilts";
 import { checkTomlExtensions } from "./utils/tomlExtensionCheck";
@@ -460,13 +461,35 @@ export class MiseExtension {
 			}),
 		);
 
+		const debouncedAddToolInfo = new Map<
+			string,
+			(
+				document: vscode.TextDocument,
+				service: MiseService,
+				ctx: vscode.ExtensionContext,
+			) => void
+		>();
+
+		const getDebouncedForDoc = (uri: string) => {
+			if (!debouncedAddToolInfo.has(uri)) {
+				debouncedAddToolInfo.set(uri, debounce(addToolInfoToEditor, 500));
+			}
+			return (
+				debouncedAddToolInfo.get(uri) ?? debounce(addToolInfoToEditor, 500)
+			);
+		};
+
 		context.subscriptions.push(
 			vscode.workspace.onDidChangeTextDocument((event) => {
 				if (
 					event.document === vscode.window.activeTextEditor?.document &&
 					event.document.languageId === "toml"
 				) {
-					addToolInfoToEditor(event.document, this.miseService, context);
+					getDebouncedForDoc(event.document.uri.toString())(
+						event.document,
+						this.miseService,
+						context,
+					);
 				}
 			}),
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -517,6 +540,10 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			createToolHoverProvider(allTomlFilesSelector, this.miseService),
+		);
+
+		context.subscriptions.push(
+			createToolLinkProvider(allTomlFilesSelector, this.miseService),
 		);
 
 		context.subscriptions.push(

@@ -15,6 +15,7 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsAutomaticallyIncludeList:
 		"configureExtensionsAutomaticallyIncludeList",
 	enableCodeLens: "enableCodeLens",
+	enableToolLinks: "enableToolLinks",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
@@ -119,6 +120,10 @@ export const enableExtensionForWorkspace = async () => {
 
 export const isCodeLensEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableCodeLens, true);
+};
+
+export const isToolLinksEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableToolLinks, true);
 };
 
 export const shouldShowToolVersionsDecorations = () => {

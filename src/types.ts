@@ -65,16 +65,18 @@ type MiseSettingInfo = {
 
 type MiseToolInfo = {
 	backend: string;
-	description: string;
+	description: string | null;
 	installed_versions: string[];
-	requested_versions: string[];
-	active_versions: string[];
-	config_source: { type: string; path: string };
+	requested_versions: string[] | null;
+	active_versions: string[] | null;
+	config_source: { type: string; path: string } | null;
 	tool_options: {
-		os: string;
-		install_env: Record<string, string>;
-		api_url?: string;
-		url?: string;
+		os?: string | null;
+		install_env?: Record<string, string>;
+		api_url?: string | null;
+		url?: string | null;
+		provider?: string | null;
+		channel?: string | null;
 	};
 };
 

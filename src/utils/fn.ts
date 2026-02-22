@@ -22,6 +22,20 @@ export const truncateStr = (str: string, maxLen: number) => {
 	return `${str.slice(0, maxLen)}...`;
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: generic debounce
+export function debounce<T extends (...args: any[]) => void>(
+	fn: T,
+	delayMs: number,
+): (...args: Parameters<T>) => void {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	return (...args: Parameters<T>) => {
+		if (timer !== undefined) {
+			clearTimeout(timer);
+		}
+		timer = setTimeout(() => fn(...args), delayMs);
+	};
+}
+
 export const mergeArrays = (
 	arr: Array<[string, string | undefined]>,
 ): Record<string, string> => {

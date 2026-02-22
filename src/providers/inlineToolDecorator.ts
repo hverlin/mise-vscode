@@ -9,6 +9,11 @@ import { expandPath } from "../utils/fileUtils";
 import { getSvgIcon } from "../utils/iconUtils";
 import { logger } from "../utils/logger";
 import { getCleanedToolName } from "../utils/miseUtilts";
+import {
+	extractToolNamesFromLine,
+	extractToolVersionFromLine,
+	isPositionInToolsContext,
+} from "../utils/tomlParsing";
 
 const activeDecorationsPerFileAndTool: {
 	[filePath: string]: {
@@ -39,78 +44,160 @@ export async function showToolVersionInline(
 	activeGutterDecorationsPerFileAndTool[currentFile] ??= {};
 
 	const updatedToolNames = new Set<string>();
+	// Collect all decoration ranges per tool key first, then apply once.
+	// If we call setDecorations multiple times for the same decoration type,
+	// each call replaces the previous — so the same tool on multiple lines
+	// (e.g. `pkl` in [tools] AND `tools.pkl` in a task) would lose the first.
+	const pendingDecorations = new Map<string, vscode.DecorationOptions[]>();
 
-	let inToolsSection = false;
 	for (let line = 0; line < document.lineCount; line++) {
 		try {
 			const lineText = document.lineAt(line).text;
 			const trimmedLine = lineText.trim();
-			if (trimmedLine === "[tools]") {
-				inToolsSection = true;
+
+			const { inContext, isInline } = isPositionInToolsContext(
+				document,
+				new vscode.Position(line, 0),
+			);
+			if (!inContext) {
 				continue;
 			}
 
-			if (!inToolsSection) {
-				continue;
-			}
-
-			if (trimmedLine.startsWith("[")) {
+			if (
+				!isInline &&
+				trimmedLine.startsWith("[") &&
+				trimmedLine !== "[tools]"
+			) {
 				break;
 			}
 
-			if (trimmedLine.startsWith("#")) {
+			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
 				continue;
 			}
 
-			const toolMatch = trimmedLine.match(/^([a-zA-z/'"\-0-9:]*)\s*=\s.*/);
-			if (!toolMatch || !toolMatch[1]) {
+			const toolNamesRaw = extractToolNamesFromLine(lineText);
+			if (toolNamesRaw.length === 0) {
 				continue;
 			}
 
-			const cleanedToolName = getCleanedToolName(toolMatch[1]);
-			if (!cleanedToolName) {
+			const annotations: string[] = [];
+			const usedTools: string[] = [];
+
+			for (const raw of toolNamesRaw) {
+				const cleanedToolName = getCleanedToolName(raw);
+				if (!cleanedToolName) {
+					continue;
+				}
+
+				const toolFromList =
+					tools.find((t) => t.name === cleanedToolName && t.active) ??
+					tools.find((t) => t.name === cleanedToolName);
+
+				let resolvedVersion: string | undefined;
+				let resolvedInstalled: boolean;
+
+				if (toolFromList) {
+					resolvedVersion = toolFromList.version;
+					resolvedInstalled = toolFromList.installed;
+				} else {
+					try {
+						const info = await miseService.miseToolInfo(cleanedToolName);
+						if (!info) {
+							continue;
+						}
+						const activeVersion = (info.active_versions ?? [])[0];
+						const installedVersions = info.installed_versions ?? [];
+						resolvedVersion = activeVersion ?? installedVersions[0];
+						resolvedInstalled = installedVersions.length > 0;
+					} catch {
+						continue;
+					}
+				}
+
+				const reqVersion = extractToolVersionFromLine(lineText, raw);
+				if (reqVersion && resolvedVersion) {
+					const normalizedReq = reqVersion.replace(/^v/, "");
+					if (
+						normalizedReq !== "latest" &&
+						!resolvedVersion.startsWith(normalizedReq)
+					) {
+						if (isInline) {
+							continue;
+						}
+						annotations.push("Not installed");
+						usedTools.push(cleanedToolName);
+						continue;
+					}
+				}
+
+				if (isInline) {
+					if (resolvedInstalled) {
+						annotations.push(`${cleanedToolName}: ${resolvedVersion}`);
+					}
+				} else {
+					annotations.push(
+						resolvedInstalled ? (resolvedVersion ?? "") : "Not installed",
+					);
+				}
+				usedTools.push(cleanedToolName);
+			}
+
+			if (annotations.length === 0) {
 				continue;
 			}
 
-			const toolInfo = tools.find((t) => t.name === cleanedToolName);
+			const contentText = isInline
+				? `\t\t# ${annotations.join(", ")}`
+				: `\t\t# ${annotations[0]}`;
 
-			updatedToolNames.add(cleanedToolName);
-			activeDecorationsPerFileAndTool[currentFile][cleanedToolName] ??=
-				vscode.window.createTextEditorDecorationType({
-					after: { color: "rgba(136,136,136,0.63)" },
-				});
+			const joinedToolName = usedTools.join("|");
+			if (!joinedToolName) continue;
 
-			const activeTextEditor = vscode.window.activeTextEditor;
-			if (!activeTextEditor) {
-				return;
-			}
+			updatedToolNames.add(joinedToolName);
 
-			const currentFileInActiveEditor = expandPath(
-				activeTextEditor?.document.uri.fsPath,
-			);
-			if (currentFile !== currentFileInActiveEditor) {
-				return;
-			}
-
-			vscode.window.activeTextEditor?.setDecorations(
-				activeDecorationsPerFileAndTool[currentFile][cleanedToolName],
-				[
-					{
-						range: new vscode.Range(line, 0, line, lineText.length),
-						renderOptions: {
-							after: {
-								contentText: toolInfo?.installed
-									? `\t\t# ${toolInfo?.version ?? ""}`
-									: "\t\t# Not installed",
-								color: "rgba(136,136,136,0.3)",
-							},
-						},
+			const decorationOption: vscode.DecorationOptions = {
+				range: new vscode.Range(line, 0, line, lineText.length),
+				renderOptions: {
+					after: {
+						contentText,
+						color: "rgba(136,136,136,0.3)",
 					},
-				],
-			);
+				},
+			};
+
+			const existing = pendingDecorations.get(joinedToolName);
+			if (existing) {
+				existing.push(decorationOption);
+			} else {
+				pendingDecorations.set(joinedToolName, [decorationOption]);
+			}
 		} catch (error) {
 			logger.info("Error while showing tool version inline", error);
 		}
+	}
+
+	const activeTextEditor = vscode.window.activeTextEditor;
+	if (!activeTextEditor) {
+		return;
+	}
+
+	const currentFileInActiveEditor = expandPath(
+		activeTextEditor.document.uri.fsPath,
+	);
+	if (currentFile !== currentFileInActiveEditor) {
+		return;
+	}
+
+	for (const [joinedToolName, decorationOptions] of pendingDecorations) {
+		activeDecorationsPerFileAndTool[currentFile][joinedToolName] ??=
+			vscode.window.createTextEditorDecorationType({
+				after: { color: "rgba(136,136,136,0.63)" },
+			});
+
+		activeTextEditor.setDecorations(
+			activeDecorationsPerFileAndTool[currentFile][joinedToolName],
+			decorationOptions,
+		);
 	}
 
 	for (const toolName in activeDecorationsPerFileAndTool[currentFile]) {
@@ -141,46 +228,65 @@ export async function showOutdatedToolsGutterIcons(
 	const updatedToolNames = new Set<string>();
 	const linesWithOutdatedTools: number[] = [];
 
-	let inToolsSection = false;
 	for (let line = 0; line < document.lineCount; line++) {
 		try {
 			const lineText = document.lineAt(line).text;
 			const trimmedLine = lineText.trim();
-			if (trimmedLine === "[tools]") {
-				inToolsSection = true;
-				continue;
-			}
 
-			if (!inToolsSection) {
-				continue;
-			}
+			const { inContext, isInline } = isPositionInToolsContext(
+				document,
+				new vscode.Position(line, 0),
+			);
+			if (!inContext) continue;
 
-			if (trimmedLine.startsWith("[")) {
+			if (
+				!isInline &&
+				trimmedLine.startsWith("[") &&
+				trimmedLine !== "[tools]"
+			) {
 				break;
 			}
 
-			if (trimmedLine.startsWith("#")) {
+			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
 				continue;
 			}
 
-			const toolMatch = trimmedLine.match(/^([a-z/'"-0-9:]*)\s*=\s.*/);
-			if (!toolMatch || !toolMatch[1]) {
+			const toolNamesRaw = extractToolNamesFromLine(lineText);
+			if (toolNamesRaw.length === 0) {
 				continue;
 			}
 
-			const cleanedToolName = getCleanedToolName(toolMatch[1]);
-			if (!cleanedToolName) {
+			let hasOutdated = false;
+			const outdatedNames: string[] = [];
+			const validToolNames: string[] = [];
+
+			for (const raw of toolNamesRaw) {
+				const cleanedToolName = getCleanedToolName(raw);
+				if (!cleanedToolName) {
+					continue;
+				}
+
+				validToolNames.push(cleanedToolName);
+
+				const outdatedTool = outdatedTools.find(
+					(t) => t.name === cleanedToolName,
+				);
+				if (outdatedTool) {
+					hasOutdated = true;
+					outdatedNames.push(cleanedToolName);
+				}
+			}
+
+			if (validToolNames.length === 0) {
 				continue;
 			}
 
-			const outdatedTool = outdatedTools.find(
-				(t) => t.name === cleanedToolName,
-			);
-			if (!outdatedTool) {
+			const joinedToolName = validToolNames.join("|");
+			updatedToolNames.add(joinedToolName);
+
+			if (!hasOutdated) {
 				continue;
 			}
-
-			updatedToolNames.add(cleanedToolName);
 
 			const activeTextEditor = vscode.window.activeTextEditor;
 			if (!activeTextEditor) {
@@ -194,13 +300,18 @@ export async function showOutdatedToolsGutterIcons(
 				return;
 			}
 
+			const firstOutdatedTool = outdatedTools.find(
+				(t) => t.name === outdatedNames[0],
+			);
+
 			const gutterIconPath = vscode.Uri.parse(
 				getSvgIcon(
 					vscode.window.activeColorTheme.kind,
-					outdatedTool.version ? "arrow-circle-up" : "warning",
+					firstOutdatedTool?.version ? "arrow-circle-up" : "warning",
 				),
 			);
-			activeGutterDecorationsPerFileAndTool[currentFile][cleanedToolName] ??=
+
+			activeGutterDecorationsPerFileAndTool[currentFile][joinedToolName] ??=
 				vscode.window.createTextEditorDecorationType({
 					gutterIconPath: gutterIconPath,
 					gutterIconSize: "75%",
@@ -208,8 +319,15 @@ export async function showOutdatedToolsGutterIcons(
 
 			const range = new vscode.Range(line, 0, line, 0);
 			activeTextEditor.setDecorations(
-				activeGutterDecorationsPerFileAndTool[currentFile][cleanedToolName],
-				[{ range, hoverMessage: ["Click to install tool"] }],
+				activeGutterDecorationsPerFileAndTool[currentFile][joinedToolName],
+				[
+					{
+						range,
+						hoverMessage: [
+							`Click to install tools: ${outdatedNames.join(", ")}`,
+						],
+					},
+				],
 			);
 			linesWithOutdatedTools.push(line + 1);
 		} catch (error) {

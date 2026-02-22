@@ -171,6 +171,14 @@ Show run/add tool code lens indicators in the editor.
 
 ---
 
+##### `mise.enableToolLinks`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Enable document links for tools in mise configuration files.
+
+---
+
 ##### `mise.showNotificationIfMissingTools`
 - **Type:** `boolean`
 - **Default:** `true`

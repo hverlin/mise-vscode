@@ -1,949 +1,956 @@
 {
-	"name": "mise-vscode",
-	"displayName": "Mise VSCode",
-	"publisher": "hverlin",
-	"description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-	"version": "1.3.1",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/hverlin/mise-vscode"
-	},
-	"bugs": {
-		"url": "https://github.com/hverlin/mise-vscode/issues"
-	},
-	"license": "MIT",
-	"engines": {
-		"vscode": "^1.85.0"
-	},
-	"categories": [
-		"Programming Languages",
-		"Snippets",
-		"Other"
-	],
-	"keywords": [
-		"mise",
-		"mise-en-place",
-		"devtools",
-		"rtx",
-		"asdf",
-		"asdf-vm",
-		"tasks",
-		"envs",
-		"environment variables",
-		"scripts"
-	],
-	"icon": "resources/icon.png",
-	"main": "./dist/extension.js",
-	"browser": "./dist/browser/browser.js",
-	"activationEvents": [
-		"onTaskType:mise",
-		"workspaceContains:.config/mise/**/config.*.toml",
-		"workspaceContains:.config/mise/**/config.toml",
-		"workspaceContains:.mise.*.toml",
-		"workspaceContains:.mise.toml",
-		"workspaceContains:.mise/config.*.toml",
-		"workspaceContains:.mise/config.toml",
-		"workspaceContains:mise.*.toml",
-		"workspaceContains:mise.toml",
-		"workspaceContains:mise/config.*.toml",
-		"workspaceContains:mise/config.toml",
-		"onLanguage"
-	],
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": false,
-			"description": "This extension requires a trusted workspace because it can execute code in the workspace."
-		},
-		"virtualWorkspaces": {
-			"supported": "limited",
-			"description": "syntax highlighting only"
-		}
-	},
-	"contributes": {
-		"languages": [
-			{
-				"id": "toml",
-				"aliases": [
-					"TOML",
-					"toml"
-				],
-				"extensions": [
-					".toml"
-				],
-				"filenames": [
-					"mise.lock"
-				],
-				"configuration": "./syntaxes/toml-language-configuration.json"
-			}
-		],
-		"tomlValidation": [
-			{
-				"fileMatch": [
-					".mise.toml",
-					".mise.*.toml",
-					"mise.toml",
-					"mise.*.toml",
-					"**/.mise/config.toml",
-					"**/mise/config.toml"
-				],
-				"url": "https://mise.jdx.dev/schema/mise.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "toml",
-				"scopeName": "source.toml",
-				"path": "./syntaxes/toml-language.json"
-			},
-			{
-				"scopeName": "source.usage.kdl",
-				"path": "./syntaxes/usage-kdl.json"
-			},
-			{
-				"scopeName": "source.mise.shell",
-				"path": "./syntaxes/shell.json"
-			},
-			{
-				"injectTo": [
-					"source.toml"
-				],
-				"scopeName": "inline.tera-mise",
-				"path": "./syntaxes/tera-mise.json",
-				"embeddedLanguages": {
-					"meta.embedded.tera.expression": "tera",
-					"meta.embedded.tera.statement": "tera",
-					"source.js": "javascript",
-					"source.python": "python",
-					"source.shell": "shellscript",
-					"source.ruby": "ruby"
-				}
-			}
-		],
-		"walkthroughs": [
-			{
-				"id": "mise-getting-started",
-				"title": "Mise VSCode setup",
-				"description": "Important steps to get started with the Mise VSCode extension.",
-				"when": "!isWeb",
-				"steps": [
-					{
-						"id": "auto-configure",
-						"title": "Auto-Configure Extensions",
-						"description": "Choose whether to automatically configure VSCode extensions to use tools from mise.\n[Open settings](command:mise.openExtensionSettings)",
-						"media": {
-							"markdown": "walkthrough/auto-configure.md"
-						},
-						"when": "!isWeb"
-					},
-					{
-						"id": "explore",
-						"title": "Tips for using Mise VSCode",
-						"description": "Open the mise panel to see tools, tasks and environment variables.\n[Open Mise Panel](command:workbench.view.extension.mise-panel)",
-						"media": {
-							"markdown": "walkthrough/explore.md"
-						},
-						"when": "!isWeb"
-					}
-				]
-			}
-		],
-		"snippets": [
-			{
-				"language": "toml",
-				"path": "./snippets/toml-tasks-snippets.json"
-			},
-			{
-				"language": "shellscript",
-				"path": "./snippets/file-tasks-snippets.json"
-			}
-		],
-		"configuration": {
-			"title": "Mise",
-			"properties": {
-				"mise.enable": {
-					"order": 1,
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "Enable/disable mise extension."
-				},
-				"mise.binPath": {
-					"order": 2,
-					"type": "string",
-					"markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nIf set to `mise` (default), it will use `mise` available in `PATH`.\n\nSee https://mise.jdx.dev/getting-started.html to install mise.",
-					"default": "mise"
-				},
-				"mise.miseEnv": {
-					"order": 3,
-					"type": "string",
-					"markdownDescription": "Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)"
-				},
-				"mise.configureExtensionsAutomatically": {
-					"order": 4,
-					"type": "boolean",
-					"default": false,
-					"markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).\n\nThis will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured."
-				},
-				"mise.configureExtensionsAutomaticallyIgnoreList": {
-					"order": 5,
-					"type": "array",
-					"default": [
-						"biomejs.biome"
-					],
-					"items": {
-						"type": "string",
-						"enum": [
-							"ms-python.python",
-							"denoland.vscode-deno",
-							"charliermarsh.ruff",
-							"golang.go",
-							"oven.bun-vscode",
-							"oracle.oracle-java",
-							"redhat.java",
-							"vscjava.vscode-gradle",
-							"salesforce.salesforcedx-vscode-apex",
-							"timonwong.shellcheck",
-							"ms-vscode.js-debug",
-							"vscode.php-language-features",
-							"xdebug.php-debug",
-							"julialang.language-julia",
-							"pgourlain.erlang",
-							"Dart-Code.dart-code",
-							"dart-code.flutter",
-							"ziglang.vscode-zig",
-							"signageos.signageos-vscode-sops",
-							"joselitofilho.ginkgotestexplorer",
-							"bufbuild.vscode-buf",
-							"biomejs.biome",
-							"bazelbuild.vscode-bazel"
-						]
-					},
-					"markdownDescription": "List of extensions that should not be configured automatically."
-				},
-				"mise.configureExtensionsAutomaticallyIncludeList": {
-					"order": 5.1,
-					"type": "array",
-					"default": [
-						"all"
-					],
-					"items": {
-						"type": "string",
-						"enum": [
-							"all",
-							"ms-python.python",
-							"denoland.vscode-deno",
-							"charliermarsh.ruff",
-							"golang.go",
-							"oven.bun-vscode",
-							"oracle.oracle-java",
-							"redhat.java",
-							"vscjava.vscode-gradle",
-							"salesforce.salesforcedx-vscode-apex",
-							"timonwong.shellcheck",
-							"ms-vscode.js-debug",
-							"vscode.php-language-features",
-							"xdebug.php-debug",
-							"julialang.language-julia",
-							"pgourlain.erlang",
-							"Dart-Code.dart-code",
-							"dart-code.flutter",
-							"ziglang.vscode-zig",
-							"signageos.signageos-vscode-sops",
-							"joselitofilho.ginkgotestexplorer",
-							"bufbuild.vscode-buf",
-							"biomejs.biome",
-							"bazelbuild.vscode-bazel"
-						]
-					},
-					"markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."
-				},
-				"mise.configureExtensionsUseShims": {
-					"order": 6,
-					"type": "boolean",
-					"title": "Configure extensions to use shims",
-					"default": true,
-					"markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
-				},
-				"mise.configureExtensionsUseSymLinks": {
-					"order": 7,
-					"type": "boolean",
-					"title": "Configure extensions to use symlinks",
-					"default": false,
-					"markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control."
-				},
-				"mise.checkForNewMiseVersion": {
-					"order": 8,
-					"type": "boolean",
-					"title": "Check for new mise version",
-					"default": true,
-					"markdownDescription": "Check if a new mise version is available on startup."
-				},
-				"mise.showToolVersionsDecorations": {
-					"order": 9,
-					"type": "boolean",
-					"title": "Show tool versions",
-					"default": true,
-					"markdownDescription": "Show tool versions in the editor. (requires reload)"
-				},
-				"mise.enableCodeLens": {
-					"order": 10,
-					"type": "boolean",
-					"title": "Enable code lens",
-					"default": true,
-					"markdownDescription": "Show run/add tool code lens indicators in the editor."
-				},
-				"mise.showNotificationIfMissingTools": {
-					"order": 11,
-					"type": "boolean",
-					"title": "Show notification if missing tools",
-					"default": true,
-					"markdownDescription": "Show notification if tools are not installed."
-				},
-				"mise.updateEnvAutomatically": {
-					"order": 12,
-					"type": "boolean",
-					"title": "Update environment variables automatically",
-					"default": true,
-					"markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, other extensions might not see all mise environment variables."
-				},
-				"mise.updateEnvAutomaticallyIncludePath": {
-					"order": 12.1,
-					"type": "boolean",
-					"title": "Include PATH when updating environment variables",
-					"default": false,
-					"markdownDescription": "Include the PATH variable when updating VSCode and terminal environment variables. Disable this if you want to keep your original PATH."
-				},
-				"mise.updateOpenTerminalsEnvAutomatically": {
-					"order": 13,
-					"type": "boolean",
-					"title": "Update terminal environment variables automatically",
-					"default": false,
-					"markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
-				},
-				"mise.teraAutoCompletion": {
-					"order": 14,
-					"type": "boolean",
-					"title": "Enable Tera auto-completion",
-					"default": true,
-					"markdownDescription": "Enable Tera auto-completion in `mise.toml` files."
-				},
-				"mise.automaticallyTrustMiseConfigFiles": {
-					"order": 15,
-					"type": "boolean",
-					"title": "Automatically trust mise config files",
-					"default": true,
-					"markdownDescription": "Automatically trust mise config files when opening them in a trusted worskspace."
-				},
-				"mise.commandTTLCacheSeconds": {
-					"order": 16,
-					"type": "number",
-					"title": "Command TTL cache seconds",
-					"default": 2,
-					"markdownDescription": "Time to live in seconds for the mise command cache. Only changed it if some commands are expensive to run."
-				},
-				"mise.showOutdatedToolGutterDecorations": {
-					"order": 16,
-					"type": "boolean",
-					"title": "Show outdated tool gutter decorations",
-					"default": true,
-					"markdownDescription": "Show outdated tool gutter decorations in the editor."
-				},
-				"mise.autoDetectMiseBinPath": {
-					"order": 17,
-					"type": "boolean",
-					"title": "Auto-detect mise bin path",
-					"default": true,
-					"markdownDescription": "Auto-detect mise bin path on startup."
-				}
-			}
-		},
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "mise-panel",
-					"title": "Mise",
-					"icon": "$(terminal)"
-				}
-			]
-		},
-		"viewsWelcome": [
-			{
-				"view": "miseTasksView",
-				"contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.refreshEntry))\n[Add task](command:mise.createTomlTask)",
-				"when": "config.mise.binPath && config.mise.enable && !mise.tasksProviderError"
-			},
-			{
-				"view": "miseTasksView",
-				"contents": "Error loading tasks. [Open logs](command:mise.openLogs)",
-				"when": "mise.tasksProviderError && config.mise.enable"
-			},
-			{
-				"view": "miseTasksView",
-				"contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openExtensionSettings)",
-				"when": "!config.mise.binPath"
-			},
-			{
-				"view": "miseTasksView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
-				"when": "!config.mise.enable"
-			},
-			{
-				"view": "miseToolsView",
-				"contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here.",
-				"when": "config.mise.enable && !mise.toolsProviderError"
-			},
-			{
-				"view": "miseToolsView",
-				"contents": "Error loading tools. [Open logs](command:mise.openLogs)",
-				"when": "mise.toolsProviderError && config.mise.enable"
-			},
-			{
-				"view": "miseToolsView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
-				"when": "!config.mise.enable"
-			},
-			{
-				"view": "miseEnvsView",
-				"contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here.",
-				"when": "config.mise.binPath && config.mise.enable && !mise.envProviderError"
-			},
-			{
-				"view": "miseEnvsView",
-				"contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
-				"when": "!config.mise.enable"
-			},
-			{
-				"view": "miseEnvsView",
-				"contents": "Error loading environment variables. [Open logs](command:mise.openLogs)",
-				"when": "mise.envProviderError && config.mise.enable"
-			}
-		],
-		"views": {
-			"mise-panel": [
-				{
-					"id": "miseTasksView",
-					"name": "Tasks",
-					"when": "!isWeb"
-				},
-				{
-					"id": "miseToolsView",
-					"name": "Tools",
-					"when": "!isWeb"
-				},
-				{
-					"id": "miseEnvsView",
-					"name": "Environment Variables",
-					"when": "!isWeb"
-				}
-			]
-		},
-		"commands": [
-			{
-				"command": "mise.refreshEntry",
-				"title": "Mise: Reload configuration",
-				"icon": "$(refresh)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openMenu",
-				"title": "Mise: Open Menu",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openMissingToolsMenu",
-				"title": "Mise: Open Missing Tools Menu",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openToolRepository",
-				"title": "Mise: Open Tool Repository",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.selectWorkspaceFolder",
-				"title": "Mise: Select Workspace Folder",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.runTask",
-				"title": "Mise: Run task",
-				"icon": "$(play)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.watchTask",
-				"title": "Mise: Run Task in Watch Mode",
-				"icon": "$(eye-watch)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.createFileTask",
-				"title": "Mise: Create File Task",
-				"icon": "$(new-file)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.createTomlTask",
-				"title": "Mise: Create Toml Task",
-				"icon": "$(add)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.createTomlTaskTopMenu",
-				"title": "Mise: Create Toml Task",
-				"icon": "$(add)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openToolDefinition",
-				"title": "Mise: Open Tool Definition",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openTaskDefinition",
-				"title": "Mise: Open Task Definition",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openEnvVariableDefinition",
-				"title": "Mise: Find Environment Variable Definition",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openFile",
-				"title": "Mise: Open File",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.removeTool",
-				"title": "Mise: Remove Tool",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.copyToolInstallPath",
-				"title": "Mise: Copy Tool Install Path",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.copyToolBinPaths",
-				"title": "Mise: Copy Tool Bin Paths",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.copyEnvVariableName",
-				"title": "Mise: Copy Environment Variable Name",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.copyEnvVariableValue",
-				"title": "Mise: Copy Environment Variable Value",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.installTool",
-				"title": "Mise: Install Tool",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.installAll",
-				"title": "Mise: Run mise install",
-				"icon": "$(cloud-download)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.useTool",
-				"title": "Mise: Run mise use",
-				"icon": "$(add)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.useToolTopMenu",
-				"title": "Mise: Use Tool",
-				"icon": "$(add)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.configureSdkPath",
-				"title": "Mise: Configure extension sdk path...",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.configureAllSdkPaths",
-				"title": "Mise: Configure all extension sdk paths",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openExtensionSettings",
-				"title": "Mise: Open extension settings",
-				"icon": "$(tools)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.openLogs",
-				"title": "Mise: Show extension logs",
-				"icon": "$(list-unordered)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.listAllTools",
-				"title": "Mise: List all Tools",
-				"icon": "$(list-ordered)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.showSettings",
-				"title": "Mise: Show mise settings",
-				"icon": "$(list-ordered)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.showTrackedConfig",
-				"title": "Mise: Show mise tracked configurations",
-				"icon": "$(list-ordered)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.visualizeTasksDeps",
-				"title": "Mise: Visualize Tasks Dependencies",
-				"icon": "$(git-merge)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.setEnvVariable",
-				"title": "Mise: Set Environment Variable",
-				"icon": "$(add)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.fmt",
-				"title": "Mise: Run mise fmt",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.editSetting",
-				"title": "Mise: Edit Setting",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.showAllEnvVarValues",
-				"title": "Mise: Show All Environment Variable Values",
-				"icon": "$(eye)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.hideAllEnvVarValues",
-				"title": "Mise: Hide All Environment Variable Values",
-				"icon": "$(eye-closed)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.showEnvVariableValue",
-				"title": "Mise: Show Environment Variable Value",
-				"icon": "$(eye)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.hideEnvVariableValue",
-				"title": "Mise: Hide Environment Variable Value",
-				"icon": "$(eye-closed)",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.displayPath",
-				"title": "Mise: Display PATH variable",
-				"enablement": "!isWeb"
-			},
-			{
-				"command": "mise.doctor",
-				"title": "Mise: Run mise doctor",
-				"enablement": "!isWeb"
-			}
-		],
-		"menus": {
-			"commandPalette": [
-				{
-					"command": "mise.createTomlTaskTopMenu",
-					"when": "false"
-				},
-				{
-					"command": "mise.useToolTopMenu",
-					"when": "false"
-				},
-				{
-					"command": "mise.openMissingToolsMenu",
-					"when": "false"
-				},
-				{
-					"command": "mise.showAllEnvVarValues",
-					"when": "false"
-				},
-				{
-					"command": "mise.hideAllEnvVarValues",
-					"when": "false"
-				},
-				{
-					"command": "mise.showEnvVariableValue",
-					"when": "false"
-				},
-				{
-					"command": "mise.hideEnvVariableValue",
-					"when": "false"
-				},
-				{
-					"command": "mise.displayPath",
-					"when": "false"
-				},
-				{
-					"command": "mise.doctor",
-					"when": "false"
-				}
-			],
-			"view/title": [
-				{
-					"command": "mise.createTomlTaskTopMenu",
-					"when": "view == miseTasksView",
-					"group": "navigation@1"
-				},
-				{
-					"command": "mise.createFileTask",
-					"when": "view == miseTasksView",
-					"group": "navigation@2"
-				},
-				{
-					"command": "mise.visualizeTasksDeps",
-					"when": "view == miseTasksView",
-					"group": "navigation@2"
-				},
-				{
-					"command": "mise.listAllTools",
-					"when": "view == miseToolsView",
-					"group": "navigation@1"
-				},
-				{
-					"command": "mise.useToolTopMenu",
-					"when": "view == miseToolsView",
-					"group": "navigation@2"
-				},
-				{
-					"command": "mise.installAll",
-					"when": "view == miseToolsView",
-					"group": "navigation@3"
-				},
-				{
-					"command": "mise.showAllEnvVarValues",
-					"when": "view == miseEnvsView && !mise.showAllEnvVarValues",
-					"group": "navigation@1"
-				},
-				{
-					"command": "mise.hideAllEnvVarValues",
-					"when": "view == miseEnvsView && mise.showAllEnvVarValues",
-					"group": "navigation@1"
-				},
-				{
-					"command": "mise.setEnvVariable",
-					"when": "view == miseEnvsView",
-					"group": "navigation@2"
-				},
-				{
-					"command": "mise.refreshEntry",
-					"when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
-					"group": "navigation@4"
-				}
-			],
-			"view/item/context": [
-				{
-					"when": "view == miseTasksView && viewItem == miseTask",
-					"command": "mise.runTask",
-					"group": "inline"
-				},
-				{
-					"when": "view == miseTasksView && viewItem == miseTask",
-					"command": "mise.watchTask",
-					"group": "inline"
-				},
-				{
-					"when": "view == miseTasksView && viewItem == miseTaskGroupEditable",
-					"command": "mise.createTomlTask",
-					"group": "inline"
-				},
-				{
-					"when": "view == miseTasksView && (viewItem == miseTaskGroupEditable || viewItem == miseTaskGroup)",
-					"command": "mise.openFile",
-					"group": "2_modification"
-				},
-				{
-					"when": "view == miseTasksView && viewItem == miseTask",
-					"command": "mise.runTask",
-					"group": "2_modification"
-				},
-				{
-					"when": "view == miseTasksView && viewItem == miseTask",
-					"command": "mise.watchTask",
-					"group": "2_modification"
-				},
-				{
-					"command": "mise.removeTool",
-					"when": "view == miseToolsView && viewItem == tool-installed",
-					"group": "2_modification"
-				},
-				{
-					"command": "mise.openToolRepository",
-					"when": "view == miseToolsView",
-					"group": "2_modification"
-				},
-				{
-					"command": "mise.installTool",
-					"when": "view == miseToolsView && viewItem == tool-notinstalled",
-					"group": "2_modification"
-				},
-				{
-					"command": "mise.copyToolInstallPath",
-					"when": "view == miseToolsView && viewItem == tool-installed",
-					"group": "2_modification"
-				},
-				{
-					"command": "mise.copyToolBinPaths",
-					"when": "view == miseToolsView && viewItem == tool-installed",
-					"group": "2_modification"
-				},
-				{
-					"when": "view == miseToolsView && viewItem == miseToolGroup",
-					"command": "mise.useTool",
-					"group": "inline"
-				},
-				{
-					"when": "view == miseToolsView && viewItem == miseToolGroup",
-					"command": "mise.openFile",
-					"group": "2_modification"
-				},
-				{
-					"when": "view == miseEnvsView && (viewItem == hiddenEnvItem)",
-					"command": "mise.showEnvVariableValue",
-					"group": "inline"
-				},
-				{
-					"when": "view == miseEnvsView && viewItem == visibleEnvItem",
-					"command": "mise.hideEnvVariableValue",
-					"group": "inline"
-				},
-				{
-					"command": "mise.copyEnvVariableName",
-					"when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
-					"group": "2_modification"
-				},
-				{
-					"when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
-					"command": "mise.copyEnvVariableValue",
-					"group": "2_modification"
-				}
-			],
-			"editor/lineNumber/context": [
-				{
-					"command": "mise.listAllTools",
-					"group": "inline",
-					"when": "editorLineNumber in mise.linesWithOutdatedTools"
-				}
-			],
-			"explorer/context": [
-				{
-					"command": "mise.selectWorkspaceFolder",
-					"group": "inline",
-					"when": "explorerResourceIsRoot && treeElementCanCollapse && workspaceFolderCount > 1"
-				}
-			]
-		},
-		"taskDefinitions": [
-			{
-				"type": "mise",
-				"required": [
-					"task"
-				],
-				"properties": {
-					"task": {
-						"description": "The mise task to execute",
-						"type": "string"
-					},
-					"watch": {
-						"description": "Re-run the task when files change",
-						"type": "boolean"
-					},
-					"miseEnv": {
-						"description": "The mise environment to use",
-						"type": "string"
-					},
-					"glob": {
-						"description": "Glob pattern to watch for changes. Defaults to sources from the tasks(s)",
-						"type": "string"
-					},
-					"runArgs": {
-						"description": "Arguments to pass to the task. Not used when watch is true",
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": []
-					},
-					"watchexecArgs": {
-						"description": "Arguments to pass to watchexec. (example: --clear) | use watchexec --help for more information",
-						"type": "array",
-						"items": {
-							"type": "string"
-						},
-						"default": []
-					}
-				}
-			}
-		]
-	},
-	"scripts": {
-		"dev-extension": "rsbuild dev",
-		"dev-browser": "rslib build -c rslib.browser.config.ts --watch --config-loader jiti",
-		"dev-webviews": "rsbuild dev -c rsbuild.webviews.config.ts",
-		"build": "rsbuild build && rslib build -c rslib.browser.config.ts --config-loader jiti && rsbuild build -c rsbuild.webviews.config.ts",
-		"ts-check": "tsc --noEmit",
-		"lint-fix": "biome check --fix",
-		"lint": "biome ci",
-		"test": "bun test",
-		"e2e-tests": "vscode-test"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.3.10",
-		"@rsbuild/core": "^1.7.3",
-		"@rsbuild/plugin-react": "^1.4.5",
-		"@rslib/core": "^0.19.0",
-		"@types/bun": "^1.3.5",
-		"@types/micromatch": "^4.0.10",
-		"@types/node": "^24.10.4",
-		"@types/react": "^18.3.27",
-		"@types/react-dom": "^18.3.7",
-		"@types/vscode": "^1.85.0",
-		"@types/sinon": "^17.0.4",
-		"@types/tmp": "^0.2.6",
-		"@vscode/test-cli": "^0.0.12",
-		"@vscode/test-electron": "^2.5.2",
-		"bun": "^1.3.5",
-		"sinon": "^21.0.1",
-		"tmp": "^0.2.5",
-		"tsx": "^4.21.0",
-		"typescript": "^5.9.3"
-	},
-	"dependencies": {
-		"@rsbuild/plugin-node-polyfill": "^1.4.4",
-		"@std/collections": "npm:@jsr/std__collections@^1.0.9",
-		"@tanstack/match-sorter-utils": "^8.19.4",
-		"@tanstack/react-query": "^5.90.14",
-		"@tanstack/react-table": "^8.21.3",
-		"@vscode-elements/react-elements": "^1.15.1",
-		"@vscode/codicons": "^0.0.44",
-		"async-cache-dedupe": "^2.2.0",
-		"cheerio": "^1.1.2",
-		"d3": "^7.9.0",
-		"d3-graphviz": "^5.6.0",
-		"micromatch": "^4.0.8",
-		"react": "18.3.1",
-		"react-dom": "18.3.1",
-		"react-error-boundary": "^4.1.2",
-		"toml-v1": "^1.0.0",
-		"zustand": "^5.0.9"
-	},
-	"packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
+  "name": "mise-vscode",
+  "displayName": "Mise VSCode",
+  "publisher": "hverlin",
+  "description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
+  "version": "1.3.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hverlin/mise-vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/hverlin/mise-vscode/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "mise",
+    "mise-en-place",
+    "devtools",
+    "rtx",
+    "asdf",
+    "asdf-vm",
+    "tasks",
+    "envs",
+    "environment variables",
+    "scripts"
+  ],
+  "icon": "resources/icon.png",
+  "main": "./dist/extension.js",
+  "browser": "./dist/browser/browser.js",
+  "activationEvents": [
+    "onTaskType:mise",
+    "workspaceContains:.config/mise/**/config.*.toml",
+    "workspaceContains:.config/mise/**/config.toml",
+    "workspaceContains:.mise.*.toml",
+    "workspaceContains:.mise.toml",
+    "workspaceContains:.mise/config.*.toml",
+    "workspaceContains:.mise/config.toml",
+    "workspaceContains:mise.*.toml",
+    "workspaceContains:mise.toml",
+    "workspaceContains:mise/config.*.toml",
+    "workspaceContains:mise/config.toml",
+    "onLanguage"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "This extension requires a trusted workspace because it can execute code in the workspace."
+    },
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "syntax highlighting only"
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "toml",
+        "aliases": [
+          "TOML",
+          "toml"
+        ],
+        "extensions": [
+          ".toml"
+        ],
+        "filenames": [
+          "mise.lock"
+        ],
+        "configuration": "./syntaxes/toml-language-configuration.json"
+      }
+    ],
+    "tomlValidation": [
+      {
+        "fileMatch": [
+          ".mise.toml",
+          ".mise.*.toml",
+          "mise.toml",
+          "mise.*.toml",
+          "**/.mise/config.toml",
+          "**/mise/config.toml"
+        ],
+        "url": "https://mise.jdx.dev/schema/mise.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "toml",
+        "scopeName": "source.toml",
+        "path": "./syntaxes/toml-language.json"
+      },
+      {
+        "scopeName": "source.usage.kdl",
+        "path": "./syntaxes/usage-kdl.json"
+      },
+      {
+        "scopeName": "source.mise.shell",
+        "path": "./syntaxes/shell.json"
+      },
+      {
+        "injectTo": [
+          "source.toml"
+        ],
+        "scopeName": "inline.tera-mise",
+        "path": "./syntaxes/tera-mise.json",
+        "embeddedLanguages": {
+          "meta.embedded.tera.expression": "tera",
+          "meta.embedded.tera.statement": "tera",
+          "source.js": "javascript",
+          "source.python": "python",
+          "source.shell": "shellscript",
+          "source.ruby": "ruby"
+        }
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "mise-getting-started",
+        "title": "Mise VSCode setup",
+        "description": "Important steps to get started with the Mise VSCode extension.",
+        "when": "!isWeb",
+        "steps": [
+          {
+            "id": "auto-configure",
+            "title": "Auto-Configure Extensions",
+            "description": "Choose whether to automatically configure VSCode extensions to use tools from mise.\n[Open settings](command:mise.openExtensionSettings)",
+            "media": {
+              "markdown": "walkthrough/auto-configure.md"
+            },
+            "when": "!isWeb"
+          },
+          {
+            "id": "explore",
+            "title": "Tips for using Mise VSCode",
+            "description": "Open the mise panel to see tools, tasks and environment variables.\n[Open Mise Panel](command:workbench.view.extension.mise-panel)",
+            "media": {
+              "markdown": "walkthrough/explore.md"
+            },
+            "when": "!isWeb"
+          }
+        ]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "toml",
+        "path": "./snippets/toml-tasks-snippets.json"
+      },
+      {
+        "language": "shellscript",
+        "path": "./snippets/file-tasks-snippets.json"
+      }
+    ],
+    "configuration": {
+      "title": "Mise",
+      "properties": {
+        "mise.enable": {
+          "order": 1,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable/disable mise extension."
+        },
+        "mise.binPath": {
+          "order": 2,
+          "type": "string",
+          "markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nIf set to `mise` (default), it will use `mise` available in `PATH`.\n\nSee https://mise.jdx.dev/getting-started.html to install mise.",
+          "default": "mise"
+        },
+        "mise.miseEnv": {
+          "order": 3,
+          "type": "string",
+          "markdownDescription": "Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)"
+        },
+        "mise.configureExtensionsAutomatically": {
+          "order": 4,
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).\n\nThis will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured."
+        },
+        "mise.configureExtensionsAutomaticallyIgnoreList": {
+          "order": 5,
+          "type": "array",
+          "default": [
+            "biomejs.biome"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "ms-python.python",
+              "denoland.vscode-deno",
+              "charliermarsh.ruff",
+              "golang.go",
+              "oven.bun-vscode",
+              "oracle.oracle-java",
+              "redhat.java",
+              "vscjava.vscode-gradle",
+              "salesforce.salesforcedx-vscode-apex",
+              "timonwong.shellcheck",
+              "ms-vscode.js-debug",
+              "vscode.php-language-features",
+              "xdebug.php-debug",
+              "julialang.language-julia",
+              "pgourlain.erlang",
+              "Dart-Code.dart-code",
+              "dart-code.flutter",
+              "ziglang.vscode-zig",
+              "signageos.signageos-vscode-sops",
+              "joselitofilho.ginkgotestexplorer",
+              "bufbuild.vscode-buf",
+              "biomejs.biome",
+              "bazelbuild.vscode-bazel"
+            ]
+          },
+          "markdownDescription": "List of extensions that should not be configured automatically."
+        },
+        "mise.configureExtensionsAutomaticallyIncludeList": {
+          "order": 5.1,
+          "type": "array",
+          "default": [
+            "all"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "all",
+              "ms-python.python",
+              "denoland.vscode-deno",
+              "charliermarsh.ruff",
+              "golang.go",
+              "oven.bun-vscode",
+              "oracle.oracle-java",
+              "redhat.java",
+              "vscjava.vscode-gradle",
+              "salesforce.salesforcedx-vscode-apex",
+              "timonwong.shellcheck",
+              "ms-vscode.js-debug",
+              "vscode.php-language-features",
+              "xdebug.php-debug",
+              "julialang.language-julia",
+              "pgourlain.erlang",
+              "Dart-Code.dart-code",
+              "dart-code.flutter",
+              "ziglang.vscode-zig",
+              "signageos.signageos-vscode-sops",
+              "joselitofilho.ginkgotestexplorer",
+              "bufbuild.vscode-buf",
+              "biomejs.biome",
+              "bazelbuild.vscode-bazel"
+            ]
+          },
+          "markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."
+        },
+        "mise.configureExtensionsUseShims": {
+          "order": 6,
+          "type": "boolean",
+          "title": "Configure extensions to use shims",
+          "default": true,
+          "markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
+        },
+        "mise.configureExtensionsUseSymLinks": {
+          "order": 7,
+          "type": "boolean",
+          "title": "Configure extensions to use symlinks",
+          "default": false,
+          "markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control."
+        },
+        "mise.checkForNewMiseVersion": {
+          "order": 8,
+          "type": "boolean",
+          "title": "Check for new mise version",
+          "default": true,
+          "markdownDescription": "Check if a new mise version is available on startup."
+        },
+        "mise.showToolVersionsDecorations": {
+          "order": 9,
+          "type": "boolean",
+          "title": "Show tool versions",
+          "default": true,
+          "markdownDescription": "Show tool versions in the editor. (requires reload)"
+        },
+        "mise.enableCodeLens": {
+          "order": 10,
+          "type": "boolean",
+          "title": "Enable code lens",
+          "default": true,
+          "markdownDescription": "Show run/add tool code lens indicators in the editor."
+        },
+        "mise.enableToolLinks": {
+          "order": 10.5,
+          "type": "boolean",
+          "title": "Enable tool links",
+          "default": true,
+          "markdownDescription": "Enable document links for tools in mise configuration files."
+        },
+        "mise.showNotificationIfMissingTools": {
+          "order": 11,
+          "type": "boolean",
+          "title": "Show notification if missing tools",
+          "default": true,
+          "markdownDescription": "Show notification if tools are not installed."
+        },
+        "mise.updateEnvAutomatically": {
+          "order": 12,
+          "type": "boolean",
+          "title": "Update environment variables automatically",
+          "default": true,
+          "markdownDescription": "Update VSCode and terminal environment variables automatically based on the mise configuration. Note that depending on the extensions loading order, other extensions might not see all mise environment variables."
+        },
+        "mise.updateEnvAutomaticallyIncludePath": {
+          "order": 12.1,
+          "type": "boolean",
+          "title": "Include PATH when updating environment variables",
+          "default": false,
+          "markdownDescription": "Include the PATH variable when updating VSCode and terminal environment variables. Disable this if you want to keep your original PATH."
+        },
+        "mise.updateOpenTerminalsEnvAutomatically": {
+          "order": 13,
+          "type": "boolean",
+          "title": "Update terminal environment variables automatically",
+          "default": false,
+          "markdownDescription": "Update terminal environment variables automatically based on the mise configuration. This will send `unset` and `eval $(mise env)` commands to the terminal. If you don't enable this, you will need to restart the integrated terminals to get the new environment variables."
+        },
+        "mise.teraAutoCompletion": {
+          "order": 14,
+          "type": "boolean",
+          "title": "Enable Tera auto-completion",
+          "default": true,
+          "markdownDescription": "Enable Tera auto-completion in `mise.toml` files."
+        },
+        "mise.automaticallyTrustMiseConfigFiles": {
+          "order": 15,
+          "type": "boolean",
+          "title": "Automatically trust mise config files",
+          "default": true,
+          "markdownDescription": "Automatically trust mise config files when opening them in a trusted worskspace."
+        },
+        "mise.commandTTLCacheSeconds": {
+          "order": 16,
+          "type": "number",
+          "title": "Command TTL cache seconds",
+          "default": 2,
+          "markdownDescription": "Time to live in seconds for the mise command cache. Only changed it if some commands are expensive to run."
+        },
+        "mise.showOutdatedToolGutterDecorations": {
+          "order": 16,
+          "type": "boolean",
+          "title": "Show outdated tool gutter decorations",
+          "default": true,
+          "markdownDescription": "Show outdated tool gutter decorations in the editor."
+        },
+        "mise.autoDetectMiseBinPath": {
+          "order": 17,
+          "type": "boolean",
+          "title": "Auto-detect mise bin path",
+          "default": true,
+          "markdownDescription": "Auto-detect mise bin path on startup."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mise-panel",
+          "title": "Mise",
+          "icon": "$(terminal)"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "miseTasksView",
+        "contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.refreshEntry))\n[Add task](command:mise.createTomlTask)",
+        "when": "config.mise.binPath && config.mise.enable && !mise.tasksProviderError"
+      },
+      {
+        "view": "miseTasksView",
+        "contents": "Error loading tasks. [Open logs](command:mise.openLogs)",
+        "when": "mise.tasksProviderError && config.mise.enable"
+      },
+      {
+        "view": "miseTasksView",
+        "contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openExtensionSettings)",
+        "when": "!config.mise.binPath"
+      },
+      {
+        "view": "miseTasksView",
+        "contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+        "when": "!config.mise.enable"
+      },
+      {
+        "view": "miseToolsView",
+        "contents": "[Tools](https://mise.jdx.dev/dev-tools/) will be displayed here.",
+        "when": "config.mise.enable && !mise.toolsProviderError"
+      },
+      {
+        "view": "miseToolsView",
+        "contents": "Error loading tools. [Open logs](command:mise.openLogs)",
+        "when": "mise.toolsProviderError && config.mise.enable"
+      },
+      {
+        "view": "miseToolsView",
+        "contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+        "when": "!config.mise.enable"
+      },
+      {
+        "view": "miseEnvsView",
+        "contents": "[Environment variables](https://mise.jdx.dev/environments.html) will be displayed here.",
+        "when": "config.mise.binPath && config.mise.enable && !mise.envProviderError"
+      },
+      {
+        "view": "miseEnvsView",
+        "contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+        "when": "!config.mise.enable"
+      },
+      {
+        "view": "miseEnvsView",
+        "contents": "Error loading environment variables. [Open logs](command:mise.openLogs)",
+        "when": "mise.envProviderError && config.mise.enable"
+      }
+    ],
+    "views": {
+      "mise-panel": [
+        {
+          "id": "miseTasksView",
+          "name": "Tasks",
+          "when": "!isWeb"
+        },
+        {
+          "id": "miseToolsView",
+          "name": "Tools",
+          "when": "!isWeb"
+        },
+        {
+          "id": "miseEnvsView",
+          "name": "Environment Variables",
+          "when": "!isWeb"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mise.refreshEntry",
+        "title": "Mise: Reload configuration",
+        "icon": "$(refresh)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openMenu",
+        "title": "Mise: Open Menu",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openMissingToolsMenu",
+        "title": "Mise: Open Missing Tools Menu",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openToolRepository",
+        "title": "Mise: Open Tool Repository",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.selectWorkspaceFolder",
+        "title": "Mise: Select Workspace Folder",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.runTask",
+        "title": "Mise: Run task",
+        "icon": "$(play)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.watchTask",
+        "title": "Mise: Run Task in Watch Mode",
+        "icon": "$(eye-watch)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.createFileTask",
+        "title": "Mise: Create File Task",
+        "icon": "$(new-file)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.createTomlTask",
+        "title": "Mise: Create Toml Task",
+        "icon": "$(add)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.createTomlTaskTopMenu",
+        "title": "Mise: Create Toml Task",
+        "icon": "$(add)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openToolDefinition",
+        "title": "Mise: Open Tool Definition",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openTaskDefinition",
+        "title": "Mise: Open Task Definition",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openEnvVariableDefinition",
+        "title": "Mise: Find Environment Variable Definition",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openFile",
+        "title": "Mise: Open File",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.removeTool",
+        "title": "Mise: Remove Tool",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.copyToolInstallPath",
+        "title": "Mise: Copy Tool Install Path",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.copyToolBinPaths",
+        "title": "Mise: Copy Tool Bin Paths",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.copyEnvVariableName",
+        "title": "Mise: Copy Environment Variable Name",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.copyEnvVariableValue",
+        "title": "Mise: Copy Environment Variable Value",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.installTool",
+        "title": "Mise: Install Tool",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.installAll",
+        "title": "Mise: Run mise install",
+        "icon": "$(cloud-download)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.useTool",
+        "title": "Mise: Run mise use",
+        "icon": "$(add)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.useToolTopMenu",
+        "title": "Mise: Use Tool",
+        "icon": "$(add)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.configureSdkPath",
+        "title": "Mise: Configure extension sdk path...",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.configureAllSdkPaths",
+        "title": "Mise: Configure all extension sdk paths",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openExtensionSettings",
+        "title": "Mise: Open extension settings",
+        "icon": "$(tools)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openLogs",
+        "title": "Mise: Show extension logs",
+        "icon": "$(list-unordered)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.listAllTools",
+        "title": "Mise: List all Tools",
+        "icon": "$(list-ordered)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showSettings",
+        "title": "Mise: Show mise settings",
+        "icon": "$(list-ordered)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showTrackedConfig",
+        "title": "Mise: Show mise tracked configurations",
+        "icon": "$(list-ordered)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.visualizeTasksDeps",
+        "title": "Mise: Visualize Tasks Dependencies",
+        "icon": "$(git-merge)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.setEnvVariable",
+        "title": "Mise: Set Environment Variable",
+        "icon": "$(add)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.fmt",
+        "title": "Mise: Run mise fmt",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.editSetting",
+        "title": "Mise: Edit Setting",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showAllEnvVarValues",
+        "title": "Mise: Show All Environment Variable Values",
+        "icon": "$(eye)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.hideAllEnvVarValues",
+        "title": "Mise: Hide All Environment Variable Values",
+        "icon": "$(eye-closed)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showEnvVariableValue",
+        "title": "Mise: Show Environment Variable Value",
+        "icon": "$(eye)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.hideEnvVariableValue",
+        "title": "Mise: Hide Environment Variable Value",
+        "icon": "$(eye-closed)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.displayPath",
+        "title": "Mise: Display PATH variable",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.doctor",
+        "title": "Mise: Run mise doctor",
+        "enablement": "!isWeb"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "mise.createTomlTaskTopMenu",
+          "when": "false"
+        },
+        {
+          "command": "mise.useToolTopMenu",
+          "when": "false"
+        },
+        {
+          "command": "mise.openMissingToolsMenu",
+          "when": "false"
+        },
+        {
+          "command": "mise.showAllEnvVarValues",
+          "when": "false"
+        },
+        {
+          "command": "mise.hideAllEnvVarValues",
+          "when": "false"
+        },
+        {
+          "command": "mise.showEnvVariableValue",
+          "when": "false"
+        },
+        {
+          "command": "mise.hideEnvVariableValue",
+          "when": "false"
+        },
+        {
+          "command": "mise.displayPath",
+          "when": "false"
+        },
+        {
+          "command": "mise.doctor",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "mise.createTomlTaskTopMenu",
+          "when": "view == miseTasksView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.createFileTask",
+          "when": "view == miseTasksView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mise.visualizeTasksDeps",
+          "when": "view == miseTasksView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mise.listAllTools",
+          "when": "view == miseToolsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.useToolTopMenu",
+          "when": "view == miseToolsView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mise.installAll",
+          "when": "view == miseToolsView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "mise.showAllEnvVarValues",
+          "when": "view == miseEnvsView && !mise.showAllEnvVarValues",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.hideAllEnvVarValues",
+          "when": "view == miseEnvsView && mise.showAllEnvVarValues",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.setEnvVariable",
+          "when": "view == miseEnvsView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mise.refreshEntry",
+          "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.runTask",
+          "group": "inline"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.watchTask",
+          "group": "inline"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTaskGroupEditable",
+          "command": "mise.createTomlTask",
+          "group": "inline"
+        },
+        {
+          "when": "view == miseTasksView && (viewItem == miseTaskGroupEditable || viewItem == miseTaskGroup)",
+          "command": "mise.openFile",
+          "group": "2_modification"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.runTask",
+          "group": "2_modification"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.watchTask",
+          "group": "2_modification"
+        },
+        {
+          "command": "mise.removeTool",
+          "when": "view == miseToolsView && viewItem == tool-installed",
+          "group": "2_modification"
+        },
+        {
+          "command": "mise.openToolRepository",
+          "when": "view == miseToolsView",
+          "group": "2_modification"
+        },
+        {
+          "command": "mise.installTool",
+          "when": "view == miseToolsView && viewItem == tool-notinstalled",
+          "group": "2_modification"
+        },
+        {
+          "command": "mise.copyToolInstallPath",
+          "when": "view == miseToolsView && viewItem == tool-installed",
+          "group": "2_modification"
+        },
+        {
+          "command": "mise.copyToolBinPaths",
+          "when": "view == miseToolsView && viewItem == tool-installed",
+          "group": "2_modification"
+        },
+        {
+          "when": "view == miseToolsView && viewItem == miseToolGroup",
+          "command": "mise.useTool",
+          "group": "inline"
+        },
+        {
+          "when": "view == miseToolsView && viewItem == miseToolGroup",
+          "command": "mise.openFile",
+          "group": "2_modification"
+        },
+        {
+          "when": "view == miseEnvsView && (viewItem == hiddenEnvItem)",
+          "command": "mise.showEnvVariableValue",
+          "group": "inline"
+        },
+        {
+          "when": "view == miseEnvsView && viewItem == visibleEnvItem",
+          "command": "mise.hideEnvVariableValue",
+          "group": "inline"
+        },
+        {
+          "command": "mise.copyEnvVariableName",
+          "when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
+          "group": "2_modification"
+        },
+        {
+          "when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
+          "command": "mise.copyEnvVariableValue",
+          "group": "2_modification"
+        }
+      ],
+      "editor/lineNumber/context": [
+        {
+          "command": "mise.listAllTools",
+          "group": "inline",
+          "when": "editorLineNumber in mise.linesWithOutdatedTools"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "mise.selectWorkspaceFolder",
+          "group": "inline",
+          "when": "explorerResourceIsRoot && treeElementCanCollapse && workspaceFolderCount > 1"
+        }
+      ]
+    },
+    "taskDefinitions": [
+      {
+        "type": "mise",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "description": "The mise task to execute",
+            "type": "string"
+          },
+          "watch": {
+            "description": "Re-run the task when files change",
+            "type": "boolean"
+          },
+          "miseEnv": {
+            "description": "The mise environment to use",
+            "type": "string"
+          },
+          "glob": {
+            "description": "Glob pattern to watch for changes. Defaults to sources from the tasks(s)",
+            "type": "string"
+          },
+          "runArgs": {
+            "description": "Arguments to pass to the task. Not used when watch is true",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "watchexecArgs": {
+            "description": "Arguments to pass to watchexec. (example: --clear) | use watchexec --help for more information",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "dev-extension": "rsbuild dev",
+    "dev-browser": "rslib build -c rslib.browser.config.ts --watch --config-loader jiti",
+    "dev-webviews": "rsbuild dev -c rsbuild.webviews.config.ts",
+    "build": "rsbuild build && rslib build -c rslib.browser.config.ts --config-loader jiti && rsbuild build -c rsbuild.webviews.config.ts",
+    "ts-check": "tsc --noEmit",
+    "lint-fix": "biome check --fix",
+    "lint": "biome ci",
+    "test": "bun test",
+    "e2e-tests": "vscode-test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.10",
+    "@rsbuild/core": "^1.7.3",
+    "@rsbuild/plugin-react": "^1.4.5",
+    "@rslib/core": "^0.19.0",
+    "@types/bun": "^1.3.5",
+    "@types/micromatch": "^4.0.10",
+    "@types/node": "^24.10.4",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "@types/vscode": "^1.85.0",
+    "@types/sinon": "^17.0.4",
+    "@types/tmp": "^0.2.6",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "bun": "^1.3.5",
+    "sinon": "^21.0.1",
+    "tmp": "^0.2.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@rsbuild/plugin-node-polyfill": "^1.4.4",
+    "@std/collections": "npm:@jsr/std__collections@^1.0.9",
+    "@tanstack/match-sorter-utils": "^8.19.4",
+    "@tanstack/react-query": "^5.90.14",
+    "@tanstack/react-table": "^8.21.3",
+    "@vscode-elements/react-elements": "^1.15.1",
+    "@vscode/codicons": "^0.0.44",
+    "async-cache-dedupe": "^2.2.0",
+    "cheerio": "^1.1.2",
+    "d3": "^7.9.0",
+    "d3-graphviz": "^5.6.0",
+    "micromatch": "^4.0.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-error-boundary": "^4.1.2",
+    "toml-v1": "^1.0.0",
+    "zustand": "^5.0.9"
+  },
+  "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
 }

@@ -139,52 +139,77 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 	if (!toolInfo?.backend) {
 		return;
 	}
+	return getWebsiteFromToolName(toolInfo.backend, toolInfo.tool_options);
+};
 
-	// backendName:repo
-	const [backendName, repo] = toolInfo.backend.split(":");
-	if (!repo || !backendName) {
-		return;
+export const getWebsiteFromToolName = (
+	toolName: string,
+	toolOptions?: MiseToolInfo["tool_options"],
+): string | undefined => {
+	if (!toolName) {
+		return undefined;
 	}
 
-	if (
-		repo.includes("/") &&
-		["ubi", "aqua", "asdf", "vfox", "spm"].includes(backendName)
-	) {
-		let repoName = repo;
-		if (backendName === "ubi") {
-			repoName = repo.split("[")[0] as string;
-		}
+	const [backendName, repo] = toolName.split(":");
+	if (!repo || !backendName) {
+		return undefined;
+	}
 
-		if (repoName?.startsWith("https://")) {
-			return repo;
-		}
+	return getWebsiteFromParts(backendName, repo, toolOptions);
+};
+
+const getWebsiteFromParts = (
+	backendName: string,
+	repo: string,
+	toolOptions?: MiseToolInfo["tool_options"],
+): string | undefined => {
+	if (backendName === "aqua") {
+		const repoName = repo.split("/").slice(0, 2).join("/");
 		return `https://github.com/${repoName}`;
 	}
 
+	if (backendName === "ubi") {
+		const repoName =
+			repo.split("[")[0]?.split("/").slice(0, 2).join("/") || repo;
+		const domain =
+			toolOptions?.provider === "gitlab" ? "gitlab.com" : "github.com";
+		return `https://${domain}/${repoName}`;
+	}
+
+	if (backendName === "spm") {
+		if (repo.startsWith("https://") || repo.startsWith("http://")) {
+			return repo;
+		}
+		const domain =
+			toolOptions?.provider === "gitlab" ? "gitlab.com" : "github.com";
+		return `https://${domain}/${repo}`;
+	}
+
+	if (backendName === "vfox") {
+		return `https://github.com/${repo}`;
+	}
+
 	if (backendName === "github") {
-		if (toolInfo.tool_options.api_url) {
-			const url = new URL(toolInfo.tool_options.api_url);
+		if (toolOptions?.api_url) {
+			const url = new URL(toolOptions.api_url);
 			return `${url.protocol}//${url.hostname}/${repo}`;
 		}
-
 		return `https://github.com/${repo}`;
 	}
 
 	if (backendName === "gitlab") {
-		if (toolInfo.tool_options.api_url) {
-			const url = new URL(toolInfo.tool_options.api_url);
+		if (toolOptions?.api_url) {
+			const url = new URL(toolOptions.api_url);
 			return `${url.protocol}//${url.hostname}/${repo}`;
 		}
-
 		return `https://gitlab.com/${repo}`;
 	}
 
 	if (backendName === "http") {
-		if (toolInfo.tool_options.url) {
-			return toolInfo.tool_options.url;
+		if (toolOptions?.url) {
+			return toolOptions.url;
 		}
-
-		return "https://mise.jdx.dev/dev-tools/backends/http.html";
+		return "https://mise.jdx.dev/dev-tools/backends/http";
 	}
 
 	if (backendName === "core") {
@@ -224,16 +249,19 @@ export const getWebsiteForTool = async (toolInfo: MiseToolInfo) => {
 		return `https://www.nuget.org/packages/${repo}`;
 	}
 
-	if (backendName === "asdf") {
-		const res = await fetch(
-			`https://raw.githubusercontent.com/asdf-vm/asdf-plugins/refs/heads/master/plugins/${repo}`,
-		);
-		const data = await res.text();
-		const url = data.match(/(https:\/\/github.com\/[^"]+)/);
-		if (url?.[1] && typeof url[1] === "string") {
-			return url[1];
-		}
+	if (backendName === "conda") {
+		const channel = toolOptions?.channel || "conda-forge";
+		return `https://anaconda.org/${channel}/${repo}`;
 	}
+
+	if (backendName === "asdf") {
+		if (repo.startsWith("http")) {
+			return repo;
+		}
+		return `https://github.com/${repo}`;
+	}
+
+	return undefined;
 };
 
 export const DEPENDS_KEYWORDS = [

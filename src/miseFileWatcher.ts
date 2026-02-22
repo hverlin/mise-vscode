@@ -33,9 +33,9 @@ export class MiseFileWatcher {
 		});
 	}
 
-	private async initializeFileWatcher() {
-		this.dispose();
+	private lastWatchedHash = "";
 
+	private async initializeFileWatcher() {
 		const rootFolders = vscode.workspace.workspaceFolders;
 		if (!rootFolders?.length) {
 			logger.info(
@@ -44,7 +44,40 @@ export class MiseFileWatcher {
 			return;
 		}
 
-		const patterns = [];
+		const [configFiles, tasksSources, envs] = await Promise.all([
+			this.miseService.getMiseConfigFiles(),
+			this.miseService.getAllCachedTasksSources(),
+			this.miseService.getEnvWithInfo(),
+		]);
+
+		const envSources = envs
+			.map((env) => env.source ?? "")
+			.filter((source) => source !== "");
+
+		const idiomaticFilesValues = [...idiomaticFiles.values()];
+		const filesToWatch = [
+			...new Set([
+				...configFiles.map((c) => c.path),
+				...tasksSources,
+				...envSources,
+				...rootFolders.flatMap((rf) =>
+					idiomaticFilesValues.map((f) =>
+						expandPath(path.join(rf.uri.fsPath, f)),
+					),
+				),
+			]),
+		].sort();
+
+		const currentHash = filesToWatch.join("|");
+		if (this.lastWatchedHash === currentHash && this.fileWatchers.length > 0) {
+			return;
+		}
+
+		this.lastWatchedHash = currentHash;
+		this.dispose();
+
+		const patterns: vscode.RelativePattern[] = [];
+
 		for (const rootFolder of rootFolders) {
 			const miseStandardConfigsPattern = new vscode.RelativePattern(
 				rootFolder,
@@ -52,41 +85,19 @@ export class MiseFileWatcher {
 			);
 			patterns.push(miseStandardConfigsPattern);
 
-			const [configFiles, tasksSources, envs] = await Promise.all([
-				this.miseService.getMiseConfigFiles(),
-				this.miseService.getAllCachedTasksSources(),
-				this.miseService.getEnvWithInfo(),
-			]);
-
-			const envSources = envs
-				.map((env) => env.source ?? "")
-				.filter((source) => source !== "");
-
-			const idiomaticFilesValues = [...idiomaticFiles.values()];
-			const filesToWatch = [
-				...new Set([
-					...configFiles.map((c) => c.path),
-					...tasksSources,
-					...envSources,
-					...idiomaticFilesValues.map((f) =>
-						expandPath(path.join(rootFolder.uri.fsPath, f)),
-					),
-				]),
-			];
-
-			for (const file of filesToWatch) {
-				const miseDetectedConfigs = new vscode.RelativePattern(
-					vscode.Uri.file(file),
-					"*",
-				);
-				patterns.push(miseDetectedConfigs);
-			}
-
 			const taskDirsPattern = new vscode.RelativePattern(
 				rootFolder,
 				`{${allowedFileTaskDirs.map((dir) => `${dir}/**/*`)}}`,
 			);
 			patterns.push(taskDirsPattern);
+		}
+
+		for (const file of filesToWatch) {
+			const miseDetectedConfigs = new vscode.RelativePattern(
+				vscode.Uri.file(file),
+				"*",
+			);
+			patterns.push(miseDetectedConfigs);
 		}
 
 		for (const pattern of patterns) {
