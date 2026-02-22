@@ -390,6 +390,7 @@ export async function updateEnv(
 	);
 
 	if (previousEnvs.size === 0) {
+		context.environmentVariableCollection.clear();
 		updateEnvironment(context, currentEnvs, []);
 	} else {
 		const variablesToRemove = [...previousEnvs.entries()].filter(
