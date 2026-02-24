@@ -31,7 +31,10 @@ import {
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { getWebsiteForTool } from "../utils/miseUtilts";
-import { CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME } from "../utils/supportedExtensions";
+import {
+	CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME,
+	getAllConfigurableExtensions,
+} from "../utils/supportedExtensions";
 
 type TreeItem = ToolsSourceItem | ToolItem;
 
@@ -622,11 +625,20 @@ export function registerToolsCommands(
 			const ignoreList = getIgnoreList();
 			const includeList = getIncludeList();
 
+			const allExtensions = getAllConfigurableExtensions();
+
+			const extByToolName = new Map<string, typeof allExtensions>();
+			for (const ext of allExtensions) {
+				for (const toolName of ext.toolNames) {
+					const existing = extByToolName.get(toolName) ?? [];
+					existing.push(ext);
+					extByToolName.set(toolName, existing);
+				}
+			}
+
 			const tools = await miseService.getCurrentTools();
 			const configurableTools = tools.filter((tool) => {
-				const configurableExtensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(
-					tool.name,
-				);
+				const configurableExtensions = extByToolName.get(tool.name);
 				if (!configurableExtensions?.length) {
 					return false;
 				}
@@ -659,8 +671,7 @@ export function registerToolsCommands(
 			const configurableExtensionsWithTools = configurableTools
 				.filter((tool) => tool.installed)
 				.flatMap((tool) => {
-					const configurableExtensions =
-						CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(tool.name);
+					const configurableExtensions = extByToolName.get(tool.name);
 
 					if (!configurableExtensions?.length) {
 						return [];

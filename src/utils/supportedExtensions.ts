@@ -1,5 +1,9 @@
 import * as path from "node:path";
 import type { VSCodeSettingValue } from "../configuration";
+import {
+	getCustomBinaryExtensions,
+	getCustomFolderExtensions,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 import {
 	configureSimpleExtension,
@@ -529,6 +533,112 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 ];
+
+function appendSubdirs(basePath: string, subdirs?: string[]): string {
+	if (!subdirs?.length) {
+		return basePath;
+	}
+	return path.join(basePath, ...subdirs);
+}
+
+export function createCustomBinaryExtensionConfig(customConfig: {
+	extensionId: string;
+	toolSources: string[];
+	vscodeSetting: { key: string; subdirs?: string[] };
+	binName?: string;
+	supportsShims?: boolean;
+	supportsSymlinks?: boolean;
+}): ConfigurableExtension {
+	return {
+		extensionId: customConfig.extensionId,
+		toolNames: customConfig.toolSources,
+		generateConfiguration: async ({
+			tool,
+			miseService,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			const shouldUseShims = customConfig.supportsShims !== false && useShims;
+			const shouldUseSymLinks =
+				customConfig.supportsSymlinks !== false && useSymLinks;
+
+			const resolvedBinName = customConfig.binName || tool.name;
+
+			const result = await configureSimpleExtension(miseService, {
+				configKey: customConfig.vscodeSetting.key,
+				useShims: shouldUseShims,
+				useSymLinks: shouldUseSymLinks,
+				tool,
+				miseConfig,
+				binName: resolvedBinName,
+			});
+
+			if (
+				customConfig.vscodeSetting.subdirs &&
+				result[customConfig.vscodeSetting.key]
+			) {
+				const basePath = result[customConfig.vscodeSetting.key];
+				if (typeof basePath === "string") {
+					result[customConfig.vscodeSetting.key] = appendSubdirs(
+						basePath,
+						customConfig.vscodeSetting.subdirs,
+					);
+				}
+			}
+
+			return result;
+		},
+	};
+}
+
+export function createCustomFolderExtensionConfig(customConfig: {
+	extensionId: string;
+	toolSources: string[];
+	vscodeSetting: { key: string; subdirs?: string[] };
+	folderName: string;
+	sourceSubdirs?: string[];
+	supportsSymlinks?: boolean;
+}): ConfigurableExtension {
+	return {
+		extensionId: customConfig.extensionId,
+		toolNames: customConfig.toolSources,
+		generateConfiguration: async ({ tool, miseService, useSymLinks }) => {
+			const shouldUseSymLinks =
+				customConfig.supportsSymlinks !== false && useSymLinks;
+
+			const sourcePath = appendSubdirs(
+				tool.install_path,
+				customConfig.sourceSubdirs,
+			);
+
+			const folderPath = shouldUseSymLinks
+				? await miseService.createMiseToolSymlink(
+						customConfig.folderName,
+						sourcePath,
+						"dir",
+					)
+				: sourcePath;
+
+			return {
+				[customConfig.vscodeSetting.key]: appendSubdirs(
+					folderPath,
+					customConfig.vscodeSetting.subdirs,
+				),
+			};
+		},
+	};
+}
+
+export function getAllConfigurableExtensions(): ConfigurableExtension[] {
+	const binaryConfigs = getCustomBinaryExtensions();
+	const binaryExtensions = binaryConfigs.map(createCustomBinaryExtensionConfig);
+
+	const folderConfigs = getCustomFolderExtensions();
+	const folderExtensions = folderConfigs.map(createCustomFolderExtensionConfig);
+
+	return [...SUPPORTED_EXTENSIONS, ...binaryExtensions, ...folderExtensions];
+}
 
 export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
 	string,
