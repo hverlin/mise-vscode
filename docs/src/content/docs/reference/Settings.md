@@ -259,3 +259,41 @@ Auto-detect mise bin path on startup.
 
 ---
 
+##### `mise.customBinaryExtensions`
+- **Type:** `array` (array of `object`)
+- **Default:** `[]`
+
+Custom binary extensions to automatically configure VSCode extensions with mise tool binaries.
+
+Each entry requires:
+- `extensionId`: VSCode extension ID
+- `toolSources`: Array of mise tool registry sources to match
+- `vscodeSetting.key`: VSCode setting key to write
+
+Optional:
+- `binName`: Binary name (defaults to first tool name)
+- `vscodeSetting.subdirs`: Subdirectories to append to the path
+- `supportsShims`: Whether extension supports shims (default: true)
+- `supportsSymlinks`: Whether extension supports symlinks (default: true)
+
+---
+
+##### `mise.customFolderExtensions`
+- **Type:** `array` (array of `object`)
+- **Default:** `[]`
+
+Custom folder extensions to automatically configure VSCode extensions with mise tool folders.
+
+Each entry requires:
+- `extensionId`: VSCode extension ID
+- `toolSources`: Array of mise tool registry sources to match
+- `vscodeSetting.key`: VSCode setting key to write
+- `folderName`: Name for the symlink folder
+
+Optional:
+- `vscodeSetting.subdirs`: Subdirectories to append to the path written to VSCode setting
+- `sourceSubdirs`: Additional subdirs to find the tool source folder
+- `supportsSymlinks`: Whether extension supports symlinks (default: true)
+
+---
+

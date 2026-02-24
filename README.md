@@ -23,7 +23,7 @@ directly from your editor.
 
 It can automatically
 [configure other extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
-to use tools provided by `mise` in your current project.
+to use tools provided by `mise` in your current project, including support for custom extensions.
 
 [![mise-vscode screenshot](screenshots/mise-vscode-screenshot.png)](https://hverlin.github.io/mise-vscode/)
 

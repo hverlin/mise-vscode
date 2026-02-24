@@ -44,6 +44,44 @@ Extensions which have built-in support for `mise`:
 - [Elixir](https://marketplace.visualstudio.com/items?itemName=JakeBecker.elixir-ls)
   will look for `mise` and install the lsp server automatically
 
+## Custom Extensions
+
+You can configure any VSCode extension to use mise tools via settings:
+
+- **`mise.customBinaryExtensions`**: Configure extensions that need a binary path
+- **`mise.customFolderExtensions`**: Configure extensions that need a folder path (e.g., JDK home)
+
+Example for binary mode:
+
+```json
+{
+  "mise.customBinaryExtensions": [
+    {
+      "extensionId": "example.my-extension",
+      "toolSources": ["aqua:mytool"],
+      "vscodeSetting": { "key": "myExtension.toolPath" }
+    }
+  ]
+}
+```
+
+Example for folder mode:
+
+```json
+{
+  "mise.customFolderExtensions": [
+    {
+      "extensionId": "example.java-extension",
+      "toolSources": ["jfox:java", "asdf:openjdk"],
+      "vscodeSetting": { "key": "java.jdkHome" },
+      "folderName": "custom-jdk"
+    }
+  ]
+}
+```
+
+See the Extension Settings for full configuration options.
+
 Extensions that are not supported:
 - [Rust](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) does not offer to update the cargo path automatically. See [this discussion](https://github.com/hverlin/mise-vscode/discussions/70) for workarounds. 
 

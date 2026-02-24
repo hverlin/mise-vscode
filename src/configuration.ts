@@ -28,6 +28,8 @@ export const CONFIGURATION_FLAGS = {
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
 	showNotificationIfMissingTools: "showNotificationIfMissingTools",
 	autoDetectMiseBinPath: "autoDetectMiseBinPath",
+	customBinaryExtensions: "customBinaryExtensions",
+	customFolderExtensions: "customFolderExtensions",
 } as const;
 
 const getExtensionConfig = () => {
@@ -188,6 +190,37 @@ export const getCommandTTLCacheSeconds = () => {
 
 export const shouldAutoDetectMiseBinPath = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.autoDetectMiseBinPath, true);
+};
+
+type VSCodeSettingSubdirs = {
+	key: string;
+	subdirs?: string[];
+};
+
+type CustomBinaryExtensionConfig = {
+	extensionId: string;
+	toolSources: string[];
+	vscodeSetting: VSCodeSettingSubdirs;
+	binName?: string;
+	supportsShims?: boolean;
+	supportsSymlinks?: boolean;
+};
+
+type CustomFolderExtensionConfig = {
+	extensionId: string;
+	toolSources: string[];
+	vscodeSetting: VSCodeSettingSubdirs;
+	folderName: string;
+	sourceSubdirs?: string[];
+	supportsSymlinks?: boolean;
+};
+
+export const getCustomBinaryExtensions = (): CustomBinaryExtensionConfig[] => {
+	return getConfOrElse(CONFIGURATION_FLAGS.customBinaryExtensions, []);
+};
+
+export const getCustomFolderExtensions = (): CustomFolderExtensionConfig[] => {
+	return getConfOrElse(CONFIGURATION_FLAGS.customFolderExtensions, []);
 };
 
 export type VSCodeSettingValue =
