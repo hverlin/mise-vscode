@@ -12,6 +12,7 @@ export default defineConfig({
 			},
 			plugins: [pluginNodePolyfill()],
 			format: "cjs",
+			autoExternal: false,
 			output: {
 				target: "web",
 				externals: {

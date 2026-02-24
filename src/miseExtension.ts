@@ -28,6 +28,7 @@ import {
 	getCurrentWorkspaceFolder,
 	getMiseEnv,
 	isMiseExtensionEnabled,
+	isTaskSymbolProviderEnabled,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
 	shouldShowNotificationIfMissingTools,
@@ -637,12 +638,14 @@ export class MiseExtension {
 			),
 		);
 
-		context.subscriptions.push(
-			vscode.languages.registerDocumentSymbolProvider(
-				allTomlFilesSelector,
-				new MiseTomlTaskSymbolProvider(vscode),
-			),
-		);
+		if (isTaskSymbolProviderEnabled()) {
+			context.subscriptions.push(
+				vscode.languages.registerDocumentSymbolProvider(
+					allTomlFilesSelector,
+					new MiseTomlTaskSymbolProvider(vscode),
+				),
+			);
+		}
 
 		await vscode.commands.executeCommand(MISE_RELOAD);
 

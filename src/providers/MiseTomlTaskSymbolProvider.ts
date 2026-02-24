@@ -104,43 +104,51 @@ export class MiseTomlTaskSymbolProvider
 		const lines = document.getText().split(/\r?\n/);
 
 		for (const mainKey in parsed) {
-			if (["settings", "env", "tools"].includes(mainKey)) {
-				const { name, detail, range } = this.getKeyData(
-					parsed,
-					sourceTracker,
-					lines,
-					mainKey,
-				);
-				symbols.push(
-					this.createSymbol(
-						`[${name}]`,
-						detail,
-						this.SECTION_SYMBOL_KIND,
-						range,
-					),
-				);
-			}
-			if (mainKey === "tasks") {
-				for (const key in parsed.tasks) {
-					const value = parsed.tasks[key];
-					const { name, detail, range } = this.getKeyData(
-						parsed.tasks,
-						sourceTracker,
-						lines,
-						key,
-					);
-					symbols.push(
+			const sectionValue =
+				parsed[mainKey as keyof MiseTomlType] ??
+				(parsed as Record<string, unknown>)[mainKey];
+
+			const { name, detail, range } = this.getKeyData(
+				parsed,
+				sourceTracker,
+				lines,
+				mainKey,
+			);
+
+			const sectionSymbol = this.createSymbol(
+				`[${name}]`,
+				detail,
+				this.SECTION_SYMBOL_KIND,
+				range,
+			);
+
+			if (
+				sectionValue &&
+				typeof sectionValue === "object" &&
+				!Array.isArray(sectionValue)
+			) {
+				const entries = sectionValue as Record<string, string | object>;
+				for (const key in entries) {
+					const value = entries[key];
+					const keyData = this.getKeyData(entries, sourceTracker, lines, key);
+
+					const isTask = mainKey === "tasks";
+					const isComplexEntry = typeof value === "object" && value !== null;
+
+					sectionSymbol.children.push(
 						this.createSymbol(
-							name,
-							typeof value === "string" ? detail : "",
-							typeof value === "string"
-								? this.TRIVIAL_TASK_SYMBOL_KIND
-								: this.TASK_SECTION_SYMBOL_KIND,
-							range,
+							keyData.name,
+							typeof value === "string" ? keyData.detail : "",
+							isTask && isComplexEntry
+								? this.TASK_SECTION_SYMBOL_KIND
+								: this.TRIVIAL_TASK_SYMBOL_KIND,
+							keyData.range,
 						),
 					);
 				}
 			}
+
+			symbols.push(sectionSymbol);
 		}
 		this.symbols = symbols;
 		return symbols;

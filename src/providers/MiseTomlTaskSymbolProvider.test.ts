@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { MiseTomlTaskSymbolProvider } from "./MiseTomlTaskSymbolProvider";
 
 class MockDocumentSymbol {
+	children: MockDocumentSymbol[] = [];
 	constructor(
 		public name: string,
 		public detail: string,
@@ -77,138 +78,57 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new VSCodeMock() as typeof vscode,
 		);
 	});
-	it("provides symbols for tasks sections and trivial key-value pairs", () => {
+	it("provides hierarchical symbols for all sections", () => {
 		const document = {
 			getText: () => multiSymbolMiseToml,
 		} as vscode.TextDocument;
-		const toolsSectionLength = "[tools]".length;
-		const envSectionLength = "[env]".length;
-		const settinsSectionLength = "[settings]".length;
-
-		const key1Length = 'key1 = "value1"'.length;
-		const key2Length = '"key2"= "value2"'.length;
-		const complexKey3Length = '"complex \\"key\\" 3" = "value3"'.length;
-
-		const exampleSectionLength = "[tasks.example]".length;
-		const complexSectionLength = '[tasks."complex [\\"section\\"] name"]'
-			.length;
 
 		const symbols = provider.provideDocumentSymbols(
 			document,
 			{} as vscode.CancellationToken,
 		) as MockDocumentSymbol[];
 
-		expect(symbols).toEqual([
-			new MockDocumentSymbol(
-				"[tools]",
-				"",
-				new VSCodeMock().SymbolKind.Namespace,
-				new vscode.Range(
-					new vscode.Position(0, 0),
-					new vscode.Position(0, toolsSectionLength),
-				),
-				new vscode.Range(
-					new vscode.Position(0, 0),
-					new vscode.Position(0, toolsSectionLength),
-				),
-			),
-			// only trivial key-value pairs should be included as symbols from "tasks" section
-			new MockDocumentSymbol(
-				"[env]",
-				"",
-				new VSCodeMock().SymbolKind.Namespace,
-				new vscode.Range(
-					new vscode.Position(3, 0),
-					new vscode.Position(3, envSectionLength),
-				),
-				new vscode.Range(
-					new vscode.Position(3, 0),
-					new vscode.Position(3, envSectionLength),
-				),
-			),
-			new MockDocumentSymbol(
-				"[settings]",
-				"",
-				new VSCodeMock().SymbolKind.Namespace,
-				new vscode.Range(
-					new vscode.Position(7, 0),
-					new vscode.Position(7, settinsSectionLength),
-				),
-				new vscode.Range(
-					new vscode.Position(7, 0),
-					new vscode.Position(7, settinsSectionLength),
-				),
-			),
-			new MockDocumentSymbol(
-				"key1",
-				"value1",
-				new VSCodeMock().SymbolKind.Property,
-				new vscode.Range(
-					new vscode.Position(11, 0),
-					new vscode.Position(11, key1Length),
-				),
-				new vscode.Range(
-					new vscode.Position(11, 0),
-					new vscode.Position(11, key1Length),
-				),
-			),
-			new MockDocumentSymbol(
-				"key2",
-				"value2",
-				new VSCodeMock().SymbolKind.Property,
-				new vscode.Range(
-					new vscode.Position(12, 0),
-					new vscode.Position(12, key2Length),
-				),
-				new vscode.Range(
-					new vscode.Position(12, 0),
-					new vscode.Position(12, key2Length),
-				),
-			),
-			new MockDocumentSymbol(
-				'complex "key" 3',
-				"value3",
-				new VSCodeMock().SymbolKind.Property,
-				new vscode.Range(
-					new vscode.Position(13, 0),
-					new vscode.Position(13, complexKey3Length),
-				),
-				new vscode.Range(
-					new vscode.Position(13, 0),
-					new vscode.Position(13, complexKey3Length),
-				),
-			),
+		// Should have 5 top-level sections: tools, env, settings, tasks, other
+		expect(symbols.length).toBe(5);
 
-			// "example" and "complex [\"section\"] name" sections should be included as symbols
-			new MockDocumentSymbol(
-				"example",
-				"",
-				new VSCodeMock().SymbolKind.Function,
-				new vscode.Range(
-					new vscode.Position(15, 0),
-					new vscode.Position(15, exampleSectionLength),
-				),
-				new vscode.Range(
-					new vscode.Position(15, 0),
-					new vscode.Position(15, exampleSectionLength),
-				),
-			),
-			new MockDocumentSymbol(
-				'complex ["section"] name',
-				"",
-				new VSCodeMock().SymbolKind.Function,
-				new vscode.Range(
-					new vscode.Position(18, 0),
-					new vscode.Position(18, complexSectionLength),
-				),
-				new vscode.Range(
-					new vscode.Position(18, 0),
-					new vscode.Position(18, complexSectionLength),
-				),
-			),
+		expect(symbols[0]?.name).toBe("[tools]");
+		expect(symbols[0]?.kind).toBe(MockSymbolKind.Namespace);
+		expect(symbols[0]?.children.length).toBe(1);
+		expect(symbols[0]?.children[0]?.name).toBe("key_tool");
+		expect(symbols[0]?.children[0]?.detail).toBe("value_tool");
 
-			// "other" section should be ignored, as it's not a "tasks" section
-		]);
+		expect(symbols[1]?.name).toBe("[env]");
+		expect(symbols[1]?.kind).toBe(MockSymbolKind.Namespace);
+		expect(symbols[1]?.children.length).toBe(2);
+		expect(symbols[1]?.children[0]?.name).toBe("env_key");
+		expect(symbols[1]?.children[1]?.name).toBe("env_key2");
+
+		expect(symbols[2]?.name).toBe("[settings]");
+		expect(symbols[2]?.kind).toBe(MockSymbolKind.Namespace);
+		expect(symbols[2]?.children.length).toBe(1);
+		expect(symbols[2]?.children[0]?.name).toBe("setting_key");
+
+		expect(symbols[3]?.name).toBe("[tasks]");
+		expect(symbols[3]?.kind).toBe(MockSymbolKind.Namespace);
+		expect(symbols[3]?.children.length).toBe(5);
+
+		expect(symbols[3]?.children[0]?.name).toBe("key1");
+		expect(symbols[3]?.children[0]?.detail).toBe("value1");
+		expect(symbols[3]?.children[0]?.kind).toBe(MockSymbolKind.Property);
+		expect(symbols[3]?.children[1]?.name).toBe("key2");
+		expect(symbols[3]?.children[1]?.kind).toBe(MockSymbolKind.Property);
+		expect(symbols[3]?.children[2]?.name).toBe('complex "key" 3');
+		expect(symbols[3]?.children[2]?.kind).toBe(MockSymbolKind.Property);
+
+		expect(symbols[3]?.children[3]?.name).toBe("example");
+		expect(symbols[3]?.children[3]?.kind).toBe(MockSymbolKind.Function);
+		expect(symbols[3]?.children[4]?.name).toBe('complex ["section"] name');
+		expect(symbols[3]?.children[4]?.kind).toBe(MockSymbolKind.Function);
+
+		expect(symbols[4]?.name).toBe("[other]");
+		expect(symbols[4]?.kind).toBe(MockSymbolKind.Namespace);
+		expect(symbols[4]?.children.length).toBe(1);
+		expect(symbols[4]?.children[0]?.name).toBe("key_other");
 	});
 
 	it("keeps previous symbols if cancellation is requested", () => {

@@ -30,6 +30,7 @@ export const CONFIGURATION_FLAGS = {
 	autoDetectMiseBinPath: "autoDetectMiseBinPath",
 	customBinaryExtensions: "customBinaryExtensions",
 	customFolderExtensions: "customFolderExtensions",
+	enableTaskSymbolProvider: "enableTaskSymbolProvider",
 } as const;
 
 const getExtensionConfig = () => {
@@ -190,6 +191,10 @@ export const getCommandTTLCacheSeconds = () => {
 
 export const shouldAutoDetectMiseBinPath = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.autoDetectMiseBinPath, true);
+};
+
+export const isTaskSymbolProviderEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableTaskSymbolProvider, false);
 };
 
 type VSCodeSettingSubdirs = {

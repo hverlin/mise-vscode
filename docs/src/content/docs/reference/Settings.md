@@ -187,6 +187,14 @@ Enable document links for tools in mise configuration files.
 
 ---
 
+##### `mise.enableTaskSymbolProvider`
+- **Type:** `boolean`
+- **Default:** `false`
+
+Enable document symbol provider for mise TOML files. Provides an outline of tasks, tools, env, and settings sections. This is always enabled on the web. On desktop, you can use [Tombi](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) for better TOML support.
+
+---
+
 ##### `mise.showNotificationIfMissingTools`
 - **Type:** `boolean`
 - **Default:** `true`
