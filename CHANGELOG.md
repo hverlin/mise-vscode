@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/hverlin/mise-vscode/compare/v1.5.0...v1.6.0) (2026-02-24)
+
+
+### Features
+
+* (add symbol provider) ([#182](https://github.com/hverlin/mise-vscode/issues/182)) ([324ccfa](https://github.com/hverlin/mise-vscode/commit/324ccfa128aae41d9d68a22294829c6af4c6963b))
+* add `mise.enableTaskSymbolProvider` setting to toggle document symbol provider ([9f44a3d](https://github.com/hverlin/mise-vscode/commit/9f44a3d3450cd28d09d6e0e10dee8691468f57d8))
+
+
+### Bug Fixes
+
+* deduplicate PATH entries (fix [#184](https://github.com/hverlin/mise-vscode/issues/184)) ([5d315c1](https://github.com/hverlin/mise-vscode/commit/5d315c16cb3a2dbdc5a9e3346ffda6ecfcde9f4b))
+
 ## [1.5.0](https://github.com/hverlin/mise-vscode/compare/v1.4.0...v1.5.0) (2026-02-22)
 
 
