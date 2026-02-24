@@ -3,7 +3,7 @@
   "displayName": "Mise VSCode",
   "publisher": "hverlin",
   "description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/hverlin/mise-vscode"
@@ -382,7 +382,11 @@
           "markdownDescription": "Custom binary extensions to automatically configure VSCode extensions with mise tool binaries.\n\nEach entry requires:\n- `extensionId`: VSCode extension ID\n- `toolSources`: Array of mise tool registry sources to match\n- `vscodeSetting.key`: VSCode setting key to write\n\nOptional:\n- `binName`: Binary name (defaults to first tool name)\n- `vscodeSetting.subdirs`: Subdirectories to append to the path\n- `supportsShims`: Whether extension supports shims (default: true)\n- `supportsSymlinks`: Whether extension supports symlinks (default: true)",
           "items": {
             "type": "object",
-            "required": ["extensionId", "toolSources", "vscodeSetting"],
+            "required": [
+              "extensionId",
+              "toolSources",
+              "vscodeSetting"
+            ],
             "properties": {
               "extensionId": {
                 "type": "string",
@@ -390,17 +394,26 @@
               },
               "toolSources": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {
+                  "type": "string"
+                },
                 "description": "Mise tool registry sources to find the tool (e.g., ['python'], ['node', 'aqua:bufbuild/buf'])"
               },
               "vscodeSetting": {
                 "type": "object",
-                "required": ["key"],
+                "required": [
+                  "key"
+                ],
                 "properties": {
-                  "key": { "type": "string", "description": "VSCode setting key (e.g., 'python.defaultInterpreterPath')" },
+                  "key": {
+                    "type": "string",
+                    "description": "VSCode setting key (e.g., 'python.defaultInterpreterPath')"
+                  },
                   "subdirs": {
                     "type": "array",
-                    "items": { "type": "string" },
+                    "items": {
+                      "type": "string"
+                    },
                     "description": "Subdirectories to append to the tool path (e.g., ['bin'] to point to bin folder)"
                   }
                 }
@@ -429,7 +442,12 @@
           "markdownDescription": "Custom folder extensions to automatically configure VSCode extensions with mise tool folders.\n\nEach entry requires:\n- `extensionId`: VSCode extension ID\n- `toolSources`: Array of mise tool registry sources to match\n- `vscodeSetting.key`: VSCode setting key to write\n- `folderName`: Name for the symlink folder\n\nOptional:\n- `vscodeSetting.subdirs`: Subdirectories to append to the path written to VSCode setting\n- `sourceSubdirs`: Additional subdirs to find the tool source folder\n- `supportsSymlinks`: Whether extension supports symlinks (default: true)",
           "items": {
             "type": "object",
-            "required": ["extensionId", "toolSources", "vscodeSetting", "folderName"],
+            "required": [
+              "extensionId",
+              "toolSources",
+              "vscodeSetting",
+              "folderName"
+            ],
             "properties": {
               "extensionId": {
                 "type": "string",
@@ -437,17 +455,26 @@
               },
               "toolSources": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {
+                  "type": "string"
+                },
                 "description": "Mise tool registry sources to find the tool (e.g., ['python'], ['node', 'aqua:bufbuild/buf'])"
               },
               "vscodeSetting": {
                 "type": "object",
-                "required": ["key"],
+                "required": [
+                  "key"
+                ],
                 "properties": {
-                  "key": { "type": "string", "description": "VSCode setting key (e.g., 'java.jdkHome')" },
+                  "key": {
+                    "type": "string",
+                    "description": "VSCode setting key (e.g., 'java.jdkHome')"
+                  },
                   "subdirs": {
                     "type": "array",
-                    "items": { "type": "string" },
+                    "items": {
+                      "type": "string"
+                    },
                     "description": "Subdirectories to append to the path (e.g., ['bin'] to point to bin subfolder)"
                   }
                 }
@@ -458,7 +485,9 @@
               },
               "sourceSubdirs": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {
+                  "type": "string"
+                },
                 "description": "Additional subdirs to find the tool source folder (e.g., ['lib'] to use parent/lib as base)"
               },
               "supportsSymlinks": {
