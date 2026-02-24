@@ -12,7 +12,18 @@ class MockDocumentSymbol {
 	) {}
 }
 
-const MockSymbolKind = {};
+const MockSymbolKind = {
+	Property: 1,
+	Function: 2,
+	Namespace: 3,
+};
+
+class VSCodeMock {
+	DocumentSymbol = MockDocumentSymbol;
+	Range = vscode.Range;
+	Position = vscode.Position;
+	SymbolKind = MockSymbolKind;
+}
 
 let provider: MiseTomlTaskSymbolProvider;
 
@@ -61,16 +72,14 @@ env_key = "value_env"
 describe("MiseTomlTaskSymbolProvider tests", () => {
 	beforeEach(() => {
 		// Mock the logger to prevent actual logging during tests
-		provider = new MiseTomlTaskSymbolProvider({
-			DocumentSymbol: MockDocumentSymbol as any,
-			SymbolKind: MockSymbolKind as any,
-			Range: vscode.Range as any,
-			Position: vscode.Position as any,
-		});
+		/* eslint-disable @typescript-eslint/no-explicit-any */
+		provider = new MiseTomlTaskSymbolProvider(
+			new VSCodeMock() as typeof vscode,
+		);
 	});
 	it("provides symbols for tasks sections and trivial key-value pairs", () => {
 		const document = {
-			getText: () => multiSymbolMiseToml
+			getText: () => multiSymbolMiseToml,
 		} as vscode.TextDocument;
 		const toolsSectionLength = "[tools]".length;
 		const envSectionLength = "[env]".length;
@@ -93,7 +102,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"[tools]",
 				"",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Namespace,
 				new vscode.Range(
 					new vscode.Position(0, 0),
 					new vscode.Position(0, toolsSectionLength),
@@ -107,7 +116,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"[env]",
 				"",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Namespace,
 				new vscode.Range(
 					new vscode.Position(3, 0),
 					new vscode.Position(3, envSectionLength),
@@ -120,7 +129,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"[settings]",
 				"",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Namespace,
 				new vscode.Range(
 					new vscode.Position(7, 0),
 					new vscode.Position(7, settinsSectionLength),
@@ -133,7 +142,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"key1",
 				"value1",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Property,
 				new vscode.Range(
 					new vscode.Position(11, 0),
 					new vscode.Position(11, key1Length),
@@ -146,7 +155,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"key2",
 				"value2",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Property,
 				new vscode.Range(
 					new vscode.Position(12, 0),
 					new vscode.Position(12, key2Length),
@@ -159,7 +168,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				'complex "key" 3',
 				"value3",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Property,
 				new vscode.Range(
 					new vscode.Position(13, 0),
 					new vscode.Position(13, complexKey3Length),
@@ -174,7 +183,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				"example",
 				"",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Function,
 				new vscode.Range(
 					new vscode.Position(15, 0),
 					new vscode.Position(15, exampleSectionLength),
@@ -187,7 +196,7 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 			new MockDocumentSymbol(
 				'complex ["section"] name',
 				"",
-				undefined as any,
+				new VSCodeMock().SymbolKind.Function,
 				new vscode.Range(
 					new vscode.Position(18, 0),
 					new vscode.Position(18, complexSectionLength),
@@ -204,41 +213,55 @@ describe("MiseTomlTaskSymbolProvider tests", () => {
 
 	it("keeps previous symbols if cancellation is requested", () => {
 		const document = {
-			getText: () => simpleValidMiseToml
+			getText: () => simpleValidMiseToml,
 		} as vscode.TextDocument;
 
 		// First call to populate symbols
-		const initialSymbols = provider.provideDocumentSymbols(document, {} as vscode.CancellationToken) as MockDocumentSymbol[];
+		const initialSymbols = provider.provideDocumentSymbols(
+			document,
+			{} as vscode.CancellationToken,
+		) as MockDocumentSymbol[];
 
 		// Simulate cancellation on second call
-		const cancelledSymbols = provider.provideDocumentSymbols(document, { isCancellationRequested: true } as vscode.CancellationToken) as MockDocumentSymbol[];
+		const cancelledSymbols = provider.provideDocumentSymbols(document, {
+			isCancellationRequested: true,
+		} as vscode.CancellationToken) as MockDocumentSymbol[];
 
 		expect(cancelledSymbols).toBe(initialSymbols);
 	});
 
 	it("returns empty symbols if TOML parsing fails and no previous symbols exist", () => {
 		const invalidDocument = {
-			getText: () => simpleInvalidMiseToml
+			getText: () => simpleInvalidMiseToml,
 		} as vscode.TextDocument;
 
-		const symbols = provider.provideDocumentSymbols(invalidDocument, {} as vscode.CancellationToken) as MockDocumentSymbol[];
+		const symbols = provider.provideDocumentSymbols(
+			invalidDocument,
+			{} as vscode.CancellationToken,
+		) as MockDocumentSymbol[];
 
 		expect(symbols).toEqual([]);
 	});
 
 	it("keeps last valid symbols if TOML parsing fails", () => {
 		const validDocument = {
-			getText: () => simpleValidMiseToml
+			getText: () => simpleValidMiseToml,
 		} as vscode.TextDocument;
 
 		const invalidDocument = {
-			getText: () => simpleInvalidMiseToml
+			getText: () => simpleInvalidMiseToml,
 		} as vscode.TextDocument;
 
 		// First call with valid TOML to populate symbols
-		const validSymbols = provider.provideDocumentSymbols(validDocument, {} as vscode.CancellationToken) as MockDocumentSymbol[];
+		const validSymbols = provider.provideDocumentSymbols(
+			validDocument,
+			{} as vscode.CancellationToken,
+		) as MockDocumentSymbol[];
 		// Second call with invalid TOML should keep previous symbols
-		const invalidSymbols = provider.provideDocumentSymbols(invalidDocument, {} as vscode.CancellationToken) as MockDocumentSymbol[];
+		const invalidSymbols = provider.provideDocumentSymbols(
+			invalidDocument,
+			{} as vscode.CancellationToken,
+		) as MockDocumentSymbol[];
 
 		expect(invalidSymbols).toBe(validSymbols);
 	});
