@@ -1,3 +1,4 @@
+import path from "node:path";
 import * as vscode from "vscode";
 import {
 	MISE_COPY_ENV_VARIABLE_NAME,
@@ -334,12 +335,22 @@ function updateEnvironment(
 	context.environmentVariableCollection.description =
 		"Provide environment variables from `mise env`";
 	for (const [name, value] of envs.entries()) {
-		process.env[name] = value;
-		context.environmentVariableCollection.replace(name, value);
+		if (name.toUpperCase() === "PATH") {
+			const uniquePaths = Array.from(new Set(value.split(path.delimiter))).join(
+				path.delimiter,
+			);
+			process.env[name] = uniquePaths;
+			context.environmentVariableCollection.replace(name, uniquePaths);
+		} else {
+			process.env[name] = value;
+			context.environmentVariableCollection.replace(name, value);
+		}
 	}
 
 	for (const [name] of removedEnvs) {
-		process.env[name] = undefined;
+		if (name.toUpperCase() !== "PATH") {
+			process.env[name] = undefined;
+		}
 		context.environmentVariableCollection.delete(name);
 	}
 }
