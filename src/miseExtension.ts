@@ -42,6 +42,7 @@ import {
 } from "./providers/envProvider";
 import { addToolInfoToEditor } from "./providers/inlineToolDecorator";
 import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
+import { MiseTomlTaskSymbolProvider } from "./providers/MiseTomlTaskSymbolProvider";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import {
@@ -633,6 +634,13 @@ export class MiseExtension {
 						value,
 					});
 				},
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.languages.registerDocumentSymbolProvider(
+				allTomlFilesSelector,
+				new MiseTomlTaskSymbolProvider(vscode),
 			),
 		);
 
