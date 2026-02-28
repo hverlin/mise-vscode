@@ -274,8 +274,8 @@
           "order": 7.1,
           "type": "boolean",
           "title": "Include global mise tools when auto-configuring extensions",
-          "default": false,
-          "markdownDescription": "When enabled, tools from the global mise configuration (`~/.config/mise/config.toml`) will be included when automatically configuring VS Code extensions.\n\nWhen disabled (default), only tools from the local project configuration (`mise.toml`) are used. This prevents settings.json from being polluted with extensions for tools that are not part of the current project."
+          "default": true,
+          "markdownDescription": "When enabled, tools from the global mise configuration (`~/.config/mise/config.toml`) will be included when automatically configuring VS Code extensions.\n\nWhen disabled (recommended), only tools from the local project configuration (`mise.toml`) are used. This prevents settings.json from being polluted with extensions for tools that are not part of the current project."
         },
         "mise.checkForNewMiseVersion": {
           "order": 8,

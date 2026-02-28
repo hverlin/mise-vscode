@@ -89,7 +89,7 @@ export const shouldUseSymLinks = () => {
 export const shouldIncludeGlobalTools = (): boolean => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsIncludeGlobalTools,
-		false,
+		true,
 	);
 };
 
