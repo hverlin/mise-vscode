@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/hverlin/mise-vscode/compare/v1.6.0...v1.7.0) (2026-02-28)
+
+
+### Features
+
+* add configureExtensionsIncludeGlobalTools setting ([#187](https://github.com/hverlin/mise-vscode/issues/187)) ([83609ed](https://github.com/hverlin/mise-vscode/commit/83609ed57e51daf02962385abbe3dc1ab99d3cf8))
+
 ## [1.6.0](https://github.com/hverlin/mise-vscode/compare/v1.5.0...v1.6.0) (2026-02-24)
 
 
