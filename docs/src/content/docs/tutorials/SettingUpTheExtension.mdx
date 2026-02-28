@@ -24,6 +24,8 @@ By default, this extension **will not** automatically modify your `.vscode/setti
 
 You can [enable automatic configuration](/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) so that [other extensions](/mise-vscode/reference/supported-extensions/) you use will automatically use the tools you installed with `mise`.
 
+By default, [`mise.configureExtensionsIncludeGlobalTools`](/mise-vscode/reference/settings/#miseconfigureextensionsincludeglobaltools) is `true`, meaning tools from your global mise configuration (`~/.config/mise/config.toml`) are also included. You can set it to `false` if you only want to use tools from the local project configuration.
+
 **If you enable this feature and are sharing the `.vscode/settings.json` file with others** (e.g., in a Git repository), you may want to configure the extension to create symlinks to tools so that the settings point to a relative path in your project. Use [`mise.configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks) for this. Note that I consider that sharing the `.vscode/settings.json` file is not a good idea in general (see details below).
 
 <details>

@@ -1,0 +1,42 @@
+---
+title: Custom Extensions
+description: How to configure any VS Code extension to use mise tools
+sidebar:
+    order: 300
+---
+
+You can configure any VS Code extension to use mise tools via settings:
+
+- **`mise.customBinaryExtensions`**: Configure extensions that need a binary path
+- **`mise.customFolderExtensions`**: Configure extensions that need a folder path (e.g., JDK home)
+
+Example for binary mode:
+
+```json
+{
+  "mise.customBinaryExtensions": [
+    {
+      "extensionId": "example.my-extension",
+      "toolSources": ["aqua:mytool"],
+      "vscodeSetting": { "key": "myExtension.toolPath" }
+    }
+  ]
+}
+```
+
+Example for folder mode:
+
+```json
+{
+  "mise.customFolderExtensions": [
+    {
+      "extensionId": "example.java-extension",
+      "toolSources": ["jfox:java", "asdf:openjdk"],
+      "vscodeSetting": { "key": "java.jdkHome" },
+      "folderName": "custom-jdk"
+    }
+  ]
+}
+```
+
+See the [Extension Settings](/mise-vscode/reference/settings/) for full configuration options.

@@ -42,17 +42,19 @@ The extension will notify you if neither is installed.
 
 ## Important Defaults
 
-> [!NOTE]
-> The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your set-up.
-> For example, you can choose to enable/disable automatic configuration of other extensions or change the path to the `mise` binary.
->
-> You can access the settings by clicking on the mise extension indicator in the status bar.
+The extension includes default settings that you might want to change. See the [configuration guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) to customize your set-up.
 
-### Recommended: Disable Global Tools in Auto-Configuration
+For example, you can choose to enable/disable automatic configuration of other extensions or change the path to the `mise` binary.
 
-By default, the extension includes tools from your global mise configuration (`~/.config/mise/config.toml`) when auto-configuring other VS Code extensions. This can pollute your project settings with extensions for tools not in your current project.
+You can access the settings by clicking on the mise extension indicator in the status bar.
 
-**Recommended setting:** Set `mise.configureExtensionsIncludeGlobalTools` to `false` to only use tools from your local `mise.toml` file. This keeps your `.vscode/settings.json` clean and ensures extensions are only configured for tools actually used in your project.
+### Enabling/Disabling Auto-Configuration
+
+By default, the extension will not automatically configure other VS Code extensions to use tools provided by `mise` in your current project.
+
+To enable auto-configuration, set [`mise.configureExtensionsAutomatically`](https://hverlin.github.io/mise-vscode/reference/settings/#miseconfigureextensionsautomatically) to `true`. This will automatically configure other VS Code extensions to use tools provided by `mise` in your current project.
+
+**Important:** By default, tools from your global mise configuration (`~/.config/mise/config.toml`) are included when auto-configuring other VS Code extensions ([`mise.configureExtensionsIncludeGlobalTools`](https://hverlin.github.io/mise-vscode/reference/settings/#miseconfigureextensionsincludeglobaltools) is `true` for backward compatibility). You can set it to `false` to keep your `.vscode/settings.json` clean and ensure extensions are only configured for tools actually used in your project.
 
 ## ✨ Features
 
