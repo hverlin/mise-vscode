@@ -10,6 +10,8 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsAutomatically: "configureExtensionsAutomatically",
 	configureExtensionsUseShims: "configureExtensionsUseShims",
 	configureExtensionsUseSymLinks: "configureExtensionsUseSymLinks",
+	configureExtensionsIncludeGlobalTools:
+		"configureExtensionsIncludeGlobalTools",
 	configureExtensionsAutomaticallyIgnoreList:
 		"configureExtensionsAutomaticallyIgnoreList",
 	configureExtensionsAutomaticallyIncludeList:
@@ -80,6 +82,13 @@ export const shouldUseShims = () => {
 export const shouldUseSymLinks = () => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
+		true,
+	);
+};
+
+export const shouldIncludeGlobalTools = (): boolean => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.configureExtensionsIncludeGlobalTools,
 		true,
 	);
 };

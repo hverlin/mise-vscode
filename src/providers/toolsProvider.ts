@@ -18,6 +18,7 @@ import {
 	getIgnoreList,
 	getIncludeList,
 	isMiseExtensionEnabled,
+	shouldIncludeGlobalTools,
 	shouldUseShims,
 	shouldUseSymLinks,
 } from "../configuration";
@@ -636,7 +637,9 @@ export function registerToolsCommands(
 				}
 			}
 
-			const tools = await miseService.getCurrentTools();
+			const tools = shouldIncludeGlobalTools()
+				? await miseService.getCurrentTools()
+				: await miseService.getCurrentTools({ local: true });
 			const configurableTools = tools.filter((tool) => {
 				const configurableExtensions = extByToolName.get(tool.name);
 				if (!configurableExtensions?.length) {
