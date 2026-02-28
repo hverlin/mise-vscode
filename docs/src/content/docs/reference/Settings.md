@@ -147,6 +147,16 @@ This is useful if you share the `.vscode/settings.json` file with others. When t
 
 ---
 
+##### `mise.configureExtensionsIncludeGlobalTools`
+- **Type:** `boolean`
+- **Default:** `false`
+
+When enabled, tools from the global mise configuration (`~/.config/mise/config.toml`) will be included when automatically configuring VS Code extensions.
+
+When disabled (default), only tools from the local project configuration (`mise.toml`) are used. This prevents settings.json from being polluted with extensions for tools that are not part of the current project.
+
+---
+
 ##### `mise.checkForNewMiseVersion`
 - **Type:** `boolean`
 - **Default:** `true`

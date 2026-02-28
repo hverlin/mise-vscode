@@ -412,9 +412,13 @@ export class MiseService {
 		}
 	}
 
-	async getCurrentTools(
-		{ useCache }: { useCache?: boolean } = { useCache: true },
-	): Promise<Array<MiseTool>> {
+	async getCurrentTools({
+		useCache = true,
+		local = false,
+	}: {
+		useCache?: boolean;
+		local?: boolean;
+	} = {}): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
@@ -422,7 +426,9 @@ export class MiseService {
 		try {
 			const cacheInstance = useCache ? this.cache : this.dedupeCache;
 			const { stdout } = await cacheInstance.execCmd({
-				command: "ls --current --offline --json",
+				command: local
+					? "ls --local --offline --json"
+					: "ls --current --offline --json",
 			});
 
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
