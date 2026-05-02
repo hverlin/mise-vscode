@@ -136,7 +136,9 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return groupedTasks;
 	}
 
-	private async collectArgumentValues(info: MiseTaskInfo): Promise<string[]> {
+	private async collectArgumentValues(
+		info: MiseTaskInfo,
+	): Promise<string[] | undefined> {
 		const cmdArgs: string[] = [];
 		const spec = info.usageSpec;
 
@@ -154,10 +156,12 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				},
 			});
 
+			if (value === undefined && arg.required) {
+				return undefined;
+			}
+
 			if (value) {
 				cmdArgs.push(value);
-			} else if (arg.required) {
-				throw new Error(`Required argument ${arg.name} was not provided`);
 			}
 		}
 
@@ -168,12 +172,20 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 					ignoreFocusOut: true,
 				});
 
+				if (shouldProvide === undefined) {
+					return undefined;
+				}
+
 				if (shouldProvide === "Yes") {
 					const value = await vscode.window.showInputBox({
 						prompt: `Enter value for --${flag.name}=?`,
 						placeHolder: flag.arg,
 						ignoreFocusOut: true,
 					});
+
+					if (value === undefined) {
+						return undefined;
+					}
 
 					if (value) {
 						cmdArgs.push(flag.name, value);
@@ -184,6 +196,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 					placeHolder: `Enable ${flag.name}?`,
 					ignoreFocusOut: true,
 				});
+
+				if (shouldEnable === undefined) {
+					return undefined;
+				}
 
 				if (shouldEnable === "Yes") {
 					cmdArgs.push(flag.name);
@@ -206,6 +222,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				taskInfo.usageSpec.flags.length > 0
 			) {
 				const args = await this.collectArgumentValues(taskInfo);
+				if (args === undefined) {
+					return;
+				}
+
 				await this.miseService.runTask(taskName, ...args);
 			} else {
 				await this.miseService.runTask(taskName);
@@ -254,6 +274,9 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				taskInfo.usageSpec.flags.length > 0
 			) {
 				const args = await this.collectArgumentValues(taskInfo);
+				if (args === undefined) {
+					return;
+				}
 				await this.miseService.watchTask(taskName, ...args);
 			} else {
 				await this.miseService.watchTask(taskName);
