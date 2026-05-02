@@ -187,7 +187,8 @@
           "order": 5,
           "type": "array",
           "default": [
-            "biomejs.biome"
+            "biomejs.biome",
+            "oxc.oxc-vscode"
           ],
           "items": {
             "type": "string",
@@ -214,6 +215,7 @@
               "joselitofilho.ginkgotestexplorer",
               "bufbuild.vscode-buf",
               "biomejs.biome",
+              "oxc.oxc-vscode",
               "bazelbuild.vscode-bazel"
             ]
           },
@@ -251,6 +253,7 @@
               "joselitofilho.ginkgotestexplorer",
               "bufbuild.vscode-buf",
               "biomejs.biome",
+              "oxc.oxc-vscode",
               "bazelbuild.vscode-bazel"
             ]
           },

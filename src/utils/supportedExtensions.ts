@@ -489,6 +489,65 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	},
 	{
 		toolNames: [
+			"oxlint",
+			"npm:oxlint",
+			"oxfmt",
+			"npm:oxfmt",
+			"tsgolint",
+			"npm:tsgolint",
+		],
+		extensionId: "oxc.oxc-vscode",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			const configs = [];
+			const oxfmtConfig = await configureSimpleExtension(miseService, {
+				configKey: "oxc.path.oxfmt",
+				binName: "oxfmt",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+
+			if (oxfmtConfig) {
+				configs.push(oxfmtConfig);
+			}
+
+			const oxlintConfig = await configureSimpleExtension(miseService, {
+				configKey: "oxc.path.oxlint",
+				binName: "oxlint",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+
+			if (oxlintConfig) {
+				configs.push(oxlintConfig);
+			}
+
+			const tsgolintConfig = await configureSimpleExtension(miseService, {
+				configKey: "oxc.path.tsgolint",
+				binName: "tsgolint",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+
+			if (tsgolintConfig) {
+				configs.push(tsgolintConfig);
+			}
+
+			return Object.assign({}, ...configs);
+		},
+	},
+	{
+		toolNames: [
 			"bazelisk",
 			"aqua:bazelbuild/bazelisk",
 			"npm:@bazel/bazelisk",
