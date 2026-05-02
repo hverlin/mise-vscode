@@ -43,7 +43,7 @@ type MiseToolUpdate = {
 	name: string;
 	version: string;
 	requested_version: string;
-	latest: string;
+	latest: string | null;
 	bump?: string;
 	source?: MiseToolSource;
 };
@@ -105,7 +105,7 @@ type MiseConfig = {
 */
 type MiseVersion = {
 	version: string;
-	latest: string;
+	latest: string | null;
 	os: string;
 	arch: string;
 	build_time: string;

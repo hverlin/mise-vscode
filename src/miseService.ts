@@ -507,7 +507,7 @@ export class MiseService {
 				name: string;
 				requested: string;
 				current: string;
-				latest: string;
+				latest: string | null;
 				bump: string;
 				source: { type: string; path: string };
 			};
@@ -701,7 +701,7 @@ export class MiseService {
 			raw: version,
 			latest: version.latest,
 			current: current,
-			newVersionAvailable: version.latest !== current,
+			newVersionAvailable: !!version.latest && version.latest !== current,
 		};
 	}
 

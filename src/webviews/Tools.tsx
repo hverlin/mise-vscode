@@ -449,7 +449,7 @@ export const Tools = () => {
 							return (
 								<div title={row.original.source?.path}>
 									{row.original.version}
-									{outdatedToolInfo ? (
+									{outdatedToolInfo?.latest ? (
 										<small>
 											<br />({outdatedToolInfo.latest} is available)
 										</small>
