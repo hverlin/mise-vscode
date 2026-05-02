@@ -512,7 +512,7 @@
         {
           "id": "mise-panel",
           "title": "Mise",
-          "icon": "$(terminal)"
+          "icon": "resources/icon.svg"
         }
       ]
     },

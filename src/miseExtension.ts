@@ -692,7 +692,7 @@ export class MiseExtension {
 			return;
 		}
 
-		const icon = state === "loading" ? "$(sync~spin)" : "$(terminal)";
+		const icon = state === "loading" ? "$(sync~spin)" : "$(gear)";
 		this.statusBarItem.color = undefined;
 
 		this.statusBarItem.text = `${icon} Mise`;
