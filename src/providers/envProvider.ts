@@ -381,6 +381,14 @@ export async function updateEnv(
 	miseService: MiseService,
 ) {
 	if (!isMiseExtensionEnabled() || !shouldUpdateEnv()) {
+		if (previousEnvs.size > 0) {
+			const variablesToRemove = [...previousEnvs.entries()];
+			updateEnvironment(context, new Map(), variablesToRemove);
+			if (shouldAutomaticallyReloadTerminalEnv()) {
+				updateTerminalsEnvs(variablesToRemove);
+			}
+			previousEnvs.clear();
+		}
 		return;
 	}
 
