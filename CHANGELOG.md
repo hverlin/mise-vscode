@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.0](https://github.com/hverlin/mise-vscode/compare/v1.7.0...v1.8.0) (2026-05-02)
+
+
+### Features
+
+* optional oxc-vscode support ([313444f](https://github.com/hverlin/mise-vscode/commit/313444febe635e7022ec68830a7e1f5b670dcdd4)), closes [#195](https://github.com/hverlin/mise-vscode/issues/195)
+* update mise icon ([b47dbd9](https://github.com/hverlin/mise-vscode/commit/b47dbd9ec2d237a7b1967c192060c70f2421cd76))
+
+
+### Bug Fixes
+
+* cancel task run when 'Esc' is pressed during argument prompt ([1e5c29c](https://github.com/hverlin/mise-vscode/commit/1e5c29ca887ca2e8cb27238c5d9bbf9ececbbfd6)), closes [#190](https://github.com/hverlin/mise-vscode/issues/190)
+* improve mise update notification if offline ([36e6184](https://github.com/hverlin/mise-vscode/commit/36e61848cca01389c7414babcc87f627f1837205)), closes [#194](https://github.com/hverlin/mise-vscode/issues/194)
+* mise.updateEnvAutomaticallyIncludePath ([25ab996](https://github.com/hverlin/mise-vscode/commit/25ab9963310615a03545d814a11e27c79986755a)), closes [#193](https://github.com/hverlin/mise-vscode/issues/193)
+
 ## [1.7.0](https://github.com/hverlin/mise-vscode/compare/v1.6.0...v1.7.0) (2026-02-28)
 
 
