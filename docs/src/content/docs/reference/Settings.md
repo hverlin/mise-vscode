@@ -88,7 +88,9 @@ List of extensions that should not be configured automatically.
 - `joselitofilho.ginkgotestexplorer`
 - `bufbuild.vscode-buf`
 - `biomejs.biome`
+- `oxc.oxc-vscode`
 - `bazelbuild.vscode-bazel`
+- `swiftlang.swift-vscode`
 
 ---
 
@@ -123,7 +125,9 @@ List of extensions that should be configured automatically. If both include and 
 - `joselitofilho.ginkgotestexplorer`
 - `bufbuild.vscode-buf`
 - `biomejs.biome`
+- `oxc.oxc-vscode`
 - `bazelbuild.vscode-bazel`
+- `swiftlang.swift-vscode`
 
 ---
 

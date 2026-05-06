@@ -591,6 +591,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["swift"],
+		extensionId: "swiftlang.swift-vscode",
+		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
+			const binPath = path.join(tool.install_path, "usr", "bin");
+
+			return {
+				"swift.path": useSymLinks
+					? await miseService.createMiseToolSymlink("swift", binPath)
+					: binPath,
+			};
+		},
+	},
 ];
 
 function appendSubdirs(basePath: string, subdirs?: string[]): string {

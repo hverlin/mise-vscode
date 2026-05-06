@@ -216,7 +216,8 @@
               "bufbuild.vscode-buf",
               "biomejs.biome",
               "oxc.oxc-vscode",
-              "bazelbuild.vscode-bazel"
+              "bazelbuild.vscode-bazel",
+              "swiftlang.swift-vscode"
             ]
           },
           "markdownDescription": "List of extensions that should not be configured automatically."
@@ -254,7 +255,8 @@
               "bufbuild.vscode-buf",
               "biomejs.biome",
               "oxc.oxc-vscode",
-              "bazelbuild.vscode-bazel"
+              "bazelbuild.vscode-bazel",
+              "swiftlang.swift-vscode"
             ]
           },
           "markdownDescription": "List of extensions that should be configured automatically. If both include and ignore lists are set, the ignore list takes precedence. If the include list includes 'all' (default), all supported extensions are considered except those in the ignore list."

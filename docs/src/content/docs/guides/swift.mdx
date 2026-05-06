@@ -1,0 +1,71 @@
+---
+title: Swift setup
+description: How to set up Swift in VS Code with mise
+sidebar:
+    order: 200
+---
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+<Aside type="caution">[mise support for Swift is still experimental](https://mise.jdx.dev/lang/swift.html), and there may still be issues on certain setups and environments.</Aside>
+
+Here is how to set up Swift in VS Code with mise:
+
+<Steps>
+1. Install the [mise-vscode extension](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode#overview) (if not already installed)
+1. Install the [Swift extension](https://marketplace.visualstudio.com/items?itemName=swiftlang.swift-vscode) for VS Code
+1. Open a project with a `mise.toml` file (or any other files supported by mise)
+</Steps>
+
+If your project has a `mise.toml` file, such as the one below:
+
+```toml [mise.toml]
+[tools]
+swift = "latest"
+```
+
+`mise-vscode` will automatically detect it and set `swift.path` in your workspace settings.
+
+If you want to quickly initialize a Swift project, you can use the following commands:
+
+<Steps>
+1. ```shell frame="none"
+    mkdir my-swift-project && cd my-swift-project
+    ```
+1. ```shell frame="none"
+   mise use swift@latest
+   ```
+1. ```shell frame="none"
+   swift package init
+   ```
+</Steps>
+
+This will create a new Swift project with a `mise.toml` file that specifies the latest version of Swift. Once the `mise-vscode` extension has initialized the extension SDK paths, the Swift VS Code extension should work.
+
+## Troubleshooting
+
+### Changing the Swift path requires Visual Studio Code be reloaded.
+
+This warning may display on launch when not using symlinks. While the Swift extension still works despite the warning, it can be silenced by [enabling symlinks](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks):
+
+```json [settings.json]
+{
+  "mise.configureExtensionsUseSymLinks": true
+}
+```
+
+### The Swift Extension has detected a change in the selected Xcode which does not match the value of your "swift.path" setting.
+
+On macOS the Swift VS Code extension looks for the XCode developer directory. You can silence this warning by setting the value of the `DEVELOPER_DIR` environment variable to the output of `xcode-select -p` in your VS Code settings. While this could be set in your workspace settings it's generally better to set it in your user settings as it may vary between systems and environments.
+
+```shell frame="none"
+xcode-select -p
+# /Applications/Xcode.app/Contents/Developer
+```
+
+```json [settings.json]
+{
+  "swift.swiftEnvironmentVariables": {
+    "DEVELOPER_DIR": "/Applications/Xcode.app/Contents/Developer"
+  }
+}
+```
