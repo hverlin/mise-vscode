@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/hverlin/mise-vscode/compare/v1.8.0...v1.9.0) (2026-05-06)
+
+
+### Features
+
+* add swift support ([#197](https://github.com/hverlin/mise-vscode/issues/197)) ([a9b420e](https://github.com/hverlin/mise-vscode/commit/a9b420e5811b90b265366b9fd80802bd33d624d0))
+
 ## [1.8.0](https://github.com/hverlin/mise-vscode/compare/v1.7.0...v1.8.0) (2026-05-02)
 
 
