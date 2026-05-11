@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/hverlin/mise-vscode/compare/v1.9.0...v1.9.1) (2026-05-11)
+
+
+### Bug Fixes
+
+* Normalize v prefix on both sides of version check ([#199](https://github.com/hverlin/mise-vscode/issues/199)) ([fe92162](https://github.com/hverlin/mise-vscode/commit/fe92162aaebd3dfef5ec93459f1e70bffa7b675d))
+
 ## [1.9.0](https://github.com/hverlin/mise-vscode/compare/v1.8.0...v1.9.0) (2026-05-06)
 
 
