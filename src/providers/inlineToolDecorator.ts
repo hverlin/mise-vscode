@@ -133,10 +133,15 @@ export async function showToolVersionInline(
 
 				const reqVersion = extractToolVersionFromLine(lineText, raw);
 				if (reqVersion && resolvedVersion) {
+					// Strip a leading `v` from both sides so git-sourced tools
+					// (e.g. `pipx:github/owner/repo` pinned to a tag like
+					// `v0.8.7`) are not flagged as "Not installed" when the
+					// pin and resolved version match modulo the prefix.
 					const normalizedReq = reqVersion.replace(/^v/, "");
+					const normalizedResolved = resolvedVersion.replace(/^v/, "");
 					if (
 						normalizedReq !== "latest" &&
-						!resolvedVersion.startsWith(normalizedReq)
+						!normalizedResolved.startsWith(normalizedReq)
 					) {
 						if (isInline) {
 							continue;
