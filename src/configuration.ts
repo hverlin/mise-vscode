@@ -165,7 +165,7 @@ export const shouldUpdateEnv = () => {
 export const shouldUpdateEnvAutomaticallyIncludePATH = () => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.updateEnvAutomaticallyIncludePath,
-		false,
+		true,
 	);
 };
 

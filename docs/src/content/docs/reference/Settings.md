@@ -227,7 +227,7 @@ Update VSCode and terminal environment variables automatically based on the mise
 
 ##### `mise.updateEnvAutomaticallyIncludePath`
 - **Type:** `boolean`
-- **Default:** `false`
+- **Default:** `true`
 
 Include the PATH variable when updating VSCode and terminal environment variables. Disable this if you want to keep your original PATH.
 
