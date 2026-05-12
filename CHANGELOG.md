@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/hverlin/mise-vscode/compare/v1.9.1...v1.9.2) (2026-05-12)
+
+
+### Bug Fixes
+
+* set mise.updateEnvAutomaticallyIncludePath back to true by default ([d4cfaec](https://github.com/hverlin/mise-vscode/commit/d4cfaec6f8b8fd13883f18987ad7ddc2864a902d)), closes [#201](https://github.com/hverlin/mise-vscode/issues/201)
+
 ## [1.9.1](https://github.com/hverlin/mise-vscode/compare/v1.9.0...v1.9.1) (2026-05-11)
 
 
