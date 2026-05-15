@@ -2,58 +2,46 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+env:
+  MISE_LOCKED: "1"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [24.x]
-
     steps:
-      - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: npm i -g --force corepack && corepack enable
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151  # v4.0.1
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          install: true
+          cache: true
 
-      - run: pnpm i --frozen-lockfile
+      - run: aube ci --frozen-lockfile
       - run: node --run lint
       - run: node --run ts-check
       - run: node --run test
       - run: node --run build
+
   e2e-tests:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [24.x]
-
     steps:
-      - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: npm i -g --force corepack && corepack enable
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151  # v4.0.1
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          install: true
+          cache: true
 
       - run: sudo apt update
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05  # v1.6.0
         with:
           packages: 'libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libgtk-3-0 libx11-xcb1 libxcb-dri3-0 libxss1 xvfb dbus-x11'
           version: 1.0
 
-      - run: curl https://mise.run | sh
-      - run: pnpm i --frozen-lockfile
+      - run: aube ci --frozen-lockfile
       - run: node --run build
       - run: xvfb-run -a node --run e2e-tests
