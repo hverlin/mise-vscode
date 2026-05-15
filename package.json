@@ -1077,7 +1077,7 @@
     "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
-    "sinon": "^21.0.1",
+    "sinon": "^22.0.0",
     "tmp": "^0.2.5",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
