@@ -4,23 +4,22 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+
+env:
+  MISE_LOCKED: "1"
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [24.x]
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151  # v4.0.1
         with:
-          node-version: ${{ matrix.node-version }}
+          install: true
+          cache: true
 
-      - run: npm i -g --force corepack && corepack enable && pnpm i --frozen-lockfile
+      - run: aube ci --frozen-lockfile
       - run: node --run lint
       - run: node --run ts-check
       - run: node --run build
@@ -30,17 +29,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151  # v4.0.1
         with:
-          node-version: '24.x'
+          install: true
+          cache: true
 
-      - run: npm i -g --force corepack && corepack enable && pnpm i --frozen-lockfile
+      - run: aube ci --frozen-lockfile
       - run: node --run build
 
       - name: Publish to Open VSX Registry
-        uses: HaaLeo/publish-vscode-extension@v1
+        uses: HaaLeo/publish-vscode-extension@f4ece70f329f66686bd71c54b1671353fe320e49  # v1
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           dependencies: false
@@ -50,18 +49,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151  # v4.0.1
         with:
-          node-version: '24.x'
+          install: true
+          cache: true
 
-      - run: npm i -g --force corepack && corepack enable && pnpm i --frozen-lockfile
+      - run: aube ci --frozen-lockfile
       - run: node --run build
 
       - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v1
+        uses: HaaLeo/publish-vscode-extension@f4ece70f329f66686bd71c54b1671353fe320e49  # v1
         with:
           pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
           registryUrl: https://marketplace.visualstudio.com

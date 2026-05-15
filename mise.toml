@@ -2,6 +2,11 @@
 pkl = "0.29.1"
 node = '24'
 hk = "1.18.1"
+aube = "1.14.1"
+bun = "1.3.5"
+
+[settings]
+lockfile = true
 
 [env]
 _.path = ["./node_modules/.bin"]
@@ -48,10 +53,8 @@ dir = "{{config_root}}/docs"
 depends = ['docs:build']
 
 [tasks.install]
-description = 'Installs dependencies with pnpm'
-run = 'corepack enable && pnpm install'
-sources = ['package.json', 'pnpm-lock.yaml']
-outputs = ['node_modules/.pnpm/lock.yaml']
+description = 'Installs dependencies with aube'
+run = 'aube install'
 
 [tasks.start-vscode]
 description = 'Starts VSCode with the extension loaded'

@@ -4,6 +4,7 @@
 .vscode-test-web/
 node_modules
 mise.local.toml
+mise.local.lock
 dist/
 .DS_Store
 doc/.astro
