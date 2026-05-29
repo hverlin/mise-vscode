@@ -1207,7 +1207,7 @@ export class MiseService {
 			"mise-tools",
 		);
 
-		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9.]/g, "_");
+		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9.-]/g, "_");
 
 		await mkdirp(toolsPaths);
 		const linkPath = path.join(toolsPaths, sanitizedBinName);
