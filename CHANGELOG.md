@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/hverlin/mise-vscode/compare/v1.9.2...v1.9.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* preserve hyphens in mise-tools symlink names ([#212](https://github.com/hverlin/mise-vscode/issues/212)) ([9a8d27e](https://github.com/hverlin/mise-vscode/commit/9a8d27eaeaab3027c0896b7f082062c2a536a6f6))
+
 ## [1.9.2](https://github.com/hverlin/mise-vscode/compare/v1.9.1...v1.9.2) (2026-05-12)
 
 
