@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/hverlin/mise-vscode/compare/v1.9.3...v1.10.0) (2026-06-03)
+
+
+### Features
+
+* add "useArray" option to customBinaryExtensions ([#214](https://github.com/hverlin/mise-vscode/issues/214)) ([0907b5e](https://github.com/hverlin/mise-vscode/commit/0907b5e5ca0eef03a54c7e56a95287dbc8283162))
+
 ## [1.9.3](https://github.com/hverlin/mise-vscode/compare/v1.9.2...v1.9.3) (2026-05-29)
 
 
