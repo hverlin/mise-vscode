@@ -10,7 +10,7 @@ You can configure any VS Code extension to use mise tools via settings:
 - **`mise.customBinaryExtensions`**: Configure extensions that need a binary path
 - **`mise.customFolderExtensions`**: Configure extensions that need a folder path (e.g., JDK home)
 
-Example for binary mode:
+Example for binary mode (string value):
 
 ```json
 {
@@ -19,6 +19,20 @@ Example for binary mode:
       "extensionId": "example.my-extension",
       "toolSources": ["aqua:mytool"],
       "vscodeSetting": { "key": "myExtension.toolPath" }
+    }
+  ]
+}
+```
+
+Some extensions expect an array of paths instead of a single string. Use `vscodeSetting.asArray`:
+
+```json
+{
+  "mise.customBinaryExtensions": [
+    {
+      "extensionId": "astral-sh.ty",
+      "toolSources": ["ty"],
+      "vscodeSetting": { "key": "ty.path", "asArray": true }
     }
   ]
 }

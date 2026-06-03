@@ -616,7 +616,7 @@ function appendSubdirs(basePath: string, subdirs?: string[]): string {
 export function createCustomBinaryExtensionConfig(customConfig: {
 	extensionId: string;
 	toolSources: string[];
-	vscodeSetting: { key: string; subdirs?: string[] };
+	vscodeSetting: { key: string; subdirs?: string[]; asArray?: boolean };
 	binName?: string;
 	supportsShims?: boolean;
 	supportsSymlinks?: boolean;
@@ -656,6 +656,13 @@ export function createCustomBinaryExtensionConfig(customConfig: {
 						basePath,
 						customConfig.vscodeSetting.subdirs,
 					);
+				}
+			}
+
+			if (customConfig.vscodeSetting.asArray) {
+				const value = result[customConfig.vscodeSetting.key];
+				if (typeof value === "string") {
+					result[customConfig.vscodeSetting.key] = [value];
 				}
 			}
 
