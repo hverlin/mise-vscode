@@ -295,6 +295,7 @@ Each entry requires:
 Optional:
 - `binName`: Binary name (defaults to first tool name)
 - `vscodeSetting.subdirs`: Subdirectories to append to the path
+- `vscodeSetting.asArray`: Whether to wrap the setting value in an array (default: false)
 - `supportsShims`: Whether extension supports shims (default: true)
 - `supportsSymlinks`: Whether extension supports symlinks (default: true)
 

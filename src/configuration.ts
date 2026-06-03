@@ -209,6 +209,7 @@ export const isTaskSymbolProviderEnabled = () => {
 type VSCodeSettingSubdirs = {
 	key: string;
 	subdirs?: string[];
+	asArray?: boolean;
 };
 
 type CustomBinaryExtensionConfig = {

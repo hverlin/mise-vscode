@@ -391,7 +391,7 @@
           "order": 19,
           "type": "array",
           "default": [],
-          "markdownDescription": "Custom binary extensions to automatically configure VSCode extensions with mise tool binaries.\n\nEach entry requires:\n- `extensionId`: VSCode extension ID\n- `toolSources`: Array of mise tool registry sources to match\n- `vscodeSetting.key`: VSCode setting key to write\n\nOptional:\n- `binName`: Binary name (defaults to first tool name)\n- `vscodeSetting.subdirs`: Subdirectories to append to the path\n- `supportsShims`: Whether extension supports shims (default: true)\n- `supportsSymlinks`: Whether extension supports symlinks (default: true)",
+          "markdownDescription": "Custom binary extensions to automatically configure VSCode extensions with mise tool binaries.\n\nEach entry requires:\n- `extensionId`: VSCode extension ID\n- `toolSources`: Array of mise tool registry sources to match\n- `vscodeSetting.key`: VSCode setting key to write\n\nOptional:\n- `binName`: Binary name (defaults to first tool name)\n- `vscodeSetting.subdirs`: Subdirectories to append to the path\n- `vscodeSetting.asArray`: Whether to wrap the setting value in an array (default: false)\n- `supportsShims`: Whether extension supports shims (default: true)\n- `supportsSymlinks`: Whether extension supports symlinks (default: true)",
           "items": {
             "type": "object",
             "required": [
@@ -427,6 +427,11 @@
                       "type": "string"
                     },
                     "description": "Subdirectories to append to the tool path (e.g., ['bin'] to point to bin folder)"
+                  },
+                  "asArray": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to wrap the setting value in an array (e.g., ['/path/to/bin'] instead of '/path/to/bin')"
                   }
                 }
               },
