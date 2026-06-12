@@ -91,6 +91,14 @@ List of extensions that should not be configured automatically.
 - `oxc.oxc-vscode`
 - `bazelbuild.vscode-bazel`
 - `swiftlang.swift-vscode`
+- `Pkl.pkl-vscode`
+- `exiasr.hadolint`
+- `astral-sh.ty`
+- `tombi-toml.tombi`
+- `foxundermoon.shell-format`
+- `sumneko.lua`
+- `twxs.cmake`
+- `ms-dotnettools.vscode-dotnet-runtime`
 
 ---
 
@@ -128,6 +136,14 @@ List of extensions that should be configured automatically. If both include and 
 - `oxc.oxc-vscode`
 - `bazelbuild.vscode-bazel`
 - `swiftlang.swift-vscode`
+- `Pkl.pkl-vscode`
+- `exiasr.hadolint`
+- `astral-sh.ty`
+- `tombi-toml.tombi`
+- `foxundermoon.shell-format`
+- `sumneko.lua`
+- `twxs.cmake`
+- `ms-dotnettools.vscode-dotnet-runtime`
 
 ---
 

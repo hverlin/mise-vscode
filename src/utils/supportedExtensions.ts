@@ -604,6 +604,164 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			};
 		},
 	},
+	{
+		toolNames: ["aqua:apple/pkl"],
+		extensionId: "Pkl.pkl-vscode",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "pkl.cli.path",
+				binName: "pkl",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:hadolint/hadolint"],
+		extensionId: "exiasr.hadolint",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "hadolint.hadolintPath",
+				binName: "hadolint",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:astral-sh/ty"],
+		extensionId: "astral-sh.ty",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "ty.path",
+				binName: "ty",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+				valueTransformer: (bin: string) => [bin],
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:tombi-toml/tombi"],
+		extensionId: "tombi-toml.tombi",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "tombi.path",
+				binName: "tombi",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:mvdan/sh"],
+		extensionId: "foxundermoon.shell-format",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "shellformat.path",
+				binName: "shfmt",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:LuaLS/lua-language-server"],
+		extensionId: "sumneko.lua",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "Lua.misc.executablePath",
+				binName: "lua-language-server",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["aqua:Kitware/CMake"],
+		extensionId: "twxs.cmake",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "cmake.cmakePath",
+				binName: "cmake",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["dotnet"],
+		extensionId: "ms-dotnettools.vscode-dotnet-runtime",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "dotnetAcquisitionExtension.sharedExistingDotnetPath",
+				binName: "dotnet",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 function appendSubdirs(basePath: string, subdirs?: string[]): string {
