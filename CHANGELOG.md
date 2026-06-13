@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/hverlin/mise-vscode/compare/v1.10.0...v1.11.0) (2026-06-12)
+
+
+### Features
+
+* add multiple new langs ([#217](https://github.com/hverlin/mise-vscode/issues/217)) ([7169352](https://github.com/hverlin/mise-vscode/commit/7169352f4f6c3475197bc182c95052afa65e3d25))
+
 ## [1.10.0](https://github.com/hverlin/mise-vscode/compare/v1.9.3...v1.10.0) (2026-06-03)
 
 
