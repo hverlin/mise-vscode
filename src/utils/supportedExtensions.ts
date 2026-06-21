@@ -762,6 +762,73 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			});
 		},
 	},
+	{
+		toolNames: ["java"],
+		extensionId: "SonarSource.sonarlint-vscode",
+		generateConfiguration: async ({ tool }) => {
+			return {
+				"sonarlint.ls.javaHome": tool.install_path,
+			};
+		},
+	},
+	{
+		toolNames: ["java"],
+		extensionId: "Pkl.pkl-vscode",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "pkl.lsp.java.path",
+				binName: "java",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["node"],
+		extensionId: "oxc.oxc-vscode",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+			useSymLinks,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "oxc.path.node",
+				binName: "node",
+				useShims,
+				useSymLinks,
+				tool,
+				miseConfig,
+			});
+		},
+	},
+	{
+		toolNames: ["node"],
+		extensionId: "SonarSource.sonarlint-vscode",
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useShims,
+		}) => {
+			return configureSimpleExtension(miseService, {
+				configKey: "sonarlint.pathToNodeExecutable",
+				binName: "node",
+				useShims,
+				useSymLinks: false,
+				tool,
+				miseConfig,
+			});
+		},
+	},
 ];
 
 function appendSubdirs(basePath: string, subdirs?: string[]): string {

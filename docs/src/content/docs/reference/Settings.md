@@ -99,6 +99,7 @@ List of extensions that should not be configured automatically.
 - `sumneko.lua`
 - `twxs.cmake`
 - `ms-dotnettools.vscode-dotnet-runtime`
+- `SonarSource.sonarlint-vscode`
 
 ---
 
@@ -144,6 +145,7 @@ List of extensions that should be configured automatically. If both include and 
 - `sumneko.lua`
 - `twxs.cmake`
 - `ms-dotnettools.vscode-dotnet-runtime`
+- `SonarSource.sonarlint-vscode`
 
 ---
 
