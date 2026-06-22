@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/hverlin/mise-vscode/compare/v1.11.0...v1.12.0) (2026-06-21)
+
+
+### Features
+
+* Manage Node & Java settings for plugins ([#222](https://github.com/hverlin/mise-vscode/issues/222)) ([05e377c](https://github.com/hverlin/mise-vscode/commit/05e377c2ec0ca035f157192c108afd1d12e6ca6e))
+
 ## [1.11.0](https://github.com/hverlin/mise-vscode/compare/v1.10.0...v1.11.0) (2026-06-12)
 
 
