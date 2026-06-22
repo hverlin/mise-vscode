@@ -37,7 +37,7 @@ jobs:
           cache: true
 
       - run: sudo apt update
-      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05  # v1.6.0
+      - uses: awalsh128/cache-apt-pkgs-action@681749ae568c81c2037cb9185e38b709b261bd2f  # v1.6.1
         with:
           packages: 'libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libgtk-3-0 libx11-xcb1 libxcb-dri3-0 libxss1 xvfb dbus-x11'
           version: 1.0
