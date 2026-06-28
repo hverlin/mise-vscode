@@ -51,8 +51,8 @@ importers:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
       react-error-boundary:
-        specifier: ^4.1.2
-        version: 4.1.2(react@18.3.1)
+        specifier: ^6.1.2
+        version: 6.1.2(react@18.3.1)
       toml-v1:
         specifier: ^1.0.0
         version: 1.0.0
@@ -2968,10 +2968,10 @@ packages:
     peerDependencies:
       react: ^18.3.1
 
-  react-error-boundary@4.1.2:
-    resolution: {integrity: sha512-GQDxZ5Jd+Aq/qUxbCm1UtzmL/s++V7zKgE8yMktJiCQXCCFZnMZh9ng+6/Ne6PjNSXH0L9CjeOEREfRnq6Duag==}
+  react-error-boundary@6.1.2:
+    resolution: {integrity: sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng==}
     peerDependencies:
-      react: '>=16.13.1'
+      react: ^18.0.0 || ^19.0.0
 
   react-refresh@0.18.0:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
@@ -3392,6 +3392,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -7161,9 +7162,8 @@ snapshots:
       react: 18.3.1
       scheduler: 0.23.2
 
-  react-error-boundary@4.1.2(react@18.3.1):
+  react-error-boundary@6.1.2(react@18.3.1):
     dependencies:
-      '@babel/runtime': 7.26.0
       react: 18.3.1
 
   react-refresh@0.18.0: {}
