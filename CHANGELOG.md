@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/hverlin/mise-vscode/compare/v1.12.0...v1.12.1) (2026-07-29)
+
+
+### Bug Fixes
+
+* Remove Tombi support ([#235](https://github.com/hverlin/mise-vscode/issues/235)) ([c2903e1](https://github.com/hverlin/mise-vscode/commit/c2903e1bd6817fc6094e52499df48cf7dde0d30f))
+
 ## [1.12.0](https://github.com/hverlin/mise-vscode/compare/v1.11.0...v1.12.0) (2026-06-21)
 
 
