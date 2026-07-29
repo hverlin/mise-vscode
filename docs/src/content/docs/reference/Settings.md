@@ -94,7 +94,6 @@ List of extensions that should not be configured automatically.
 - `Pkl.pkl-vscode`
 - `exiasr.hadolint`
 - `astral-sh.ty`
-- `tombi-toml.tombi`
 - `foxundermoon.shell-format`
 - `sumneko.lua`
 - `twxs.cmake`
@@ -140,7 +139,6 @@ List of extensions that should be configured automatically. If both include and 
 - `Pkl.pkl-vscode`
 - `exiasr.hadolint`
 - `astral-sh.ty`
-- `tombi-toml.tombi`
 - `foxundermoon.shell-format`
 - `sumneko.lua`
 - `twxs.cmake`
