@@ -665,25 +665,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 		},
 	},
 	{
-		toolNames: ["aqua:tombi-toml/tombi"],
-		extensionId: "tombi-toml.tombi",
-		generateConfiguration: async ({
-			miseService,
-			tool,
-			miseConfig,
-			useShims,
-		}) => {
-			return configureSimpleExtension(miseService, {
-				configKey: "tombi.path",
-				binName: "tombi",
-				useShims,
-				useSymLinks: false,
-				tool,
-				miseConfig,
-			});
-		},
-	},
-	{
 		toolNames: ["aqua:mvdan/sh"],
 		extensionId: "foxundermoon.shell-format",
 		generateConfiguration: async ({
