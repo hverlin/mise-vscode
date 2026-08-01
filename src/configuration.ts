@@ -26,6 +26,7 @@ export const CONFIGURATION_FLAGS = {
 	updateEnvAutomaticallyIncludePath: "updateEnvAutomaticallyIncludePath",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 	teraAutoCompletion: "teraAutoCompletion",
+	resolveMonorepoProjectConfigs: "resolveMonorepoProjectConfigs",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
 	showNotificationIfMissingTools: "showNotificationIfMissingTools",
@@ -204,6 +205,10 @@ export const shouldAutoDetectMiseBinPath = () => {
 
 export const isTaskSymbolProviderEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableTaskSymbolProvider, false);
+};
+
+export const shouldResolveMonorepoProjectConfigs = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.resolveMonorepoProjectConfigs, true);
 };
 
 type VSCodeSettingSubdirs = {

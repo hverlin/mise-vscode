@@ -25,6 +25,7 @@ import {
 import type { MiseService } from "../miseService";
 import { configureExtension } from "../utils/configureExtensionUtil";
 import {
+	compareSourcePaths,
 	displayPathRelativeTo,
 	expandPath,
 	isWindows,
@@ -57,7 +58,7 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 
 	async getToolsSourceItems() {
 		const [tools, configFiles] = await Promise.all([
-			this.miseService.getCurrentTools(),
+			this.miseService.getCurrentToolsIncludingMonorepo(),
 			this.miseService.getMiseConfigFiles(),
 		]);
 
@@ -90,15 +91,14 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 			this.miseService.getCurrentWorkspaceFolderPath();
 
 		return Object.entries(toolsBySource)
-			.sort(([sourceA], [sourceB]) => {
-				// keep original order of config files
-				const indexA = configFiles.findIndex((file) => file.path === sourceA);
-				const indexB = configFiles.findIndex((file) => file.path === sourceB);
-				if (indexA !== -1 && indexB !== -1) {
-					return indexB - indexA;
-				}
-				return sourceA.localeCompare(sourceB);
-			})
+			.filter(
+				// an empty group is an "add tool here" affordance, which only makes
+				// sense for toml files
+				([source, tools]) => tools.length > 0 || source.endsWith(".toml"),
+			)
+			.sort(([sourceA], [sourceB]) =>
+				compareSourcePaths(sourceA, sourceB, currentWorkspaceFolderPath),
+			)
 			.map(
 				([source, tools]) =>
 					new ToolsSourceItem(currentWorkspaceFolderPath || "", source, tools),
@@ -178,6 +178,10 @@ Number of tools: ${tools.length}`;
 				title: "Open file",
 				arguments: [this.source],
 			};
+		} else {
+			// resourceUri + ThemeIcon.File renders the icon theme's file icon
+			this.resourceUri = vscode.Uri.file(expandPath(source));
+			this.iconPath = vscode.ThemeIcon.File;
 		}
 	}
 }

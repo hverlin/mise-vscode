@@ -1,4 +1,3 @@
-import micromatch from "micromatch";
 import type { Position, TextDocument } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
@@ -6,9 +5,17 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { findTaskDefinition } from "../utils/miseFileParser";
 import { DEPENDS_KEYWORDS } from "../utils/miseUtilts";
+import {
+	dependsPatternMatchesTask,
+	getTaskNameParts,
+	resolveTaskReference,
+	TASK_NAME_REGEX,
+} from "../utils/taskNames";
 
 // https://mise.jdx.dev/tasks/running-tasks.html#wildcards
-function isTaskDependency(task: MiseTask, taskName: string): boolean {
+function isTaskDependency(task: MiseTask, target: MiseTask): boolean {
+	const ownerConfigRoot = getTaskNameParts(task.name).configRoot;
+
 	for (const keyword of DEPENDS_KEYWORDS) {
 		const depends = task[keyword];
 		if (!depends) {
@@ -21,12 +28,7 @@ function isTaskDependency(task: MiseTask, taskName: string): boolean {
 				continue;
 			}
 
-			const taskMatch = micromatch.isMatch(taskName, pattern, {
-				dot: true,
-				nobrace: false, // Enable {a,b} matching
-				noglobstar: false, // Enable ** matching
-			});
-			if (taskMatch) {
+			if (dependsPatternMatchesTask(pattern, ownerConfigRoot, target)) {
 				return true;
 			}
 		}
@@ -35,27 +37,19 @@ function isTaskDependency(task: MiseTask, taskName: string): boolean {
 	return false;
 }
 
-export async function getReferencesForTask(
-	taskName: string,
-	tasks: MiseTask[],
-) {
-	const task = tasks.find((t) => t.name === taskName);
-	if (!task) {
-		return [];
-	}
-
-	const tasksReference = tasks.filter((t) => isTaskDependency(t, taskName));
+export async function getReferencesForTask(task: MiseTask, tasks: MiseTask[]) {
+	const tasksReference = tasks.filter((t) => isTaskDependency(t, task));
 
 	return await Promise.all(
-		tasksReference.map(async (task) => {
+		tasksReference.map(async (dependentTask) => {
 			const taskDocument = await vscode.workspace.openTextDocument(
-				vscode.Uri.parse(expandPath(task.source)),
+				vscode.Uri.parse(expandPath(dependentTask.source)),
 			);
 
-			const taskPosition = findTaskDefinition(taskDocument, task.name);
+			const taskPosition = findTaskDefinition(taskDocument, dependentTask.name);
 
 			return {
-				uri: vscode.Uri.parse(expandPath(task.source)),
+				uri: vscode.Uri.parse(expandPath(dependentTask.source)),
 				range: new vscode.Range(
 					new vscode.Position(
 						taskPosition.start.line,
@@ -86,12 +80,19 @@ export class TaskReferenceProvider implements vscode.ReferenceProvider {
 		}
 
 		const word = document.getText(
-			document.getWordRangeAtPosition(position, /[\w:-]+/),
+			document.getWordRangeAtPosition(position, TASK_NAME_REGEX),
 		);
 
-		return getReferencesForTask(
+		const tasks = await this.miseService.getAllCachedTasks();
+		const task = resolveTaskReference(
+			tasks,
 			word,
-			await this.miseService.getAllCachedTasks(),
+			expandPath(document.uri.fsPath),
 		);
+		if (!task) {
+			return [];
+		}
+
+		return getReferencesForTask(task, tasks);
 	}
 }

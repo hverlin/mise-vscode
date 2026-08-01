@@ -95,3 +95,55 @@ Using the command palette: `cmd|ctrl+shift+p`, search for
 You can visualize the dependencies of a task by using the `Mise: Visualize Tasks Dependencies` command.
 
 ![screenshot showing the task dependencies view](./task-dependencies.png)
+
+## Monorepo tasks
+
+The extension supports
+[mise monorepo tasks](https://mise.jdx.dev/tasks/monorepo.html) (`monorepo_root = true`).
+This requires mise `2025.10.3` or later. package.json script tasks and the
+project graph additionally require a recent mise version and the
+[`experimental` setting](https://mise.jdx.dev/configuration/settings.html#experimental)
+(`mise settings experimental=true`, or `experimental = true` under `[settings]`
+in the monorepo root `mise.toml`).
+
+Tasks are shown with their fully qualified names (`//projects/frontend:build`)
+and can be run from the activity bar, code lenses, the command palette, and the
+VS Code tasks API. In the activity bar, tasks are grouped by their config file,
+with each project's files listed together.
+
+Navigation understands all the ways tasks can reference each other:
+
+- `depends = ["build"]` — a task of the same project
+- `depends = [":build"]` — explicit same-project reference
+- `depends = ["//projects/frontend:build"]` — fully qualified reference
+- `depends = ["//projects/...:build"]`, `depends = ["//projects/frontend:*"]` —
+  wildcards. Hovering shows all the matching tasks, and go-to-definition opens
+  each of them.
+- task aliases (`alias = "fmt"`), including in other projects
+
+### package.json scripts
+
+If the monorepo defines a Node workspace (`workspaces` in the root
+`package.json`, or `pnpm-workspace.yaml`), mise exposes each package's scripts
+as tasks (e.g. `node:frontend#test`, also addressable as
+`//projects/frontend:test`). These tasks appear in the activity bar under their
+`package.json` file and can be run like any other task. Go-to-definition on a
+reference to such a task jumps to the script in the `package.json` file.
+
+### Workspace projects graph
+
+`Mise: Visualize task dependencies` (also available from the mise status bar
+menu, under _Task dependencies_) shows the workspace project graph inferred by
+mise from ecosystem manifests, in addition to the task dependency graph.
+
+### Tools and environment variables
+
+Tools and environment variables declared in a monorepo project config (e.g.
+`projects/frontend/mise.toml`) are shown in the Tools and Environment variables
+views, grouped under their config file. Note that the environment injected into
+the VS Code terminal and the automatic SDK configuration still use the
+workspace root configuration.
+
+Resolving them spawns one mise process per project when the configuration is
+loaded. In large monorepos, you can disable this with the
+`mise.resolveMonorepoProjectConfigs` setting.

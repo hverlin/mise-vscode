@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+#MISE description="Seed the backend database"
+print("Seeding the backend database")

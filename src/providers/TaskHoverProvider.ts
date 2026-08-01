@@ -4,6 +4,12 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { type MiseTomlType, TomlParser } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
+import {
+	findTasksMatchingDependsPattern,
+	resolveTaskReference,
+	TASK_NAME_REGEX,
+	TASK_PATTERN_REGEX,
+} from "../utils/taskNames";
 
 function createMarkdownString(task: MiseTask): vscode.MarkdownString {
 	const markdownString = new vscode.MarkdownString();
@@ -18,6 +24,25 @@ function createMarkdownString(task: MiseTask): vscode.MarkdownString {
 	if (task.file) {
 		markdownString.appendMarkdown(`\n\nFile: ${task.file}`);
 	}
+	return markdownString;
+}
+
+function createTaskListMarkdownString(
+	pattern: string,
+	tasks: MiseTask[],
+): vscode.MarkdownString {
+	const markdownString = new vscode.MarkdownString();
+	markdownString.appendMarkdown(
+		`**${pattern}** matches ${tasks.length} tasks:\n\n`,
+	);
+	markdownString.appendMarkdown(
+		tasks
+			.map(
+				(task) =>
+					`- \`${task.name}\`${task.description ? ` — ${task.description}` : ""}`,
+			)
+			.join("\n"),
+	);
 	return markdownString;
 }
 
@@ -36,17 +61,12 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		}
 
 		const tasks = await this.miseService.getAllCachedTasks();
+		const documentPath = expandPath(document.uri.fsPath);
 		const tasksSources = tasks.map((t) => expandPath(t.source));
-		if (!tasksSources.includes(document.uri.fsPath)) {
+		if (!tasksSources.includes(documentPath)) {
 			return null;
 		}
 
-		const taskNameRange = document.getWordRangeAtPosition(position, /[\w:-]+/);
-		if (!taskNameRange) {
-			return null;
-		}
-
-		const taskName = document.getText(taskNameRange);
 		const tomParser = new TomlParser<MiseTomlType>(document.getText());
 
 		const keyAtPosition = tomParser.getKeyAtPosition(position);
@@ -59,7 +79,17 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")
 		) {
-			const task = tasks.find((t) => t.name === taskName);
+			const taskNameRange = document.getWordRangeAtPosition(
+				position,
+				TASK_NAME_REGEX,
+			);
+			if (!taskNameRange) {
+				return null;
+			}
+
+			// the parsed key handles quoted names like `[tasks."docs:build"]`
+			const localName = String(keyPath.at(-1));
+			const task = resolveTaskReference(tasks, localName, documentPath);
 			if (!task) {
 				return null;
 			}
@@ -71,11 +101,33 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			return null;
 		}
 
-		const task = tasks.find((t) => t.name === taskName);
-		if (!task) {
+		const patternRange = document.getWordRangeAtPosition(
+			position,
+			TASK_PATTERN_REGEX,
+		);
+		if (!patternRange) {
 			return null;
 		}
 
-		return new vscode.Hover(createMarkdownString(task), taskNameRange);
+		const pattern = document.getText(patternRange);
+		const matchingTasks = findTasksMatchingDependsPattern(
+			tasks,
+			pattern,
+			documentPath,
+		);
+
+		const [firstTask] = matchingTasks;
+		if (!firstTask) {
+			return null;
+		}
+
+		if (matchingTasks.length === 1) {
+			return new vscode.Hover(createMarkdownString(firstTask), patternRange);
+		}
+
+		return new vscode.Hover(
+			createTaskListMarkdownString(pattern, matchingTasks),
+			patternRange,
+		);
 	}
 }

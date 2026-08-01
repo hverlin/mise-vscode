@@ -2,12 +2,45 @@ import { useQuery } from "@tanstack/react-query";
 import {
 	VscodeMultiSelect,
 	VscodeOption,
+	VscodeTabHeader,
+	VscodeTabPanel,
+	VscodeTabs,
 } from "@vscode-elements/react-elements";
 import { useState } from "react";
 import { Graphviz } from "./components/DotRenderer";
 import { vscodeClient } from "./webviewVsCodeApi";
 
-export const TasksDependencies = () => {
+const GRAPH_STYLE = `
+    rankdir="TB";
+    splines=true;
+    overlap=false;
+    nodesep="0.3";
+    ranksep="0.8";
+    fontname="Lato";
+    graph [ bgcolor="transparent" ]
+    node [ shape="plaintext" style="filled, rounded" fontname="Lato" margin=0.2 ]
+    edge [ fontname="Lato" color="#aaa" ]
+`;
+
+const escapeDotLabel = (value: string) => value.replace(/"/g, '\\"');
+
+const buildProjectsDot = (projects: MiseProject[]) => {
+	const nodes = projects.map(
+		(project) =>
+			`    "${escapeDotLabel(project.id)}" [ label = "${escapeDotLabel(
+				`${project.id} (${project.root || "."})`,
+			)}" ]`,
+	);
+	const edges = projects.flatMap((project) =>
+		(project.dependencies ?? []).map(
+			(dependency) =>
+				`    "${escapeDotLabel(project.id)}" -> "${escapeDotLabel(dependency)}"`,
+		),
+	);
+	return `digraph {\n${GRAPH_STYLE}\n${[...nodes, ...edges].join("\n")}\n}`;
+};
+
+const TaskDepsGraph = () => {
 	const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
 	const tasksQuery = useQuery({
@@ -33,16 +66,7 @@ export const TasksDependencies = () => {
 
 	const dotString = `
 digraph {
-    rankdir="TB";
-    splines=true;
-    overlap=false;
-    nodesep="0.3";
-    ranksep="0.8";
-    fontname="Lato";
-    graph [ bgcolor="transparent" ]
-    node [ shape="plaintext" style="filled, rounded" fontname="Lato" margin=0.2 ]
-    edge [ fontname="Lato" color="#aaa" ]
-
+${GRAPH_STYLE}
 ${taskDepsDot}
 `;
 
@@ -78,5 +102,42 @@ ${taskDepsDot}
 				/>
 			)}
 		</div>
+	);
+};
+
+const WorkspaceProjectsGraph = ({ projects }: { projects: MiseProject[] }) => (
+	<Graphviz
+		dot={buildProjectsDot(projects)}
+		options={{
+			engine: "dot",
+			convertEqualSidedPolygons: true,
+			// small graphs look better at their natural size
+			fit: false,
+		}}
+	/>
+);
+
+export const TasksDependencies = () => {
+	const projectsQuery = useQuery({
+		queryKey: ["tasksGraph"],
+		queryFn: ({ queryKey }) =>
+			vscodeClient.request({ queryKey }) as Promise<MiseProject[]>,
+	});
+
+	if (!projectsQuery.data?.length) {
+		return <TaskDepsGraph />;
+	}
+
+	return (
+		<VscodeTabs>
+			<VscodeTabHeader slot="header">Task dependencies</VscodeTabHeader>
+			<VscodeTabPanel>
+				<TaskDepsGraph />
+			</VscodeTabPanel>
+			<VscodeTabHeader slot="header">Workspace projects</VscodeTabHeader>
+			<VscodeTabPanel>
+				<WorkspaceProjectsGraph projects={projectsQuery.data} />
+			</VscodeTabPanel>
+		</VscodeTabs>
 	);
 };

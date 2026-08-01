@@ -25,7 +25,7 @@ export class VsCodeTaskProvider {
 						};
 
 						const baseCommand = miseService.createMiseCommand(
-							`run ${task.name}`,
+							`run "${task.name.replace(/"/g, '\\"')}"`,
 						);
 
 						if (!baseCommand) {
@@ -75,7 +75,7 @@ export class VsCodeTaskProvider {
 					const baseCommand = miseService.createMiseCommand(
 						definition.watch
 							? `watch -t "${definition.task.replace(/"/g, '\\"')}" ${allWatchArgs.join(" ")}`
-							: `run ${definition.task} ${runArgs.join(" ")}`,
+							: `run "${definition.task.replace(/"/g, '\\"')}" ${runArgs.join(" ")}`,
 						{ setMiseEnv: false },
 					);
 

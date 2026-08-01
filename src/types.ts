@@ -4,6 +4,8 @@ type depsArray = Array<string | string[]>;
 
 type MiseTask = {
 	name: string;
+	/** e.g. `fmt` for a toml task, `//projects/frontend:test` for a workspace script task */
+	aliases?: string[];
 	source: string;
 	description: string;
 	// TODO: only in 2025.1.4. Force to upgrade mise version and remove the `?` later
@@ -27,6 +29,17 @@ type MiseTask = {
 type MiseToolSource = {
 	type: string;
 	path: string;
+};
+
+/** A project of the workspace graph reported by `mise tasks graph --json` */
+type MiseProject = {
+	/** e.g. `node:frontend` */
+	id: string;
+	/** path relative to the monorepo root, e.g. `projects/frontend` */
+	root: string;
+	metadata?: Record<string, string>;
+	/** ids of the projects this project depends on */
+	dependencies?: string[];
 };
 
 type MiseTool = {

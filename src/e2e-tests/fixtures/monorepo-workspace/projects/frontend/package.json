@@ -1,0 +1,10 @@
+{
+	"name": "frontend",
+	"scripts": {
+		"test": "echo 'testing frontend'",
+		"start": "echo 'starting frontend'"
+	},
+	"dependencies": {
+		"backend": "*"
+	}
+}

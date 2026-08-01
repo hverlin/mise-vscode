@@ -9,6 +9,12 @@ import {
 	TomlParser,
 } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
+import {
+	findTasksMatchingDependsPattern,
+	resolveTaskReference,
+	TASK_NAME_REGEX,
+	TASK_PATTERN_REGEX,
+} from "../utils/taskNames";
 
 export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	private miseService: MiseService;
@@ -25,17 +31,11 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 		}
 
 		const tasks = await this.miseService.getAllCachedTasks();
+		const documentPath = expandPath(document.uri.fsPath);
 		const tasksSources = tasks.map((t) => expandPath(t.source));
-		if (!tasksSources.includes(document.uri.fsPath)) {
+		if (!tasksSources.includes(documentPath)) {
 			return null;
 		}
-
-		const taskNameRange = document.getWordRangeAtPosition(position, /[\w:-]+/);
-		if (!taskNameRange) {
-			return [];
-		}
-
-		const taskName = document.getText(taskNameRange);
 
 		const tomParser = new TomlParser<MiseTomlType>(document.getText());
 
@@ -49,7 +49,17 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")
 		) {
-			const task = tasks.find((t) => t.name === taskName);
+			const taskNameRange = document.getWordRangeAtPosition(
+				position,
+				TASK_NAME_REGEX,
+			);
+			if (!taskNameRange) {
+				return [];
+			}
+
+			// the parsed key handles quoted names like `[tasks."docs:build"]`
+			const localName = String(keyPath.at(-1));
+			const task = resolveTaskReference(tasks, localName, documentPath);
 			if (!task) {
 				return [];
 			}
@@ -69,29 +79,41 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			return null;
 		}
 
-		const task = tasks.find((t) => t.name === taskName);
-		if (!task) {
+		const patternRange = document.getWordRangeAtPosition(
+			position,
+			TASK_PATTERN_REGEX,
+		);
+		if (!patternRange) {
 			return [];
 		}
 
-		const uri = vscode.Uri.file(task.source.replace(/^~/, os.homedir()));
-		const taskDocument = await vscode.workspace.openTextDocument(uri);
+		const pattern = document.getText(patternRange);
+		const matchingTasks = findTasksMatchingDependsPattern(
+			tasks,
+			pattern,
+			documentPath,
+		);
 
-		const foundPosition = findTaskDefinition(taskDocument, task.name);
+		return Promise.all(
+			matchingTasks.map(async (task) => {
+				const uri = vscode.Uri.file(task.source.replace(/^~/, os.homedir()));
+				const taskDocument = await vscode.workspace.openTextDocument(uri);
 
-		return [
-			{
-				originSelectionRange: taskNameRange,
-				targetUri: vscode.Uri.parse(task.source),
-				targetSelectionRange: new vscode.Range(
-					foundPosition.start,
-					foundPosition.end,
-				),
-				targetRange: new vscode.Range(
-					foundPosition.start,
-					foundPosition.end.translate(100, 100), // hack to make the range visible, improve later
-				),
-			},
-		];
+				const foundPosition = findTaskDefinition(taskDocument, task.name);
+
+				return {
+					originSelectionRange: patternRange,
+					targetUri: vscode.Uri.parse(task.source),
+					targetSelectionRange: new vscode.Range(
+						foundPosition.start,
+						foundPosition.end,
+					),
+					targetRange: new vscode.Range(
+						foundPosition.start,
+						foundPosition.end.translate(100, 100), // hack to make the range visible, improve later
+					),
+				};
+			}),
+		);
 	}
 }

@@ -1,0 +1,19 @@
+[tools]
+shellcheck = "0.10.0"
+
+[tasks.build]
+description = "Build the backend"
+run = "echo 'Building backend'"
+
+[tasks.deploy]
+description = "Deploy the backend"
+run = "echo 'Deploying backend'"
+depends = [":build"]
+
+[tasks.format]
+alias = "fmt"
+run = "echo 'Formatting backend'"
+
+[tasks.release]
+description = "Covers arguments in depends and alias references"
+depends = ["build --quick", "fmt"]

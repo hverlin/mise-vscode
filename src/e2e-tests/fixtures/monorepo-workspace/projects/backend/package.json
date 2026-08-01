@@ -1,0 +1,12 @@
+{
+	"name": "backend",
+	"scripts": {
+		"test": "echo 'testing backend'"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "22.11.0"
+		}
+	}
+}
