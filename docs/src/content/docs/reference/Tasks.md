@@ -100,8 +100,11 @@ You can visualize the dependencies of a task by using the `Mise: Visualize Tasks
 
 The extension supports
 [mise monorepo tasks](https://mise.jdx.dev/tasks/monorepo.html) (`monorepo_root = true`).
-This requires mise `2025.10.3` or later. Workspace script tasks and the project
-graph require a recent mise version.
+This requires mise `2025.10.3` or later. package.json script tasks and the
+project graph additionally require a recent mise version and the
+[`experimental` setting](https://mise.jdx.dev/configuration/settings.html#experimental)
+(`mise settings experimental=true`, or `experimental = true` under `[settings]`
+in the monorepo root `mise.toml`).
 
 Tasks are shown with their fully qualified names (`//projects/frontend:build`)
 and can be run from the activity bar, code lenses, the command palette, and the

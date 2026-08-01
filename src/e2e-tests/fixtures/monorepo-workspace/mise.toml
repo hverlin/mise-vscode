@@ -4,10 +4,16 @@ monorepo_root = true
 config_roots = ["projects/*", "projects/backend/integration"]
 
 [settings]
+# package.json script tasks and `mise tasks graph` are experimental-gated
+experimental = true
 # the declared tools are not installed, don't install them during test runs
 task.run_auto_install = false
 # pick up the node version declared in package.json devEngines
 idiomatic_version_file_enable_tools = ["node"]
+
+[tools]
+# running package.json script tasks needs npm in the task env
+node = "24"
 
 [tasks.root-task]
 description = "Task defined at the monorepo root"

@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import {
 	VscodeMultiSelect,
 	VscodeOption,
+	VscodeTabHeader,
+	VscodeTabPanel,
+	VscodeTabs,
 } from "@vscode-elements/react-elements";
 import { useState } from "react";
 import { Graphviz } from "./components/DotRenderer";
@@ -37,19 +40,13 @@ const buildProjectsDot = (projects: MiseProject[]) => {
 	return `digraph {\n${GRAPH_STYLE}\n${[...nodes, ...edges].join("\n")}\n}`;
 };
 
-export const TasksDependencies = () => {
+const TaskDepsGraph = () => {
 	const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
 	const tasksQuery = useQuery({
 		queryKey: ["tasks"],
 		queryFn: ({ queryKey }) =>
 			vscodeClient.request({ queryKey }) as Promise<MiseTask[]>,
-	});
-
-	const projectsQuery = useQuery({
-		queryKey: ["tasksGraph"],
-		queryFn: ({ queryKey }) =>
-			vscodeClient.request({ queryKey }) as Promise<MiseProject[]>,
 	});
 
 	const taskDepsQuery = useQuery({
@@ -104,18 +101,43 @@ ${taskDepsDot}
 					}}
 				/>
 			)}
-			{projectsQuery.data?.length ? (
-				<div>
-					<h3>Workspace projects</h3>
-					<Graphviz
-						dot={buildProjectsDot(projectsQuery.data)}
-						options={{
-							engine: "dot",
-							convertEqualSidedPolygons: true,
-						}}
-					/>
-				</div>
-			) : null}
 		</div>
+	);
+};
+
+const WorkspaceProjectsGraph = ({ projects }: { projects: MiseProject[] }) => (
+	<Graphviz
+		dot={buildProjectsDot(projects)}
+		options={{
+			engine: "dot",
+			convertEqualSidedPolygons: true,
+			// small graphs look better at their natural size
+			fit: false,
+		}}
+	/>
+);
+
+export const TasksDependencies = () => {
+	const projectsQuery = useQuery({
+		queryKey: ["tasksGraph"],
+		queryFn: ({ queryKey }) =>
+			vscodeClient.request({ queryKey }) as Promise<MiseProject[]>,
+	});
+
+	if (!projectsQuery.data?.length) {
+		return <TaskDepsGraph />;
+	}
+
+	return (
+		<VscodeTabs>
+			<VscodeTabHeader slot="header">Task dependencies</VscodeTabHeader>
+			<VscodeTabPanel>
+				<TaskDepsGraph />
+			</VscodeTabPanel>
+			<VscodeTabHeader slot="header">Workspace projects</VscodeTabHeader>
+			<VscodeTabPanel>
+				<WorkspaceProjectsGraph projects={projectsQuery.data} />
+			</VscodeTabPanel>
+		</VscodeTabs>
 	);
 };
