@@ -1,0 +1,27 @@
+# Fixture exercising the different ways tools can be declared in TOML.
+# Not named mise.toml on purpose: mise itself should ignore this file so it
+# does not interfere with the task-execution tests in this workspace.
+[tools]
+"github:cli/cli" = "latest"
+"aqua:BurntSushi/ripgrep" = { version = "latest", os = ["linux", "macos"] }
+"ubi:sharkdp/fd".version = "latest"
+python = ["3.10", "3.11"]
+
+[tools."github:jdx/mise"]
+version = "2025.1.1"
+postinstall = "echo postinstall-done"
+depends = ["node"]
+
+[tools."gitlab:gitlab-org/cli"]
+version = "1.60.0"
+
+[tools."vfox:version-fox/vfox-cmake"]
+version = "3.30.0"
+
+[tasks.build-tools-syntax]
+run = "echo build"
+tools = { "github:sharkdp/bat" = "latest" }
+
+[tasks.lint-tools-syntax]
+tools."ubi:BurntSushi/xsv" = "latest"
+run = "echo lint"

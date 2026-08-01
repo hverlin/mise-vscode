@@ -2,7 +2,7 @@ import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
-import { type MiseTomlType, TomlParser } from "../utils/miseFileParser";
+import { getCachedTomlParser } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
 import {
 	findTasksMatchingDependsPattern,
@@ -67,11 +67,19 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			return null;
 		}
 
-		const tomParser = new TomlParser<MiseTomlType>(document.getText());
+		const tomParser = getCachedTomlParser(document);
+		if (!tomParser) {
+			return null;
+		}
 
 		const keyAtPosition = tomParser.getKeyAtPosition(position);
 		const keyPath = keyAtPosition?.key ?? [];
 		if (!keyPath.length) {
+			return null;
+		}
+
+		// `depends` under [tools.*] refers to other tools, not tasks
+		if (keyPath[0] === "tools") {
 			return null;
 		}
 

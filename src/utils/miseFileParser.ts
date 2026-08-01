@@ -24,33 +24,57 @@ interface KeyPosition {
 	value?: unknown;
 }
 
-// TODO: implement a better parser & improve performance
+// TODO: implement a better parser
 export class TomlParser<T extends object> {
 	public sourceTracker: SourceTracker;
 	public parsed: T;
 	private positionMap: KeyPosition[] = [];
+	// offsets of every `\n` in the source, for O(log n) offset→position lookups
+	private newlineOffsets: number[] = [];
 
-	constructor(private readonly source: string) {
-		this.source = source;
+	constructor(source: string) {
+		for (
+			let i = source.indexOf("\n");
+			i !== -1;
+			i = source.indexOf("\n", i + 1)
+		) {
+			this.newlineOffsets.push(i);
+		}
 		this.sourceTracker = new SourceTracker();
 		this.parsed = parse(source, "", this.sourceTracker);
 
 		this.buildPositionMap(this.sourceTracker, this.parsed);
 	}
 
-	calculatePositionFromSourceOffset(offset: number): SourcePosition {
-		let line = 0;
-		// source tracker is 1-based
-		let character = offset === 0 ? offset : offset - 1;
-
-		for (let i = 0; i < offset; i++) {
-			if (this.source[i] === "\n") {
-				line++;
-				character = offset - (i + 1);
+	/** Number of newlines at source indices strictly before `offset` */
+	private countNewlinesBefore(offset: number): number {
+		let low = 0;
+		let high = this.newlineOffsets.length;
+		while (low < high) {
+			const mid = (low + high) >> 1;
+			const newlineOffset = this.newlineOffsets[mid];
+			if (newlineOffset !== undefined && newlineOffset < offset) {
+				low = mid + 1;
+			} else {
+				high = mid;
 			}
 		}
+		return low;
+	}
 
-		return { line, character };
+	private offsetToPositionFromLineStart(offset: number): SourcePosition {
+		const line = this.countNewlinesBefore(offset);
+		const lastNewline = this.newlineOffsets[line - 1] ?? -1;
+		return { line, character: offset - (lastNewline + 1) };
+	}
+
+	calculatePositionFromSourceOffset(offset: number): SourcePosition {
+		const position = this.offsetToPositionFromLineStart(offset);
+		// source tracker offsets are 1-based on the first line
+		if (position.line === 0 && offset !== 0) {
+			return { line: 0, character: offset - 1 };
+		}
+		return position;
 	}
 
 	private buildPositionMap(
@@ -129,30 +153,73 @@ export class TomlParser<T extends object> {
 			return undefined;
 		}
 
-		let line = 0;
-		let lastNewLine = -1;
-
-		for (let i = 0; i < keySource.end; i++) {
-			if (this.source[i] === "\n") {
-				line++;
-				lastNewLine = i;
-			}
-		}
-
-		let startLine = 0;
-		let startChar = keySource.start;
-		for (let i = 0; i < keySource.start; i++) {
-			if (this.source[i] === "\n") {
-				startLine++;
-				startChar = keySource.start - (i + 1);
-			}
-		}
+		const start = this.offsetToPositionFromLineStart(keySource.start);
+		const end = this.offsetToPositionFromLineStart(keySource.end);
 
 		return new vscode.Range(
-			new vscode.Position(startLine, startChar),
-			new vscode.Position(line, keySource.end - (lastNewLine + 1)),
+			new vscode.Position(start.line, start.character),
+			new vscode.Position(end.line, end.character),
 		);
 	}
+}
+
+type ParserCacheEntry = {
+	version: number;
+	parser?: TomlParser<MiseTomlType>;
+	// last successful parse, served while the document is mid-edit and invalid
+	lastGood?: TomlParser<MiseTomlType>;
+};
+
+const parserCache = new Map<string, ParserCacheEntry>();
+const PARSER_CACHE_MAX_ENTRIES = 32;
+
+/**
+ * Returns a `TomlParser` for the document, cached by document version so
+ * repeated hover/definition/symbol requests do not re-parse the same content.
+ * When the document does not parse (mid-edit), the last good parse is returned
+ * instead; undefined only when the document never parsed successfully.
+ */
+export function getCachedTomlParser(
+	document: vscode.TextDocument,
+): TomlParser<MiseTomlType> | undefined {
+	const key = document.uri?.toString();
+	if (key === undefined) {
+		// documents without a uri (e.g. test doubles) are parsed uncached
+		try {
+			return new TomlParser<MiseTomlType>(document.getText());
+		} catch {
+			return undefined;
+		}
+	}
+
+	const previous = parserCache.get(key);
+	if (previous && previous.version === document.version) {
+		return previous.parser ?? previous.lastGood;
+	}
+
+	let parser: TomlParser<MiseTomlType> | undefined;
+	try {
+		parser = new TomlParser<MiseTomlType>(document.getText());
+	} catch {
+		parser = undefined;
+	}
+
+	// delete before set so re-parsed documents move to the end of the
+	// insertion-ordered map, making the eviction below approximately LRU
+	parserCache.delete(key);
+	parserCache.set(key, {
+		version: document.version,
+		parser,
+		lastGood: parser ?? previous?.lastGood,
+	});
+	if (parserCache.size > PARSER_CACHE_MAX_ENTRIES) {
+		const oldest = parserCache.keys().next().value;
+		if (oldest !== undefined) {
+			parserCache.delete(oldest);
+		}
+	}
+
+	return parser ?? previous?.lastGood;
 }
 
 /**
@@ -225,7 +292,10 @@ export function findToolPosition(
 		return;
 	}
 
-	const tomParser = new TomlParser<MiseTomlType>(document.getText());
+	const tomParser = getCachedTomlParser(document);
+	if (!tomParser) {
+		return;
+	}
 	for (const tool of toolsToTry) {
 		const range = tomParser.findRange(tomParser.parsed.tools ?? {}, tool);
 		if (range) {
@@ -240,8 +310,8 @@ export function findEnvVarPosition(
 ) {
 	for (const document of documents) {
 		if (document.fileName.endsWith("toml")) {
-			const parser = new TomlParser<MiseTomlType>(document.getText());
-			const range = parser.findRange(parser.parsed.env ?? {}, envVarName);
+			const parser = getCachedTomlParser(document);
+			const range = parser?.findRange(parser.parsed.env ?? {}, envVarName);
 			if (range) {
 				return { document, range };
 			}
@@ -321,8 +391,10 @@ export function findTaskDefinition(
 	}
 
 	try {
-		const text = document.getText();
-		const tomlParser = new TomlParser<MiseTomlType>(text);
+		const tomlParser = getCachedTomlParser(document);
+		if (!tomlParser) {
+			return TOP_OF_FILE;
+		}
 
 		for (const nameCandidate of nameCandidates) {
 			let keyPosition: { start: number; end: number };

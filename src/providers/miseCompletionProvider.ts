@@ -6,6 +6,7 @@ import type {
 } from "vscode";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
+import { isPositionInToolsContext } from "../utils/tomlParsing";
 
 export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 	private tasksCache: MiseTask[];
@@ -22,6 +23,31 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 		const lineText = document.lineAt(position.line).text;
 		if (!this.isDependsArrayContext(lineText, position.character)) {
 			return [];
+		}
+
+		// `depends` on a tool (in a [tools.*] section or a tool's inline options
+		// table) refers to other tools, not tasks
+		const toolsContext = isPositionInToolsContext(document, position);
+		if (toolsContext.inContext) {
+			const tools = await this.miseService.getCurrentTools();
+			const toolNames = [
+				...new Set(
+					tools
+						.map((tool) => tool.name)
+						.filter((name) => name !== toolsContext.sectionToolName),
+				),
+			];
+			return toolNames.map((name) => {
+				const completionItem = new vscode.CompletionItem(
+					name,
+					vscode.CompletionItemKind.Module,
+				);
+				completionItem.insertText =
+					context.triggerCharacter === '"' || context.triggerCharacter === "'"
+						? name
+						: `"${name}"`;
+				return completionItem;
+			});
 		}
 
 		const tasks = await this.miseService.getTasks({ includeHidden: true });

@@ -5,8 +5,7 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import {
 	findTaskDefinition,
-	type MiseTomlType,
-	TomlParser,
+	getCachedTomlParser,
 } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
 import {
@@ -37,11 +36,19 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			return null;
 		}
 
-		const tomParser = new TomlParser<MiseTomlType>(document.getText());
+		const tomParser = getCachedTomlParser(document);
+		if (!tomParser) {
+			return null;
+		}
 
 		const keyAtPosition = tomParser.getKeyAtPosition(position);
 		const keyPath = keyAtPosition?.key ?? [];
 		if (!keyPath.length) {
+			return null;
+		}
+
+		// `depends` under [tools.*] refers to other tools, not tasks
+		if (keyPath[0] === "tools") {
 			return null;
 		}
 

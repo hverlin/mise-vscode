@@ -524,7 +524,7 @@ export class MiseExtension {
 			vscode.languages.registerCompletionItemProvider(
 				allTomlFilesSelector,
 				new ToolCompletionProvider(this.miseService),
-				...['"', "'", "="],
+				...['"', "'", "=", "."],
 			),
 		);
 
