@@ -45,6 +45,11 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			return null;
 		}
 
+		// `depends` under [tools.*] refers to other tools, not tasks
+		if (keyPath[0] === "tools") {
+			return null;
+		}
+
 		if (
 			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")

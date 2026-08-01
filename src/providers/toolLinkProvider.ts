@@ -57,15 +57,26 @@ export const createToolLinkProvider = (
 				const line = document.lineAt(i);
 				const text = line.text.trim();
 
-				const { inContext } = isPositionInToolsContext(
+				const { inContext, inToolOptionsSection } = isPositionInToolsContext(
 					document,
 					new vscode.Position(i, 0),
 				);
-				if (!inContext || text.length === 0 || text.startsWith("#")) {
+				if (
+					!inContext ||
+					inToolOptionsSection ||
+					text.length === 0 ||
+					text.startsWith("#")
+				) {
 					continue;
 				}
 
 				const toolNames = extractToolNamesFromLine(line.text);
+
+				// On `[tools.<name>]` headers, search for the tool name after the
+				// `tools.` prefix so a tool like `tool` does not match inside `tools`
+				const headerPrefixIndex = line.text.indexOf("[tools.");
+				const searchFrom =
+					headerPrefixIndex === -1 ? 0 : headerPrefixIndex + "[tools.".length;
 
 				for (const toolName of toolNames) {
 					if (!toolName) continue;
@@ -78,13 +89,13 @@ export const createToolLinkProvider = (
 					let startIndex: number;
 					let endIndex: number;
 					if (line.text.includes(quotedDouble)) {
-						startIndex = line.text.indexOf(quotedDouble);
+						startIndex = line.text.indexOf(quotedDouble, searchFrom);
 						endIndex = startIndex + quotedDouble.length;
 					} else if (line.text.includes(quotedSingle)) {
-						startIndex = line.text.indexOf(quotedSingle);
+						startIndex = line.text.indexOf(quotedSingle, searchFrom);
 						endIndex = startIndex + quotedSingle.length;
 					} else {
-						startIndex = line.text.indexOf(toolName);
+						startIndex = line.text.indexOf(toolName, searchFrom);
 						endIndex = startIndex + toolName.length;
 					}
 

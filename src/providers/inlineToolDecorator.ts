@@ -13,7 +13,9 @@ import { getCleanedToolName } from "../utils/miseUtilts";
 import {
 	extractToolNamesFromLine,
 	extractToolVersionFromLine,
+	extractToolVersionFromSection,
 	isPositionInToolsContext,
+	parseToolsSectionHeader,
 } from "../utils/tomlParsing";
 
 const activeDecorationsPerFileAndTool: {
@@ -72,20 +74,12 @@ export async function showToolVersionInline(
 			const lineText = document.lineAt(line).text;
 			const trimmedLine = lineText.trim();
 
-			const { inContext, isInline } = isPositionInToolsContext(
-				document,
-				new vscode.Position(line, 0),
-			);
-			if (!inContext) {
+			const { inContext, isInline, inToolOptionsSection } =
+				isPositionInToolsContext(document, new vscode.Position(line, 0));
+			// Option lines inside a `[tools.<name>]` section (version, os, ...)
+			// do not declare tools; the section header line does.
+			if (!inContext || inToolOptionsSection) {
 				continue;
-			}
-
-			if (
-				!isInline &&
-				trimmedLine.startsWith("[") &&
-				trimmedLine !== "[tools]"
-			) {
-				break;
 			}
 
 			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
@@ -97,6 +91,7 @@ export async function showToolVersionInline(
 				continue;
 			}
 
+			const isToolsSectionHeader = !!parseToolsSectionHeader(trimmedLine);
 			const annotations: string[] = [];
 			const usedTools: string[] = [];
 
@@ -131,7 +126,11 @@ export async function showToolVersionInline(
 					}
 				}
 
-				const reqVersion = extractToolVersionFromLine(lineText, raw);
+				const reqVersion =
+					extractToolVersionFromLine(lineText, raw) ??
+					(isToolsSectionHeader
+						? extractToolVersionFromSection(document, line)
+						: undefined);
 				if (reqVersion && resolvedVersion) {
 					// Strip a leading `v` from both sides so git-sourced tools
 					// (e.g. `pipx:github/owner/repo` pinned to a tag like
@@ -264,19 +263,11 @@ export async function showOutdatedToolsGutterIcons(
 			const lineText = document.lineAt(line).text;
 			const trimmedLine = lineText.trim();
 
-			const { inContext, isInline } = isPositionInToolsContext(
+			const { inContext, inToolOptionsSection } = isPositionInToolsContext(
 				document,
 				new vscode.Position(line, 0),
 			);
-			if (!inContext) continue;
-
-			if (
-				!isInline &&
-				trimmedLine.startsWith("[") &&
-				trimmedLine !== "[tools]"
-			) {
-				break;
-			}
+			if (!inContext || inToolOptionsSection) continue;
 
 			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
 				continue;
