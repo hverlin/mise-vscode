@@ -38,6 +38,8 @@ Path to the mise binary (automatically detected on startup).
 
 If set to `mise` (default), it will use `mise` available in `PATH`.
 
+Relative paths (e.g. `./bin/mise`) and `${workspaceFolder}` variables are resolved against the workspace folders.
+
 See https://mise.jdx.dev/getting-started.html to install mise.
 
 ---

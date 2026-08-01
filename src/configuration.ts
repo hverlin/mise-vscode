@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { deepMerge } from "@std/collections";
 import * as vscode from "vscode";
+import { resolveConfiguredBinPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 
 export const CONFIGURATION_FLAGS = {
@@ -114,7 +115,21 @@ export const getMiseEnv = (): string | undefined => {
 };
 
 export const getConfiguredBinPath = (): string | undefined => {
-	return getExtensionConfig().get<string>(CONFIGURATION_FLAGS.binPath)?.trim();
+	const configuredPath = getExtensionConfig()
+		.get<string>(CONFIGURATION_FLAGS.binPath)
+		?.trim();
+
+	if (!configuredPath) {
+		return configuredPath;
+	}
+
+	return resolveConfiguredBinPath(
+		configuredPath,
+		vscode.workspace.workspaceFolders?.map((folder) => ({
+			name: folder.name,
+			fsPath: folder.uri.fsPath,
+		})) ?? [],
+	);
 };
 
 export const updateBinPath = async (binPath: string) => {

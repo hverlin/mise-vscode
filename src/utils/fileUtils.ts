@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -13,6 +14,62 @@ export function expandPath(filePath: string): string {
 		return res.toLowerCase();
 	}
 	return res;
+}
+
+const WORKSPACE_FOLDER_VARIABLE = /^\$\{workspaceFolder(?::([^}]+))?\}[/\\]?/;
+
+/**
+ * Resolve a configured binary path (`mise.binPath`) that may reference the
+ * workspace: `${workspaceFolder}`/`${workspaceFolder:folderName}` variables
+ * and relative paths like `./bin/mise` are resolved against the workspace
+ * folders (the first folder where the file exists wins). Bare command names
+ * without a path separator (e.g. `mise`) are left untouched so they are
+ * looked up in `PATH`.
+ */
+export function resolveConfiguredBinPath(
+	configuredPath: string,
+	workspaceFolders: readonly { name: string; fsPath: string }[],
+	exists: (filePath: string) => boolean = existsSync,
+): string {
+	const variableMatch = configuredPath.match(WORKSPACE_FOLDER_VARIABLE);
+
+	if (variableMatch) {
+		const [prefix, folderName] = variableMatch;
+		const folders = folderName
+			? workspaceFolders.filter((folder) => folder.name === folderName)
+			: workspaceFolders;
+
+		const candidates = folders.map((folder) =>
+			path.join(folder.fsPath, configuredPath.slice(prefix.length)),
+		);
+
+		return (
+			candidates.find((candidate) => exists(candidate)) ??
+			candidates[0] ??
+			configuredPath
+		);
+	}
+
+	if (configuredPath.startsWith("~/") || configuredPath.startsWith("~\\")) {
+		return path.join(os.homedir(), configuredPath.slice(2));
+	}
+
+	if (
+		path.isAbsolute(configuredPath) ||
+		(!configuredPath.includes("/") && !configuredPath.includes("\\"))
+	) {
+		return configuredPath;
+	}
+
+	const candidates = workspaceFolders.map((folder) =>
+		path.resolve(folder.fsPath, configuredPath),
+	);
+
+	return (
+		candidates.find((candidate) => exists(candidate)) ??
+		candidates[0] ??
+		configuredPath
+	);
 }
 
 const SHEBANG_EXTENSIONS: Record<string, string> = {

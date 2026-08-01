@@ -3,6 +3,7 @@ import {
 	compareSourcePaths,
 	getShebangFileExtension,
 	getSourceProximityRank,
+	resolveConfiguredBinPath,
 } from "./fileUtils";
 
 describe("getSourceProximityRank", () => {
@@ -101,5 +102,104 @@ describe("getShebangFileExtension", () => {
 	it("returns undefined without a shebang or for unknown interpreters", () => {
 		expect(getShebangFileExtension("echo hi")).toBeUndefined();
 		expect(getShebangFileExtension("#!/usr/bin/env made-up\n")).toBeUndefined();
+	});
+});
+
+describe("resolveConfiguredBinPath", () => {
+	const folders = [
+		{ name: "frontend", fsPath: "/repo/frontend" },
+		{ name: "backend", fsPath: "/repo/backend" },
+	];
+	const existsIn = (...paths: string[]) => {
+		return (filePath: string) => paths.includes(filePath);
+	};
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: literal VS Code variable
+	const workspaceFolderVar = "${workspaceFolder}";
+
+	it("leaves bare command names untouched for PATH lookup", () => {
+		expect(resolveConfiguredBinPath("mise", folders, existsIn())).toBe("mise");
+		expect(resolveConfiguredBinPath("mise.exe", folders, existsIn())).toBe(
+			"mise.exe",
+		);
+	});
+
+	it("leaves absolute paths untouched", () => {
+		expect(
+			resolveConfiguredBinPath("/usr/local/bin/mise", folders, existsIn()),
+		).toBe("/usr/local/bin/mise");
+	});
+
+	it("resolves relative paths against the first workspace folder containing the file", () => {
+		expect(
+			resolveConfiguredBinPath(
+				"./bin/mise",
+				folders,
+				existsIn("/repo/backend/bin/mise"),
+			),
+		).toBe("/repo/backend/bin/mise");
+		expect(
+			resolveConfiguredBinPath(
+				"bin/mise",
+				folders,
+				existsIn("/repo/frontend/bin/mise", "/repo/backend/bin/mise"),
+			),
+		).toBe("/repo/frontend/bin/mise");
+	});
+
+	it("falls back to the first workspace folder when the file does not exist", () => {
+		expect(resolveConfiguredBinPath("./bin/mise", folders, existsIn())).toBe(
+			"/repo/frontend/bin/mise",
+		);
+	});
+
+	it("resolves workspaceFolder variables", () => {
+		expect(
+			resolveConfiguredBinPath(
+				`${workspaceFolderVar}/bin/mise`,
+				folders,
+				existsIn("/repo/backend/bin/mise"),
+			),
+		).toBe("/repo/backend/bin/mise");
+		expect(
+			resolveConfiguredBinPath(
+				`${workspaceFolderVar}/bin/mise`,
+				folders,
+				existsIn(),
+			),
+		).toBe("/repo/frontend/bin/mise");
+	});
+
+	it("resolves named workspaceFolder variables against the named folder", () => {
+		expect(
+			resolveConfiguredBinPath(
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: literal VS Code variable
+				"${workspaceFolder:backend}/bin/mise",
+				folders,
+				existsIn(),
+			),
+		).toBe("/repo/backend/bin/mise");
+	});
+
+	it("expands the home directory prefix", () => {
+		const resolved = resolveConfiguredBinPath(
+			"~/bin/mise",
+			folders,
+			existsIn(),
+		);
+		expect(resolved.endsWith("bin/mise")).toBe(true);
+		expect(resolved.startsWith("~")).toBe(false);
+	});
+
+	it("returns the configured path unchanged without workspace folders", () => {
+		expect(resolveConfiguredBinPath("./bin/mise", [], existsIn())).toBe(
+			"./bin/mise",
+		);
+		expect(
+			resolveConfiguredBinPath(
+				`${workspaceFolderVar}/bin/mise`,
+				[],
+				existsIn(),
+			),
+		).toBe(`${workspaceFolderVar}/bin/mise`);
 	});
 });
