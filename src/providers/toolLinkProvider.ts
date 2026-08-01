@@ -2,15 +2,13 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled, isToolLinksEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { getCachedTomlParser } from "../utils/miseFileParser";
 import {
 	getCleanedToolName,
 	getWebsiteForTool,
 	getWebsiteFromToolName,
 } from "../utils/miseUtilts";
-import {
-	extractToolNamesFromLine,
-	isPositionInToolsContext,
-} from "../utils/tomlParsing";
+import { buildToolIndex } from "../utils/toolIndex";
 
 async function resolveToolLink(
 	miseService: MiseService,
@@ -50,84 +48,36 @@ export const createToolLinkProvider = (
 				return [];
 			}
 
+			const parser = getCachedTomlParser(document);
+			if (!parser) {
+				return [];
+			}
+
 			const links: vscode.DocumentLink[] = [];
 			const linkPromises: Promise<void>[] = [];
 
-			for (let i = 0; i < document.lineCount; i++) {
-				const line = document.lineAt(i);
-				const text = line.text.trim();
-
-				const { inContext, inToolOptionsSection } = isPositionInToolsContext(
-					document,
-					new vscode.Position(i, 0),
-				);
-				if (
-					!inContext ||
-					inToolOptionsSection ||
-					text.length === 0 ||
-					text.startsWith("#")
-				) {
+			for (const { toolName, range } of buildToolIndex(parser)) {
+				const cleanedToolName = getCleanedToolName(toolName);
+				if (!cleanedToolName) {
 					continue;
 				}
 
-				const toolNames = extractToolNamesFromLine(line.text);
-
-				// On `[tools.<name>]` headers, search for the tool name after the
-				// `tools.` prefix so a tool like `tool` does not match inside `tools`
-				const headerPrefixIndex = line.text.indexOf("[tools.");
-				const searchFrom =
-					headerPrefixIndex === -1 ? 0 : headerPrefixIndex + "[tools.".length;
-
-				for (const toolName of toolNames) {
-					if (!toolName) continue;
-
-					const cleanedToolName = getCleanedToolName(toolName);
-					if (!cleanedToolName) continue;
-
-					const quotedDouble = `"${toolName}"`;
-					const quotedSingle = `'${toolName}'`;
-					let startIndex: number;
-					let endIndex: number;
-					if (line.text.includes(quotedDouble)) {
-						startIndex = line.text.indexOf(quotedDouble, searchFrom);
-						endIndex = startIndex + quotedDouble.length;
-					} else if (line.text.includes(quotedSingle)) {
-						startIndex = line.text.indexOf(quotedSingle, searchFrom);
-						endIndex = startIndex + quotedSingle.length;
-					} else {
-						startIndex = line.text.indexOf(toolName, searchFrom);
-						endIndex = startIndex + toolName.length;
-					}
-
-					if (startIndex === -1) {
-						continue;
-					}
-
-					const toolWebsite = getWebsiteFromToolName(cleanedToolName);
-					if (toolWebsite) {
-						try {
-							const range = new vscode.Range(
-								new vscode.Position(i, startIndex),
-								new vscode.Position(i, endIndex),
-							);
-							links.push(
-								new vscode.DocumentLink(range, vscode.Uri.parse(toolWebsite)),
-							);
-						} catch {
-							// ignore invalid URI
-						}
-					} else {
-						// Slow path: call miseToolInfo for backends that need tool_options
-						const range = new vscode.Range(
-							new vscode.Position(i, startIndex),
-							new vscode.Position(i, endIndex),
+				const toolWebsite = getWebsiteFromToolName(cleanedToolName);
+				if (toolWebsite) {
+					try {
+						links.push(
+							new vscode.DocumentLink(range, vscode.Uri.parse(toolWebsite)),
 						);
-						linkPromises.push(
-							resolveToolLink(miseService, toolName, range, links).catch(
-								() => {}, // Ignore errors for individual tools
-							),
-						);
+					} catch {
+						// ignore invalid URI
 					}
+				} else {
+					// Slow path: call miseToolInfo for backends that need tool_options
+					linkPromises.push(
+						resolveToolLink(miseService, toolName, range, links).catch(
+							() => {}, // Ignore errors for individual tools
+						),
+					);
 				}
 			}
 

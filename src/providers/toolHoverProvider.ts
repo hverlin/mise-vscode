@@ -2,14 +2,9 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { getCachedTomlParser } from "../utils/miseFileParser";
 import { getCleanedToolName, getWebsiteForTool } from "../utils/miseUtilts";
-import {
-	extractToolNamesFromLine,
-	extractToolVersionFromLine,
-	extractToolVersionFromSection,
-	isPositionInToolsContext,
-	parseToolsSectionHeader,
-} from "../utils/tomlParsing";
+import { buildToolIndex } from "../utils/toolIndex";
 
 export const createToolHoverProvider = (
 	documentSelector: DocumentSelector,
@@ -24,38 +19,24 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const wordRange = document.getWordRangeAtPosition(position);
-			if (!wordRange) {
+			const parser = getCachedTomlParser(document);
+			if (!parser) {
 				return;
 			}
 
-			const { inContext, inToolOptionsSection } = isPositionInToolsContext(
-				document,
-				position,
+			const tool = buildToolIndex(parser).find((t) =>
+				t.range.contains(position),
 			);
-			if (!inContext || inToolOptionsSection) {
+			if (!tool) {
 				return;
 			}
 
-			const word = document.getText(wordRange);
-			const toolNamesRaw = extractToolNamesFromLine(
-				document.lineAt(position).text,
-				word,
-			);
-			if (toolNamesRaw.length === 0) {
-				return;
-			}
-			const toolNameRaw = toolNamesRaw[0];
-			if (!toolNameRaw) {
-				return;
-			}
-
-			const toolName = getCleanedToolName(toolNameRaw);
+			const toolName = getCleanedToolName(tool.toolName);
 			if (!toolName) {
 				return;
 			}
 
-			const toolInfo = await miseService.miseToolInfo(toolNameRaw);
+			const toolInfo = await miseService.miseToolInfo(tool.toolName);
 			if (!toolInfo) {
 				return;
 			}
@@ -63,16 +44,8 @@ export const createToolHoverProvider = (
 			const markdownString = new vscode.MarkdownString("");
 			const toolWebsite = await getWebsiteForTool(toolInfo);
 
-			const lineText = document.lineAt(position).text;
-			const parsedRequestedVersion =
-				extractToolVersionFromLine(lineText, toolNameRaw) ??
-				// `[tools.<name>]` header: the version is on a line inside the section
-				(parseToolsSectionHeader(lineText)
-					? extractToolVersionFromSection(document, position.line)
-					: undefined);
 			const displayRequestedVersion =
-				parsedRequestedVersion ||
-				(toolInfo.requested_versions ?? []).join(", ");
+				tool.requestedVersion || (toolInfo.requested_versions ?? []).join(", ");
 
 			markdownString.appendMarkdown(
 				[
@@ -105,6 +78,6 @@ export const createToolHoverProvider = (
 					.join("\n\n"),
 			);
 
-			return new vscode.Hover([markdownString]);
+			return new vscode.Hover([markdownString], tool.range);
 		},
 	});
