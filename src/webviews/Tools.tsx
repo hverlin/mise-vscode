@@ -189,10 +189,12 @@ const ToolInfo = ({
 const ActionCell = ({
 	tool,
 	outdatedToolInfo,
+	bumpInfo,
 	onSelect,
 }: {
 	tool: MiseTool;
 	outdatedToolInfo?: MiseToolUpdate;
+	bumpInfo?: MiseToolUpdate;
 	onSelect: (tool: MiseTool) => void;
 }) => {
 	const queryClient = useQueryClient();
@@ -210,11 +212,14 @@ const ActionCell = ({
 			}),
 	});
 
+	// `up --bump` also rewrites the version in the mise config file
+	const bump = Boolean(bumpInfo?.bump);
 	const upgradeToolMutation = useMutation({
-		mutationKey: ["upgradeTool", tool.name, tool.requested_version],
+		mutationKey: ["upgradeTool", tool.name, tool.requested_version, `${bump}`],
 		mutationFn: () =>
 			vscodeClient.request({
 				mutationKey: ["upgradeTool", tool.name, tool.requested_version],
+				variables: { bump },
 			}),
 	});
 
@@ -237,19 +242,27 @@ const ActionCell = ({
 
 	return (
 		<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-			{outdatedToolInfo && (
+			{(outdatedToolInfo || bump) && (
 				<VscodeButton
-					title={"Upgrade"}
+					title={
+						bump
+							? `Bump to ${bumpInfo?.bump} (updates the version in ${toDisplayPath(bumpInfo?.source?.path ?? "mise.toml")})`
+							: "Upgrade"
+					}
 					className="small-button"
 					disabled={upgradeToolMutation.isPending}
 					onClick={() => {
 						return upgradeToolMutation.mutate(undefined, {
-							onSettled: () =>
-								queryClient.invalidateQueries({ queryKey: ["tools"] }),
+							onSettled: () => {
+								queryClient.invalidateQueries({ queryKey: ["tools"] });
+								queryClient.invalidateQueries({ queryKey: ["outdatedTools"] });
+							},
 						});
 					}}
 				>
-					<i className="codicon codicon-arrow-up" />
+					<i
+						className={`codicon codicon-${bump ? "arrow-circle-up" : "arrow-up"}`}
+					/>
 				</VscodeButton>
 			)}
 			<VscodeButton
@@ -329,6 +342,32 @@ export const Tools = () => {
 		},
 	});
 
+	// `mise outdated --bump` also reports tools pinned to an exact version.
+	// It is only fetched on demand ("Check for updates" button)
+	const [bumpCheckRequested, setBumpCheckRequested] = useState(false);
+	const bumpedToolsQuery = useQuery({
+		queryKey: ["outdatedTools", "bump"],
+		enabled: bumpCheckRequested,
+		queryFn: () => {
+			if (!navigator.onLine) {
+				return [];
+			}
+
+			return vscodeClient.request({
+				queryKey: ["outdatedTools"],
+				variables: { bump: true },
+			}) as Promise<Array<MiseToolUpdate>>;
+		},
+	});
+
+	const findBumpInfo = (tool: MiseTool) =>
+		bumpedToolsQuery.data?.find(
+			(bumpedTool) =>
+				bumpedTool.name === tool.name &&
+				bumpedTool.version === tool.version &&
+				bumpedTool.bump,
+		);
+
 	if (toolsQuery.isError) {
 		return <div>Error: {toolsQuery.error.message}</div>;
 	}
@@ -341,7 +380,8 @@ export const Tools = () => {
 				(outdatedTool) =>
 					outdatedTool.name === tool.name &&
 					outdatedTool.version === tool.version,
-			)
+			) &&
+			!findBumpInfo(tool)
 		) {
 			continue;
 		}
@@ -407,6 +447,24 @@ export const Tools = () => {
 						>
 							{pruneToolsMutations.isPending ? "Pruning..." : "Prune tools"}
 						</VscodeButton>
+						<VscodeButton
+							secondary
+							title={
+								"Check for updates, including tools pinned to a specific version (mise outdated --bump)"
+							}
+							disabled={bumpedToolsQuery.isFetching}
+							onClick={() => {
+								if (bumpCheckRequested) {
+									void bumpedToolsQuery.refetch();
+								} else {
+									setBumpCheckRequested(true);
+								}
+							}}
+						>
+							{bumpedToolsQuery.isFetching
+								? "Checking for updates..."
+								: "Check for updates"}
+						</VscodeButton>
 						<div>
 							{outdatedToolsQuery.isLoading ? "Loading outdated tools..." : ""}
 						</div>
@@ -446,12 +504,22 @@ export const Tools = () => {
 									outdatedTool.name === row.original.name &&
 									outdatedTool.version === row.original.version,
 							);
+							const bumpInfo = findBumpInfo(row.original);
 							return (
 								<div title={row.original.source?.path}>
 									{row.original.version}
 									{outdatedToolInfo?.latest ? (
 										<small>
 											<br />({outdatedToolInfo.latest} is available)
+										</small>
+									) : (
+										""
+									)}
+									{bumpInfo?.bump &&
+									bumpInfo.bump !== outdatedToolInfo?.latest ? (
+										<small>
+											<br />({bumpInfo.requested_version} can be bumped to{" "}
+											{bumpInfo.bump})
 										</small>
 									) : (
 										""
@@ -499,6 +567,7 @@ export const Tools = () => {
 										outdatedTool.name === props.row.original.name &&
 										outdatedTool.version === props.row.original.version,
 								)}
+								bumpInfo={findBumpInfo(props.row.original)}
 								onSelect={(tool) => {
 									if (selectedTool === tool) {
 										setSelectedTool(null);

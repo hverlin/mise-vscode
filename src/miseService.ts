@@ -507,9 +507,11 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.cache.execCmd({
-			command: bump ? "outdated --bump --json" : "outdated --json",
-		});
+		// --bump is only requested explicitly (button click), so bypass the TTL
+		// cache to make sure a new check is performed each time
+		const { stdout } = bump
+			? await this.dedupeCache.execCmd({ command: "outdated --bump --json" })
+			: await this.cache.execCmd({ command: "outdated --json" });
 
 		if (!stdout) {
 			return [];
@@ -521,7 +523,7 @@ export class MiseService {
 				requested: string;
 				current: string;
 				latest: string | null;
-				bump: string;
+				bump: string | null;
 				source: { type: string; path: string };
 			};
 
@@ -1273,12 +1275,14 @@ export class MiseService {
 			: this.runMiseToolActionInConsole("prune --dry-run");
 	}
 
-	async upgradeToolInConsole(toolName: string) {
+	async upgradeToolInConsole(toolName: string, { bump = false } = {}) {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(`up ${toolName}`);
+		await this.runMiseToolActionInConsole(
+			bump ? `up --bump ${toolName}` : `up ${toolName}`,
+		);
 	}
 
 	async installToolInConsole(toolName: string, version: string) {
