@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.15.0](https://github.com/hverlin/mise-vscode/compare/v1.14.0...v1.15.0) (2026-08-01)
+
+
+### Features
+
+* improve toml parsing ([#243](https://github.com/hverlin/mise-vscode/issues/243)) ([73a67ed](https://github.com/hverlin/mise-vscode/commit/73a67ed750c9597bdaa160ceec38f16580c9a869))
+* support monorepo config_roots path links ([46fcb5f](https://github.com/hverlin/mise-vscode/commit/46fcb5f7a4e884781cea7819a5c105eccee4a023))
+* tool-versions file support ([#246](https://github.com/hverlin/mise-vscode/issues/246)) ([54517a9](https://github.com/hverlin/mise-vscode/commit/54517a9837be93314765f6b465660fb7f0420c1f))
+
 ## [1.14.0](https://github.com/hverlin/mise-vscode/compare/v1.13.0...v1.14.0) (2026-08-01)
 
 
