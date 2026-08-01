@@ -289,7 +289,14 @@
           "type": "boolean",
           "title": "Configure extensions to use symlinks",
           "default": false,
-          "markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control."
+          "markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control.\n\nThe folder where the symlinks are created can be changed with `mise.configureExtensionsSymLinksFolder`."
+        },
+        "mise.configureExtensionsSymLinksFolder": {
+          "order": 7.05,
+          "type": "string",
+          "title": "Symlinks folder",
+          "default": ".vscode/mise-tools",
+          "markdownDescription": "Folder in which `mise.configureExtensionsUseSymLinks` creates the symlinks to the `mise` tools. Relative paths are resolved from the workspace folder (absolute paths are also supported).\n\nUseful if you use a VS Code fork that stores its settings in a different folder (e.g. `.cursor/mise-tools` for Cursor, `.windsurf/mise-tools` for Windsurf), or if you prefer to keep the symlinks outside of `.vscode` (e.g. `.mise-tools`)."
         },
         "mise.configureExtensionsIncludeGlobalTools": {
           "order": 7.1,

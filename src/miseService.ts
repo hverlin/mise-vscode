@@ -9,6 +9,7 @@ import { MISE_RELOAD } from "./commands";
 import {
 	getCommandTTLCacheSeconds,
 	getConfiguredBinPath,
+	getConfiguredSymLinksFolder,
 	getCurrentWorkspaceFolderPath,
 	getMiseEnv,
 	isMiseExtensionEnabled,
@@ -1306,23 +1307,23 @@ export class MiseService {
 		binPath: string,
 		targetType: "dir" | "file" = "dir",
 	) {
-		const toolsPaths = path.join(
-			this.getCurrentWorkspaceFolderPath() ?? "",
-			".vscode",
-			"mise-tools",
-		);
+		const symLinksFolder = getConfiguredSymLinksFolder();
+		const toolsPaths = path.isAbsolute(symLinksFolder)
+			? symLinksFolder
+			: path.join(this.getCurrentWorkspaceFolderPath() ?? "", symLinksFolder);
 
 		const sanitizedBinName = binName.replace(/[^a-zA-Z0-9.-]/g, "_");
 
 		await mkdirp(toolsPaths);
 		const linkPath = path.join(toolsPaths, sanitizedBinName);
-		const configuredPath = path.join(
-			// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-			"${workspaceFolder}",
-			".vscode",
-			"mise-tools",
-			sanitizedBinName,
-		);
+		const configuredPath = path.isAbsolute(symLinksFolder)
+			? linkPath
+			: path.join(
+					// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
+					"${workspaceFolder}",
+					symLinksFolder,
+					sanitizedBinName,
+				);
 
 		if (existsSync(linkPath)) {
 			logger.debug(
@@ -1333,7 +1334,7 @@ export class MiseService {
 			}
 
 			logger.info(
-				`mise-tools/${binPath} was symlinked to a different version. Deleting the old symlink now.`,
+				`${linkPath} was symlinked to a different version. Deleting the old symlink now.`,
 			);
 			await rm(linkPath);
 		}
