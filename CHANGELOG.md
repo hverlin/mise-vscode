@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/hverlin/mise-vscode/compare/v1.13.0...v1.14.0) (2026-08-01)
+
+
+### Features
+
+* [#237](https://github.com/hverlin/mise-vscode/issues/237) add "Check for updates" button to the tools view (mise outdated --bump) ([#241](https://github.com/hverlin/mise-vscode/issues/241)) ([3e3135b](https://github.com/hverlin/mise-vscode/commit/3e3135b3c1770754a506e8483b892a5a141ea49b))
+
+
+### Bug Fixes
+
+* [#225](https://github.com/hverlin/mise-vscode/issues/225) support relative paths and ${workspaceFolder} in mise.binPath ([feaedb3](https://github.com/hverlin/mise-vscode/commit/feaedb3eaf266374f1efdb7855aff31cd20df017))
+
 ## [1.13.0](https://github.com/hverlin/mise-vscode/compare/v1.12.1...v1.13.0) (2026-08-01)
 
 
