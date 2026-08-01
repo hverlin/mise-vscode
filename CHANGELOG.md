@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.0](https://github.com/hverlin/mise-vscode/compare/v1.12.1...v1.13.0) (2026-08-01)
+
+
+### Features
+
+* [#189](https://github.com/hverlin/mise-vscode/issues/189) monorepo support ([#238](https://github.com/hverlin/mise-vscode/issues/238)) ([d80b80f](https://github.com/hverlin/mise-vscode/commit/d80b80f4a6e3d6146e50b460dd7ff0ab01c04463))
+* [#234](https://github.com/hverlin/mise-vscode/issues/234) add setting to configure the mise-tools symlinks folder ([#240](https://github.com/hverlin/mise-vscode/issues/240)) ([19b09d7](https://github.com/hverlin/mise-vscode/commit/19b09d78c10d5c165da1bf3c57646d496f0bfadc))
+
 ## [1.12.1](https://github.com/hverlin/mise-vscode/compare/v1.12.0...v1.12.1) (2026-07-29)
 
 
