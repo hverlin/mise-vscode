@@ -1,0 +1,17 @@
+[env]
+FRONTEND_ONLY = "fixture"
+
+[tools]
+jq = "1.7.1"
+
+[tasks.build]
+description = "Build the frontend"
+run = "echo 'Building frontend'"
+
+[tasks.dev]
+run = "echo 'Starting frontend dev server'"
+
+[tasks.ci]
+description = "Depends on a sibling toml task and a package.json script"
+depends = ["build", ":test"]
+

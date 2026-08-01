@@ -15,6 +15,108 @@ export function expandPath(filePath: string): string {
 	return res;
 }
 
+const SHEBANG_EXTENSIONS: Record<string, string> = {
+	bash: "sh",
+	sh: "sh",
+	zsh: "sh",
+	dash: "sh",
+	ksh: "sh",
+	fish: "fish",
+	python: "py",
+	node: "js",
+	bun: "ts",
+	deno: "ts",
+	tsx: "ts",
+	"ts-node": "ts",
+	ruby: "rb",
+	perl: "pl",
+};
+
+/** `#!/usr/bin/env python3` -> `py`, undefined when unknown */
+export function getShebangFileExtension(content: string): string | undefined {
+	const firstLine = content.split("\n", 1)[0] ?? "";
+	if (!firstLine.startsWith("#!")) {
+		return undefined;
+	}
+
+	const tokens = firstLine.slice(2).trim().split(/\s+/);
+	let interpreter = path.basename(tokens[0] ?? "");
+	if (interpreter === "env") {
+		interpreter = tokens.find((t, i) => i > 0 && !t.startsWith("-")) ?? "";
+	}
+	// python3.12 -> python, node22 -> node
+	const normalized = interpreter.replace(/[\d.]+$/, "") || interpreter;
+	return SHEBANG_EXTENSIONS[normalized] ?? SHEBANG_EXTENSIONS[interpreter];
+}
+
+/**
+ * File extension matching the language of a script, derived from its shebang
+ * when the file has no extension. Used to pick a file icon for file tasks.
+ */
+export async function getScriptFileExtension(
+	filePath: string,
+): Promise<string | undefined> {
+	if (path.extname(filePath)) {
+		return undefined;
+	}
+
+	try {
+		const content = await fs.readFile(filePath, "utf8");
+		return getShebangFileExtension(content);
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Order of config sources in the tree views:
+ * 0 = inside the workspace, 1 = parent of the workspace, 2 = global/other
+ */
+export function getSourceProximityRank(
+	sourcePath: string,
+	workspaceRoot: string | undefined,
+): number {
+	if (!workspaceRoot) {
+		return 2;
+	}
+	const expandedSource = expandPath(sourcePath);
+	const expandedRoot = expandPath(workspaceRoot);
+	if (expandedSource.startsWith(expandedRoot + path.sep)) {
+		return 0;
+	}
+	if (expandedRoot.startsWith(path.dirname(expandedSource) + path.sep)) {
+		return 1;
+	}
+	return 2;
+}
+
+/**
+ * Order config sources for the tree views: workspace sources first (with the
+ * workspace root config before project configs), then parent configs, then
+ * global ones.
+ */
+export function compareSourcePaths(
+	sourceA: string,
+	sourceB: string,
+	workspaceRoot: string | undefined,
+): number {
+	const rankA = getSourceProximityRank(sourceA, workspaceRoot);
+	const rankB = getSourceProximityRank(sourceB, workspaceRoot);
+	if (rankA !== rankB) {
+		return rankA - rankB;
+	}
+
+	const expandedA = expandPath(sourceA);
+	const expandedB = expandPath(sourceB);
+	const directoryCompare = path
+		.dirname(expandedA)
+		.localeCompare(path.dirname(expandedB));
+	if (directoryCompare !== 0) {
+		return directoryCompare;
+	}
+	return path.basename(expandedA).localeCompare(path.basename(expandedB));
+}
+
 export function displayPathRelativeTo(
 	filePath: string,
 	rootFolder: string | undefined,

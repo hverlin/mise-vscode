@@ -7,6 +7,36 @@ import { useState } from "react";
 import { Graphviz } from "./components/DotRenderer";
 import { vscodeClient } from "./webviewVsCodeApi";
 
+const GRAPH_STYLE = `
+    rankdir="TB";
+    splines=true;
+    overlap=false;
+    nodesep="0.3";
+    ranksep="0.8";
+    fontname="Lato";
+    graph [ bgcolor="transparent" ]
+    node [ shape="plaintext" style="filled, rounded" fontname="Lato" margin=0.2 ]
+    edge [ fontname="Lato" color="#aaa" ]
+`;
+
+const escapeDotLabel = (value: string) => value.replace(/"/g, '\\"');
+
+const buildProjectsDot = (projects: MiseProject[]) => {
+	const nodes = projects.map(
+		(project) =>
+			`    "${escapeDotLabel(project.id)}" [ label = "${escapeDotLabel(
+				`${project.id} (${project.root || "."})`,
+			)}" ]`,
+	);
+	const edges = projects.flatMap((project) =>
+		(project.dependencies ?? []).map(
+			(dependency) =>
+				`    "${escapeDotLabel(project.id)}" -> "${escapeDotLabel(dependency)}"`,
+		),
+	);
+	return `digraph {\n${GRAPH_STYLE}\n${[...nodes, ...edges].join("\n")}\n}`;
+};
+
 export const TasksDependencies = () => {
 	const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
@@ -14,6 +44,12 @@ export const TasksDependencies = () => {
 		queryKey: ["tasks"],
 		queryFn: ({ queryKey }) =>
 			vscodeClient.request({ queryKey }) as Promise<MiseTask[]>,
+	});
+
+	const projectsQuery = useQuery({
+		queryKey: ["tasksGraph"],
+		queryFn: ({ queryKey }) =>
+			vscodeClient.request({ queryKey }) as Promise<MiseProject[]>,
 	});
 
 	const taskDepsQuery = useQuery({
@@ -33,16 +69,7 @@ export const TasksDependencies = () => {
 
 	const dotString = `
 digraph {
-    rankdir="TB";
-    splines=true;
-    overlap=false;
-    nodesep="0.3";
-    ranksep="0.8";
-    fontname="Lato";
-    graph [ bgcolor="transparent" ]
-    node [ shape="plaintext" style="filled, rounded" fontname="Lato" margin=0.2 ]
-    edge [ fontname="Lato" color="#aaa" ]
-
+${GRAPH_STYLE}
 ${taskDepsDot}
 `;
 
@@ -77,6 +104,18 @@ ${taskDepsDot}
 					}}
 				/>
 			)}
+			{projectsQuery.data?.length ? (
+				<div>
+					<h3>Workspace projects</h3>
+					<Graphviz
+						dot={buildProjectsDot(projectsQuery.data)}
+						options={{
+							engine: "dot",
+							convertEqualSidedPolygons: true,
+						}}
+					/>
+				</div>
+			) : null}
 		</div>
 	);
 };

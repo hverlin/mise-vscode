@@ -135,6 +135,11 @@ export default class WebViewPanel {
 									this.miseService.getTaskDependencies(message.variables.tasks),
 								);
 							}
+							case "tasksGraph": {
+								return executeAction(message, () =>
+									this.miseService.getTasksGraph(),
+								);
+							}
 							case "tasks": {
 								return executeAction(message, () =>
 									this.miseService.getTasks(),

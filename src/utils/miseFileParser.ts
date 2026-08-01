@@ -2,6 +2,7 @@ import { parse, SourceTracker } from "toml-v1";
 import * as vscode from "vscode";
 import { logger } from "./logger";
 import { TOOLS_MAPPING } from "./miseUtilts";
+import { getTaskDefinitionNameCandidates } from "./taskNames";
 
 export type MiseTomlType = {
 	tools?: Record<string, string | object>;
@@ -154,14 +155,57 @@ export class TomlParser<T extends object> {
 	}
 }
 
+/**
+ * Locate a tool declared in the package.json `devEngines` field
+ * (https://mise.jdx.dev/lang/node.html)
+ */
+function findPackageJsonDevEnginesPosition(
+	document: vscode.TextDocument,
+	toolNames: string[],
+) {
+	const lines = document.getText().split("\n");
+	let inDevEnginesSection = false;
+	let braceDepth = 0;
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (line === undefined) {
+			continue;
+		}
+
+		if (!inDevEnginesSection) {
+			if (/"devEngines"\s*:/.test(line)) {
+				inDevEnginesSection = true;
+				braceDepth = 0;
+			} else {
+				continue;
+			}
+		}
+
+		for (const toolName of toolNames) {
+			const toolNameIndex = line.indexOf(`"${toolName}"`);
+			if (toolNameIndex !== -1) {
+				return new vscode.Range(
+					new vscode.Position(i, toolNameIndex + 1),
+					new vscode.Position(i, toolNameIndex + 1 + toolName.length),
+				);
+			}
+		}
+
+		braceDepth +=
+			(line.match(/{/g)?.length ?? 0) - (line.match(/}/g)?.length ?? 0);
+		if (braceDepth <= 0 && !/"devEngines"\s*:/.test(line)) {
+			return undefined;
+		}
+	}
+
+	return undefined;
+}
+
 export function findToolPosition(
 	document: vscode.TextDocument,
 	toolName: string,
 ) {
-	if (!document.fileName.endsWith("toml")) {
-		return;
-	}
-
 	const toolsToTry: string[] = [];
 	toolsToTry.push(toolName);
 	for (const [from, to] of TOOLS_MAPPING) {
@@ -171,6 +215,14 @@ export function findToolPosition(
 		if (toolName === to) {
 			toolsToTry.push(from);
 		}
+	}
+
+	if (document.fileName.endsWith("package.json")) {
+		return findPackageJsonDevEnginesPosition(document, toolsToTry);
+	}
+
+	if (!document.fileName.endsWith("toml")) {
+		return;
 	}
 
 	const tomParser = new TomlParser<MiseTomlType>(document.getText());
@@ -208,54 +260,107 @@ export function findEnvVarPosition(
 	return undefined;
 }
 
+const TOP_OF_FILE = {
+	start: new vscode.Position(0, 0),
+	end: new vscode.Position(0, 0),
+};
+
+function findPackageJsonScriptPosition(
+	document: vscode.TextDocument,
+	scriptNames: string[],
+) {
+	const lines = document.getText().split("\n");
+	let inScriptsSection = false;
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (line === undefined) {
+			continue;
+		}
+
+		if (!inScriptsSection) {
+			if (/"scripts"\s*:/.test(line)) {
+				inScriptsSection = true;
+			}
+			continue;
+		}
+
+		if (/^\s*}/.test(line)) {
+			break;
+		}
+
+		for (const scriptName of scriptNames) {
+			const scriptKeyIndex = line.indexOf(`"${scriptName}"`);
+			if (scriptKeyIndex !== -1) {
+				return {
+					start: new vscode.Position(i, scriptKeyIndex + 1),
+					end: new vscode.Position(i, scriptKeyIndex + 1 + scriptName.length),
+				};
+			}
+		}
+	}
+
+	return undefined;
+}
+
 export function findTaskDefinition(
 	document: vscode.TextDocument,
 	taskName: string,
 ) {
+	// config files key tasks by local name, mise reports qualified names
+	const nameCandidates = getTaskDefinitionNameCandidates(taskName);
+
+	if (document.fileName.endsWith("package.json")) {
+		return (
+			findPackageJsonScriptPosition(document, nameCandidates) ?? TOP_OF_FILE
+		);
+	}
+
 	if (!document.fileName.endsWith(".toml")) {
-		return {
-			start: new vscode.Position(0, 0),
-			end: new vscode.Position(0, 0),
-		};
+		return TOP_OF_FILE;
 	}
 
 	try {
 		const text = document.getText();
-
 		const tomlParser = new TomlParser<MiseTomlType>(text);
-		const keyPosition = tomlParser.sourceTracker.getKeySource(
-			tomlParser.parsed?.tasks ?? tomlParser.parsed,
-			taskName,
-		);
-		const valuePosition = tomlParser.sourceTracker.getValueSource(
-			tomlParser.parsed?.tasks ?? tomlParser.parsed,
-			taskName,
-		);
 
-		if (!keyPosition || !valuePosition) {
-			logger.info("Could not find task definition:", taskName);
+		for (const nameCandidate of nameCandidates) {
+			let keyPosition: { start: number; end: number };
+			let valuePosition: { start: number; end: number };
+			try {
+				keyPosition = tomlParser.sourceTracker.getKeySource(
+					tomlParser.parsed?.tasks ?? tomlParser.parsed,
+					nameCandidate,
+				);
+				valuePosition = tomlParser.sourceTracker.getValueSource(
+					tomlParser.parsed?.tasks ?? tomlParser.parsed,
+					nameCandidate,
+				);
+			} catch (_e) {
+				continue;
+			}
+
+			if (!keyPosition || !valuePosition) {
+				continue;
+			}
+
+			const startPosition = tomlParser.calculatePositionFromSourceOffset(
+				keyPosition.start,
+			);
+			const endPosition = tomlParser.calculatePositionFromSourceOffset(
+				valuePosition.end,
+			);
+
 			return {
-				start: new vscode.Position(0, 0),
-				end: new vscode.Position(0, 0),
+				start: new vscode.Position(startPosition.line, startPosition.character),
+				end: new vscode.Position(endPosition.line, endPosition.character),
 			};
 		}
 
-		const startPosition = tomlParser.calculatePositionFromSourceOffset(
-			keyPosition.start,
-		);
-		const endPosition = tomlParser.calculatePositionFromSourceOffset(
-			valuePosition.end,
-		);
-
-		return {
-			start: new vscode.Position(startPosition.line, startPosition.character),
-			end: new vscode.Position(endPosition.line, endPosition.character),
-		};
+		logger.info("Could not find task definition:", taskName);
+		return TOP_OF_FILE;
 	} catch (error) {
 		logger.info("Error finding task definition:", error as Error);
-		return {
-			start: new vscode.Position(0, 0),
-			end: new vscode.Position(0, 0),
-		};
+		return TOP_OF_FILE;
 	}
 }

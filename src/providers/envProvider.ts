@@ -19,16 +19,24 @@ import {
 	shouldUpdateEnvAutomaticallyIncludePATH,
 } from "../configuration";
 import type { MiseService } from "../miseService";
+import {
+	compareSourcePaths,
+	displayPathRelativeTo,
+	expandPath,
+	getSourceProximityRank,
+} from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findEnvVarPosition } from "../utils/miseFileParser";
 import { runInVscodeTerminal } from "../utils/shell";
 
-export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
+type EnvTreeNode = EnvItem | EnvsSourceGroupItem;
+
+export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvTreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
-		void | EnvItem | null | undefined
-	> = new vscode.EventEmitter<EnvItem | undefined | null | void>();
+		void | EnvTreeNode | null | undefined
+	> = new vscode.EventEmitter<EnvTreeNode | undefined | null | void>();
 	readonly onDidChangeTreeData: vscode.Event<
-		EnvItem | undefined | null | void
+		EnvTreeNode | undefined | null | void
 	> = this._onDidChangeTreeData.event;
 
 	private makeAllItemVisible = false;
@@ -84,24 +92,90 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 		this.refresh();
 	}
 
-	getTreeItem(element: EnvItem): vscode.TreeItem {
+	getTreeItem(element: EnvTreeNode): vscode.TreeItem {
 		return element;
 	}
 
-	async getEnvItems() {
-		const envs = await this.miseService.getEnvWithInfo();
-		return envs.map(
-			(env) =>
-				new EnvItem(env, {
-					isVisible: this.visibleItems.has(env.name)
-						? this.visibleItems.get(env.name) === true
-						: this.makeAllItemVisible,
-				}),
-		);
+	private createEnvItem(env: MiseEnvWithInfo) {
+		return new EnvItem(env, {
+			isVisible: this.visibleItems.has(env.name)
+				? this.visibleItems.get(env.name) === true
+				: this.makeAllItemVisible,
+		});
 	}
 
-	async getChildren(): Promise<EnvItem[]> {
+	async getEnvItems(): Promise<EnvTreeNode[]> {
+		const [rootEnvs, projectEnvs] = await Promise.all([
+			this.miseService.getEnvWithInfo(),
+			this.miseService.getMonorepoProjectEnvs(),
+		]);
+
+		const workspaceRoot = this.miseService.getCurrentWorkspaceFolderPath();
+
+		// PATH first, then the vars without a config file (e.g. set by tools),
+		// then one group per config file
+		const pathEnvs = rootEnvs.filter((env) => env.name === "PATH");
+		const sourcelessEnvs = rootEnvs.filter(
+			(env) => env.name !== "PATH" && !env.source,
+		);
+
+		const envsBySource = new Map<
+			string,
+			{ envs: MiseEnvWithInfo[]; isProjectScoped: boolean }
+		>();
+		const addToGroup = (env: MiseEnvWithInfo, isProjectScoped: boolean) => {
+			if (!env.source) {
+				return;
+			}
+			const group = envsBySource.get(env.source) ?? {
+				envs: [],
+				isProjectScoped,
+			};
+			group.envs.push(env);
+			envsBySource.set(env.source, group);
+		};
+		for (const env of rootEnvs) {
+			if (env.name !== "PATH") {
+				addToGroup(env, false);
+			}
+		}
+		for (const project of projectEnvs) {
+			for (const env of project.envs) {
+				addToGroup(env, true);
+			}
+		}
+
+		const groupItems = [...envsBySource.entries()]
+			.sort(([sourceA], [sourceB]) =>
+				compareSourcePaths(sourceA, sourceB, workspaceRoot),
+			)
+			.map(
+				([source, group]) =>
+					new EnvsSourceGroupItem(
+						workspaceRoot || "",
+						source,
+						group.envs,
+						group.isProjectScoped,
+					),
+			);
+
+		return [
+			...pathEnvs.map((env) => this.createEnvItem(env)),
+			...sourcelessEnvs.map((env) => this.createEnvItem(env)),
+			...groupItems,
+		];
+	}
+
+	async getChildren(element?: EnvTreeNode): Promise<EnvTreeNode[]> {
 		if (!isMiseExtensionEnabled()) {
+			return [];
+		}
+
+		if (element instanceof EnvsSourceGroupItem) {
+			return element.envs.map((env) => this.createEnvItem(env));
+		}
+
+		if (element) {
 			return [];
 		}
 
@@ -116,6 +190,29 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvItem> {
 			);
 			return [];
 		}
+	}
+}
+
+class EnvsSourceGroupItem extends vscode.TreeItem {
+	constructor(
+		workspaceRoot: string,
+		source: string,
+		public readonly envs: MiseEnvWithInfo[],
+		isProjectScoped: boolean,
+	) {
+		super(
+			displayPathRelativeTo(source, workspaceRoot),
+			getSourceProximityRank(source, workspaceRoot) === 0
+				? vscode.TreeItemCollapsibleState.Expanded
+				: vscode.TreeItemCollapsibleState.Collapsed,
+		);
+		this.description = `${envs.length} ${envs.length === 1 ? "variable" : "variables"}`;
+		this.tooltip = isProjectScoped
+			? `Environment variables defined in ${source}.\nThey only apply within this project, not at the workspace root.`
+			: `Source: ${source}`;
+		this.resourceUri = vscode.Uri.file(expandPath(source));
+		this.iconPath = vscode.ThemeIcon.File;
+		this.contextValue = "miseEnvGroup";
 	}
 }
 
@@ -159,7 +256,8 @@ export function registerEnvsCommands(
 		vscode.commands.registerCommand(
 			MISE_OPEN_ENV_VAR_DEFINITION,
 			async (name: string | undefined) => {
-				const possibleEnvs = await miseService.getEnvWithInfo();
+				const possibleEnvs =
+					await miseService.getEnvWithInfoIncludingMonorepo();
 				let selectedName = name;
 				if (!selectedName) {
 					selectedName = await vscode.window.showQuickPick(

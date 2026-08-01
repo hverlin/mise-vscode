@@ -1,6 +1,10 @@
 import { describe, expect, it } from "bun:test";
 
-import { type MiseTomlType, TomlParser } from "./miseFileParser";
+import {
+	findToolPosition,
+	type MiseTomlType,
+	TomlParser,
+} from "./miseFileParser";
 
 describe("miseFileParser", () => {
 	it("mise.toml", () => {
@@ -92,5 +96,59 @@ ci = { depends = ["format", "build", "test"] }
 				value: ["format", "build", "test"],
 			},
 		]);
+	});
+});
+
+describe("findToolPosition", () => {
+	const createDocument = (fileName: string, text: string) =>
+		({ fileName, getText: () => text }) as unknown as Parameters<
+			typeof findToolPosition
+		>[0];
+
+	it("finds tools declared in package.json devEngines", () => {
+		const document = createDocument(
+			"/repo/projects/backend/package.json",
+			[
+				"{",
+				'\t"name": "backend",',
+				'\t"devEngines": {',
+				'\t\t"runtime": {',
+				'\t\t\t"name": "node",',
+				'\t\t\t"version": "22.11.0"',
+				"\t\t}",
+				"\t}",
+				"}",
+			].join("\n"),
+		);
+
+		const range = findToolPosition(document, "node");
+		expect(range?.start.line).toBe(4);
+		expect(range?.start.character).toBe(12);
+	});
+
+	it("does not match tool names outside of devEngines", () => {
+		const document = createDocument(
+			"/repo/projects/frontend/package.json",
+			[
+				"{",
+				'\t"name": "frontend",',
+				'\t"dependencies": {',
+				'\t\t"node": "*"',
+				"\t}",
+				"}",
+			].join("\n"),
+		);
+
+		expect(findToolPosition(document, "node")).toBeUndefined();
+	});
+
+	it("still finds tools in toml files", () => {
+		const document = createDocument(
+			"/repo/mise.toml",
+			["[tools]", 'node = "22"'].join("\n"),
+		);
+
+		const range = findToolPosition(document, "node");
+		expect(range?.start.line).toBe(1);
 	});
 });

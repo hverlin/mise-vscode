@@ -225,6 +225,14 @@ Enable document symbol provider for mise TOML files. Provides an outline of task
 
 ---
 
+##### `mise.resolveMonorepoProjectConfigs`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the tools and environment variables of each [monorepo](https://mise.jdx.dev/tasks/monorepo.html) project. This spawns one mise process per project when the configuration is loaded. Disable this in large monorepos if reloads feel slow.
+
+---
+
 ##### `mise.showNotificationIfMissingTools`
 - **Type:** `boolean`
 - **Default:** `true`

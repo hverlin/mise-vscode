@@ -1,0 +1,4 @@
+[tasks.test]
+description = "Run the integration tests"
+run = "echo 'Running integration tests'"
+depends = ["//projects/backend:build"]

@@ -11,6 +11,7 @@ import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { isMiseTomlFile } from "../utils/miseUtilts";
+import { qualifyTaskName } from "../utils/taskNames";
 
 function createRunTaskCodeLens(
 	taskName: string,
@@ -254,6 +255,38 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		return codeLenses;
 	}
 
+	/**
+	 * Monorepo tasks must be run with their qualified name, not the local name
+	 * found in the document
+	 */
+	private async qualifyTaskNamesInLenses(
+		document: vscode.TextDocument,
+		codeLenses: vscode.CodeLens[],
+	): Promise<vscode.CodeLens[]> {
+		const tasks = await this.miseService.getAllCachedTasks();
+		const documentPath = expandPath(document.uri.fsPath);
+
+		for (const codeLens of codeLenses) {
+			const { command } = codeLens;
+			if (
+				command?.arguments?.length !== 1 ||
+				(command.command !== MISE_RUN_TASK &&
+					command.command !== MISE_WATCH_TASK)
+			) {
+				continue;
+			}
+
+			const localName = command.arguments[0];
+			if (typeof localName !== "string") {
+				continue;
+			}
+
+			command.arguments = [qualifyTaskName(tasks, localName, documentPath)];
+		}
+
+		return codeLenses;
+	}
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -274,10 +307,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
-		if (isMiseTomlFile(document.fileName)) {
-			return await this.handleMiseTomlFile(document);
-		}
+		const codeLenses = isMiseTomlFile(document.fileName)
+			? await this.handleMiseTomlFile(document)
+			: this.handleTaskFile(document);
 
-		return this.handleTaskFile(document);
+		return this.qualifyTaskNamesInLenses(document, codeLenses);
 	}
 }

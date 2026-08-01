@@ -13,8 +13,10 @@ import {
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
+	compareSourcePaths,
 	displayPathRelativeTo,
 	expandPath,
+	getScriptFileExtension,
 	setupMiseToml,
 	setupTaskFile,
 } from "../utils/fileUtils";
@@ -28,6 +30,7 @@ import {
 } from "../utils/miseUtilts";
 import { execAsync } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
+import { getTaskDisplayName } from "../utils/taskNames";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -66,6 +69,11 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				continue;
 			}
 
+			// only offer empty groups for toml files (tasks can be created there)
+			if (!configFile.path.endsWith(".toml")) {
+				continue;
+			}
+
 			const expandedPath = expandPath(configFile.path);
 			const isRelativeToWorkspace = expandedPath.startsWith(
 				currentWorkspaceFolderPath || "",
@@ -75,14 +83,18 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			}
 		}
 
-		return Object.entries(groupedTasks).map(
-			([source, tasks]) =>
-				new TasksSourceGroupItem(
-					currentWorkspaceFolderPath || "",
-					source,
-					tasks,
-				),
-		);
+		return Object.entries(groupedTasks)
+			.sort(([sourceA], [sourceB]) =>
+				compareSourcePaths(sourceA, sourceB, currentWorkspaceFolderPath),
+			)
+			.map(
+				([source, tasks]) =>
+					new TasksSourceGroupItem(
+						currentWorkspaceFolderPath || "",
+						source,
+						tasks,
+					),
+			);
 	}
 
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
@@ -105,7 +117,11 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		}
 
 		if (element instanceof TasksSourceGroupItem) {
-			return element.tasks.map((task) => new TaskItem(task));
+			return Promise.all(
+				element.tasks.map(
+					async (task) => new TaskItem(task, await getFileTaskIconUri(task)),
+				),
+			);
 		}
 
 		return [];
@@ -125,7 +141,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 		for (const task of tasks) {
 			const source =
-				(task.source.endsWith(".toml")
+				(task.source.endsWith(".toml") || task.source.endsWith("package.json")
 					? expandPath(task.source)
 					: task.source.split("/").slice(0, -1).join("/")) || "Unknown";
 			if (!groupedTasks[source]) {
@@ -299,7 +315,9 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 	) {
 		const pathShown = displayPathRelativeTo(source, currentWorkspaceFolderPath);
 
-		super(`${pathShown} (${tasks.length} tasks)`);
+		super(
+			`${pathShown} (${tasks.length} ${tasks.length === 1 ? "task" : "tasks"})`,
+		);
 		this.tooltip = `Source: ${source}`;
 
 		this.contextValue = source.endsWith(".toml")
@@ -316,13 +334,42 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 			};
 		} else {
 			this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+			this.resourceUri = vscode.Uri.file(source);
+			// the "folder" id is resolved by the file icon theme, which may have
+			// no folder icons; use a plain codicon for directories instead
+			this.iconPath =
+				source.endsWith(".toml") || source.endsWith("package.json")
+					? vscode.ThemeIcon.File
+					: new vscode.ThemeIcon("symbol-folder");
 		}
 	}
 }
 
+/**
+ * Icon uri of a file task, reflecting the language of the script. The path can
+ * be synthetic (`clean.sh` for a `clean` bash script), it is only used to pick
+ * the icon of the icon theme.
+ */
+async function getFileTaskIconUri(
+	task: MiseTask,
+): Promise<vscode.Uri | undefined> {
+	if (task.source.endsWith(".toml") || task.source.endsWith("package.json")) {
+		return undefined;
+	}
+	const expandedSource = expandPath(task.source);
+	const extension = await getScriptFileExtension(expandedSource);
+	return extension
+		? vscode.Uri.file(`${expandedSource}.${extension}`)
+		: vscode.Uri.file(expandedSource);
+}
+
 class TaskItem extends vscode.TreeItem {
-	constructor(public readonly task: MiseTask) {
-		super(task.name, vscode.TreeItemCollapsibleState.None);
+	constructor(
+		public readonly task: MiseTask,
+		fileTaskIconUri?: vscode.Uri,
+	) {
+		// the group already shows the source file, avoid repeating the qualifier
+		super(getTaskDisplayName(task), vscode.TreeItemCollapsibleState.None);
 		const runInfo = task.run?.join(" ");
 		this.tooltip = [
 			["Task", task.name],
@@ -340,7 +387,12 @@ class TaskItem extends vscode.TreeItem {
 
 		this.description = (task.description || task.run?.join(" ")) ?? "";
 
-		this.iconPath = new vscode.ThemeIcon("tasklist");
+		if (fileTaskIconUri) {
+			this.resourceUri = fileTaskIconUri;
+			this.iconPath = vscode.ThemeIcon.File;
+		} else {
+			this.iconPath = new vscode.ThemeIcon("tasklist");
+		}
 
 		this.command = {
 			command: MISE_OPEN_TASK_DEFINITION,

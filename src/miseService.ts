@@ -13,6 +13,7 @@ import {
 	getMiseEnv,
 	isMiseExtensionEnabled,
 	shouldCheckForNewMiseVersion,
+	shouldResolveMonorepoProjectConfigs,
 	updateBinPath,
 } from "./configuration";
 import { expandPath, isWindows, mkdirp } from "./utils/fileUtils";
@@ -33,6 +34,7 @@ import {
 	runInVscodeTerminal,
 } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
+import { getConfigRootPaths } from "./utils/taskNames";
 
 // https://github.com/jdx/mise/blob/main/src/env.rs
 const XDG_STATE_HOME =
@@ -337,6 +339,21 @@ export class MiseService {
 		await this.cache.execCmd({ command: "trust", setMiseEnv: false });
 	}
 
+	private async buildTasksLsCommand({ includeHidden = false } = {}) {
+		let extraArgs = "";
+
+		if (includeHidden) {
+			extraArgs += " --hidden";
+		}
+
+		// --all (added in 2025.10.3) loads tasks from every monorepo project
+		if (await this.hasValidMiseVersion([2025, 10, 3])) {
+			extraArgs += " --all";
+		}
+
+		return `tasks ls --json ${extraArgs}`;
+	}
+
 	async getTasks(
 		{ includeHidden }: { includeHidden?: boolean } = {
 			includeHidden: false,
@@ -346,20 +363,9 @@ export class MiseService {
 			return [];
 		}
 
-		let extraArgs = "";
-
-		if (includeHidden) {
-			extraArgs += " --hidden";
-		}
-
-		// The --all flag was added in 2025.10.3
-		if (await this.hasValidMiseVersion([2025, 10, 3])) {
-			extraArgs += " --all";
-		}
-
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: `tasks ls --json ${extraArgs}`,
+				command: await this.buildTasksLsCommand({ includeHidden }),
 			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
@@ -379,7 +385,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.slowCache.execCmd({
-			command: "tasks ls --json --hidden",
+			command: await this.buildTasksLsCommand({ includeHidden: true }),
 		});
 		return JSON.parse(stdout);
 	}
@@ -415,9 +421,12 @@ export class MiseService {
 	async getCurrentTools({
 		useCache = true,
 		local = false,
+		configRootPath = undefined,
 	}: {
 		useCache?: boolean;
 		local?: boolean;
+		/** Resolve tools from this directory instead of the workspace root (monorepo project) */
+		configRootPath?: string;
 	} = {}): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
@@ -425,10 +434,13 @@ export class MiseService {
 
 		try {
 			const cacheInstance = useCache ? this.cache : this.dedupeCache;
+			const cdArg = configRootPath ? `-C "${configRootPath}" ` : "";
 			const { stdout } = await cacheInstance.execCmd({
-				command: local
-					? "ls --local --offline --json"
-					: "ls --current --offline --json",
+				command:
+					cdArg +
+					(local
+						? "ls --local --offline --json"
+						: "ls --current --offline --json"),
 			});
 
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
@@ -575,13 +587,19 @@ export class MiseService {
 		}
 	}
 
-	async getEnvWithInfo() {
+	async getEnvWithInfo({
+		configRootPath = undefined,
+	}: {
+		/** Resolve envs from this directory instead of the workspace root (monorepo project) */
+		configRootPath?: string;
+	} = {}) {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
+		const cdArg = configRootPath ? `-C "${configRootPath}" ` : "";
 		const { stdout } = await this.cache.execCmd({
-			command: "env --json-extended",
+			command: `${cdArg}env --json-extended`,
 		});
 
 		const parsed = JSON.parse(stdout) as Record<string, MiseEnvWithInfo>;
@@ -591,6 +609,93 @@ export class MiseService {
 			tool: info?.tool,
 			source: info?.source ? expandPath(info.source) : undefined,
 		}));
+	}
+
+	/** Absolute paths of the monorepo config roots, empty outside of a monorepo */
+	async getMonorepoConfigRootPaths(): Promise<string[]> {
+		// resolving project configs spawns one mise process per project
+		if (!shouldResolveMonorepoProjectConfigs()) {
+			return [];
+		}
+
+		const workspaceRoot = this.getCurrentWorkspaceFolderPath();
+		if (!workspaceRoot) {
+			return [];
+		}
+
+		const tasks = await this.getAllCachedTasks();
+		return getConfigRootPaths(tasks).map((configRoot) =>
+			expandPath(path.join(workspaceRoot, configRoot)),
+		);
+	}
+
+	/**
+	 * Root tools plus the ones defined by monorepo projects. Project tools are
+	 * not visible from the workspace root, they require resolving with `-C`.
+	 */
+	async getCurrentToolsIncludingMonorepo(): Promise<Array<MiseTool>> {
+		const [rootTools, configRootPaths] = await Promise.all([
+			this.getCurrentTools(),
+			this.getMonorepoConfigRootPaths(),
+		]);
+
+		if (!configRootPaths.length) {
+			return rootTools;
+		}
+
+		const projectTools = await Promise.all(
+			configRootPaths.map(async (configRootPath) => {
+				const tools = await this.getCurrentTools({ configRootPath }).catch(
+					() => [] as MiseTool[],
+				);
+				// the rest is already reported by the workspace root
+				return tools.filter((tool) =>
+					tool.source?.path
+						? expandPath(tool.source.path).startsWith(configRootPath)
+						: false,
+				);
+			}),
+		);
+
+		return uniqBy(
+			[...rootTools, ...projectTools.flat()],
+			(tool) =>
+				`${tool.name}|${tool.requested_version}|${tool.source?.path ?? ""}`,
+		);
+	}
+
+	/** Envs defined by each project, they only apply within the project directory */
+	async getMonorepoProjectEnvs() {
+		const configRootPaths = await this.getMonorepoConfigRootPaths();
+
+		const projectEnvs = await Promise.all(
+			configRootPaths.map(async (configRootPath) => {
+				const envs = await this.getEnvWithInfo({ configRootPath }).catch(
+					() => [] as MiseEnvWithInfo[],
+				);
+				return {
+					configRootPath,
+					envs: envs.filter((env) =>
+						env.source ? env.source.startsWith(configRootPath) : false,
+					),
+				};
+			}),
+		);
+
+		return projectEnvs.filter((project) => project.envs.length > 0);
+	}
+
+	/** Envs of the workspace root plus the ones defined by monorepo projects */
+	async getEnvWithInfoIncludingMonorepo() {
+		const [rootEnvs, projectEnvs] = await Promise.all([
+			this.getEnvWithInfo(),
+			this.getMonorepoProjectEnvs(),
+		]);
+
+		return uniqBy(
+			[...rootEnvs, ...projectEnvs.flatMap((project) => project.envs)],
+			(env) => `${env.name}|${env.value}|${env.source ?? ""}`,
+		);
 	}
 
 	async miseFmt() {
@@ -1256,5 +1361,25 @@ export class MiseService {
 			command: `tasks deps ${taskString} --dot`,
 		});
 		return stdout;
+	}
+
+	/**
+	 * Project graph inferred from ecosystem manifests. Empty outside of a
+	 * workspace or when mise does not support `tasks graph` yet.
+	 */
+	async getTasksGraph(): Promise<MiseProject[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		try {
+			const { stdout } = await this.cache.execCmd({
+				command: "tasks graph --json",
+			});
+			return (JSON.parse(stdout).projects ?? []) as MiseProject[];
+		} catch (error) {
+			logger.debug("mise tasks graph is not available:", error as Error);
+			return [];
+		}
 	}
 }

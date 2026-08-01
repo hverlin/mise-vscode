@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Run the frontend e2e tests"
+echo "Running frontend e2e tests"

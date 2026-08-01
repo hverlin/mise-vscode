@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Remove build artifacts"
+echo "Cleaning workspace"

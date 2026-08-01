@@ -11,6 +11,7 @@ import {
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
+	MISE_VISUALIZE_TASKS_DEPS,
 } from "./commands";
 import {
 	disableExtensionForWorkspace,
@@ -39,6 +40,11 @@ export function createMenu(miseService: MiseService) {
 					label: "Tracked configurations",
 					detail: "List & manage tracked configurations",
 					iconPath: new vscode.ThemeIcon("list-selection"),
+				},
+				{
+					label: "Task dependencies",
+					detail: "Visualize task dependencies & workspace projects",
+					iconPath: new vscode.ThemeIcon("type-hierarchy"),
 				},
 				(vscode.workspace.workspaceFolders?.length ?? 0) > 1
 					? {
@@ -89,6 +95,9 @@ export function createMenu(miseService: MiseService) {
 				break;
 			case "Tracked configurations":
 				await vscode.commands.executeCommand(MISE_SHOW_TRACKED_CONFIG);
+				break;
+			case "Task dependencies":
+				await vscode.commands.executeCommand(MISE_VISUALIZE_TASKS_DEPS);
 				break;
 			case "Reload configuration":
 				await vscode.commands.executeCommand(MISE_RELOAD);

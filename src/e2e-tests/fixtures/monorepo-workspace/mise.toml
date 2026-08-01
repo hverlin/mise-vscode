@@ -1,0 +1,24 @@
+monorepo_root = true
+
+[monorepo]
+config_roots = ["projects/*", "projects/backend/integration"]
+
+[settings]
+# the declared tools are not installed, don't install them during test runs
+task.run_auto_install = false
+# pick up the node version declared in package.json devEngines
+idiomatic_version_file_enable_tools = ["node"]
+
+[tasks.root-task]
+description = "Task defined at the monorepo root"
+run = "echo 'Hello from the monorepo root'"
+
+[tasks.build-all]
+description = "Build all the projects"
+depends = ["//projects/...:build"]
+
+[tasks.verify]
+description = "Covers name wildcards, wait_for, and depends_post"
+depends = ["//projects/frontend:*"]
+wait_for = ["build-all"]
+depends_post = [":root-task"]

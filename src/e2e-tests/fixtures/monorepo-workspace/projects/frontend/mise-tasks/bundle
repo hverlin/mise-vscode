@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+//MISE description="Bundle the frontend assets"
+console.log("Bundling the frontend assets");

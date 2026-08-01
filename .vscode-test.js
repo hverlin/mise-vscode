@@ -2,15 +2,36 @@ const { defineConfig } = require("@vscode/test-cli");
 const path = require("node:path");
 const fixturesPath = path.join(__dirname, "src/e2e-tests/fixtures/");
 
-module.exports = defineConfig({
-	files: "src/e2e-tests/**/*.e2e.ts",
-	workspaceFolder: path.join(fixturesPath, "task-execution-workspace"),
-	env: {
-		MISE_CEILING_PATHS: fixturesPath,
+// MISE_CEILING_PATHS stops mise from traversing above the fixtures directory,
+// so the workspaces under test never inherit this repository's own mise config.
+// Ceiling paths are exclusive: configs at the workspace root are still loaded.
+module.exports = defineConfig([
+	{
+		label: "default",
+		files: "src/e2e-tests/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "task-execution-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+		},
+		installExtensions: ["tombi-toml.tombi"],
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
 	},
-	installExtensions: ["tombi-toml.tombi"],
-	mocha: {
-		require: ["tsx/cjs"],
-		timeout: 60_000,
+	{
+		label: "monorepo",
+		files: "src/e2e-tests/monorepo/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			// Pre-trust the fixture configs (including subproject configs) so the
+			// extension never blocks on the trust dialog in CI.
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
 	},
-});
+]);

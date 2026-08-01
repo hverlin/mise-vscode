@@ -47,7 +47,7 @@ export class MiseFileWatcher {
 		const [configFiles, tasksSources, envs] = await Promise.all([
 			this.miseService.getMiseConfigFiles(),
 			this.miseService.getAllCachedTasksSources(),
-			this.miseService.getEnvWithInfo(),
+			this.miseService.getEnvWithInfoIncludingMonorepo(),
 		]);
 
 		const envSources = envs
