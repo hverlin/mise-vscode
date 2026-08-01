@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
-import { type MiseTomlType, TomlParser } from "../utils/miseFileParser";
+import {
+	getCachedTomlParser,
+	type MiseTomlType,
+	type TomlParser,
+} from "../utils/miseFileParser";
 
 type VscodeLike = Pick<
 	typeof vscode,
@@ -88,19 +92,11 @@ export class MiseTomlTaskSymbolProvider
 		}
 		const symbols: vscode.DocumentSymbol[] = [];
 
-		let parsed: MiseTomlType | null = null;
-		let sourceTracker: TomlParser<MiseTomlType>["sourceTracker"] | null = null;
-		try {
-			({ parsed, sourceTracker } = new TomlParser<
-				MiseTomlType & { [key: string]: Record<string, string | object> }
-			>(document.getText()));
-		} catch (_error) {
+		const parser = getCachedTomlParser(document);
+		if (!parser) {
 			return this.symbols;
 		}
-
-		if (!parsed) {
-			return this.symbols;
-		}
+		const { parsed, sourceTracker } = parser;
 		const lines = document.getText().split(/\r?\n/);
 
 		for (const mainKey in parsed) {
