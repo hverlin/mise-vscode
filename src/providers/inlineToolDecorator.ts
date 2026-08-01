@@ -9,19 +9,18 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { getSvgIcon } from "../utils/iconUtils";
 import { logger } from "../utils/logger";
-import { getCachedTomlParser } from "../utils/miseFileParser";
 import { getCleanedToolName } from "../utils/miseUtilts";
-import { buildToolIndex, type DeclaredTool } from "../utils/toolIndex";
+import {
+	type DeclaredTool,
+	getToolIndexForDocument,
+	isConcreteVersion,
+} from "../utils/toolIndex";
 
 function groupToolsByLine(
 	document: vscode.TextDocument,
 ): Map<number, DeclaredTool[]> {
 	const toolsByLine = new Map<number, DeclaredTool[]>();
-	const parser = getCachedTomlParser(document);
-	if (!parser) {
-		return toolsByLine;
-	}
-	for (const tool of buildToolIndex(parser)) {
+	for (const tool of getToolIndexForDocument(document)) {
 		const line = tool.range.start.line;
 		const existing = toolsByLine.get(line);
 		if (existing) {
@@ -125,17 +124,14 @@ export async function showToolVersionInline(
 				}
 
 				const reqVersion = declaredTool.requestedVersion;
-				if (reqVersion && resolvedVersion) {
+				if (reqVersion && resolvedVersion && isConcreteVersion(reqVersion)) {
 					// Strip a leading `v` from both sides so git-sourced tools
 					// (e.g. `pipx:github/owner/repo` pinned to a tag like
 					// `v0.8.7`) are not flagged as "Not installed" when the
 					// pin and resolved version match modulo the prefix.
 					const normalizedReq = reqVersion.replace(/^v/, "");
 					const normalizedResolved = resolvedVersion.replace(/^v/, "");
-					if (
-						normalizedReq !== "latest" &&
-						!normalizedResolved.startsWith(normalizedReq)
-					) {
+					if (!normalizedResolved.startsWith(normalizedReq)) {
 						if (isInline) {
 							continue;
 						}

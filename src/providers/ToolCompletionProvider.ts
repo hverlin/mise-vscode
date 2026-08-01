@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { getCleanedToolName } from "../utils/miseUtilts";
+import { getCleanedToolName, isToolVersionsFile } from "../utils/miseUtilts";
 import {
 	parseInlineTableVersionPrefix,
 	parseToolsSectionHeader,
@@ -31,6 +31,38 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 		const linePrefix = document
 			.lineAt(position)
 			.text.substring(0, position.character);
+
+		if (isToolVersionsFile(document.fileName)) {
+			// First token: tool name completions (`nodejs `, `shellcheck `, ...)
+			if (linePrefix.match(/^\s*\S*$/)) {
+				return tools
+					.filter((tool) => tool.short !== undefined)
+					.map((tool) => {
+						const completionItem = new vscode.CompletionItem(
+							{ label: tool.short as string, description: tool.full },
+							vscode.CompletionItemKind.Module,
+						);
+						completionItem.insertText = `${tool.short} `;
+						completionItem.command = {
+							command: "editor.action.triggerSuggest",
+							title: "Re-trigger completions",
+						};
+						return completionItem;
+					});
+			}
+
+			// After the tool name: version completions for the current token
+			const versionMatch = linePrefix.match(/^\s*(\S+)\s+(?:\S+\s+)*(\S*)$/);
+			if (!versionMatch?.[1] || linePrefix.includes("#")) {
+				return [];
+			}
+			return this.getVersionCompletions(
+				getCleanedToolName(versionMatch[1]),
+				versionMatch[2],
+				position,
+				{ wrapInQuotes: false },
+			);
+		}
 
 		// Complete tool names while typing a `[tools.<name>]` section header
 		const headerPrefixMatch = linePrefix.match(
@@ -96,9 +128,9 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 			const [, existingQuote, partial] = versionValueMatch;
 			return this.getVersionCompletions(
 				getCleanedToolName(sectionToolName),
-				existingQuote,
 				partial,
 				position,
+				{ wrapInQuotes: !existingQuote },
 			);
 		}
 
@@ -142,9 +174,9 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 		if (inlineVersion) {
 			return this.getVersionCompletions(
 				getCleanedToolName(inlineVersion.toolName),
-				inlineVersion.quote,
 				inlineVersion.partial,
 				position,
+				{ wrapInQuotes: !inlineVersion.quote },
 			);
 		}
 		if (linePrefix.includes("{")) {
@@ -172,17 +204,17 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 
 		return this.getVersionCompletions(
 			getCleanedToolName(toolName),
-			existingQuote,
 			partial,
 			position,
+			{ wrapInQuotes: !existingQuote },
 		);
 	}
 
 	private async getVersionCompletions(
 		cleanedToolName: string,
-		existingQuote: string | undefined,
 		partial: string | undefined,
 		position: vscode.Position,
+		{ wrapInQuotes }: { wrapInQuotes: boolean },
 	) {
 		const versions = await this.miseService.listRemoteVersions(cleanedToolName);
 
@@ -205,7 +237,7 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 					vscode.CompletionItemKind.Value,
 				);
 				completionItem.sortText = i.toString();
-				completionItem.insertText = existingQuote ? version : `'${version}'`;
+				completionItem.insertText = wrapInQuotes ? `'${version}'` : version;
 				completionItem.range = replaceRange;
 				return completionItem;
 			});

@@ -1,5 +1,10 @@
-import type * as vscode from "vscode";
-import type { MiseTomlType, TomlParser } from "./miseFileParser";
+import * as vscode from "vscode";
+import {
+	getCachedTomlParser,
+	type MiseTomlType,
+	type TomlParser,
+} from "./miseFileParser";
+import { isToolVersionsFile } from "./miseUtilts";
 
 export type DeclaredTool = {
 	/** decoded tool name (quotes removed, e.g. `github:cli/cli`) */
@@ -80,4 +85,72 @@ export function buildToolIndex(
 
 	visit(parser.parsed as Record<string, unknown>, []);
 	return tools;
+}
+
+/**
+ * Lists tools declared in an asdf-style `.tool-versions` file:
+ *
+ * ```
+ * # comment
+ * nodejs 20.11.0        # trailing comment
+ * python 3.12.0 3.11.0  # multiple versions, first one wins
+ * ```
+ */
+export function buildToolVersionsIndex(
+	document: vscode.TextDocument,
+): DeclaredTool[] {
+	const tools: DeclaredTool[] = [];
+	for (let line = 0; line < document.lineCount; line++) {
+		const text = document.lineAt(line).text;
+		const withoutComment = (text.split("#")[0] ?? "").trimEnd();
+		const match = withoutComment.match(/^(\s*)(\S+)\s*(.*)$/);
+		if (!match?.[2]) {
+			continue;
+		}
+		const indent = match[1]?.length ?? 0;
+		const toolName = match[2];
+		const versions = match[3]?.trim().split(/\s+/).filter(Boolean) ?? [];
+		tools.push({
+			toolName,
+			range: new vscode.Range(
+				new vscode.Position(line, indent),
+				new vscode.Position(line, indent + toolName.length),
+			),
+			requestedVersion: versions[0],
+			inTask: false,
+		});
+	}
+	return tools;
+}
+
+/**
+ * A version is "concrete" when it can be compared against a resolved version
+ * with a prefix match. `latest`, `lts`, `system`, and scoped specifiers like
+ * `ref:<sha>`/`path:<dir>`/`prefix:<v>`/`sub-<n>:<v>` cannot, so version
+ * mismatch checks should be skipped for them.
+ */
+export function isConcreteVersion(version: string): boolean {
+	if (
+		version === "latest" ||
+		version === "system" ||
+		version.startsWith("lts")
+	) {
+		return false;
+	}
+	return !/^(ref:|path:|prefix:|sub-)/.test(version);
+}
+
+/**
+ * Returns the tools declared in the given document, whatever its syntax:
+ * mise TOML configs go through the cached TOML parser; `.tool-versions`
+ * files are parsed line by line.
+ */
+export function getToolIndexForDocument(
+	document: vscode.TextDocument,
+): DeclaredTool[] {
+	if (isToolVersionsFile(document.fileName)) {
+		return buildToolVersionsIndex(document);
+	}
+	const parser = getCachedTomlParser(document);
+	return parser ? buildToolIndex(parser) : [];
 }

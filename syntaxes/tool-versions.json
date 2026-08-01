@@ -1,0 +1,35 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "tool-versions",
+	"scopeName": "source.tool-versions",
+	"patterns": [
+		{
+			"name": "comment.line.number-sign.tool-versions",
+			"match": "#.*$"
+		},
+		{
+			"match": "^\\s*(\\S+)((?:\\s+[^\\s#]+)*)",
+			"captures": {
+				"1": {
+					"name": "support.type.property-name.tool-versions"
+				},
+				"2": {
+					"patterns": [
+						{
+							"name": "keyword.other.scoped-version.tool-versions",
+							"match": "\\b(?:ref|path|prefix|sub-[^:\\s]+):[^\\s#]+"
+						},
+						{
+							"name": "constant.language.tool-versions",
+							"match": "\\b(?:latest|system|lts(?:-[^\\s#]+)?)\\b"
+						},
+						{
+							"name": "string.unquoted.version.tool-versions",
+							"match": "[^\\s#]+"
+						}
+					]
+				}
+			}
+		}
+	]
+}

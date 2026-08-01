@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
+import type * as vscode from "vscode";
 import { type MiseTomlType, TomlParser } from "./miseFileParser";
-import { buildToolIndex, type DeclaredTool } from "./toolIndex";
+import {
+	buildToolIndex,
+	buildToolVersionsIndex,
+	type DeclaredTool,
+	getToolIndexForDocument,
+	isConcreteVersion,
+} from "./toolIndex";
 
 function indexOf(source: string): DeclaredTool[] {
 	return buildToolIndex(new TomlParser<MiseTomlType>(source));
@@ -178,5 +185,122 @@ describe("buildToolIndex", () => {
 			"node",
 			"python",
 		]);
+	});
+});
+
+function fakeDocument(fileName: string, content: string): vscode.TextDocument {
+	const lines = content.split("\n");
+	return {
+		fileName,
+		lineCount: lines.length,
+		lineAt: (line: number) => ({ text: lines[line] ?? "" }),
+		getText: () => content,
+	} as unknown as vscode.TextDocument;
+}
+
+describe("buildToolVersionsIndex", () => {
+	const index = (content: string) =>
+		buildToolVersionsIndex(fakeDocument("/repo/.tool-versions", content));
+
+	it("indexes simple tool lines", () => {
+		const tools = index(["nodejs 20.11.0", "shellcheck 0.10.0"].join("\n"));
+		expect(tools.map((t) => t.toolName)).toEqual(["nodejs", "shellcheck"]);
+		expect(byName(tools, "nodejs")).toMatchObject({
+			requestedVersion: "20.11.0",
+			inTask: false,
+		});
+		expect(byName(tools, "nodejs").range.start).toMatchObject({
+			line: 0,
+			character: 0,
+		});
+		expect(byName(tools, "nodejs").range.end).toMatchObject({
+			line: 0,
+			character: "nodejs".length,
+		});
+	});
+
+	it("uses the first entry of multiple versions", () => {
+		const tools = index("python 3.12.0 3.11.0");
+		expect(byName(tools, "python").requestedVersion).toBe("3.12.0");
+	});
+
+	it("skips blank lines and comments", () => {
+		const tools = index(
+			["# tools for this repo", "", "nodejs 20.11.0", "   ", "# python 3"].join(
+				"\n",
+			),
+		);
+		expect(tools.map((t) => t.toolName)).toEqual(["nodejs"]);
+		expect(byName(tools, "nodejs").range.start.line).toBe(2);
+	});
+
+	it("strips trailing comments", () => {
+		const tools = index("nodejs 20.11.0 # pinned for CI");
+		expect(byName(tools, "nodejs").requestedVersion).toBe("20.11.0");
+	});
+
+	it("handles a tool without a version", () => {
+		const tools = index("nodejs");
+		expect(byName(tools, "nodejs").requestedVersion).toBeUndefined();
+	});
+
+	it("handles indentation and CRLF line endings", () => {
+		const tools = index("  nodejs 20.11.0\r\nrust 1.80.0\r\n");
+		expect(byName(tools, "nodejs").range.start.character).toBe(2);
+		expect(byName(tools, "rust").requestedVersion).toBe("1.80.0");
+	});
+
+	it("keeps scoped version specifiers verbatim", () => {
+		const tools = index("ruby ref:master");
+		expect(byName(tools, "ruby").requestedVersion).toBe("ref:master");
+	});
+});
+
+describe("isConcreteVersion", () => {
+	it("accepts plain and fuzzy versions", () => {
+		for (const version of ["20.11.0", "3.12", "v1.2.3", "2025.1.1"]) {
+			expect(isConcreteVersion(version)).toBe(true);
+		}
+	});
+
+	it("rejects scoped and symbolic versions", () => {
+		for (const version of [
+			"latest",
+			"system",
+			"lts",
+			"lts-hydrogen",
+			"ref:master",
+			"path:/opt/node",
+			"prefix:20",
+			"sub-1:latest",
+		]) {
+			expect(isConcreteVersion(version)).toBe(false);
+		}
+	});
+});
+
+describe("getToolIndexForDocument", () => {
+	it("routes .tool-versions files to the line parser", () => {
+		const document = fakeDocument("/repo/.tool-versions", "nodejs 20.11.0");
+		expect(getToolIndexForDocument(document).map((t) => t.toolName)).toEqual([
+			"nodejs",
+		]);
+	});
+
+	it("routes TOML files to the TOML index", () => {
+		const document = fakeDocument("/repo/mise.toml", '[tools]\nnode = "22"');
+		expect(getToolIndexForDocument(document).map((t) => t.toolName)).toEqual([
+			"node",
+		]);
+	});
+
+	it("returns an empty index for unparseable TOML", () => {
+		const document = fakeDocument("/repo/mise.toml", "[tools\nnope");
+		expect(getToolIndexForDocument(document)).toEqual([]);
+	});
+
+	it("does not treat similarly named files as .tool-versions", () => {
+		const document = fakeDocument("/repo/foo.tool-versions", "nodejs 20");
+		expect(getToolIndexForDocument(document)).toEqual([]);
 	});
 });
