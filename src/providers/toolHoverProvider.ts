@@ -2,9 +2,8 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { getCachedTomlParser } from "../utils/miseFileParser";
 import { getCleanedToolName, getWebsiteForTool } from "../utils/miseUtilts";
-import { buildToolIndex } from "../utils/toolIndex";
+import { getToolIndexForDocument } from "../utils/toolIndex";
 
 export const createToolHoverProvider = (
 	documentSelector: DocumentSelector,
@@ -19,12 +18,7 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const parser = getCachedTomlParser(document);
-			if (!parser) {
-				return;
-			}
-
-			const tool = buildToolIndex(parser).find((t) =>
+			const tool = getToolIndexForDocument(document).find((t) =>
 				t.range.contains(position),
 			);
 			if (!tool) {

@@ -37,6 +37,7 @@
   "browser": "./dist/browser/browser.js",
   "activationEvents": [
     "onTaskType:mise",
+    "workspaceContains:.tool-versions",
     "workspaceContains:.config/mise/**/config.*.toml",
     "workspaceContains:.config/mise/**/config.toml",
     "workspaceContains:.mise.*.toml",
@@ -74,6 +75,16 @@
           "mise.lock"
         ],
         "configuration": "./syntaxes/toml-language-configuration.json"
+      },
+      {
+        "id": "tool-versions",
+        "aliases": [
+          "tool-versions"
+        ],
+        "filenames": [
+          ".tool-versions"
+        ],
+        "configuration": "./syntaxes/tool-versions-language-configuration.json"
       }
     ],
     "tomlValidation": [
@@ -94,6 +105,11 @@
         "language": "toml",
         "scopeName": "source.toml",
         "path": "./syntaxes/toml-language.json"
+      },
+      {
+        "language": "tool-versions",
+        "scopeName": "source.tool-versions",
+        "path": "./syntaxes/tool-versions.json"
       },
       {
         "scopeName": "source.usage.kdl",

@@ -54,6 +54,10 @@ export const TOOLS_MAPPING = [
 	["go", "golang"] as const,
 ] as const;
 
+export function isToolVersionsFile(fileName: string): boolean {
+	return fileName.split(/[\\/]/).pop() === ".tool-versions";
+}
+
 export const getCleanedToolName = (toolName: string) => {
 	return toolName
 		.trim()

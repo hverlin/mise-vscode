@@ -1,7 +1,7 @@
 import { parse, SourceTracker } from "toml-v1";
 import * as vscode from "vscode";
 import { logger } from "./logger";
-import { TOOLS_MAPPING } from "./miseUtilts";
+import { isToolVersionsFile, TOOLS_MAPPING } from "./miseUtilts";
 import { getTaskDefinitionNameCandidates } from "./taskNames";
 
 export type MiseTomlType = {
@@ -222,6 +222,25 @@ export function getCachedTomlParser(
 	return parser ?? previous?.lastGood;
 }
 
+/** Locate a tool declared in an asdf-style `.tool-versions` file */
+function findToolVersionsPosition(
+	document: vscode.TextDocument,
+	toolNames: string[],
+) {
+	const lines = document.getText().split("\n");
+	for (let i = 0; i < lines.length; i++) {
+		const match = lines[i]?.split("#")[0]?.match(/^(\s*)(\S+)/);
+		if (match?.[2] && toolNames.includes(match[2])) {
+			const start = match[1]?.length ?? 0;
+			return new vscode.Range(
+				new vscode.Position(i, start),
+				new vscode.Position(i, start + match[2].length),
+			);
+		}
+	}
+	return undefined;
+}
+
 /**
  * Locate a tool declared in the package.json `devEngines` field
  * (https://mise.jdx.dev/lang/node.html)
@@ -286,6 +305,10 @@ export function findToolPosition(
 
 	if (document.fileName.endsWith("package.json")) {
 		return findPackageJsonDevEnginesPosition(document, toolsToTry);
+	}
+
+	if (isToolVersionsFile(document.fileName)) {
+		return findToolVersionsPosition(document, toolsToTry);
 	}
 
 	if (!document.fileName.endsWith("toml")) {

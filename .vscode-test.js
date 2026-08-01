@@ -23,6 +23,22 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "tool-versions",
+		files: "src/e2e-tests/tool-versions/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "tool-versions-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			// Pre-trust the fixture .tool-versions so tool resolution never
+			// blocks on the trust dialog in CI.
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),

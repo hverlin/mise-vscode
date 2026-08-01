@@ -71,7 +71,7 @@ import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProv
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
-import { allowedFileTaskDirs } from "./utils/miseUtilts";
+import { allowedFileTaskDirs, isToolVersionsFile } from "./utils/miseUtilts";
 import { checkTomlExtensions } from "./utils/tomlExtensionCheck";
 import WebViewPanel from "./webviewPanel";
 
@@ -423,6 +423,13 @@ export class MiseExtension {
 		);
 
 		const allTomlFilesSelector = { scheme: "file", language: "toml" };
+		// `.tool-versions` files have no language contribution (plaintext),
+		// so tool features match them by file name pattern instead
+		const toolVersionsSelector = {
+			scheme: "file",
+			pattern: "**/.tool-versions",
+		};
+		const toolFilesSelector = [allTomlFilesSelector, toolVersionsSelector];
 
 		context.subscriptions.push(
 			vscode.languages.registerCompletionItemProvider(
@@ -481,11 +488,14 @@ export class MiseExtension {
 			);
 		};
 
+		const isToolsDocument = (document: vscode.TextDocument) =>
+			document.languageId === "toml" || isToolVersionsFile(document.fileName);
+
 		context.subscriptions.push(
 			vscode.workspace.onDidChangeTextDocument((event) => {
 				if (
 					event.document === vscode.window.activeTextEditor?.document &&
-					event.document.languageId === "toml"
+					isToolsDocument(event.document)
 				) {
 					getDebouncedForDoc(event.document.uri.toString())(
 						event.document,
@@ -495,24 +505,27 @@ export class MiseExtension {
 				}
 			}),
 			vscode.window.onDidChangeActiveTextEditor((editor) => {
-				if (editor && editor.document.languageId === "toml") {
+				if (editor && isToolsDocument(editor.document)) {
 					addToolInfoToEditor(editor.document, this.miseService, context);
 				}
 			}),
 			vscode.window.onDidChangeActiveColorTheme(() => {
 				const editor = vscode.window.activeTextEditor;
-				if (editor && editor.document.languageId === "toml") {
+				if (editor && isToolsDocument(editor.document)) {
 					addToolInfoToEditor(editor.document, this.miseService, context);
 				}
 			}),
 			vscode.workspace.onDidSaveTextDocument((document) => {
-				if (document.languageId === "toml") {
+				if (isToolsDocument(document)) {
 					vscode.commands.executeCommand(MISE_RELOAD);
 				}
 			}),
 		);
 
-		if (vscode.window.activeTextEditor?.document.languageId === "toml") {
+		if (
+			vscode.window.activeTextEditor &&
+			isToolsDocument(vscode.window.activeTextEditor.document)
+		) {
 			void addToolInfoToEditor(
 				vscode.window.activeTextEditor?.document,
 				this.miseService,
@@ -525,6 +538,11 @@ export class MiseExtension {
 				allTomlFilesSelector,
 				new ToolCompletionProvider(this.miseService),
 				...['"', "'", "=", "."],
+			),
+			vscode.languages.registerCompletionItemProvider(
+				toolVersionsSelector,
+				new ToolCompletionProvider(this.miseService),
+				" ",
 			),
 		);
 
@@ -541,11 +559,11 @@ export class MiseExtension {
 		);
 
 		context.subscriptions.push(
-			createToolHoverProvider(allTomlFilesSelector, this.miseService),
+			createToolHoverProvider(toolFilesSelector, this.miseService),
 		);
 
 		context.subscriptions.push(
-			createToolLinkProvider(allTomlFilesSelector, this.miseService),
+			createToolLinkProvider(toolFilesSelector, this.miseService),
 		);
 
 		context.subscriptions.push(

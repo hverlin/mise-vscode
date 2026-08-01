@@ -2,13 +2,12 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled, isToolLinksEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { getCachedTomlParser } from "../utils/miseFileParser";
 import {
 	getCleanedToolName,
 	getWebsiteForTool,
 	getWebsiteFromToolName,
 } from "../utils/miseUtilts";
-import { buildToolIndex } from "../utils/toolIndex";
+import { getToolIndexForDocument } from "../utils/toolIndex";
 
 async function resolveToolLink(
 	miseService: MiseService,
@@ -48,15 +47,10 @@ export const createToolLinkProvider = (
 				return [];
 			}
 
-			const parser = getCachedTomlParser(document);
-			if (!parser) {
-				return [];
-			}
-
 			const links: vscode.DocumentLink[] = [];
 			const linkPromises: Promise<void>[] = [];
 
-			for (const { toolName, range } of buildToolIndex(parser)) {
+			for (const { toolName, range } of getToolIndexForDocument(document)) {
 				const cleanedToolName = getCleanedToolName(toolName);
 				if (!cleanedToolName) {
 					continue;
