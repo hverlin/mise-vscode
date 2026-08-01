@@ -9,14 +9,29 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { getSvgIcon } from "../utils/iconUtils";
 import { logger } from "../utils/logger";
+import { getCachedTomlParser } from "../utils/miseFileParser";
 import { getCleanedToolName } from "../utils/miseUtilts";
-import {
-	extractToolNamesFromLine,
-	extractToolVersionFromLine,
-	extractToolVersionFromSection,
-	isPositionInToolsContext,
-	parseToolsSectionHeader,
-} from "../utils/tomlParsing";
+import { buildToolIndex, type DeclaredTool } from "../utils/toolIndex";
+
+function groupToolsByLine(
+	document: vscode.TextDocument,
+): Map<number, DeclaredTool[]> {
+	const toolsByLine = new Map<number, DeclaredTool[]>();
+	const parser = getCachedTomlParser(document);
+	if (!parser) {
+		return toolsByLine;
+	}
+	for (const tool of buildToolIndex(parser)) {
+		const line = tool.range.start.line;
+		const existing = toolsByLine.get(line);
+		if (existing) {
+			existing.push(tool);
+		} else {
+			toolsByLine.set(line, [tool]);
+		}
+	}
+	return toolsByLine;
+}
 
 const activeDecorationsPerFileAndTool: {
 	[filePath: string]: {
@@ -69,34 +84,17 @@ export async function showToolVersionInline(
 	// (e.g. `pkl` in [tools] AND `tools.pkl` in a task) would lose the first.
 	const pendingDecorations = new Map<string, vscode.DecorationOptions[]>();
 
-	for (let line = 0; line < document.lineCount; line++) {
+	for (const [line, lineTools] of groupToolsByLine(document)) {
 		try {
 			const lineText = document.lineAt(line).text;
-			const trimmedLine = lineText.trim();
-
-			const { inContext, isInline, inToolOptionsSection } =
-				isPositionInToolsContext(document, new vscode.Position(line, 0));
-			// Option lines inside a `[tools.<name>]` section (version, os, ...)
-			// do not declare tools; the section header line does.
-			if (!inContext || inToolOptionsSection) {
-				continue;
-			}
-
-			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
-				continue;
-			}
-
-			const toolNamesRaw = extractToolNamesFromLine(lineText);
-			if (toolNamesRaw.length === 0) {
-				continue;
-			}
-
-			const isToolsSectionHeader = !!parseToolsSectionHeader(trimmedLine);
+			// task tools (`tools = { ... }`, `tools.<name> = ...`) get the
+			// `name: version` annotation style; config tools show the version only
+			const isInline = lineTools.some((tool) => tool.inTask);
 			const annotations: string[] = [];
 			const usedTools: string[] = [];
 
-			for (const raw of toolNamesRaw) {
-				const cleanedToolName = getCleanedToolName(raw);
+			for (const declaredTool of lineTools) {
+				const cleanedToolName = getCleanedToolName(declaredTool.toolName);
 				if (!cleanedToolName) {
 					continue;
 				}
@@ -126,11 +124,7 @@ export async function showToolVersionInline(
 					}
 				}
 
-				const reqVersion =
-					extractToolVersionFromLine(lineText, raw) ??
-					(isToolsSectionHeader
-						? extractToolVersionFromSection(document, line)
-						: undefined);
+				const reqVersion = declaredTool.requestedVersion;
 				if (reqVersion && resolvedVersion) {
 					// Strip a leading `v` from both sides so git-sourced tools
 					// (e.g. `pipx:github/owner/repo` pinned to a tag like
@@ -258,32 +252,14 @@ export async function showOutdatedToolsGutterIcons(
 	const updatedToolNames = new Set<string>();
 	const linesWithOutdatedTools: number[] = [];
 
-	for (let line = 0; line < document.lineCount; line++) {
+	for (const [line, lineTools] of groupToolsByLine(document)) {
 		try {
-			const lineText = document.lineAt(line).text;
-			const trimmedLine = lineText.trim();
-
-			const { inContext, inToolOptionsSection } = isPositionInToolsContext(
-				document,
-				new vscode.Position(line, 0),
-			);
-			if (!inContext || inToolOptionsSection) continue;
-
-			if (trimmedLine.startsWith("#") || trimmedLine === "[tools]") {
-				continue;
-			}
-
-			const toolNamesRaw = extractToolNamesFromLine(lineText);
-			if (toolNamesRaw.length === 0) {
-				continue;
-			}
-
 			let hasOutdated = false;
 			const outdatedNames: string[] = [];
 			const validToolNames: string[] = [];
 
-			for (const raw of toolNamesRaw) {
-				const cleanedToolName = getCleanedToolName(raw);
+			for (const declaredTool of lineTools) {
+				const cleanedToolName = getCleanedToolName(declaredTool.toolName);
 				if (!cleanedToolName) {
 					continue;
 				}
