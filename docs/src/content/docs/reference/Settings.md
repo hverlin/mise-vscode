@@ -165,6 +165,18 @@ This is useful if you share the `.vscode/settings.json` file with others. When t
 - every user must have the extension installed
 - the directory `.vscode/mise-tools` must be excluded from version control.
 
+The folder where the symlinks are created can be changed with `mise.configureExtensionsSymLinksFolder`.
+
+---
+
+##### `mise.configureExtensionsSymLinksFolder`
+- **Type:** `string`
+- **Default:** `".vscode/mise-tools"`
+
+Folder in which `mise.configureExtensionsUseSymLinks` creates the symlinks to the `mise` tools. Relative paths are resolved from the workspace folder (absolute paths are also supported).
+
+Useful if you use a VS Code fork that stores its settings in a different folder (e.g. `.cursor/mise-tools` for Cursor, `.windsurf/mise-tools` for Windsurf), or if you prefer to keep the symlinks outside of `.vscode` (e.g. `.mise-tools`).
+
 ---
 
 ##### `mise.configureExtensionsIncludeGlobalTools`

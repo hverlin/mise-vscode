@@ -10,6 +10,7 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsAutomatically: "configureExtensionsAutomatically",
 	configureExtensionsUseShims: "configureExtensionsUseShims",
 	configureExtensionsUseSymLinks: "configureExtensionsUseSymLinks",
+	configureExtensionsSymLinksFolder: "configureExtensionsSymLinksFolder",
 	configureExtensionsIncludeGlobalTools:
 		"configureExtensionsIncludeGlobalTools",
 	configureExtensionsAutomaticallyIgnoreList:
@@ -85,6 +86,16 @@ export const shouldUseSymLinks = () => {
 		CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
 		true,
 	);
+};
+
+export const DEFAULT_SYMLINKS_FOLDER = ".vscode/mise-tools";
+
+export const getConfiguredSymLinksFolder = (): string => {
+	const folder = getExtensionConfig()
+		.get<string>(CONFIGURATION_FLAGS.configureExtensionsSymLinksFolder)
+		?.trim();
+
+	return folder || DEFAULT_SYMLINKS_FOLDER;
 };
 
 export const shouldIncludeGlobalTools = (): boolean => {
