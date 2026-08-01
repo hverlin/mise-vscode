@@ -57,7 +57,7 @@ type MiseToolUpdate = {
 	version: string;
 	requested_version: string;
 	latest: string | null;
-	bump?: string;
+	bump?: string | null;
 	source?: MiseToolSource;
 };
 

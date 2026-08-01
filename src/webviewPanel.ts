@@ -112,7 +112,9 @@ export default class WebViewPanel {
 							}
 							case "outdatedTools": {
 								return executeAction(message, () =>
-									this.miseService.getOutdatedTools(),
+									this.miseService.getOutdatedTools({
+										bump: message.variables?.bump === true,
+									}),
 								);
 							}
 							case "settings": {
@@ -164,7 +166,9 @@ export default class WebViewPanel {
 							}
 							case "upgradeTool": {
 								return executeAction(message, async () =>
-									miseService.upgradeToolInConsole(message.mutationKey[1]),
+									miseService.upgradeToolInConsole(message.mutationKey[1], {
+										bump: message.variables?.bump === true,
+									}),
 								);
 							}
 							case "installTool": {
