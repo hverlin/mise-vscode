@@ -26,12 +26,8 @@ async function resolveToolLink(
 	}
 
 	try {
-		const parsedUri = website.startsWith("http")
-			? vscode.Uri.parse(website)
-			: vscode.Uri.parse(
-					`https://${website.replace(/^git\+/, "").replace(/^git:\/\//, "")}`,
-				);
-		links.push(new vscode.DocumentLink(range, parsedUri));
+		// getWebsiteForTool already guarantees an http(s) address
+		links.push(new vscode.DocumentLink(range, vscode.Uri.parse(website)));
 	} catch {
 		// Ignore invalid URIs
 	}

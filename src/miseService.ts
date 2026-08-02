@@ -7,20 +7,26 @@ import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { MISE_RELOAD } from "./commands";
 import {
+	CONFIGURATION_FLAGS,
 	getCommandTTLCacheSeconds,
 	getConfiguredBinPath,
 	getConfiguredSymLinksFolder,
 	getCurrentWorkspaceFolderPath,
 	getMiseEnv,
+	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
 	shouldCheckForNewMiseVersion,
 	shouldResolveMonorepoProjectConfigs,
+	shouldSkipWorkspaceBinaryApproval,
 	updateBinPath,
 } from "./configuration";
-import { expandPath, isWindows, mkdirp } from "./utils/fileUtils";
+import { expandPath, hashFile, isWindows, mkdirp } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
-import { resolveMisePath } from "./utils/miseBinLocator";
+import {
+	resolveMisePath,
+	WorkspaceBinaryNotApprovedError,
+} from "./utils/miseBinLocator";
 import { expandConfig } from "./utils/miseDoctorParser";
 import {
 	flattenJsonSchema,
@@ -29,10 +35,10 @@ import {
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
-	execAsync,
-	execAsyncMergeOutput,
+	buildShellCommand,
 	isTerminalClosed,
 	runInVscodeTerminal,
+	safeExec,
 } from "./utils/shell";
 import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
 import { getConfigRootPaths } from "./utils/taskNames";
@@ -43,6 +49,9 @@ const XDG_STATE_HOME =
 const STATE_DIR =
 	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
 const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
+
+/** globalState key holding the workspace mise binaries the user approved */
+export const APPROVED_WORKSPACE_BINARIES_KEY = "mise.approvedWorkspaceBinaries";
 
 const flattenSettings = (obj: object, prefix = "") => {
 	const result: Record<string, MiseSettingInfo> = {};
@@ -126,30 +135,30 @@ export class MiseService {
 	private dedupeCache = createCache({
 		ttl: 0,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
-		this.execMiseCommand(command, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv }),
 	);
 
 	private cache = createCache({
 		ttl: getCommandTTLCacheSeconds(),
 		storage: { type: "memory" },
-	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
-		this.execMiseCommand(command, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv }),
 	);
 
 	private slowCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ command, setMiseEnv } = {}) =>
-		this.execMiseCommand(command, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv }),
 	);
 
 	private longTTLCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
 	})
-		.define("execCmd", ({ command, setMiseEnv } = {}) =>
-			this.execMiseCommand(command, { setMiseEnv }),
+		.define("execCmd", ({ args, setMiseEnv } = {}) =>
+			this.execMiseCommand(args, { setMiseEnv }),
 		)
 		.define("fetchSchema", async () => {
 			const res = await fetch("https://mise.jdx.dev/schema/mise.json");
@@ -183,7 +192,16 @@ export class MiseService {
 		const previousPath = getConfiguredBinPath();
 
 		try {
-			miseBinaryPath = await resolveMisePath();
+			miseBinaryPath = await resolveMisePath({
+				// every folder counts, not only the selected one: a relative
+				// binPath resolves against whichever folder holds the file
+				workspaceRoots:
+					vscode.workspace.workspaceFolders?.map(
+						(folder) => folder.uri.fsPath,
+					) ?? [],
+				confirmWorkspaceBinary: (binPath) =>
+					this.confirmWorkspaceBinary(binPath),
+			});
 			if (previousPath !== miseBinaryPath) {
 				logger.info(`Mise binary path resolved to: ${miseBinaryPath}`);
 				await updateBinPath(miseBinaryPath);
@@ -195,6 +213,15 @@ export class MiseService {
 				}
 			}
 		} catch (error) {
+			if (error instanceof WorkspaceBinaryNotApprovedError) {
+				// no fallback on purpose: the extension stays idle until the user
+				// reviews the binary, instead of quietly using a different mise
+				logger.info(error.message);
+				this._pendingBinaryApproval = error.binPath;
+				this._hasValidMiseBinPath = false;
+				return;
+			}
+
 			if (!this.invalidMisePathErrorShown) {
 				void showSettingsNotification(
 					"Invalid configured mise bin path. Please configure the binary path.",
@@ -207,6 +234,7 @@ export class MiseService {
 			return;
 		}
 
+		this._pendingBinaryApproval = undefined;
 		this._hasValidMiseBinPath = true;
 		if (!this.hasVerifiedMiseVersion) {
 			const version = await this.getVersion();
@@ -224,7 +252,7 @@ export class MiseService {
 				);
 				this.hasVerifiedMiseVersion = true;
 				if (selection === "Run mise self-update") {
-					await this.runMiseToolActionInConsole("self-update -y");
+					await this.runMiseToolActionInConsole(["self-update", "-y"]);
 				}
 				if (selection === "open mise website") {
 					await vscode.env.openExternal(
@@ -235,33 +263,196 @@ export class MiseService {
 		}
 	}
 
-	async execMiseCommand(command: string, { setMiseEnv = true } = {}) {
-		const miseCommand = this.createMiseCommand(command, { setMiseEnv });
-		ensureMiseCommand(miseCommand);
-		logger.debug(`> ${miseCommand}`);
-		return execAsync(miseCommand, {
+	/** Paths refused in this window, so a reload does not ask again */
+	private readonly refusedWorkspaceBinaries = new Set<string>();
+
+	private _pendingBinaryApproval: string | undefined;
+
+	/** Set while a workspace mise binary is waiting for the user's decision */
+	get pendingBinaryApproval(): string | undefined {
+		return this._pendingBinaryApproval;
+	}
+
+	/** Ask about the refused binary again, for the "review" status bar entry */
+	async reviewWorkspaceBinary(): Promise<void> {
+		if (this._pendingBinaryApproval) {
+			this.refusedWorkspaceBinaries.delete(this._pendingBinaryApproval);
+		}
+	}
+
+	private getApprovedWorkspaceBinaries(): Record<string, string> {
+		return this.context.globalState.get<Record<string, string>>(
+			APPROVED_WORKSPACE_BINARIES_KEY,
+			{},
+		);
+	}
+
+	/** Approved workspace binaries, for the revoke command */
+	listApprovedWorkspaceBinaries(): string[] {
+		return Object.keys(this.getApprovedWorkspaceBinaries()).sort();
+	}
+
+	/** Drop stored approvals so the next resolution asks again */
+	async revokeWorkspaceBinaryApprovals(binPaths: string[]): Promise<void> {
+		const approved = { ...this.getApprovedWorkspaceBinaries() };
+		for (const binPath of binPaths) {
+			delete approved[binPath];
+			this.refusedWorkspaceBinaries.delete(binPath);
+		}
+		await this.context.globalState.update(
+			APPROVED_WORKSPACE_BINARIES_KEY,
+			approved,
+		);
+	}
+
+	/**
+	 * A mise binary living in the workspace is code shipped by the repository:
+	 * running it is the repository's code running, so it is approved once by
+	 * the user and the answer is remembered across windows.
+	 *
+	 * The approval is tied to the contents of the binary, not only to its path,
+	 * so a project that swaps the file after being approved has to ask again.
+	 */
+	private async confirmWorkspaceBinary(binPath: string): Promise<boolean> {
+		// opt-out for projects that ship a launcher on purpose, e.g. the script
+		// written by `mise generate bootstrap -l -w`. Machine scoped, so this is
+		// the user's own decision and never the project's.
+		if (shouldSkipWorkspaceBinaryApproval()) {
+			logger.info(
+				`Running the workspace mise binary without approval, ${CONFIGURATION_FLAGS.skipWorkspaceBinaryApproval} is enabled: ${binPath}`,
+			);
+			return true;
+		}
+
+		if (this.refusedWorkspaceBinaries.has(binPath)) {
+			return false;
+		}
+
+		const approved = this.getApprovedWorkspaceBinaries();
+		const currentHash = await hashFile(binPath);
+		const approvedHash = approved[binPath];
+
+		if (currentHash && approvedHash === currentHash) {
+			return true;
+		}
+
+		const changedSinceApproval = Boolean(approvedHash && currentHash);
+		if (changedSinceApproval) {
+			logger.info(`The approved mise binary changed on disk: ${binPath}`);
+		}
+
+		const allow = "Allow and run it";
+		const inspectSettings = "Inspect settings.json";
+
+		const setByWorkspace = isBinPathSetByWorkspace();
+		const origin = setByWorkspace
+			? "This path is set by this project's own .vscode/settings.json, not by your user settings. Inspect that file before allowing it."
+			: "This path comes from your own settings.";
+
+		const title = changedSinceApproval
+			? "The mise binary of this workspace changed since you approved it."
+			: "This workspace is configured to use a mise binary from the project folder.";
+
+		const selection = await vscode.window.showWarningMessage(
+			title,
+			{
+				modal: true,
+				detail: `${binPath}\n\n${origin}\n\nRunning it executes a program shipped with this project, not the mise installed on your machine. Only allow this if you trust the project.`,
+			},
+			...(setByWorkspace ? [inspectSettings, allow] : [allow]),
+		);
+
+		if (selection === inspectSettings) {
+			await vscode.commands.executeCommand(
+				"workbench.action.openWorkspaceSettingsFile",
+			);
+			this.refusedWorkspaceBinaries.add(binPath);
+			return false;
+		}
+
+		if (selection !== allow) {
+			this.refusedWorkspaceBinaries.add(binPath);
+			return false;
+		}
+
+		if (!currentHash) {
+			// an unreadable binary cannot be pinned, so it is not remembered
+			logger.warn(`Approved ${binPath} but it could not be hashed`);
+			return true;
+		}
+
+		await this.context.globalState.update(APPROVED_WORKSPACE_BINARIES_KEY, {
+			...approved,
+			[binPath]: currentHash,
+		});
+		return true;
+	}
+
+	/**
+	 * Run mise and return its output. Arguments are passed as an argv array and
+	 * never go through a shell, they may contain any character.
+	 */
+	async execMiseCommand(args: string[], { setMiseEnv = true } = {}) {
+		const miseBinaryPath = this.getMiseBinaryPath();
+		ensureMiseCommand(miseBinaryPath);
+
+		const miseArgs = this.buildMiseArgs(args, { setMiseEnv });
+		logger.debug(`> ${miseBinaryPath} ${miseArgs.join(" ")}`);
+
+		const { code, stdout, stderr } = await safeExec(miseBinaryPath, miseArgs, {
 			cwd: this.getCurrentWorkspaceFolderPath(),
 		});
+
+		if (code !== 0) {
+			throw new Error(
+				`Command failed: mise ${miseArgs.join(" ")}\n${stderr}`.trim(),
+			);
+		}
+
+		return { stdout, stderr };
+	}
+
+	/** Same as {@link execMiseCommand}, but never throws */
+	private async execMiseCommandMergeOutput(
+		args: string[],
+		{ setMiseEnv = true } = {},
+	) {
+		const miseBinaryPath = this.getMiseBinaryPath();
+		if (!miseBinaryPath) {
+			return { stdout: "", stderr: "" };
+		}
+
+		const { stdout, stderr } = await safeExec(
+			miseBinaryPath,
+			this.buildMiseArgs(args, { setMiseEnv }),
+			{ cwd: this.getCurrentWorkspaceFolderPath() },
+		);
+		return { stdout, stderr };
 	}
 
 	async runMiseToolActionInConsole(
-		command: string,
+		args: string[],
 		taskName?: string,
 	): Promise<void> {
 		try {
-			const miseCommand = this.createMiseCommand(command);
-			logger.info(`> ${miseCommand}`);
-
-			if (!miseCommand) {
+			const miseBinaryPath = this.getMiseBinaryPath();
+			if (!miseBinaryPath) {
 				logger.warn("Could not find mise binary");
 				return;
 			}
 
-			const execution = new vscode.ShellExecution(miseCommand);
+			const miseArgs = this.buildMiseArgs(args);
+			logger.info(`> ${miseBinaryPath} ${miseArgs.join(" ")}`);
+
+			// the arguments are quoted here rather than by vscode: its own
+			// `ShellQuoting.Strong` does not escape quotes inside the value
+			const execution = new vscode.ShellExecution(
+				buildShellCommand(miseBinaryPath, miseArgs),
+			);
 			const task = new vscode.Task(
 				{ type: "mise" },
 				vscode.TaskScope.Workspace,
-				taskName ?? `mise ${command}`,
+				taskName ?? `mise ${args.join(" ")}`,
 				"mise",
 				execution,
 			);
@@ -290,8 +481,22 @@ export class MiseService {
 		return getConfiguredBinPath();
 	}
 
+	/** Arguments of a mise invocation, with the configured environment applied */
+	public buildMiseArgs(args: string[], { setMiseEnv = true } = {}): string[] {
+		const miseEnv = getMiseEnv();
+		const isUsePath = args[0] === "use" && args.includes("--path");
+		if (!miseEnv || !setMiseEnv || isUsePath) {
+			return args;
+		}
+		return ["--env", miseEnv, ...args];
+	}
+
+	/**
+	 * Command line running mise in a terminal. Only for the places that need a
+	 * shell command, prefer {@link execMiseCommand} everywhere else.
+	 */
 	public createMiseCommand(
-		command: string,
+		args: string[],
 		{ setMiseEnv = true } = {},
 	): string | undefined {
 		const miseBinaryPath = this.getMiseBinaryPath();
@@ -299,17 +504,10 @@ export class MiseService {
 			return undefined;
 		}
 
-		let miseCommand = miseBinaryPath.includes(" ")
-			? isWindows
-				? `& "${miseBinaryPath}"`
-				: `"${miseBinaryPath}"`
-			: miseBinaryPath;
-
-		const miseEnv = getMiseEnv();
-		if (miseEnv && setMiseEnv && !command.includes("use --path")) {
-			miseCommand = `${miseCommand} --env "${getMiseEnv()}"`;
-		}
-		return `${miseCommand} ${command}`;
+		return buildShellCommand(
+			miseBinaryPath,
+			this.buildMiseArgs(args, { setMiseEnv }),
+		);
 	}
 
 	private async handleUntrustedFile(error: Error): Promise<void> {
@@ -326,7 +524,7 @@ export class MiseService {
 		}
 
 		try {
-			await this.cache.execCmd({ command: "trust" });
+			await this.cache.execCmd({ args: ["trust"] });
 		} catch (trustError) {
 			logger.error("Error trusting mise configuration:", trustError as Error);
 			throw new Error(
@@ -339,22 +537,22 @@ export class MiseService {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
-		await this.cache.execCmd({ command: "trust", setMiseEnv: false });
+		await this.cache.execCmd({ args: ["trust"], setMiseEnv: false });
 	}
 
-	private async buildTasksLsCommand({ includeHidden = false } = {}) {
-		let extraArgs = "";
+	private async buildTasksLsArgs({ includeHidden = false } = {}) {
+		const args = ["tasks", "ls", "--json"];
 
 		if (includeHidden) {
-			extraArgs += " --hidden";
+			args.push("--hidden");
 		}
 
 		// --all (added in 2025.10.3) loads tasks from every monorepo project
 		if (await this.hasValidMiseVersion([2025, 10, 3])) {
-			extraArgs += " --all";
+			args.push("--all");
 		}
 
-		return `tasks ls --json ${extraArgs}`;
+		return args;
 	}
 
 	async getTasks(
@@ -368,7 +566,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: await this.buildTasksLsCommand({ includeHidden }),
+				args: await this.buildTasksLsArgs({ includeHidden }),
 			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
@@ -388,7 +586,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.slowCache.execCmd({
-			command: await this.buildTasksLsCommand({ includeHidden: true }),
+			args: await this.buildTasksLsArgs({ includeHidden: true }),
 		});
 		return JSON.parse(stdout);
 	}
@@ -413,7 +611,11 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.execMiseCommand(`tasks info "${taskName}"`);
+			const { stdout } = await this.execMiseCommand([
+				"tasks",
+				"info",
+				taskName,
+			]);
 			return parseTaskInfo(stdout);
 		} catch (error: unknown) {
 			logger.info("Error fetching mise task info:", error as Error);
@@ -437,13 +639,14 @@ export class MiseService {
 
 		try {
 			const cacheInstance = useCache ? this.cache : this.dedupeCache;
-			const cdArg = configRootPath ? `-C "${configRootPath}" ` : "";
 			const { stdout } = await cacheInstance.execCmd({
-				command:
-					cdArg +
-					(local
-						? "ls --local --offline --json"
-						: "ls --current --offline --json"),
+				args: [
+					...(configRootPath ? ["-C", configRootPath] : []),
+					"ls",
+					local ? "--local" : "--current",
+					"--offline",
+					"--json",
+				],
 			});
 
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
@@ -476,7 +679,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "ls --offline --json",
+				args: ["ls", "--offline", "--json"],
 			});
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
@@ -512,8 +715,10 @@ export class MiseService {
 		// --bump is only requested explicitly (button click), so bypass the TTL
 		// cache to make sure a new check is performed each time
 		const { stdout } = bump
-			? await this.dedupeCache.execCmd({ command: "outdated --bump --json" })
-			: await this.cache.execCmd({ command: "outdated --json" });
+			? await this.dedupeCache.execCmd({
+					args: ["outdated", "--bump", "--json"],
+				})
+			: await this.cache.execCmd({ args: ["outdated", "--json"] });
 
 		if (!stdout) {
 			return [];
@@ -551,11 +756,11 @@ export class MiseService {
 				? filename.replace(/\\/g, "/").replace(/^\//, "")
 				: filename;
 
-			cmd.push(`--path "${normalizedPath}"`);
+			cmd.push("--path", normalizedPath);
 		}
 		cmd.push("--rm");
 		cmd.push(toolName);
-		await this.runMiseToolActionInConsole(cmd.join(" "));
+		await this.runMiseToolActionInConsole(cmd);
 	}
 
 	async removeToolInConsole(toolName: string, version?: string) {
@@ -563,9 +768,10 @@ export class MiseService {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(
-			version ? `uninstall ${toolName}@${version}` : `uninstall ${toolName}`,
-		);
+		await this.runMiseToolActionInConsole([
+			"uninstall",
+			version ? `${toolName}@${version}` : toolName,
+		]);
 	}
 
 	async getEnvs(): Promise<MiseEnv[]> {
@@ -575,7 +781,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "env --json",
+				args: ["env", "--json"],
 			});
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
 				name: key,
@@ -602,9 +808,12 @@ export class MiseService {
 			return [];
 		}
 
-		const cdArg = configRootPath ? `-C "${configRootPath}" ` : "";
 		const { stdout } = await this.cache.execCmd({
-			command: `${cdArg}env --json-extended`,
+			args: [
+				...(configRootPath ? ["-C", configRootPath] : []),
+				"env",
+				"--json-extended",
+			],
 		});
 
 		const parsed = JSON.parse(stdout) as Record<string, MiseEnvWithInfo>;
@@ -704,19 +913,16 @@ export class MiseService {
 	}
 
 	async miseFmt() {
-		await this.execMiseCommand("fmt", { setMiseEnv: false });
+		await this.execMiseCommand(["fmt"], { setMiseEnv: false });
 	}
 
 	async runTask(taskName: string, ...args: string[]): Promise<void> {
 		const terminal = this.getOrCreateTerminal(`run ${taskName}`);
 		terminal.show();
 
-		const runTaskCmd = isWindows
-			? `run "${taskName.replace(/"/g, '\\"')}"`
-			: `run '${taskName.replace(/'/g, "\\'")}'`;
-		const baseCommand = this.createMiseCommand(runTaskCmd);
-		ensureMiseCommand(baseCommand);
-		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
+		const command = this.createMiseCommand(["run", taskName, ...args]);
+		ensureMiseCommand(command);
+		await runInVscodeTerminal(terminal, command);
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {
@@ -728,12 +934,9 @@ export class MiseService {
 		}
 		const terminal = this.getOrCreateTerminal(terminalName);
 		terminal.show();
-		const watchTaskCmd = isWindows
-			? `watch "${taskName.replace(/"/g, '\\"')}"`
-			: `watch '${taskName.replace(/'/g, "\\'")}'`;
-		const baseCommand = this.createMiseCommand(watchTaskCmd);
-		ensureMiseCommand(baseCommand);
-		await runInVscodeTerminal(terminal, `${baseCommand} ${args.join(" ")}`);
+		const command = this.createMiseCommand(["watch", taskName, ...args]);
+		ensureMiseCommand(command);
+		await runInVscodeTerminal(terminal, command);
 	}
 
 	private getOrCreateTerminal(name: string): vscode.Terminal {
@@ -757,14 +960,14 @@ export class MiseService {
 
 	async binPaths(name: string) {
 		const { stdout } = await this.cache.execCmd({
-			command: `bin-paths ${name}`,
+			args: ["bin-paths", name],
 		});
 		return stdout.trim().split("\n");
 	}
 
 	async which(name: string): Promise<string | undefined> {
 		try {
-			const { stdout } = await this.cache.execCmd({ command: `which ${name}` });
+			const { stdout } = await this.cache.execCmd({ args: ["which", name] });
 
 			const out = stdout.trim();
 			if (out === "") {
@@ -801,7 +1004,7 @@ export class MiseService {
 
 	async miseVersion() {
 		const { stdout } = await this.cache.execCmd({
-			command: "version --json",
+			args: ["version", "--json"],
 		});
 
 		const version = JSON.parse(stdout) as MiseVersion;
@@ -816,13 +1019,12 @@ export class MiseService {
 	}
 
 	async getMiseConfiguration(): Promise<MiseConfig> {
-		const miseCmd = this.createMiseCommand("doctor --json", {
-			setMiseEnv: false,
-		});
-
-		const { stdout, stderr } = await execAsyncMergeOutput(miseCmd ?? "{}");
+		const { stdout, stderr } = await this.execMiseCommandMergeOutput(
+			["doctor", "--json"],
+			{ setMiseEnv: false },
+		);
 		if (stderr) {
-			logger.debug(miseCmd, stderr);
+			logger.debug("mise doctor --json", stderr);
 		}
 
 		try {
@@ -835,8 +1037,9 @@ export class MiseService {
 	}
 
 	async miseDoctor() {
-		const { stdout, stderr } = await execAsyncMergeOutput(
-			this.createMiseCommand("doctor", { setMiseEnv: false }) ?? "",
+		const { stdout, stderr } = await this.execMiseCommandMergeOutput(
+			["doctor"],
+			{ setMiseEnv: false },
 		);
 		return `${stdout}\n${stderr}`;
 	}
@@ -847,7 +1050,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.cache.execCmd({
-			command: "config ls --json",
+			args: ["config", "ls", "--json"],
 		});
 		return JSON.parse(stdout) as Array<{
 			path: string;
@@ -882,7 +1085,7 @@ export class MiseService {
 	}
 
 	async miseReshim() {
-		await this.execMiseCommand("reshim", { setMiseEnv: false }).catch(
+		await this.execMiseCommand(["reshim"], { setMiseEnv: false }).catch(
 			(error) => {
 				logger.info("mise reshim", error as Error);
 			},
@@ -890,14 +1093,14 @@ export class MiseService {
 	}
 
 	async getVersion() {
-		const miseCommand = this.createMiseCommand("version", {
-			setMiseEnv: false,
-		});
-		if (!miseCommand) {
+		if (!this.getMiseBinaryPath()) {
 			return "";
 		}
 
-		const { stdout, stderr } = await execAsyncMergeOutput(miseCommand ?? "");
+		const { stdout, stderr } = await this.execMiseCommandMergeOutput(
+			["version"],
+			{ setMiseEnv: false },
+		);
 		if (stderr) {
 			if (stderr.includes("run mise self-update")) {
 				logger.debug(`Mise version stderr: ${stderr.trim()}`);
@@ -1030,7 +1233,7 @@ export class MiseService {
 			}
 
 			if (suggestion === "Update Mise") {
-				await this.runMiseToolActionInConsole("self-update -y");
+				await this.runMiseToolActionInConsole(["self-update", "-y"]);
 			}
 
 			if (suggestion === "Show changelog") {
@@ -1056,7 +1259,7 @@ export class MiseService {
 			return;
 		}
 		const { stdout } = await this.longTTLCache.execCmd({
-			command: `tool "${toolName.replace(/"/g, '\\"')}" --json`,
+			args: ["tool", toolName, "--json"],
 		});
 		return JSON.parse(stdout) as MiseToolInfo;
 	}
@@ -1067,7 +1270,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.longTTLCache.execCmd({
-			command: "registry",
+			args: ["registry"],
 			setMiseEnv: false,
 		});
 
@@ -1092,7 +1295,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.longTTLCache.execCmd({
-			command: "backends",
+			args: ["backends"],
 			setMiseEnv: false,
 		});
 
@@ -1109,7 +1312,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.longTTLCache.execCmd({
-				command: `ls-remote ${toolName}${yes ? " --yes" : ""}`,
+				args: ["ls-remote", toolName, ...(yes ? ["--yes"] : [])],
 				setMiseEnv: false,
 			});
 			if (yes) {
@@ -1153,10 +1356,7 @@ export class MiseService {
 		value: string;
 	}) {
 		await this.execMiseCommand(
-			`set --file "${filePath}" "${name.replace(/"/g, '\\"')}"="${value.replace(
-				/"/g,
-				'\\"',
-			)}"`,
+			["set", "--file", filePath, `${name}=${value}`],
 			{ setMiseEnv: false },
 		);
 	}
@@ -1166,7 +1366,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.cache.execCmd({
-			command: `settings get --quiet --silent ${key}`,
+			args: ["settings", "get", "--quiet", "--silent", key],
 			setMiseEnv: undefined,
 		});
 		return stdout;
@@ -1177,9 +1377,11 @@ export class MiseService {
 			return {};
 		}
 
-		const { stdout } = await this.execMiseCommand(
-			"settings --all --json-extended",
-		);
+		const { stdout } = await this.execMiseCommand([
+			"settings",
+			"--all",
+			"--json-extended",
+		]);
 		return flattenSettings(JSON.parse(stdout));
 	}
 
@@ -1273,8 +1475,8 @@ export class MiseService {
 		}
 
 		return selection === "Yes"
-			? this.runMiseToolActionInConsole("prune")
-			: this.runMiseToolActionInConsole("prune --dry-run");
+			? this.runMiseToolActionInConsole(["prune"])
+			: this.runMiseToolActionInConsole(["prune", "--dry-run"]);
 	}
 
 	async upgradeToolInConsole(toolName: string, { bump = false } = {}) {
@@ -1283,7 +1485,7 @@ export class MiseService {
 		}
 
 		await this.runMiseToolActionInConsole(
-			bump ? `up --bump ${toolName}` : `up ${toolName}`,
+			bump ? ["up", "--bump", toolName] : ["up", toolName],
 		);
 	}
 
@@ -1292,7 +1494,10 @@ export class MiseService {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(`install ${toolName}@${version}`);
+		await this.runMiseToolActionInConsole([
+			"install",
+			`${toolName}@${version}`,
+		]);
 	}
 
 	async editSetting(
@@ -1303,9 +1508,14 @@ export class MiseService {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(
-			`config set settings.${setting} "${value}" --file "${filePath}"`,
-		);
+		await this.runMiseToolActionInConsole([
+			"config",
+			"set",
+			`settings.${setting}`,
+			value,
+			"--file",
+			filePath,
+		]);
 	}
 
 	async createMiseToolSymlink(
@@ -1368,7 +1578,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "tasks graph --json",
+				args: ["tasks", "graph", "--json"],
 			});
 			return (JSON.parse(stdout).projects ?? []) as MiseProject[];
 		} catch (error) {
@@ -1396,7 +1606,7 @@ export class MiseService {
 
 		try {
 			const { stdout } = await this.cache.execCmd({
-				command: "bootstrap status --json",
+				args: ["bootstrap", "status", "--json"],
 			});
 			return JSON.parse(stdout) as MiseBootstrapStatus;
 		} catch (error) {
@@ -1415,7 +1625,7 @@ export class MiseService {
 		}
 
 		await this.runMiseToolActionInConsole(
-			dryRun ? "bootstrap --dry-run" : "bootstrap --yes",
+			dryRun ? ["bootstrap", "--dry-run"] : ["bootstrap", "--yes"],
 		);
 	}
 }

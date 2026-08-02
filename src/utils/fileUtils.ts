@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { createReadStream, existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -14,6 +15,37 @@ export function expandPath(filePath: string): string {
 		return res.toLowerCase();
 	}
 	return res;
+}
+
+/**
+ * SHA-256 of a file, streamed so a large binary does not sit in memory.
+ * Returns undefined when the file cannot be read.
+ */
+export async function hashFile(filePath: string): Promise<string | undefined> {
+	try {
+		const hash = createHash("sha256");
+		for await (const chunk of createReadStream(filePath)) {
+			hash.update(chunk as Buffer);
+		}
+		return hash.digest("hex");
+	} catch (error) {
+		logger.info(`Unable to hash ${filePath}`, error);
+		return undefined;
+	}
+}
+
+/** Whether `filePath` sits inside `directory` (the directory itself excluded) */
+export function isPathInside(directory: string, filePath: string): boolean {
+	const normalize = (value: string) =>
+		isWindows ? path.resolve(value).toLowerCase() : path.resolve(value);
+
+	const relative = path.relative(normalize(directory), normalize(filePath));
+	return (
+		Boolean(relative) &&
+		!relative.startsWith(`..${path.sep}`) &&
+		relative !== ".." &&
+		!path.isAbsolute(relative)
+	);
 }
 
 const WORKSPACE_FOLDER_VARIABLE = /^\$\{workspaceFolder(?::([^}]+))?\}[/\\]?/;
@@ -252,20 +284,28 @@ export async function isExecutable(filePath: string): Promise<boolean> {
 	return false;
 }
 
-export async function setupTaskFile(taskFilePath: string) {
+/**
+ * Create an executable task file at `taskFilePath`, which must stay inside
+ * `taskDir`. The containment check needs the intended directory: comparing the
+ * path against its own `dirname` can never fail and lets a name such as
+ * `../../x` write anywhere.
+ */
+export async function setupTaskFile(taskFilePath: string, taskDir: string) {
 	try {
-		const normalizedDir = path.normalize(path.dirname(taskFilePath));
+		const normalizedDir = path.normalize(taskDir);
 		const normalizedPath = path.normalize(taskFilePath);
 
 		if (!path.isAbsolute(normalizedDir)) {
 			throw new Error("Task directory must be an absolute path");
 		}
 
-		if (!normalizedPath.startsWith(normalizedDir)) {
+		// nested task files are supported, escaping the directory is not
+		const relative = path.relative(normalizedDir, normalizedPath);
+		if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
 			throw new Error("Task file must be within the task directory");
 		}
 
-		await mkdirp(normalizedDir);
+		await mkdirp(path.dirname(normalizedPath));
 		await touchFile(normalizedPath);
 		await setFilePermissions(normalizedPath);
 	} catch (error) {

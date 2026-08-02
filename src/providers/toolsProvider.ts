@@ -345,13 +345,13 @@ export function registerToolsCommands(
 
 				tool = tool as MiseTool;
 				await miseService.runMiseToolActionInConsole(
-					`install ${tool.name}@${tool.requested_version}`,
+					["install", `${tool.name}@${tool.requested_version}`],
 					"Install Tool",
 				);
 			},
 		),
 		vscode.commands.registerCommand(MISE_INSTALL_ALL, async () => {
-			await miseService.runMiseToolActionInConsole("install", "Install Tool");
+			await miseService.runMiseToolActionInConsole(["install"], "Install Tool");
 			await vscode.commands.executeCommand(MISE_RELOAD);
 		}),
 		vscode.commands.registerCommand(MISE_USE_TOOL_TOP_MENU, async () => {
@@ -437,7 +437,7 @@ export function registerToolsCommands(
 					: selectedPath;
 
 				await miseService.runMiseToolActionInConsole(
-					`use --path "${normalizedPath}" ${selectedToolName}`,
+					["use", "--path", normalizedPath, selectedToolName],
 					"Use Tool",
 				);
 			},

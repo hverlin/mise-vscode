@@ -159,7 +159,35 @@ export const getWebsiteFromToolName = (
 		return undefined;
 	}
 
-	return getWebsiteFromParts(backendName, repo, toolOptions);
+	return toWebUrl(getWebsiteFromParts(backendName, repo, toolOptions));
+};
+
+const HAS_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+
+/**
+ * The result is only ever shown as a link or handed to `openExternal`, so it
+ * has to be a web address. Several backends return their tool option verbatim,
+ * and tool options come from configuration files: anything that does not end up
+ * as http(s) is dropped rather than handed to the OS protocol handler.
+ */
+export const toWebUrl = (website: string | undefined): string | undefined => {
+	if (!website) {
+		return undefined;
+	}
+
+	const candidate = website.replace(/^git\+/, "").replace(/^git:\/\//, "");
+	const withScheme = HAS_SCHEME.test(candidate)
+		? candidate
+		: `https://${candidate}`;
+
+	try {
+		const url = new URL(withScheme);
+		return url.protocol === "https:" || url.protocol === "http:"
+			? url.toString()
+			: undefined;
+	} catch {
+		return undefined;
+	}
 };
 
 const getWebsiteFromParts = (

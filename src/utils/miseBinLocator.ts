@@ -4,16 +4,52 @@ import {
 	getConfiguredBinPath,
 	shouldAutoDetectMiseBinPath,
 } from "../configuration";
+import { isPathInside } from "./fileUtils";
 import { logger } from "./logger";
 import { safeExec } from "./shell";
 
-export async function resolveMisePath(): Promise<string> {
+export class WorkspaceBinaryNotApprovedError extends Error {
+	constructor(readonly binPath: string) {
+		super(`The mise binary of this workspace was not approved: ${binPath}`);
+		this.name = "WorkspaceBinaryNotApprovedError";
+	}
+}
+
+export type ResolveMisePathOptions = {
+	/**
+	 * Roots the candidates are checked against, no check without them. Every
+	 * folder of the workspace counts: a relative `mise.binPath` resolves against
+	 * whichever folder holds the file, not only the selected one.
+	 */
+	workspaceRoots?: string[];
+	confirmWorkspaceBinary?: (binPath: string) => Promise<boolean>;
+};
+
+export async function resolveMisePath(
+	options: ResolveMisePathOptions = {},
+): Promise<string> {
 	const configuredPath = getConfiguredBinPath();
 	logger.debug(`Configured mise path: ${configuredPath}`);
 
+	const { workspaceRoots = [], confirmWorkspaceBinary } = options;
+
+	// gates every execution below: isValidBinary runs the candidate
+	const isUsableBinary = async (binPath: string) => {
+		if (
+			confirmWorkspaceBinary &&
+			workspaceRoots.some((root) => isPathInside(root, binPath))
+		) {
+			logger.info(`mise binary candidate is inside the workspace: ${binPath}`);
+			if (!(await confirmWorkspaceBinary(binPath))) {
+				throw new WorkspaceBinaryNotApprovedError(binPath);
+			}
+		}
+		return isValidBinary(binPath);
+	};
+
 	const autoDetectMiseBinPath = shouldAutoDetectMiseBinPath();
 	if (configuredPath) {
-		if (await isValidBinary(configuredPath)) {
+		if (await isUsableBinary(configuredPath)) {
 			return configuredPath;
 		}
 		if (autoDetectMiseBinPath) {
@@ -38,7 +74,7 @@ export async function resolveMisePath(): Promise<string> {
 		logger.info(`where mise: ${result.stdout}`);
 		const firstEntry = result.stdout.split("\r\n")?.[0];
 		const miseLocation = firstEntry?.trim();
-		if (miseLocation && (await isValidBinary(miseLocation))) {
+		if (miseLocation && (await isUsableBinary(miseLocation))) {
 			return miseLocation;
 		}
 	}
@@ -46,7 +82,7 @@ export async function resolveMisePath(): Promise<string> {
 	const result = await safeExec("which", ["mise"]);
 	const miseLocation = result.stdout?.trim();
 	logger.info(`which mise: ${miseLocation}`);
-	if (miseLocation && (await isValidBinary(miseLocation))) {
+	if (miseLocation && (await isUsableBinary(miseLocation))) {
 		return miseLocation;
 	}
 
@@ -86,7 +122,7 @@ export async function resolveMisePath(): Promise<string> {
 	const allPaths = [...commonPaths];
 
 	for (const binPath of allPaths) {
-		if (await isValidBinary(binPath)) {
+		if (await isUsableBinary(binPath)) {
 			return binPath;
 		}
 	}

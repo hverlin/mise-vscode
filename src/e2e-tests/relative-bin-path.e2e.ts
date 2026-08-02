@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, rm, symlink } from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
+import * as sinon from "sinon";
 import * as vscode from "vscode";
 import { MiseService } from "../miseService";
 
@@ -11,14 +12,20 @@ const execFileAsync = promisify(execFile);
 suite("Relative binPath Test Suite", function () {
 	this.timeout(20_000);
 
+	const sandbox = sinon.createSandbox();
+
 	let workspaceRoot: string;
 	let binDir: string;
 	let miseService: MiseService;
 	let originalBinPath: string | undefined;
 
-	// initializeMisePath only reads workspaceState from the context
+	// initializeMisePath reads workspaceState and stores binary approvals
 	const fakeContext = {
 		workspaceState: { get: () => undefined },
+		globalState: {
+			get: (_key: string, fallback?: unknown) => fallback,
+			update: async () => {},
+		},
 	} as unknown as vscode.ExtensionContext;
 
 	const getGlobalBinPathValue = () =>
@@ -45,10 +52,19 @@ suite("Relative binPath Test Suite", function () {
 		await mkdir(binDir, { recursive: true });
 		await symlink(miseBin, path.join(binDir, "mise"));
 
+		// the binary lives in the workspace, so it needs approval to run
+		sandbox
+			.stub(vscode.window, "showWarningMessage")
+			.callsFake(async (...args: unknown[]) => {
+				const labels = args.filter((arg) => typeof arg === "string");
+				return labels[labels.length - 1] as never;
+			});
+
 		miseService = new MiseService(fakeContext);
 	});
 
 	teardown(async () => {
+		sandbox.restore();
 		await updateBinPath(originalBinPath);
 		await rm(binDir, { recursive: true, force: true });
 	});
@@ -66,7 +82,7 @@ suite("Relative binPath Test Suite", function () {
 		// being rewritten to the resolved absolute path
 		assert.equal(getGlobalBinPathValue(), "./bin/mise");
 
-		const { stdout } = await miseService.execMiseCommand("version");
+		const { stdout } = await miseService.execMiseCommand(["version"]);
 		assert.ok(stdout.trim().length > 0, "mise version should produce output");
 	});
 });

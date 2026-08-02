@@ -16,6 +16,8 @@ import {
 	MISE_OPEN_LOGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
+	MISE_REVIEW_WORKSPACE_BINARY,
+	MISE_REVOKE_WORKSPACE_BINARIES,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_SETTINGS,
@@ -28,6 +30,7 @@ import {
 	getConfiguredBinPath,
 	getCurrentWorkspaceFolder,
 	getMiseEnv,
+	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
 	isTaskSymbolProviderEnabled,
 	shouldAutomaticallyTrustMiseConfigFiles,
@@ -76,6 +79,7 @@ import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProv
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
+import { escapeMarkdown, markdownCodeSpan } from "./utils/markdown";
 import { allowedFileTaskDirs, isToolVersionsFile } from "./utils/miseUtilts";
 import { checkTomlExtensions } from "./utils/tomlExtensionCheck";
 import WebViewPanel from "./webviewPanel";
@@ -167,6 +171,51 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			vscode.commands.registerCommand(
+				MISE_REVIEW_WORKSPACE_BINARY,
+				async () => {
+					const binPath = this.miseService.pendingBinaryApproval;
+					if (!binPath) {
+						vscode.window.showInformationMessage(
+							"No mise binary is waiting for approval in this workspace.",
+						);
+						return;
+					}
+
+					await this.miseService.reviewWorkspaceBinary();
+					await vscode.commands.executeCommand(MISE_RELOAD);
+				},
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				MISE_REVOKE_WORKSPACE_BINARIES,
+				async () => {
+					const approved = this.miseService.listApprovedWorkspaceBinaries();
+					if (!approved.length) {
+						vscode.window.showInformationMessage(
+							"No workspace mise binary has been approved.",
+						);
+						return;
+					}
+
+					const selected = await vscode.window.showQuickPick(approved, {
+						canPickMany: true,
+						title: "Revoke approved workspace mise binaries",
+						placeHolder: "Mise will ask again before running the ones you pick",
+					});
+					if (!selected?.length) {
+						return;
+					}
+
+					await this.miseService.revokeWorkspaceBinaryApprovals(selected);
+					await vscode.commands.executeCommand(MISE_RELOAD);
+				},
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
 				MISE_ENABLE_AUTO_CONFIGURATION,
 				async () => {
 					await enableAutoConfiguration();
@@ -237,6 +286,12 @@ export class MiseExtension {
 
 				if (!isMiseExtensionEnabled()) {
 					this.updateStatusBar({ state: "disabled" });
+					return;
+				}
+
+				// nothing may run against a binary the user has not approved
+				if (this.miseService.pendingBinaryApproval) {
+					this.updateStatusBar({ state: "unapproved" });
 					return;
 				}
 
@@ -738,7 +793,7 @@ export class MiseExtension {
 		state,
 		errorMsg,
 	}: {
-		state?: "loading" | "error" | "ready" | "disabled";
+		state?: "loading" | "error" | "ready" | "disabled" | "unapproved";
 		errorMsg?: string;
 	}) {
 		if (state === "error") {
@@ -746,8 +801,15 @@ export class MiseExtension {
 			return;
 		}
 
+		if (state === "unapproved") {
+			this.setUnapprovedBinaryState();
+			return;
+		}
+
 		const icon = state === "loading" ? "$(sync~spin)" : "$(gear)";
 		this.statusBarItem.color = undefined;
+		this.statusBarItem.backgroundColor = undefined;
+		this.statusBarItem.command = MISE_OPEN_MENU;
 
 		this.statusBarItem.text = `${icon} Mise`;
 		if (state === "disabled") {
@@ -782,19 +844,61 @@ export class MiseExtension {
 			miseBinPath += " (invalid)";
 		}
 
+		// the tooltip is trusted, so it renders `command:` links: every value
+		// coming from settings or from the mise binary has to be escaped
 		const infoList = [
 			`Mise VSCode ${version} - [Command Menu](command:${MISE_OPEN_MENU})`,
 			(vscode.workspace.workspaceFolders?.length || 0) > 1
-				? `[Select Workspace Folder](command:${MISE_SELECT_WORKSPACE_FOLDER}) [${selectedFolderName}]`
+				? `[Select Workspace Folder](command:${MISE_SELECT_WORKSPACE_FOLDER}) [${escapeMarkdown(selectedFolderName ?? "")}]`
 				: "",
 			`[$(tools) Mise Tools](command:${MISE_LIST_ALL_TOOLS})`,
 			`[$(gear) Mise Settings](command:${MISE_SHOW_SETTINGS})`,
 			`[$(list-unordered) Tracked Configurations](command:${MISE_SHOW_TRACKED_CONFIG})`,
-			`[BinPath: ${displayPathRelativeTo(miseBinPath, "")}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
-			miseVersion ? `Mise Version: ${miseVersion}` : "",
+			`[BinPath: ${markdownCodeSpan(displayPathRelativeTo(miseBinPath, ""))}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
+			miseVersion ? `Mise Version: ${escapeMarkdown(miseVersion)}` : "",
 		].filter(Boolean);
 
 		this.statusBarItem.tooltip.appendMarkdown(infoList.join("\n\n"));
+	}
+
+	/**
+	 * Nothing runs while a workspace mise binary is unapproved, so the status
+	 * bar has to say so rather than look idle: it turns into a warning that
+	 * opens the decision again.
+	 */
+	private setUnapprovedBinaryState() {
+		const binPath = this.miseService.pendingBinaryApproval ?? "";
+		this.statusBarItem.text = "$(shield) Mise (not approved)";
+		this.statusBarItem.color = undefined;
+		this.statusBarItem.backgroundColor = new vscode.ThemeColor(
+			"statusBarItem.warningBackground",
+		);
+		this.statusBarItem.command = MISE_REVIEW_WORKSPACE_BINARY;
+
+		const setByWorkspace = isBinPathSetByWorkspace();
+
+		const tooltip = new MarkdownString("", true);
+		tooltip.isTrusted = true;
+		tooltip.appendMarkdown(
+			[
+				"**Mise is not running in this workspace.**",
+				`It is configured to use a mise binary shipped with the project: ${markdownCodeSpan(binPath)}`,
+				setByWorkspace
+					? "`mise.binPath` is set by this project's own `.vscode/settings.json`, not by your user settings. Inspect that file before approving."
+					: "`mise.binPath` comes from your own settings.",
+				"Nothing from mise runs until you decide about it.",
+				[
+					`[$(shield) Review this binary](command:${MISE_REVIEW_WORKSPACE_BINARY})`,
+					setByWorkspace
+						? "[$(json) Inspect settings.json](command:workbench.action.openWorkspaceSettingsFile)"
+						: "",
+					`[$(gear) Extension settings](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
+				]
+					.filter(Boolean)
+					.join(" · "),
+			].join("\n\n"),
+		);
+		this.statusBarItem.tooltip = tooltip;
 	}
 
 	setErrorState(errorMsg: string) {

@@ -29,7 +29,7 @@ import {
 	idiomaticFiles,
 	renderDepsArray,
 } from "../utils/miseUtilts";
-import { execAsync } from "../utils/shell";
+import { safeExec } from "../utils/shell";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 import { getTaskDisplayName } from "../utils/taskNames";
 
@@ -273,13 +273,16 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	async watchTask(taskName: string) {
 		const [res1, res2] = await Promise.allSettled([
 			this.miseService.getCurrentTools(),
-			execAsync("which watchexec"),
+			safeExec("which", ["watchexec"]),
 		]);
 		const tools = res1.status === "fulfilled" ? res1.value : [];
 		const watchexecFromTools = tools.find(
 			(tool) => tool.name === "watchexec" && tool.installed,
 		);
-		const watchexec = res2.status === "fulfilled" ? res2.value.stdout : "";
+		const watchexec =
+			res2.status === "fulfilled" && res2.value.code === 0
+				? res2.value.stdout.trim()
+				: "";
 		if (!watchexec && !watchexecFromTools) {
 			vscode.window
 				.showErrorMessage(
@@ -288,9 +291,11 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				)
 				.then((selection) => {
 					if (selection === "Install watchexec") {
-						this.miseService.runMiseToolActionInConsole(
-							["use", "-g", "watchexec"].join(" "),
-						);
+						this.miseService.runMiseToolActionInConsole([
+							"use",
+							"-g",
+							"watchexec",
+						]);
 					}
 				});
 			return;
@@ -572,6 +577,12 @@ export function registerTasksCommands(
 					if (!value) {
 						return "Task name is required";
 					}
+					if (value.split(/[\\/]/).some((part) => part === "..")) {
+						return "Task name cannot navigate out of the task directory";
+					}
+					if (path.isAbsolute(value)) {
+						return "Task name must be relative to the task directory";
+					}
 					return null;
 				},
 			});
@@ -602,7 +613,7 @@ export function registerTasksCommands(
 			const taskDir = path.join(rootPath ?? "", taskSource);
 			const taskFile = vscode.Uri.file(`${taskDir}/${taskName}`);
 
-			await setupTaskFile(taskFile.fsPath);
+			await setupTaskFile(taskFile.fsPath, taskDir);
 
 			const document = await vscode.workspace.openTextDocument(taskFile);
 			const editor = await vscode.window.showTextDocument(document);

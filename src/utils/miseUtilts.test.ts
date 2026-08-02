@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { getWebsiteForTool, renderDepsArray } from "./miseUtilts";
+import { getWebsiteForTool, renderDepsArray, toWebUrl } from "./miseUtilts";
 
 // Mock MiseToolInfo objects matching exact `mise tool X --json` outputs
 
@@ -59,6 +59,13 @@ const hkToolInfo = {
 	tool_options: { os: null, install_env: {} },
 };
 
+// the `http` backend hands its `url` tool option straight back
+const httpToolInfo = (url: string) => ({
+	...hkToolInfo,
+	backend: "http:some-tool",
+	tool_options: { os: null, install_env: {}, url },
+});
+
 describe("getWebsiteForTool", () => {
 	it("returns mise lang page for core:node", async () => {
 		const result = await getWebsiteForTool(nodeToolInfo);
@@ -95,6 +102,52 @@ describe("getWebsiteForTool", () => {
 		// @ts-expect-error intentional
 		const result = await getWebsiteForTool({ backend: "unknown" });
 		expect(result).toBeUndefined();
+	});
+
+	// the `http` backend returns its `url` tool option verbatim, and tool
+	// options are written in the repository's own configuration files
+	it("drops a non-web url coming from the http backend tool options", async () => {
+		for (const url of [
+			"file:///etc/passwd",
+			"vscode://ms-vscode.node-debug/launch",
+			"javascript:alert(1)",
+			"data:text/html,<script>alert(1)</script>",
+		]) {
+			expect(await getWebsiteForTool(httpToolInfo(url))).toBeUndefined();
+		}
+	});
+
+	it("keeps a web url coming from the http backend tool options", async () => {
+		const result = await getWebsiteForTool(
+			httpToolInfo("https://example.com/tool"),
+		);
+		expect(result).toBe("https://example.com/tool");
+	});
+});
+
+describe("toWebUrl", () => {
+	it("defaults a scheme-less value to https", () => {
+		expect(toWebUrl("github.com/owner/repo")).toBe(
+			"https://github.com/owner/repo",
+		);
+	});
+
+	it("normalizes the git forms used by pipx and asdf backends", () => {
+		expect(toWebUrl("git+https://github.com/owner/repo")).toBe(
+			"https://github.com/owner/repo",
+		);
+		expect(toWebUrl("git://github.com/owner/repo")).toBe(
+			"https://github.com/owner/repo",
+		);
+	});
+
+	it("rejects every non-web scheme", () => {
+		expect(toWebUrl("file:///etc/passwd")).toBeUndefined();
+		expect(toWebUrl("ftp://example.com/x")).toBeUndefined();
+		expect(toWebUrl("vscode://ms-vscode.node-debug/launch")).toBeUndefined();
+		expect(toWebUrl("javascript:alert(1)")).toBeUndefined();
+		expect(toWebUrl("")).toBeUndefined();
+		expect(toWebUrl(undefined)).toBeUndefined();
 	});
 });
 

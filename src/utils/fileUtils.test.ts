@@ -1,9 +1,14 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import {
 	compareSourcePaths,
 	getShebangFileExtension,
 	getSourceProximityRank,
+	isPathInside,
 	resolveConfiguredBinPath,
+	setupTaskFile,
 } from "./fileUtils";
 
 describe("getSourceProximityRank", () => {
@@ -201,5 +206,90 @@ describe("resolveConfiguredBinPath", () => {
 				existsIn(),
 			),
 		).toBe(`${workspaceFolderVar}/bin/mise`);
+	});
+});
+
+describe("setupTaskFile", () => {
+	const withTaskDir = async (run: (taskDir: string) => Promise<void>) => {
+		const root = await mkdtemp(path.join(tmpdir(), "mise-task-"));
+		try {
+			await run(path.join(root, "mise-tasks"));
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	};
+
+	it("creates an executable task file inside the task directory", async () => {
+		await withTaskDir(async (taskDir) => {
+			const taskFile = path.join(taskDir, "build");
+
+			await setupTaskFile(taskFile, taskDir);
+
+			const stats = await stat(taskFile);
+			expect(stats.isFile()).toBe(true);
+			if (process.platform !== "win32") {
+				expect(stats.mode & 0o111).toBeGreaterThan(0);
+			}
+		});
+	});
+
+	it("supports nested task files", async () => {
+		await withTaskDir(async (taskDir) => {
+			const taskFile = path.join(taskDir, "ci", "lint");
+
+			await setupTaskFile(taskFile, taskDir);
+
+			expect((await stat(taskFile)).isFile()).toBe(true);
+		});
+	});
+
+	it("refuses a name escaping the task directory", async () => {
+		await withTaskDir(async (taskDir) => {
+			const escaping = path.join(taskDir, "..", "..", "escaped");
+
+			await expect(setupTaskFile(escaping, taskDir)).rejects.toThrow(
+				"Task file must be within the task directory",
+			);
+			await expect(stat(path.resolve(escaping))).rejects.toThrow();
+		});
+	});
+
+	it("refuses the task directory itself", async () => {
+		await withTaskDir(async (taskDir) => {
+			await expect(setupTaskFile(taskDir, taskDir)).rejects.toThrow(
+				"Task file must be within the task directory",
+			);
+		});
+	});
+
+	it("refuses a relative task directory", async () => {
+		await expect(
+			setupTaskFile("mise-tasks/build", "mise-tasks"),
+		).rejects.toThrow("Task directory must be an absolute path");
+	});
+});
+
+describe("isPathInside", () => {
+	const root = path.resolve("/repo/project");
+
+	it("accepts a path nested in the directory", () => {
+		expect(isPathInside(root, path.join(root, "bin", "mise"))).toBe(true);
+		expect(isPathInside(root, path.join(root, "mise"))).toBe(true);
+	});
+
+	it("rejects the directory itself", () => {
+		expect(isPathInside(root, root)).toBe(false);
+	});
+
+	it("rejects paths outside the directory", () => {
+		expect(isPathInside(root, path.resolve("/repo/other/mise"))).toBe(false);
+		expect(isPathInside(root, path.resolve("/usr/local/bin/mise"))).toBe(false);
+		expect(isPathInside(root, path.join(root, "..", "mise"))).toBe(false);
+	});
+
+	it("is not fooled by a sibling sharing the directory prefix", () => {
+		expect(isPathInside(root, path.resolve("/repo/project-evil/mise"))).toBe(
+			false,
+		);
 	});
 });

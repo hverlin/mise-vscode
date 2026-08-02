@@ -60,6 +60,20 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "command-injection",
+		files: "src/e2e-tests/command-injection/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "command-injection-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),

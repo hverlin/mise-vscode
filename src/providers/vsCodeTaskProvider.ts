@@ -1,6 +1,19 @@
 import * as vscode from "vscode";
 import { getMiseEnv, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { buildShellCommand } from "../utils/shell";
+
+/**
+ * Task running mise with `args`. The arguments are quoted here rather than by
+ * vscode: its own `ShellQuoting.Strong` wraps values in quotes without escaping
+ * the quotes they contain, which a task name coming from a repository may hold.
+ */
+function createMiseExecution(
+	miseBinaryPath: string,
+	args: string[],
+): vscode.ShellExecution {
+	return new vscode.ShellExecution(buildShellCommand(miseBinaryPath, args));
+}
 
 // this allows to run VSCode tasks from the command palette
 export class VsCodeTaskProvider {
@@ -24,15 +37,15 @@ export class VsCodeTaskProvider {
 							watchexecArgs: [],
 						};
 
-						const baseCommand = miseService.createMiseCommand(
-							`run "${task.name.replace(/"/g, '\\"')}"`,
-						);
-
-						if (!baseCommand) {
+						const miseBinaryPath = miseService.getMiseBinaryPath();
+						if (!miseBinaryPath) {
 							return undefined;
 						}
 
-						const execution = new vscode.ShellExecution(baseCommand);
+						const execution = createMiseExecution(
+							miseBinaryPath,
+							miseService.buildMiseArgs(["run", task.name]),
+						);
 						return new vscode.Task(
 							taskDefinition,
 							vscode.TaskScope.Workspace,
@@ -49,18 +62,18 @@ export class VsCodeTaskProvider {
 					const args = task.definition.runArgs ?? [];
 					const watchexecArgs = task.definition.watchexecArgs ?? [];
 
-					const runArgs = [];
-					const allWatchArgs = [];
+					const runArgs: string[] = [];
+					const allWatchArgs: string[] = [];
 					const glob = task.definition.glob ?? "";
 					const miseEnv = task.definition.miseEnv;
 
 					if (miseEnv === undefined) {
 						const miseEnvFromConfig = getMiseEnv();
 						if (miseEnvFromConfig) {
-							runArgs.push(`--env "${miseEnvFromConfig}"`);
+							runArgs.push("--env", miseEnvFromConfig);
 						}
 					} else if (miseEnv) {
-						runArgs.push(`--env "${miseEnv}"`);
+						runArgs.push("--env", miseEnv);
 					}
 
 					allWatchArgs.push(...runArgs);
@@ -72,18 +85,17 @@ export class VsCodeTaskProvider {
 						runArgs.push("--", ...args);
 					}
 
-					const baseCommand = miseService.createMiseCommand(
-						definition.watch
-							? `watch -t "${definition.task.replace(/"/g, '\\"')}" ${allWatchArgs.join(" ")}`
-							: `run "${definition.task.replace(/"/g, '\\"')}" ${runArgs.join(" ")}`,
-						{ setMiseEnv: false },
-					);
-
-					if (!baseCommand) {
+					const miseBinaryPath = miseService.getMiseBinaryPath();
+					if (!miseBinaryPath) {
 						return undefined;
 					}
 
-					const execution = new vscode.ShellExecution(baseCommand);
+					const execution = createMiseExecution(
+						miseBinaryPath,
+						definition.watch
+							? ["watch", "-t", definition.task, ...allWatchArgs]
+							: ["run", definition.task, ...runArgs],
+					);
 					return new vscode.Task(
 						definition,
 						task.scope ?? vscode.TaskScope.Workspace,

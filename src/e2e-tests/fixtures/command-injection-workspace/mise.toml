@@ -1,0 +1,18 @@
+# Task names are attacker-controlled: a repository can name its tasks anything.
+# Every name below breaks out of a naively quoted shell command, and the payload
+# creates a `pwned-*` sentinel file that the tests assert never appears.
+
+[tasks.'inj-dq"; touch pwned-dq #']
+run = "echo marker-dq"
+
+[tasks."inj-sq'; touch pwned-sq #"]
+run = "echo marker-sq"
+
+[tasks.'inj-sub$(touch pwned-sub)`touch pwned-bt`']
+run = "echo marker-sub"
+
+[tasks.'inj spaces & touch pwned-amp | name']
+run = "echo marker-spaces"
+
+[tasks.echo-ok]
+run = "echo marker-ok"

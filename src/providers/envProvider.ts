@@ -27,7 +27,7 @@ import {
 } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findEnvVarPosition } from "../utils/miseFileParser";
-import { runInVscodeTerminal } from "../utils/shell";
+import { buildUnsetCommands, runInVscodeTerminal } from "../utils/shell";
 
 type EnvTreeNode = EnvItem | EnvsSourceGroupItem;
 
@@ -454,7 +454,7 @@ function updateEnvironment(
 }
 
 function updateTerminalsEnvs(variablesToRemove: [string, string][]) {
-	const commands = variablesToRemove.map(([name]) => `;unset ${name}`).join("");
+	const commands = buildUnsetCommands(variablesToRemove.map(([name]) => name));
 	const isTerminalFocused = vscode.window.activeTerminal !== undefined;
 
 	const isMiseTask =

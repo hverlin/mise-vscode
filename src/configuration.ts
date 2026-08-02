@@ -36,6 +36,7 @@ export const CONFIGURATION_FLAGS = {
 	customBinaryExtensions: "customBinaryExtensions",
 	customFolderExtensions: "customFolderExtensions",
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
+	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 } as const;
 
 const getExtensionConfig = () => {
@@ -52,21 +53,21 @@ export const getConfOrElse = <T>(
 export const getIgnoreList = (): string[] => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIgnoreList,
-		[],
+		["biomejs.biome", "oxc.oxc-vscode"],
 	);
 };
 
 export const getIncludeList = (): string[] => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsAutomaticallyIncludeList,
-		[],
+		["all"],
 	);
 };
 
 export const shouldConfigureExtensionsAutomatically = (): boolean => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsAutomatically,
-		true,
+		false,
 	);
 };
 
@@ -85,7 +86,7 @@ export const shouldUseShims = () => {
 export const shouldUseSymLinks = () => {
 	return getConfOrElse(
 		CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
-		true,
+		false,
 	);
 };
 
@@ -130,6 +131,54 @@ export const getConfiguredBinPath = (): string | undefined => {
 			fsPath: folder.uri.fsPath,
 		})) ?? [],
 	);
+};
+
+export type BinPathSource =
+	| "workspaceFolder"
+	| "workspace"
+	| "global"
+	| "default";
+
+/**
+ * Where `mise.binPath` is set. The setting is `window` scoped, so a repository
+ * can ship it in its own `.vscode/settings.json`: telling the two apart is what
+ * lets the user know whether they chose the binary or the project did.
+ */
+export const getBinPathSource = (): {
+	source: BinPathSource;
+	value: string | undefined;
+} => {
+	const inspection = getExtensionConfig().inspect<string>(
+		CONFIGURATION_FLAGS.binPath,
+	);
+
+	if (inspection?.workspaceFolderValue !== undefined) {
+		return {
+			source: "workspaceFolder",
+			value: inspection.workspaceFolderValue,
+		};
+	}
+	if (inspection?.workspaceValue !== undefined) {
+		return { source: "workspace", value: inspection.workspaceValue };
+	}
+	if (inspection?.globalValue !== undefined) {
+		return { source: "global", value: inspection.globalValue };
+	}
+	return { source: "default", value: inspection?.defaultValue };
+};
+
+/**
+ * Whether the approval prompt for a workspace mise binary is turned off. The
+ * setting is machine scoped, so a repository cannot enable it for the user.
+ */
+export const shouldSkipWorkspaceBinaryApproval = (): boolean => {
+	return getConfOrElse(CONFIGURATION_FLAGS.skipWorkspaceBinaryApproval, false);
+};
+
+/** Whether `mise.binPath` comes from settings committed to the project */
+export const isBinPathSetByWorkspace = (): boolean => {
+	const { source } = getBinPathSource();
+	return source === "workspace" || source === "workspaceFolder";
 };
 
 export const updateBinPath = async (binPath: string) => {
@@ -218,11 +267,11 @@ export const shouldShowNotificationIfMissingTools = () => {
 };
 
 export const isTeraAutoCompletionEnabled = () => {
-	return getConfOrElse(CONFIGURATION_FLAGS.teraAutoCompletion, false);
+	return getConfOrElse(CONFIGURATION_FLAGS.teraAutoCompletion, true);
 };
 
 export const getCommandTTLCacheSeconds = () => {
-	return getConfOrElse(CONFIGURATION_FLAGS.commandTTLCacheSeconds, 1);
+	return getConfOrElse(CONFIGURATION_FLAGS.commandTTLCacheSeconds, 2);
 };
 
 export const shouldAutoDetectMiseBinPath = () => {

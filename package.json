@@ -188,6 +188,12 @@
           "markdownDescription": "Path to the mise binary (automatically detected on startup).\n\nIf set to `mise` (default), it will use `mise` available in `PATH`.\n\nRelative paths (e.g. `./bin/mise`) and `${workspaceFolder}` variables are resolved against the workspace folders.\n\nSee https://mise.jdx.dev/getting-started.html to install mise.",
           "default": "mise"
         },
+        "mise.skipWorkspaceBinaryApproval": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "markdownDescription": "Run a mise binary located inside the workspace without asking for approval first.\n\n**This turns off a security check.** A repository can point `mise.binPath` at a program it ships, and with this enabled that program runs as soon as you open the project. Useful if you rely on a committed launcher such as the one written by `mise generate bootstrap -l -w`.\n\nYou still have to trust the folder in VS Code first: the extension does not run in an untrusted workspace at all. This setting is machine-scoped, so a project cannot enable it for you."
+        },
         "mise.miseEnv": {
           "order": 3,
           "type": "string",
@@ -674,6 +680,17 @@
       {
         "command": "mise.openMenu",
         "title": "Mise: Open Menu",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.reviewWorkspaceBinary",
+        "title": "Mise: Review the workspace mise binary",
+        "icon": "$(shield)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.revokeWorkspaceBinaryApprovals",
+        "title": "Mise: Revoke approved workspace mise binaries",
         "enablement": "!isWeb"
       },
       {
