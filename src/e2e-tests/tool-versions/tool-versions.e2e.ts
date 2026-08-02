@@ -79,6 +79,58 @@ suite("Tool Versions File Test Suite", function () {
 		);
 	});
 
+	test("completes backend prefixes in the first token of a line", async () => {
+		const completions =
+			await vscode.commands.executeCommand<vscode.CompletionList>(
+				"vscode.executeCompletionItemProvider",
+				document.uri,
+				new vscode.Position(lineOf("nodejs 20.11.0"), 0),
+			);
+
+		const labels = completions.items.map((item) =>
+			typeof item.label === "string" ? item.label : item.label.label,
+		);
+		assert.ok(
+			labels.includes("core:") && labels.includes("npm:"),
+			`Expected backend prefixes (core:, npm:) in completions, got ${labels.length} items`,
+		);
+	});
+
+	test("completes registry tools after a backend prefix", async () => {
+		const editor = await vscode.window.showTextDocument(document);
+		const lastLine = document.lineCount - 1;
+		await editor.edit((edit) => {
+			edit.insert(
+				new vscode.Position(lastLine, document.lineAt(lastLine).text.length),
+				"\ncore:",
+			);
+		});
+
+		try {
+			const backendLine = lineOf("core:");
+			const completions =
+				await vscode.commands.executeCommand<vscode.CompletionList>(
+					"vscode.executeCompletionItemProvider",
+					document.uri,
+					new vscode.Position(backendLine, "core:".length),
+				);
+
+			const labels = completions.items.map((item) =>
+				typeof item.label === "string" ? item.label : item.label.label,
+			);
+			assert.ok(
+				labels.includes("core:node"),
+				`Expected "core:node" after the core: prefix, got: ${labels.slice(0, 20).join(", ")}`,
+			);
+			assert.ok(
+				labels.every((label) => label.startsWith("core:")),
+				`Only core: tools should be offered after the core: prefix, got: ${labels.slice(0, 20).join(", ")}`,
+			);
+		} finally {
+			await vscode.commands.executeCommand("undo");
+		}
+	});
+
 	test("provides hover for declared tools", async () => {
 		const shellcheckLine = lineOf("shellcheck 0.10.0");
 		const hovers =

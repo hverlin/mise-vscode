@@ -60,6 +60,11 @@ import {
 	TeraCompletionProvider,
 } from "./providers/miseTeraCompletionProvider";
 import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
+import {
+	UsageCompletionProvider,
+	UsageHoverProvider,
+	usageTriggerCharacters,
+} from "./providers/miseUsageCompletionProvider";
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
 import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
@@ -638,6 +643,7 @@ export class MiseExtension {
 				toolVersionsSelector,
 				new ToolCompletionProvider(this.miseService),
 				" ",
+				":",
 			),
 		);
 
@@ -646,6 +652,27 @@ export class MiseExtension {
 				allTomlFilesSelector,
 				new TeraCompletionProvider(this.miseService),
 				...["{", "%", "|", "."],
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
+				new UsageCompletionProvider(this.miseService),
+				...usageTriggerCharacters,
+			),
+			vscode.languages.registerCompletionItemProvider(
+				{ scheme: "file", language: "shellscript" },
+				new UsageCompletionProvider(this.miseService),
+				...usageTriggerCharacters,
+			),
+			vscode.languages.registerHoverProvider(
+				allTomlFilesSelector,
+				new UsageHoverProvider(this.miseService),
+			),
+			vscode.languages.registerHoverProvider(
+				{ scheme: "file", language: "shellscript" },
+				new UsageHoverProvider(this.miseService),
 			),
 		);
 

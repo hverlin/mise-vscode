@@ -41,7 +41,7 @@ suite("Task Execution Test Suite", function () {
 
 		assert.deepEqual(
 			tasks.map((t) => t.name),
-			["echo-hello", "test-e2e"],
+			["echo-hello", "greet", "test-e2e"],
 		);
 
 		const echoTask = tasks.find((t) => t.name === "echo-hello");

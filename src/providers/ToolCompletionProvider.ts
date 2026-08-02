@@ -33,9 +33,40 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 			.text.substring(0, position.character);
 
 		if (isToolVersionsFile(document.fileName)) {
+			// Backend-prefixed first token (`core:`, `npm:pretti`, ...):
+			// complete registry tools of that backend with their full name
+			const backendPrefixMatch = linePrefix.match(
+				/^\s*([a-zA-Z0-9_-]+:)(\S*)$/,
+			);
+			if (backendPrefixMatch) {
+				const [, backendPrefix = "", partial = ""] = backendPrefixMatch;
+				const typedToken = backendPrefix + partial;
+				return tools
+					.filter((tool) => tool.full?.startsWith(backendPrefix))
+					.map((tool) => {
+						const completionItem = new vscode.CompletionItem(
+							{ label: tool.full as string, description: tool.short },
+							vscode.CompletionItemKind.Module,
+						);
+						completionItem.insertText = `${tool.full} `;
+						completionItem.filterText = tool.full;
+						// `:` is not a word character, so replace the whole token
+						// explicitly instead of relying on the word range
+						completionItem.range = new vscode.Range(
+							position.translate(0, -typedToken.length),
+							position,
+						);
+						completionItem.command = {
+							command: "editor.action.triggerSuggest",
+							title: "Re-trigger completions",
+						};
+						return completionItem;
+					});
+			}
+
 			// First token: tool name completions (`nodejs `, `shellcheck `, ...)
 			if (linePrefix.match(/^\s*\S*$/)) {
-				return tools
+				const toolsCompletions = tools
 					.filter((tool) => tool.short !== undefined)
 					.map((tool) => {
 						const completionItem = new vscode.CompletionItem(
@@ -49,6 +80,21 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 						};
 						return completionItem;
 					});
+
+				const backendsCompletions = backends.map((backend) => {
+					const completionItem = new vscode.CompletionItem(
+						{ label: `${backend}:`, description: `${backend} backend` },
+						vscode.CompletionItemKind.Value,
+					);
+					completionItem.insertText = `${backend}:`;
+					completionItem.command = {
+						command: "editor.action.triggerSuggest",
+						title: "Re-trigger completions",
+					};
+					return completionItem;
+				});
+
+				return toolsCompletions.concat(backendsCompletions);
 			}
 
 			// After the tool name: version completions for the current token

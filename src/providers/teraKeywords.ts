@@ -33,6 +33,24 @@ export const teraVariables = [
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
+		name: "mise_env",
+		detail:
+			"Current configuration environment (MISE_ENV), undefined if not set",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
+		name: "tools",
+		detail:
+			"Access installed tool information (example: tools.node.version, tools.node.install_path)",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
+		name: "usage",
+		detail:
+			"Access task arguments/flags defined with the usage field (example: usage.file). Only available in task run scripts",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
 		name: "xdg_cache_home",
 		detail: "XDG cache home directory",
 		kind: vscode.CompletionItemKind.Variable,
@@ -54,72 +72,14 @@ export const teraVariables = [
 	},
 ];
 
-export const teraFunctions = [
-	{
-		name: "arg",
-		detail:
-			'Define a positional argument for a task. Example: arg(name="file", i=1, var=false)',
-		documentation: new vscode.MarkdownString(
-			`Define a positional argument for a task where order matters.
-
-Parameters:
-- \`name\`: The name of the argument (used in help/error messages)
-- \`i\`: Index to specify argument order (optional)
-- \`var\`: If true, allows multiple values (optional)
-- \`default\`: Default value if not provided (optional)
-
-Example:
-\`\`\`toml
-[tasks.test]
-run = 'cargo test {{arg(name="file")}}'
-# mise run test my-test-file
-# -> cargo test my-test-file
-\`\`\`
-`,
-		),
-		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-		insertText: 'arg(name="$1"${2:, i=${3:1}}${4:}${5:, default="$6"})',
-	},
-	{
-		name: "option",
-		detail:
-			'Define a named option for a task. Example: option(name="file", var=false)',
-		documentation: new vscode.MarkdownString(
-			`Define a named argument for a task where order doesn't matter.
-
-Parameters:
-- \`name\`: The name of the option (used in help/error messages)
-- \`var\`: If true, allows multiple values (optional)
-- \`default\`: Default value if not provided (optional)
-
-Example:
-\`\`\`toml
-run = 'cargo test {{option(name="file")}}'
-# mise run test --file my-test-file
-# -> cargo test my-test-file
-\`\`\``,
-		),
-		// biome-ignore lint/suspicious/noTemplateCurlyInString: expected
-		insertText: 'option(name="$1"${2:}${4:, default="$5"})',
-	},
-	{
-		name: "flag",
-		detail: 'Define a boolean flag for a task. Example: flag(name="verbose")',
-		documentation: new vscode.MarkdownString(
-			`Define a boolean flag for a task that doesn't take values.
-
-Parameters:
-- \`name\`: The name of the flag (used in help/error messages)
-
-Example:
-\`\`\`toml
-run = 'cargo test {{flag(name="verbose")}}'
-# mise run test --verbose
-# -> cargo test --verbose
-\`\`\``,
-		),
-		insertText: 'flag(name="$1")',
-	},
+// Note: arg(), option(), and flag() are deprecated in favor of the usage field
+// (https://mise.jdx.dev/tasks/task-arguments.html) and are intentionally not suggested.
+export const teraFunctions: Array<{
+	name: string;
+	detail: string;
+	insertText: string;
+	documentation?: MarkdownString;
+}> = [
 	{
 		name: "range",
 		detail: "Returns array of integers - range(end, [start], [step_by])",
@@ -127,7 +87,7 @@ run = 'cargo test {{flag(name="verbose")}}'
 	},
 	{
 		name: "now",
-		detail: "Returns datetime or timestamp - now([timestamp], [utc])",
+		detail: "Returns the current datetime - now([timezone])",
 		insertText: "now()",
 	},
 	{
@@ -137,8 +97,8 @@ run = 'cargo test {{flag(name="verbose")}}'
 	},
 	{
 		name: "get_random",
-		detail: "Returns a random integer - get_random(end, [start])",
-		insertText: "get_random(end=$1, start=$2)",
+		detail: "Returns a random integer - get_random(start, end, [seed])",
+		insertText: "get_random(start=$1, end=$2)",
 	},
 	{
 		name: "get_env",
@@ -148,8 +108,26 @@ run = 'cargo test {{flag(name="verbose")}}'
 	},
 	{
 		name: "exec",
-		detail: "Runs shell command and returns output - exec(command)",
+		detail:
+			"Runs shell command and returns output - exec(command, [cache_key], [cache_duration])",
 		insertText: "exec(command=$1)",
+	},
+	{
+		name: "read_file",
+		detail: "Returns the content of a file - read_file(path)",
+		insertText: "read_file(path=$1)",
+	},
+	{
+		name: "task_source_files",
+		detail:
+			"Returns the resolved source file paths of the current task (task run scripts only) - task_source_files()",
+		insertText: "task_source_files()",
+	},
+	{
+		name: "haiku",
+		detail:
+			"Returns a random haiku-style name - haiku([words], [separator], [digits])",
+		insertText: "haiku()",
 	},
 	{
 		name: "arch",
@@ -197,13 +175,63 @@ export const teraFilters = [
 	{ name: "trim", detail: "Removes leading/trailing whitespace" },
 	{ name: "trim_start", detail: "Removes leading whitespace" },
 	{ name: "trim_end", detail: "Removes trailing whitespace" },
+	{
+		name: "trim_start_matches",
+		detail: "Removes leading occurrences of a pattern",
+		insertText: "trim_start_matches(pat=$1)",
+	},
+	{
+		name: "trim_end_matches",
+		detail: "Removes trailing occurrences of a pattern",
+		insertText: "trim_end_matches(pat=$1)",
+	},
 	{ name: "truncate", detail: "Truncates string to length" },
+	{ name: "quote", detail: "Quotes a string for the shell" },
+	{
+		name: "split",
+		detail: "Splits string by pattern",
+		insertText: "split(pat=$1)",
+	},
+	{
+		name: "join",
+		detail: "Joins array with separator",
+		insertText: "join(sep=$1)",
+	},
+	{ name: "indent", detail: "Indents lines of a string" },
+	{ name: "addslashes", detail: "Escapes quotes with backslashes" },
+	{ name: "linebreaksbr", detail: "Converts line breaks to <br> tags" },
+	{ name: "striptags", detail: "Removes HTML tags" },
+	{ name: "spaceless", detail: "Removes whitespace between HTML tags" },
+	{ name: "slugify", detail: "Converts to a URL-friendly slug" },
+	{
+		name: "regex_replace",
+		detail: "Replaces text matching a regex",
+		insertText: "regex_replace(pattern=$1, rep=$2)",
+	},
+
 	{ name: "first", detail: "Returns first element" },
 	{ name: "last", detail: "Returns last element" },
+	{ name: "nth", detail: "Returns the nth element", insertText: "nth(n=$1)" },
 	{ name: "length", detail: "Returns length of string/array" },
 	{ name: "reverse", detail: "Reverses string/array" },
-	{ name: "urlencode", detail: "URL encodes string" },
+	{ name: "sort", detail: "Sorts an array" },
+	{ name: "unique", detail: "Removes duplicates from an array" },
+	{
+		name: "concat",
+		detail: "Appends to an array",
+		insertText: "concat(with=$1)",
+	},
+	{
+		name: "map",
+		detail: "Extracts an attribute from each element",
+		insertText: "map(attribute=$1)",
+	},
+	{ name: "shuffle", detail: "Shuffles an array randomly" },
 
+	{
+		name: "absolute",
+		detail: "Converts to absolute path without resolving symlinks",
+	},
 	{ name: "canonicalize", detail: "Converts to absolute path" },
 	{ name: "basename", detail: "Extracts filename from path" },
 	{ name: "dirname", detail: "Returns directory path" },
@@ -219,11 +247,37 @@ export const teraFilters = [
 		detail: "Returns file SHA256 hash",
 		insertText: "hash_file(len=$1)",
 	},
+	{ name: "urlencode", detail: "URL encodes string" },
+	{
+		name: "urlencode_strict",
+		detail: "URL encodes string including / characters",
+	},
+	{ name: "b64_encode", detail: "Encodes string as base64" },
+	{ name: "b64_decode", detail: "Decodes a base64 string" },
+	{
+		name: "date",
+		detail: "Formats a timestamp",
+		insertText: "date(format=$1)",
+	},
+	{ name: "json_encode", detail: "Encodes value as JSON" },
+	{
+		name: "format",
+		detail: "Formats a value with a format spec",
+		insertText: "format(spec=$1)",
+	},
+	{
+		name: "filesize_format",
+		detail: "Formats bytes as a human-readable file size",
+	},
+	{ name: "int", detail: "Converts to integer" },
+	{ name: "float", detail: "Converts to float" },
+	{ name: "as_str", detail: "Converts to string" },
+	{ name: "abs", detail: "Returns absolute value of a number" },
 
 	{ name: "kebabcase", detail: "Converts to kebab-case" },
 	{ name: "lowercamelcase", detail: "Converts to lowerCamelCase" },
 	{ name: "uppercamelcase", detail: "Converts to UpperCamelCase" },
-	{ name: "shoutycamelcase", detail: "Converts to SHOUTY_CAMEL_CASE" },
+	{ name: "shoutykebabcase", detail: "Converts to SHOUTY-KEBAB-CASE" },
 	{ name: "snakecase", detail: "Converts to snake_case" },
 	{ name: "shoutysnakecase", detail: "Converts to SHOUTY_SNAKE_CASE" },
 ];
