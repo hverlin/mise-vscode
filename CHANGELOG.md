@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.16.0](https://github.com/hverlin/mise-vscode/compare/v1.15.0...v1.16.0) (2026-08-02)
+
+
+### Features
+
+* improve monorepo support, search tasks ([#249](https://github.com/hverlin/mise-vscode/issues/249)) ([8753e1b](https://github.com/hverlin/mise-vscode/commit/8753e1b7db5e7c31557d02f9f70b956368f0a5e0))
+* mise bootstrap support ([#247](https://github.com/hverlin/mise-vscode/issues/247)) ([93469b4](https://github.com/hverlin/mise-vscode/commit/93469b4eaf39e5c4e3e6bdc7d10a43eafc30af54))
+* rewrite task deps graph ([#252](https://github.com/hverlin/mise-vscode/issues/252)) ([9ac024c](https://github.com/hverlin/mise-vscode/commit/9ac024c047f69dccd1710007457d5d7fc10229c5))
+
+
+### Bug Fixes
+
+* prevent command injection from workspace config, gate workspace mise binaries ([489c55f](https://github.com/hverlin/mise-vscode/commit/489c55ff2b86042ffe51bf23a9fedfe952645fca))
+
 ## [1.15.0](https://github.com/hverlin/mise-vscode/compare/v1.14.0...v1.15.0) (2026-08-01)
 
 
