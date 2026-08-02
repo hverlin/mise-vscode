@@ -1,0 +1,28 @@
+{
+	"scopeName": "inline.mise-usage",
+	"injectionSelector": "L:source.shell",
+	"patterns": [
+		{
+			"name": "meta.embedded.usage.mise",
+			"match": "^\\s*(#USAGE)\\s+(.*)$",
+			"captures": {
+				"1": { "name": "keyword.control.directive.usage.mise" },
+				"2": {
+					"name": "meta.embedded.usage.kdl",
+					"patterns": [{ "include": "source.usage.kdl" }]
+				}
+			}
+		},
+		{
+			"name": "meta.embedded.mise-config.mise",
+			"match": "^\\s*(#MISE)\\s+(.*)$",
+			"captures": {
+				"1": { "name": "keyword.control.directive.mise" },
+				"2": {
+					"name": "meta.embedded.block.toml",
+					"patterns": [{ "include": "source.toml" }]
+				}
+			}
+		}
+	]
+}

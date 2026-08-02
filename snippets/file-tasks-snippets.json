@@ -11,5 +11,15 @@
 			"#MISE depends=[${5:\"dependency\"}]",
 			"$0"
 		]
+	},
+	"mise File Task Usage Spec": {
+		"prefix": "mise-task-usage",
+		"scope": "shellscript",
+		"description": "Define file task arguments with the usage spec",
+		"body": [
+			"#USAGE arg \"<${1:file}>\" help=\"${2:File to use}\"",
+			"#USAGE flag \"-v --verbose\" help=\"Enable verbose output\"",
+			"$0"
+		]
 	}
 }

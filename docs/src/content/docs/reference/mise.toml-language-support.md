@@ -43,9 +43,54 @@ Tool names and versions are autocompleted in the `tools` section of a `mise.toml
 
 ![Screenshot showing autocompletion of tool version](./autocomplete-tool-version.png)
 
+In `.tool-versions` files, backend prefixes (`core:`, `npm:`, `cargo:`, ...) are
+also autocompleted, and typing a prefix such as `core:` suggests the registry
+tools of that backend (e.g. `core:node`).
+
 #### Autocompletion for tasks
 
 Code completion is provided for `depends = ["task_name"]`, `depends_post = ["task_name"]`, `wait_for = ["task_name"]`.
+
+### Task arguments (usage spec)
+
+Task arguments are declared with the
+[`usage` field](https://mise.jdx.dev/tasks/task-arguments.html) of a task,
+using the [usage spec](https://usage.jdx.dev/spec/). The extension provides:
+
+- **Syntax highlighting** of `usage = '''...'''` blocks (KDL)
+- **Context-aware autocompletion**: directives (`arg`, `flag`, `complete`) at
+  the start of a line, the attributes valid for that directive after it
+  (`help`, `default`, `choices` blocks, `count`, `negate`, ...), without
+  repeating attributes that are already set
+- **Hover documentation** for directives and attributes
+- **`$usage_*` variable completion**: typing `$` in a multiline `run` block
+  suggests the `usage_*` environment variables derived from the args and
+  flags of that task
+
+```toml
+[tasks.deploy]
+usage = '''
+arg "<environment>" help="Target environment" {
+  choices "dev" "staging" "prod"
+}
+flag "-v --verbose" help="Enable verbose output"
+'''
+run = '''
+echo "Deploying to ${usage_environment?}"
+'''
+```
+
+#### File tasks
+
+The same support is available in shell
+[file tasks](https://mise.jdx.dev/tasks/file-tasks.html):
+
+- `#USAGE` lines get usage spec syntax highlighting, autocompletion, and hover
+- `#MISE` lines are highlighted as TOML, with autocompletion and hover for the
+  [task configuration keys](https://mise.jdx.dev/tasks/task-configuration.html)
+  (`description`, `alias`, `depends`, `sources`, ...)
+- Typing `$` in the script body suggests the `usage_*` variables from the
+  `#USAGE` lines
 
 ### Code lens features
 

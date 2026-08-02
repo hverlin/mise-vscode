@@ -177,17 +177,29 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 		// Collect positional arguments
 		for (const arg of spec.args) {
-			const value = await vscode.window.showInputBox({
-				prompt: `Enter value for ${arg.name}`,
-				placeHolder: arg.name,
-				ignoreFocusOut: true,
-				validateInput: (value) => {
-					if (arg.required && !value) {
-						return `${arg.name} is required`;
-					}
-					return null;
-				},
-			});
+			let value: string | undefined;
+			if (arg.choices?.length) {
+				value = await vscode.window.showQuickPick(arg.choices, {
+					title: arg.required ? arg.name : `${arg.name} (optional)`,
+					placeHolder: arg.help ?? `Select value for ${arg.name}`,
+					ignoreFocusOut: true,
+				});
+			} else {
+				value = await vscode.window.showInputBox({
+					prompt: arg.help
+						? `${arg.name}: ${arg.help}`
+						: `Enter value for ${arg.name}`,
+					placeHolder: arg.required ? arg.name : `${arg.name} (optional)`,
+					value: arg.default,
+					ignoreFocusOut: true,
+					validateInput: (value) => {
+						if (arg.required && !value) {
+							return `${arg.name} is required`;
+						}
+						return null;
+					},
+				});
+			}
 
 			if (value === undefined && arg.required) {
 				return undefined;
@@ -199,9 +211,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		}
 
 		for (const flag of spec.flags) {
+			const flagDescription = flag.help ? ` (${flag.help})` : "";
 			if (flag.arg) {
 				const shouldProvide = await vscode.window.showQuickPick(["Yes", "No"], {
-					placeHolder: `Do you want to provide "--${flag.name}" option?`,
+					placeHolder: `Do you want to provide "${flag.name}" option?${flagDescription}`,
 					ignoreFocusOut: true,
 				});
 
@@ -210,11 +223,23 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				}
 
 				if (shouldProvide === "Yes") {
-					const value = await vscode.window.showInputBox({
-						prompt: `Enter value for --${flag.name}=?`,
-						placeHolder: flag.arg,
-						ignoreFocusOut: true,
-					});
+					let value: string | undefined;
+					if (flag.choices?.length) {
+						value = await vscode.window.showQuickPick(flag.choices, {
+							title: flag.name,
+							placeHolder: flag.help ?? `Select value for ${flag.name}`,
+							ignoreFocusOut: true,
+						});
+					} else {
+						value = await vscode.window.showInputBox({
+							prompt: flag.help
+								? `${flag.name}: ${flag.help}`
+								: `Enter value for ${flag.name}=?`,
+							placeHolder: flag.arg,
+							value: flag.default,
+							ignoreFocusOut: true,
+						});
+					}
 
 					if (value === undefined) {
 						return undefined;
@@ -226,7 +251,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 				}
 			} else {
 				const shouldEnable = await vscode.window.showQuickPick(["Yes", "No"], {
-					placeHolder: `Enable ${flag.name}?`,
+					placeHolder: `Enable ${flag.name}?${flagDescription}`,
 					ignoreFocusOut: true,
 				});
 
@@ -621,10 +646,19 @@ export function registerTasksCommands(
 			const taskDefinition = [
 				"#!/usr/bin/env bash",
 				`#MISE description="Run ${taskName}"`,
+				'#USAGE flag "-v --verbose" help="Enable verbose output"',
+				'#USAGE arg "[something]" help="What to print in verbose mode" default="hello"',
+				'#USAGE complete "something" run="ls"',
 				"",
 				`echo "Running ${taskName}"`,
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: bash variable
+				'if [[ "${usage_verbose:-}" == "true" ]]; then',
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: bash variable
+				'  echo "${usage_something}"',
+				"fi",
 				"",
 				"# See https://mise.jdx.dev/tasks/file-tasks.html for more information",
+				"# and https://mise.jdx.dev/tasks/task-arguments.html for task arguments",
 			].join("\n");
 
 			await editor.edit((edit) => {

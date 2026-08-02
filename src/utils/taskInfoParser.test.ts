@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
 	parseTaskInfo,
+	parseTaskInfoJson,
 	parseUsageSpecLine,
 	type TaskUsageSpec,
 } from "./taskInfoParser";
@@ -242,5 +243,189 @@ Usage Spec:
 				args: [{ name: "file", required: true }],
 			},
 		});
+	});
+});
+
+describe("parseTaskInfoJson", () => {
+	// Trimmed-down output of `mise tasks info deploy --json` for a task with a usage field
+	const deployTaskJson = {
+		name: "deploy",
+		description: "Deploy the app",
+		source: "/project/mise.toml",
+		run: ['echo "Deploying to $usage_environment"'],
+		usage_spec: {
+			name: "deploy",
+			bin: "deploy",
+			cmd: {
+				usage: "[-v --verbose] [--format <format>] <environment> [region]",
+				args: [
+					{
+						name: "environment",
+						usage: "<environment>",
+						help: "Target environment",
+						help_first_line: "Target environment",
+						required: true,
+						hide: false,
+						choices: { choices: ["dev", "staging", "prod"] },
+					},
+					{
+						name: "region",
+						usage: "[region]",
+						help: "Optional region",
+						help_first_line: "Optional region",
+						required: false,
+						hide: false,
+						default: ["us-east-1"],
+					},
+				],
+				flags: [
+					{
+						name: "verbose",
+						usage: "-v --verbose",
+						help: "Enable verbose output",
+						help_first_line: "Enable verbose output",
+						short: ["v"],
+						long: ["verbose"],
+						hide: false,
+						global: false,
+					},
+					{
+						name: "format",
+						usage: "--format <format>",
+						help: "Output format",
+						help_first_line: "Output format",
+						short: [],
+						long: ["format"],
+						hide: false,
+						global: false,
+						arg: {
+							name: "format",
+							usage: "",
+							required: true,
+							hide: false,
+							choices: { choices: ["text", "json"] },
+						},
+						default: ["text"],
+					},
+				],
+			},
+		},
+	};
+
+	test("parses a task with args and flags", () => {
+		const result = parseTaskInfoJson(JSON.stringify(deployTaskJson));
+
+		expect(result).toEqual({
+			name: "deploy",
+			description: "Deploy the app",
+			source: "/project/mise.toml",
+			run: 'echo "Deploying to $usage_environment"',
+			usageSpec: {
+				name: "deploy",
+				bin: "deploy",
+				args: [
+					{
+						name: "environment",
+						required: true,
+						help: "Target environment",
+						choices: ["dev", "staging", "prod"],
+					},
+					{
+						name: "region",
+						required: false,
+						help: "Optional region",
+						default: "us-east-1",
+					},
+				],
+				flags: [
+					{ name: "--verbose", help: "Enable verbose output" },
+					{
+						name: "--format",
+						arg: "format",
+						help: "Output format",
+						default: "text",
+						choices: ["text", "json"],
+					},
+				],
+			},
+		});
+	});
+
+	test("skips hidden args and flags", () => {
+		const result = parseTaskInfoJson(
+			JSON.stringify({
+				name: "task",
+				source: "/project/mise.toml",
+				run: ["echo"],
+				usage_spec: {
+					name: "task",
+					bin: "task",
+					cmd: {
+						args: [{ name: "secret", required: true, hide: true }],
+						flags: [{ name: "internal", long: ["internal"], hide: true }],
+					},
+				},
+			}),
+		);
+
+		expect(result.usageSpec.args).toEqual([]);
+		expect(result.usageSpec.flags).toEqual([]);
+	});
+
+	test("uses the short flag name when no long name exists", () => {
+		const result = parseTaskInfoJson(
+			JSON.stringify({
+				name: "task",
+				source: "/project/mise.toml",
+				run: ["echo"],
+				usage_spec: {
+					name: "task",
+					bin: "task",
+					cmd: { flags: [{ name: "verbose", short: ["v"], long: [] }] },
+				},
+			}),
+		);
+
+		expect(result.usageSpec.flags).toEqual([{ name: "-v" }]);
+	});
+
+	test("joins multiple run commands", () => {
+		const result = parseTaskInfoJson(
+			JSON.stringify({
+				name: "build",
+				source: "/project/mise.toml",
+				run: ["npm install", "npm run build"],
+			}),
+		);
+
+		expect(result.run).toBe("npm install\nnpm run build");
+		expect(result.usageSpec).toEqual({
+			name: "build",
+			bin: "",
+			flags: [],
+			args: [],
+		});
+	});
+
+	test("handles a task without a usage spec", () => {
+		const result = parseTaskInfoJson(
+			JSON.stringify({
+				name: "minimal",
+				description: "",
+				source: "/project/mise.toml",
+				run: 'echo "minimal"',
+			}),
+		);
+
+		expect(result).toEqual({
+			name: "minimal",
+			source: "/project/mise.toml",
+			run: 'echo "minimal"',
+			usageSpec: { name: "minimal", bin: "", flags: [], args: [] },
+		});
+	});
+
+	test("throws on invalid json", () => {
+		expect(() => parseTaskInfoJson("not json")).toThrow();
 	});
 });

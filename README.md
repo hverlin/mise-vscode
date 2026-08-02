@@ -63,13 +63,16 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 ### [mise.toml Language Support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
 - 📝 Syntax highlighting for `mise.toml` files (and [tera templates](https://mise.jdx.dev/templates.html))
 - 📚 Autocompletion for `mise.toml` files
+- 🧩 Autocompletion & hover for [task arguments](https://mise.jdx.dev/tasks/task-arguments.html)
+  (`usage` field, `#USAGE`/`#MISE` comments in file tasks, `$usage_*` variables)
 - 🔗 Go to definition, find references for mise tasks
 
 ### [Task Management](https://hverlin.github.io/mise-vscode/reference/tasks/)
 
 - 🔍 Automatic detection of [mise tasks](https://mise.jdx.dev/tasks/)
 - ⚡ Run tasks directly from, `mise.toml` files, file tasks, the command palette
-  or the activity bar (arguments are supported)
+  or the activity bar (task arguments are prompted for, with choices and
+  default values from the [usage spec](https://mise.jdx.dev/tasks/task-arguments.html))
 - 📝 View task definitions
 - ➕ Create new toml & file tasks
 - ⚡ Autocompletion of task dependencies

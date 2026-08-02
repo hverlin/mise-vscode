@@ -31,6 +31,22 @@ You have several ways to run a task with the extension:
 Click on the run button to run the task. If some option/arguments are required,
 you will be prompted to enter them.
 
+### Task arguments
+
+If the task declares arguments with the
+[`usage` field](https://mise.jdx.dev/tasks/task-arguments.html) (or `#USAGE`
+comments in file tasks), the extension prompts for them before running:
+
+- arguments with `choices` are picked from a list
+- `default` values are pre-filled
+- the `help` text of each arg/flag is shown in the prompt
+- optional arguments can be skipped
+
+See
+[mise.toml language support](/mise-vscode/reference/misetoml-language-support/#task-arguments-usage-spec)
+for the editor support (autocompletion, hover, syntax highlighting) of the
+usage spec.
+
 ### Using the mise activity bar
 
 ![task-run-activity-bar.png](../../../assets/task-run-activity-bar.png)
@@ -89,6 +105,11 @@ You can create a file task or a toml task directly from the activity bar
 
 Using the command palette: `cmd|ctrl+shift+p`, search for
 `Mise: Create File task` or `Mise: Create Toml Task`
+
+New file tasks are created with a working example of
+[task arguments](https://mise.jdx.dev/tasks/task-arguments.html) (`#USAGE`
+flag, argument with a default value, custom completion, and the corresponding
+`$usage_*` variables in the script).
 
 ## Task dependencies
 

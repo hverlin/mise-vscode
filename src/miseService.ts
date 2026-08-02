@@ -48,7 +48,11 @@ import {
 	runInVscodeTerminal,
 	safeExec,
 } from "./utils/shell";
-import { type MiseTaskInfo, parseTaskInfo } from "./utils/taskInfoParser";
+import {
+	type MiseTaskInfo,
+	parseTaskInfo,
+	parseTaskInfoJson,
+} from "./utils/taskInfoParser";
 import { getConfigRootPaths } from "./utils/taskNames";
 
 // https://github.com/jdx/mise/blob/main/src/env.rs
@@ -627,6 +631,21 @@ export class MiseService {
 	async getTaskInfo(taskName: string): Promise<MiseTaskInfo | undefined> {
 		if (!this.getMiseBinaryPath()) {
 			return undefined;
+		}
+
+		try {
+			const { stdout } = await this.execMiseCommand([
+				"tasks",
+				"info",
+				"--json",
+				taskName,
+			]);
+			return parseTaskInfoJson(stdout);
+		} catch (error: unknown) {
+			logger.info(
+				"Error fetching mise task info as json, falling back to text output:",
+				error as Error,
+			);
 		}
 
 		try {

@@ -128,6 +128,13 @@
       },
       {
         "injectTo": [
+          "source.shell"
+        ],
+        "scopeName": "inline.mise-usage",
+        "path": "./syntaxes/usage-shell.json"
+      },
+      {
+        "injectTo": [
           "source.toml"
         ],
         "scopeName": "inline.tera-mise",
@@ -180,6 +187,13 @@
         "path": "./snippets/file-tasks-snippets.json"
       }
     ],
+    "configurationDefaults": {
+      "[toml]": {
+        "editor.quickSuggestions": {
+          "strings": "on"
+        }
+      }
+    },
     "configuration": {
       "title": "Mise",
       "properties": {

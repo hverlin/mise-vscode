@@ -4,3 +4,17 @@ run = "echo 'Hello from mise test task'"
 
 [tasks.echo-hello]
 run = "echo 'Hello, World!'"
+
+[tasks.greet]
+description = "Greet someone"
+usage = '''
+arg "<name>" help="Name to greet" {
+  choices "alice" "bob"
+}
+flag "--greeting <greeting>" help="Greeting to use" default="hello"
+flag "-l --loud" help="Shout the greeting"
+'''
+run = '''
+echo "${usage_greeting?} ${usage_name?}"
+echo $usage_
+'''
