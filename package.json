@@ -74,6 +74,9 @@
         "filenames": [
           "mise.lock"
         ],
+        "filenamePatterns": [
+          "mise.*.lock"
+        ],
         "configuration": "./syntaxes/toml-language-configuration.json"
       },
       {
@@ -90,12 +93,16 @@
     "tomlValidation": [
       {
         "fileMatch": [
-          ".mise.toml",
-          ".mise.*.toml",
-          "mise.toml",
-          "mise.*.toml",
+          "**/mise.toml",
+          "**/.mise.toml",
+          "**/mise.*.toml",
+          "**/.mise.*.toml",
+          "**/mise/config.toml",
           "**/.mise/config.toml",
-          "**/mise/config.toml"
+          "**/mise/config.*.toml",
+          "**/.mise/config.*.toml",
+          "**/mise/conf.d/*.toml",
+          "**/.mise/conf.d/*.toml"
         ],
         "url": "https://mise.jdx.dev/schema/mise.json"
       }

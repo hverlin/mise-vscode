@@ -15,6 +15,12 @@ For the best experience with syntax highlighting and autocompletion in `mise.tom
 
 The extension will notify you on startup if neither is installed.
 
+`mise-vscode` associates the [mise JSON schema](https://mise.jdx.dev/schema/mise.json)
+with all mise configuration files for these extensions, including environment and
+platform-specific ones such as `mise.local.toml`, `mise.linux.toml`, or
+`mise/config.macos-arm64.toml` (see [`auto_env`](https://mise.jdx.dev/configuration/environments.html)),
+so autocompletion and validation work in all of them.
+
 `mise-vscode` provides syntax highlighting for `tera` used for
 [templating](https://mise.jdx.dev/templates.html) in `mise.toml` files
 
