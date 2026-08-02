@@ -39,6 +39,27 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "bootstrap",
+		files: "src/e2e-tests/bootstrap/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "bootstrap-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's real global config (tools, bootstrap sections)
+			// out of the tests so results match between dev machines and CI.
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"bootstrap-workspace",
+				"global-config.toml",
+			),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),

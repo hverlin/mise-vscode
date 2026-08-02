@@ -1,0 +1,2 @@
+# Used as MISE_GLOBAL_CONFIG_FILE for the bootstrap e2e suite so the machine's
+# real global config (tools, bootstrap sections) never leaks into the tests.

@@ -1,0 +1,16 @@
+# Fixture for the bootstrap e2e suite. The entries deliberately point at
+# resources that do not exist on any machine: the tests only read status and
+# navigate to declarations, they never run `mise bootstrap`.
+
+[bootstrap.repos]
+"vendor/mise-e2e-repo" = { url = "https://example.invalid/mise-e2e-repo.git" }
+
+[dotfiles]
+"~/.mise-vscode-e2e-dotfile" = { mode = "symlink" }
+
+[bootstrap.macos.defaults]
+"com.example.mise-vscode-e2e" = { ExampleKey = true }
+
+# friendly shorthand: resolves to `com.apple.finder ShowPathbar` in status
+[bootstrap.macos.finder]
+show_pathbar = true

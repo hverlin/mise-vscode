@@ -107,6 +107,110 @@ type MiseConfig = {
 	self_update_available?: boolean;
 };
 
+type MiseBootstrapPackage = {
+	package: string;
+	requested_version: string;
+	/** e.g. `installed`, `missing` */
+	state: string;
+	installed_version: string;
+};
+
+type MiseBootstrapPackageManager = {
+	available: boolean;
+	packages: MiseBootstrapPackage[];
+};
+
+type MiseBootstrapRepo = {
+	path: string;
+	path_raw: string;
+	url: string;
+	ref: string | null;
+	origin: string | null;
+	current_ref: string | null;
+	current_sha: string | null;
+	state: string;
+	reason: string;
+};
+
+type MiseBootstrapDotfile = {
+	target: string;
+	source: string;
+	mode: string;
+	/** e.g. `applied`, `missing`, `source_missing`, `differs` */
+	state: string;
+};
+
+type MiseBootstrapShellActivation = {
+	/** e.g. `zshrc` */
+	target: string;
+	shell: string;
+	path: string;
+	/** e.g. `activate`, `shims` */
+	mode: string;
+	state: string;
+};
+
+type MiseBootstrapMacosDefault = {
+	domain: string;
+	key: string;
+	value: unknown;
+	current: string | null;
+	/** e.g. `set`, `differs` */
+	state: string;
+};
+
+type MiseBootstrapLaunchdAgent = {
+	name: string;
+	label: string;
+	path: string;
+	loaded: boolean;
+	state: string;
+};
+
+type MiseBootstrapSystemdUnit = {
+	name: string;
+	unit: string;
+	state: string;
+};
+
+type MiseBootstrapLoginShell = {
+	available: boolean;
+	shell: string;
+	user: string;
+	current: string | null;
+	shell_listed: boolean;
+	state: string;
+};
+
+type MiseBootstrapTool = {
+	tool: string;
+	requested_version: string;
+	resolved_version: string;
+	state: string;
+	installed: boolean;
+};
+
+/** Output of `mise bootstrap status --json` */
+type MiseBootstrapStatus = {
+	packages: Record<string, MiseBootstrapPackageManager>;
+	repos: MiseBootstrapRepo[];
+	dotfiles: {
+		files: MiseBootstrapDotfile[];
+		edits: MiseBootstrapDotfile[];
+	};
+	mise_shell_activate: MiseBootstrapShellActivation[];
+	macos_defaults: { available?: boolean; entries: MiseBootstrapMacosDefault[] };
+	launchd: { available?: boolean; agents: MiseBootstrapLaunchdAgent[] };
+	systemd: {
+		available?: boolean;
+		reason?: string;
+		units: MiseBootstrapSystemdUnit[];
+	};
+	login_shell: MiseBootstrapLoginShell | null;
+	tools: MiseBootstrapTool[];
+	plugin_deps?: unknown[];
+};
+
 /*
 	{
 		"version": "2025.3.2 windows-x64 (2025-03-07)",
