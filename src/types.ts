@@ -47,6 +47,55 @@ type MiseProject = {
 	provenance?: { provider?: string; source?: string };
 };
 
+type MiseProjectConfigFile = {
+	path: string;
+	/** idiomatic version file (`.nvmrc`, `go.mod`, ...) rather than a mise config */
+	idiomatic: boolean;
+};
+
+type MiseProjectTool = {
+	name: string;
+	/** requested version, formatted for display */
+	version: string;
+	/** config file requesting this version */
+	source: string;
+	/** requested by an idiomatic version file rather than a mise config */
+	idiomatic: boolean;
+	/** version requested by the global config, when the tool is defined there */
+	globalVersion?: string;
+	/** requests a different version than the global config default */
+	overridesGlobal: boolean;
+	/** resolved version reported by `mise ls --all-sources`, when available */
+	resolvedVersion?: string;
+	/** whether the resolved version is installed, when reported by mise */
+	installed?: boolean;
+};
+
+/** A directory with mise configuration, shown in the Projects webview */
+type MiseProjectEntry = {
+	rootDir: string;
+	configs: MiseProjectConfigFile[];
+	tools: MiseProjectTool[];
+	/** false when only idiomatic version files were found */
+	hasMiseConfig: boolean;
+};
+
+/** One config file in the flat (per-file) view of the Projects webview */
+type MiseProjectFlatConfigFile = {
+	path: string;
+	idiomatic: boolean;
+	/** part of the global config rather than a project */
+	global: boolean;
+	tools: Record<string, string>;
+};
+
+type MiseProjectsData = {
+	projects: MiseProjectEntry[];
+	configFiles: MiseProjectFlatConfigFile[];
+	/** folders the user added via "Scan folder…", scanned recursively */
+	scanDirectories?: string[];
+};
+
 type MiseTool = {
 	name: string;
 	version: string;

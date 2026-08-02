@@ -300,6 +300,11 @@ export const Tools = () => {
 	const selectedTool = useWebviewStore((state) => state.selectedTool);
 	const setSelectedTool = useWebviewStore((state) => state.setSelectedTool);
 
+	// the persisted selection and refetched rows are different objects, so
+	// compare by identity fields instead of reference
+	const isSelectedTool = (tool: MiseTool) =>
+		selectedTool?.name === tool.name && selectedTool?.version === tool.version;
+
 	const showOutdatedOnly = useWebviewStore((state) => state.showOutdatedOnly);
 	const setShowOutdatedOnly = useWebviewStore(
 		(state) => state.setShowOutdatedOnly,
@@ -471,6 +476,7 @@ export const Tools = () => {
 					</div>
 				}
 				isLoading={toolsQuery.isLoading}
+				isRowSelected={isSelectedTool}
 				columns={[
 					{
 						id: "name",
@@ -482,7 +488,7 @@ export const Tools = () => {
 								<a
 									href="#"
 									onClick={(_e) => {
-										if (selectedTool === row.original) {
+										if (isSelectedTool(row.original)) {
 											setSelectedTool(null);
 										} else {
 											setSelectedTool(row.original);
@@ -569,7 +575,7 @@ export const Tools = () => {
 								)}
 								bumpInfo={findBumpInfo(props.row.original)}
 								onSelect={(tool) => {
-									if (selectedTool === tool) {
+									if (isSelectedTool(tool)) {
 										setSelectedTool(null);
 									} else {
 										setSelectedTool(tool);

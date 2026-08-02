@@ -18,12 +18,7 @@ import {
 	getTaskDisplayName,
 } from "./utils/taskNames";
 
-type PanelView =
-	| "TOOLS"
-	| "SETTINGS"
-	| "TRACKED_CONFIGS"
-	| "TASKS_DEPS"
-	| "BOOTSTRAP";
+type PanelView = "TOOLS" | "SETTINGS" | "TASKS_DEPS" | "BOOTSTRAP" | "PROJECTS";
 
 function panelTitleForView(view: PanelView) {
 	switch (view) {
@@ -31,12 +26,12 @@ function panelTitleForView(view: PanelView) {
 			return "Tools";
 		case "SETTINGS":
 			return "Settings";
-		case "TRACKED_CONFIGS":
-			return "Tracked Configs";
 		case "TASKS_DEPS":
 			return "Tasks Dependencies";
 		case "BOOTSTRAP":
 			return "Bootstrap";
+		case "PROJECTS":
+			return "Projects";
 	}
 }
 
@@ -55,6 +50,7 @@ export default class WebViewPanel {
 		extContext: vscode.ExtensionContext,
 		miseService: MiseService,
 		view: PanelView,
+		options: { flatFileView?: boolean } = {},
 	) {
 		const column = vscode.window.activeTextEditor
 			? vscode.window.activeTextEditor.viewColumn
@@ -68,20 +64,25 @@ export default class WebViewPanel {
 				vscode.ViewColumn.One,
 				miseService,
 				view,
+				options,
 			);
 		}
 	}
+
+	private readonly options: { flatFileView?: boolean };
 
 	private constructor(
 		_extContext: vscode.ExtensionContext,
 		column: vscode.ViewColumn,
 		miseService: MiseService,
 		view: PanelView,
+		options: { flatFileView?: boolean } = {},
 	) {
 		this._extContext = _extContext;
 		this._extensionUri = _extContext.extensionUri;
 		this.miseService = miseService;
 		this.view = view;
+		this.options = options;
 
 		this._panel = vscode.window.createWebviewPanel(
 			WebViewPanel.viewType,
@@ -150,6 +151,11 @@ export default class WebViewPanel {
 							case "trackedConfigs": {
 								return executeAction(message, () =>
 									this.miseService.getTrackedConfigFiles(),
+								);
+							}
+							case "projects": {
+								return executeAction(message, () =>
+									this.miseService.getProjects(),
 								);
 							}
 							case "tasksGraph": {
@@ -251,6 +257,38 @@ export default class WebViewPanel {
 									vscode.window.showTextDocument(
 										vscode.Uri.file(message.variables?.path as string),
 										{ preview: true, viewColumn: vscode.ViewColumn.One },
+									),
+								);
+							}
+							case "addProjectScanDirectory": {
+								return executeAction(message, async () => {
+									const picked = await vscode.window.showOpenDialog({
+										canSelectFolders: true,
+										canSelectFiles: false,
+										canSelectMany: false,
+										openLabel: "Scan folder",
+										title: "Select a folder to scan for mise projects",
+									});
+									const dir = picked?.[0]?.fsPath;
+									if (dir) {
+										await this.miseService.addProjectScanDirectory(dir);
+									}
+									return dir ?? null;
+								});
+							}
+							case "removeProjectScanDirectory": {
+								return executeAction(message, async () =>
+									this.miseService.removeProjectScanDirectory(
+										message.variables?.path as string,
+									),
+								);
+							}
+							case "openProjectInNewWindow": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(
+										"vscode.openFolder",
+										vscode.Uri.file(message.variables?.path as string),
+										{ forceNewWindow: true },
 									),
 								);
 							}
@@ -416,6 +454,10 @@ export default class WebViewPanel {
 		$("head")
 			.append(`<meta name="view" content="${this.view}">`)
 			.append(`<meta name="homeDir" content="${os.homedir()}">`);
+
+		if (this.options.flatFileView) {
+			$("head").append(`<meta name="flatFileView" content="true">`);
+		}
 
 		return $.html();
 	}

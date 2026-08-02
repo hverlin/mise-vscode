@@ -7,4 +7,4 @@ mise.local.toml
 mise.local.lock
 dist/
 .DS_Store
-doc/.astro
+docs/.astro

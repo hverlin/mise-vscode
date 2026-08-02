@@ -1,8 +1,8 @@
 import { Bootstrap } from "./Bootstrap";
+import { Projects } from "./Projects";
 import { Settings } from "./Settings";
 import { TasksDependencies } from "./TasksDependencies";
 import { Tools } from "./Tools";
-import { TrackedConfigs } from "./TrackedConfigs";
 
 export function App() {
 	const view = document
@@ -20,7 +20,7 @@ export function App() {
 			) : view === "BOOTSTRAP" ? (
 				<Bootstrap />
 			) : (
-				<TrackedConfigs />
+				<Projects />
 			)}
 		</div>
 	);

@@ -11,6 +11,12 @@ export const MISE_INSTALL_ALL = "mise.installAll";
 export const MISE_INSTALL_TOOL = "mise.installTool";
 export const MISE_LIST_ALL_TOOLS = "mise.listAllTools";
 export const MISE_SHOW_SETTINGS = "mise.showSettings";
+export const MISE_SHOW_PROJECTS = "mise.showProjects";
+/**
+ * @deprecated superseded by {@link MISE_SHOW_PROJECTS}. Kept registered (but
+ * out of the command palette) so existing keybindings still work: it opens
+ * the Projects view in its flat file mode, the old Tracked Configs list.
+ */
 export const MISE_SHOW_TRACKED_CONFIG = "mise.showTrackedConfig";
 export const MISE_VISUALIZE_TASKS_DEPS = "mise.visualizeTasksDeps";
 export const MISE_OPEN_ENV_VAR_DEFINITION = "mise.openEnvVariableDefinition";

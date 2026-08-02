@@ -26,6 +26,8 @@ type VSCodeTableProps<T> = {
 	columns: ColumnDef<T>[];
 	isLoading?: boolean;
 	filterRowElement?: ReactElement | string;
+	/** rows for which this returns true get the selected-row background */
+	isRowSelected?: (rowData: T) => boolean;
 };
 
 export default function CustomTable<T>({
@@ -33,6 +35,7 @@ export default function CustomTable<T>({
 	columns,
 	isLoading = false,
 	filterRowElement,
+	isRowSelected,
 	style,
 }: VSCodeTableProps<T> & { style?: CSSProperties }) {
 	const [sorting, setSorting] = useState<SortingState>([]);
@@ -128,7 +131,14 @@ export default function CustomTable<T>({
 						</VscodeTableRow>
 					)}
 					{table.getRowModel().rows.map((row) => (
-						<VscodeTableRow key={row.id} className="vscode-table__row">
+						<VscodeTableRow
+							key={row.id}
+							className={`vscode-table__row${
+								isRowSelected?.(row.original)
+									? " vscode-table__row--selected"
+									: ""
+							}`}
+						>
 							{row.getVisibleCells().map((cell) => (
 								<VscodeTableCell key={cell.id} style={{ whiteSpace: "wrap" }}>
 									{flexRender(cell.column.columnDef.cell, cell.getContext())}

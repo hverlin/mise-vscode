@@ -20,6 +20,7 @@ import {
 	MISE_REVOKE_WORKSPACE_BINARIES,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
+	MISE_SHOW_PROJECTS,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
 	MISE_VISUALIZE_TASKS_DEPS,
@@ -491,8 +492,16 @@ export class MiseExtension {
 		);
 
 		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_SHOW_PROJECTS, async () => {
+				WebViewPanel.createOrShow(context, this.miseService, "PROJECTS");
+			}),
+		);
+
+		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_SHOW_TRACKED_CONFIG, async () => {
-				WebViewPanel.createOrShow(context, this.miseService, "TRACKED_CONFIGS");
+				WebViewPanel.createOrShow(context, this.miseService, "PROJECTS", {
+					flatFileView: true,
+				});
 			}),
 		);
 
@@ -853,7 +862,7 @@ export class MiseExtension {
 				: "",
 			`[$(tools) Mise Tools](command:${MISE_LIST_ALL_TOOLS})`,
 			`[$(gear) Mise Settings](command:${MISE_SHOW_SETTINGS})`,
-			`[$(list-unordered) Tracked Configurations](command:${MISE_SHOW_TRACKED_CONFIG})`,
+			`[$(folder-library) Mise Projects](command:${MISE_SHOW_PROJECTS})`,
 			`[BinPath: ${markdownCodeSpan(displayPathRelativeTo(miseBinPath, ""))}](command:${MISE_OPEN_EXTENSION_SETTINGS})`,
 			miseVersion ? `Mise Version: ${escapeMarkdown(miseVersion)}` : "",
 		].filter(Boolean);
