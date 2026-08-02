@@ -3,11 +3,19 @@ import * as os from "node:os";
 import path from "node:path";
 import * as cheerio from "cheerio";
 import * as vscode from "vscode";
-import { MISE_EDIT_SETTING } from "./commands";
+import {
+	MISE_EDIT_SETTING,
+	MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,
+} from "./commands";
 import type { MiseService } from "./miseService";
 import { logger } from "./utils/logger";
 
-type PanelView = "TOOLS" | "SETTINGS" | "TRACKED_CONFIGS" | "TASKS_DEPS";
+type PanelView =
+	| "TOOLS"
+	| "SETTINGS"
+	| "TRACKED_CONFIGS"
+	| "TASKS_DEPS"
+	| "BOOTSTRAP";
 
 function panelTitleForView(view: PanelView) {
 	switch (view) {
@@ -19,6 +27,8 @@ function panelTitleForView(view: PanelView) {
 			return "Tracked Configs";
 		case "TASKS_DEPS":
 			return "Tasks Dependencies";
+		case "BOOTSTRAP":
+			return "Bootstrap";
 	}
 }
 
@@ -147,6 +157,11 @@ export default class WebViewPanel {
 									this.miseService.getTasks(),
 								);
 							}
+							case "bootstrapStatus": {
+								return executeAction(message, () =>
+									this.miseService.getBootstrapStatus(),
+								);
+							}
 						}
 						break;
 					case "mutation":
@@ -185,6 +200,21 @@ export default class WebViewPanel {
 										vscode.Uri.file(message.variables?.path as string),
 										{ preview: true, viewColumn: vscode.ViewColumn.One },
 									),
+								);
+							}
+							case "openBootstrapEntryDefinition": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(
+										MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,
+										message.variables?.entry,
+									),
+								);
+							}
+							case "runBootstrap": {
+								return executeAction(message, async () =>
+									miseService.runBootstrapInConsole({
+										dryRun: message.variables?.dryRun === true,
+									}),
 								);
 							}
 							case "editSetting": {

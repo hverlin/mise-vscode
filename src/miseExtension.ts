@@ -17,6 +17,7 @@ import {
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
 	MISE_SELECT_WORKSPACE_FOLDER,
+	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
 	MISE_VISUALIZE_TASKS_DEPS,
@@ -36,6 +37,10 @@ import {
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
+import {
+	MiseBootstrapProvider,
+	registerBootstrapCommands,
+} from "./providers/bootstrapProvider";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
@@ -176,14 +181,20 @@ export class MiseExtension {
 		const tasksProvider = new MiseTasksProvider(this.miseService);
 		const toolsProvider = new MiseToolsProvider(this.miseService);
 		const envsProvider = new MiseEnvsProvider(this.miseService);
+		const bootstrapProvider = new MiseBootstrapProvider(this.miseService);
 
 		registerTasksCommands(context, tasksProvider);
 		registerToolsCommands(context, this.miseService);
 		registerEnvsCommands(context, envsProvider, this.miseService);
+		registerBootstrapCommands(context, this.miseService);
 
 		vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
 		vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);
 		vscode.window.registerTreeDataProvider("miseEnvsView", envsProvider);
+		vscode.window.registerTreeDataProvider(
+			"miseBootstrapView",
+			bootstrapProvider,
+		);
 
 		vscode.workspace.onDidChangeConfiguration((e) => {
 			const miseConfigUpdated = Object.values(CONFIGURATION_FLAGS).some(
@@ -228,6 +239,7 @@ export class MiseExtension {
 				tasksProvider.refresh();
 				toolsProvider.refresh();
 				envsProvider.refresh();
+				bootstrapProvider.refresh();
 
 				this.checkForMissingMiseTools();
 
@@ -419,6 +431,12 @@ export class MiseExtension {
 		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_VISUALIZE_TASKS_DEPS, async () => {
 				WebViewPanel.createOrShow(context, this.miseService, "TASKS_DEPS");
+			}),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_SHOW_BOOTSTRAP, async () => {
+				WebViewPanel.createOrShow(context, this.miseService, "BOOTSTRAP");
 			}),
 		);
 
@@ -691,6 +709,11 @@ export class MiseExtension {
 			vscode.commands.executeCommand(
 				"setContext",
 				"mise.envProviderError",
+				false,
+			),
+			vscode.commands.executeCommand(
+				"setContext",
+				"mise.bootstrapProviderError",
 				false,
 			),
 			this.miseService.invalidateCache(),

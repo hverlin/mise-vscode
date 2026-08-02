@@ -1,3 +1,4 @@
+import { Bootstrap } from "./Bootstrap";
 import { Settings } from "./Settings";
 import { TasksDependencies } from "./TasksDependencies";
 import { Tools } from "./Tools";
@@ -16,6 +17,8 @@ export function App() {
 				<Settings />
 			) : view === "TASKS_DEPS" ? (
 				<TasksDependencies />
+			) : view === "BOOTSTRAP" ? (
+				<Bootstrap />
 			) : (
 				<TrackedConfigs />
 			)}

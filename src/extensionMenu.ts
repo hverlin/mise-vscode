@@ -9,6 +9,7 @@ import {
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
 	MISE_SELECT_WORKSPACE_FOLDER,
+	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
 	MISE_VISUALIZE_TASKS_DEPS,
@@ -45,6 +46,11 @@ export function createMenu(miseService: MiseService) {
 					label: "Task dependencies",
 					detail: "Visualize task dependencies & workspace projects",
 					iconPath: new vscode.ThemeIcon("type-hierarchy"),
+				},
+				{
+					label: "Bootstrap status",
+					detail: "Show mise bootstrap status",
+					iconPath: new vscode.ThemeIcon("rocket"),
 				},
 				(vscode.workspace.workspaceFolders?.length ?? 0) > 1
 					? {
@@ -98,6 +104,9 @@ export function createMenu(miseService: MiseService) {
 				break;
 			case "Task dependencies":
 				await vscode.commands.executeCommand(MISE_VISUALIZE_TASKS_DEPS);
+				break;
+			case "Bootstrap status":
+				await vscode.commands.executeCommand(MISE_SHOW_BOOTSTRAP);
 				break;
 			case "Reload configuration":
 				await vscode.commands.executeCommand(MISE_RELOAD);

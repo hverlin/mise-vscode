@@ -61,6 +61,8 @@ const flattenSettings = (obj: object, prefix = "") => {
 };
 
 const MIN_MISE_VERSION = [2025, 1, 5] as const;
+// `mise bootstrap` (with `bootstrap status --json`) was consolidated in 2026.7.16
+const MIN_MISE_VERSION_FOR_BOOTSTRAP = [2026, 7, 16] as const;
 
 function compareVersions(
 	a: readonly [number, number, number],
@@ -1386,5 +1388,47 @@ export class MiseService {
 			logger.debug("mise tasks graph is not available:", error as Error);
 			return [];
 		}
+	}
+
+	async isBootstrapAvailable() {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_BOOTSTRAP);
+	}
+
+	/**
+	 * Aggregate status of `[bootstrap.*]`, `[dotfiles]` and `[tools]` sections.
+	 * `undefined` when the installed mise version does not support bootstrap.
+	 */
+	async getBootstrapStatus(): Promise<MiseBootstrapStatus | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined;
+		}
+
+		if (!(await this.isBootstrapAvailable())) {
+			return undefined;
+		}
+
+		try {
+			const { stdout } = await this.cache.execCmd({
+				command: "bootstrap status --json",
+			});
+			return JSON.parse(stdout) as MiseBootstrapStatus;
+		} catch (error) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
+				await this.handleUntrustedFile(error);
+				return this.getBootstrapStatus();
+			}
+
+			throw error;
+		}
+	}
+
+	async runBootstrapInConsole({ dryRun = false } = {}) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(
+			dryRun ? "bootstrap --dry-run" : "bootstrap --yes",
+		);
 	}
 }

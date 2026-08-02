@@ -25,6 +25,11 @@ export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
 export const MISE_RELOAD = "mise.refreshEntry";
 export const MISE_REMOVE_TOOL = "mise.removeTool";
+export const MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION =
+	"mise.openBootstrapEntryDefinition";
+export const MISE_RUN_BOOTSTRAP = "mise.runBootstrap";
+export const MISE_RUN_BOOTSTRAP_DRY_RUN = "mise.runBootstrapDryRun";
+export const MISE_SHOW_BOOTSTRAP = "mise.showBootstrap";
 export const MISE_RUN_TASK = "mise.runTask";
 export const MISE_SET_ENV_VARIABLE = "mise.setEnvVariable";
 export const MISE_USE_TOOL = "mise.useTool";

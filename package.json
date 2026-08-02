@@ -622,6 +622,21 @@
         "view": "miseEnvsView",
         "contents": "Error loading environment variables. [Open logs](command:mise.openLogs)",
         "when": "mise.envProviderError && config.mise.enable"
+      },
+      {
+        "view": "miseBootstrapView",
+        "contents": "[Bootstrap](https://mise.jdx.dev/bootstrap.html) status will be displayed here once bootstrap sections are configured. (requires mise 2026.7.16+)\n[Show bootstrap status](command:mise.showBootstrap)",
+        "when": "config.mise.binPath && config.mise.enable && !mise.bootstrapProviderError"
+      },
+      {
+        "view": "miseBootstrapView",
+        "contents": "Error loading bootstrap status. [Open logs](command:mise.openLogs)",
+        "when": "mise.bootstrapProviderError && config.mise.enable"
+      },
+      {
+        "view": "miseBootstrapView",
+        "contents": "Mise extension is disabled.\n[Open settings](command:mise.openExtensionSettings)",
+        "when": "!config.mise.enable"
       }
     ],
     "views": {
@@ -640,6 +655,12 @@
           "id": "miseEnvsView",
           "name": "Environment Variables",
           "when": "!isWeb"
+        },
+        {
+          "id": "miseBootstrapView",
+          "name": "Bootstrap",
+          "when": "!isWeb",
+          "visibility": "collapsed"
         }
       ]
     },
@@ -863,6 +884,28 @@
         "command": "mise.doctor",
         "title": "Mise: Run mise doctor",
         "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.runBootstrap",
+        "title": "Mise: Run mise bootstrap",
+        "icon": "$(play)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.runBootstrapDryRun",
+        "title": "Mise: Run mise bootstrap (dry run)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showBootstrap",
+        "title": "Mise: Show bootstrap status",
+        "icon": "$(list-ordered)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openBootstrapEntryDefinition",
+        "title": "Mise: Open Bootstrap Entry Definition",
+        "enablement": "!isWeb"
       }
     ],
     "menus": {
@@ -901,6 +944,10 @@
         },
         {
           "command": "mise.doctor",
+          "when": "false"
+        },
+        {
+          "command": "mise.openBootstrapEntryDefinition",
           "when": "false"
         }
       ],
@@ -951,8 +998,18 @@
           "group": "navigation@2"
         },
         {
+          "command": "mise.showBootstrap",
+          "when": "view == miseBootstrapView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.runBootstrap",
+          "when": "view == miseBootstrapView",
+          "group": "navigation@2"
+        },
+        {
           "command": "mise.refreshEntry",
-          "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView",
+          "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView || view == miseBootstrapView",
           "group": "navigation@4"
         }
       ],
