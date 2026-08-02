@@ -26,7 +26,11 @@ jobs:
           install: true
           cache: true
 
-      - run: aube ci --frozen-lockfile
+      # run the install from the docs package so the workspace importer is
+      # always covered, even if the root lockfile regresses again
+      - name: Install docs dependencies
+        working-directory: docs
+        run: aube ci --frozen-lockfile
       - name: Build docs
         working-directory: docs
         run: aube run build

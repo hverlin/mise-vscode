@@ -847,9 +847,9 @@
         "enablement": "!isWeb"
       },
       {
-        "command": "mise.showTrackedConfig",
-        "title": "Mise: Show mise tracked configurations",
-        "icon": "$(list-ordered)",
+        "command": "mise.showProjects",
+        "title": "Mise: Show mise projects",
+        "icon": "$(folder-library)",
         "enablement": "!isWeb"
       },
       {

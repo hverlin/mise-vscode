@@ -1,0 +1,2 @@
+[tasks.hello]
+run = "echo hello"

@@ -10,8 +10,8 @@ import {
 	MISE_RELOAD,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
+	MISE_SHOW_PROJECTS,
 	MISE_SHOW_SETTINGS,
-	MISE_SHOW_TRACKED_CONFIG,
 	MISE_VISUALIZE_TASKS_DEPS,
 } from "./commands";
 import {
@@ -38,9 +38,9 @@ export function createMenu(miseService: MiseService) {
 					iconPath: new vscode.ThemeIcon("gear"),
 				},
 				{
-					label: "Tracked configurations",
-					detail: "List & manage tracked configurations",
-					iconPath: new vscode.ThemeIcon("list-selection"),
+					label: "Mise projects",
+					detail: "List mise projects & tracked configurations on this machine",
+					iconPath: new vscode.ThemeIcon("folder-library"),
 				},
 				{
 					label: "Task dependencies",
@@ -99,8 +99,8 @@ export function createMenu(miseService: MiseService) {
 			case "Mise settings":
 				await vscode.commands.executeCommand(MISE_SHOW_SETTINGS);
 				break;
-			case "Tracked configurations":
-				await vscode.commands.executeCommand(MISE_SHOW_TRACKED_CONFIG);
+			case "Mise projects":
+				await vscode.commands.executeCommand(MISE_SHOW_PROJECTS);
 				break;
 			case "Task dependencies":
 				await vscode.commands.executeCommand(MISE_VISUALIZE_TASKS_DEPS);

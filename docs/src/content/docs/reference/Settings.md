@@ -22,6 +22,18 @@ access the extension settings.
 
 ## Settings
 
+##### `mise.skipWorkspaceBinaryApproval`
+- **Type:** `boolean`
+- **Default:** `false`
+
+Run a mise binary located inside the workspace without asking for approval first.
+
+**This turns off a security check.** A repository can point `mise.binPath` at a program it ships, and with this enabled that program runs as soon as you open the project. Useful if you rely on a committed launcher such as the one written by `mise generate bootstrap -l -w`.
+
+You still have to trust the folder in VS Code first: the extension does not run in an untrusted workspace at all. This setting is machine-scoped, so a project cannot enable it for you.
+
+---
+
 ##### `mise.enable`
 - **Type:** `boolean`
 - **Default:** `true`

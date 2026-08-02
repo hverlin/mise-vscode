@@ -32,8 +32,16 @@ import {
 	flattenJsonSchema,
 	idiomaticFiles,
 	idiomaticFileToTool,
+	isToolVersionsFile,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
+import {
+	buildProjectsData,
+	configsFromLsAllSources,
+	findMiseConfigsInDir,
+	type MiseLsAllSourcesOutput,
+	parseToolVersionsContent,
+} from "./utils/projectsUtils";
 import {
 	buildShellCommand,
 	isTerminalClosed,
@@ -52,6 +60,9 @@ const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
 
 /** globalState key holding the workspace mise binaries the user approved */
 export const APPROVED_WORKSPACE_BINARIES_KEY = "mise.approvedWorkspaceBinaries";
+
+/** globalState key holding the folders scanned for the Projects webview */
+export const PROJECT_SCAN_DIRECTORIES_KEY = "mise.projectScanDirectories";
 
 const flattenSettings = (obj: object, prefix = "") => {
 	const result: Record<string, MiseSettingInfo> = {};
@@ -173,12 +184,20 @@ export class MiseService {
 			return flattenJsonSchema(json.$defs.settings);
 		});
 
+	// scanning the project directories reads many files: keep the result for a
+	// while instead of re-walking on every webview refresh
+	private projectsCache = createCache({
+		ttl: 60,
+		storage: { type: "memory" },
+	}).define("getProjects", () => this.loadProjectEntries());
+
 	async invalidateCache() {
 		await Promise.all([
 			this.dedupeCache.clear(),
 			this.slowCache.clear(),
 			this.cache.clear(),
 			this.longTTLCache.clear(),
+			this.projectsCache.clear(),
 		]);
 		this.eventEmitter.fire();
 	}
@@ -1389,6 +1408,46 @@ export class MiseService {
 		return this.longTTLCache.fetchSchema();
 	}
 
+	private async parseConfigFileTools(
+		configPath: string,
+	): Promise<{ path: string; tools: Record<string, unknown> } | undefined> {
+		try {
+			const stats = await vscode.workspace.fs.stat(vscode.Uri.file(configPath));
+			if (stats.type !== vscode.FileType.File) {
+				return undefined;
+			}
+
+			const content = await vscode.workspace.fs.readFile(
+				vscode.Uri.file(configPath),
+			);
+			if (configPath.endsWith(".toml")) {
+				const config = parse(content.toString());
+				return { path: configPath, tools: config.tools ?? {} };
+			}
+			if (isToolVersionsFile(configPath)) {
+				return {
+					path: configPath,
+					tools: parseToolVersionsContent(content.toString()),
+				};
+			}
+			const idiomaticFile = [...idiomaticFiles].find((ext) =>
+				configPath.endsWith(ext),
+			);
+			if (idiomaticFile) {
+				return {
+					path: configPath,
+					tools: {
+						// @ts-expect-error
+						[idiomaticFileToTool[idiomaticFile]]: content.toString().trim(),
+					},
+				};
+			}
+			return { path: configPath, tools: {} };
+		} catch {
+			return undefined;
+		}
+	}
+
 	async getTrackedConfigFiles() {
 		const trackedConfigFiles = await vscode.workspace.fs.readDirectory(
 			vscode.Uri.file(TRACKED_CONFIG_DIR),
@@ -1396,58 +1455,126 @@ export class MiseService {
 
 		const parsedTrackedConfigs = await Promise.all(
 			trackedConfigFiles.map(async ([n]) => {
-				try {
-					const trackedConfigPath = await readlink(
-						path.join(TRACKED_CONFIG_DIR, n),
-					).catch(() => "");
-					if (!trackedConfigPath) {
-						return {};
-					}
-
-					const stats = await vscode.workspace.fs.stat(
-						vscode.Uri.file(trackedConfigPath),
-					);
-
-					if (stats.type === vscode.FileType.File) {
-						const content = await vscode.workspace.fs.readFile(
-							vscode.Uri.file(trackedConfigPath),
-						);
-						if (trackedConfigPath.endsWith(".toml")) {
-							const config = parse(content.toString());
-							return {
-								path: trackedConfigPath,
-								tools: config.tools ?? {},
-							};
-						}
-						const idiomaticFile = [...idiomaticFiles].find((ext) =>
-							trackedConfigPath.endsWith(ext),
-						);
-						if (idiomaticFile) {
-							return {
-								path: trackedConfigPath,
-								tools: {
-									// @ts-expect-error
-									[idiomaticFileToTool[idiomaticFile]]: content
-										.toString()
-										.trim(),
-								},
-							};
-						}
-						return { path: trackedConfigPath, tools: {} };
-					}
-				} catch {
-					return {};
+				const trackedConfigPath = await readlink(
+					path.join(TRACKED_CONFIG_DIR, n),
+				).catch(() => "");
+				if (!trackedConfigPath) {
+					return undefined;
 				}
+				return this.parseConfigFileTools(trackedConfigPath);
 			}),
 		);
 
 		const validConfigs = parsedTrackedConfigs.filter(
-			(trackedConfigPath) => trackedConfigPath?.path,
-		) as Array<{ path: string; tools: object }>;
+			(trackedConfig) => trackedConfig !== undefined,
+		);
 
 		return uniqBy(validConfigs, (c) => c.path).sort((a, b) =>
 			a.path.localeCompare(b.path),
 		);
+	}
+
+	async getProjects(): Promise<MiseProjectsData> {
+		return this.projectsCache.getProjects();
+	}
+
+	getProjectScanDirectories(): string[] {
+		return this.context.globalState.get<string[]>(
+			PROJECT_SCAN_DIRECTORIES_KEY,
+			[],
+		);
+	}
+
+	async addProjectScanDirectory(dir: string) {
+		const dirs = this.getProjectScanDirectories();
+		if (!dirs.includes(dir)) {
+			await this.context.globalState.update(PROJECT_SCAN_DIRECTORIES_KEY, [
+				...dirs,
+				dir,
+			]);
+		}
+		await this.projectsCache.clear();
+	}
+
+	async removeProjectScanDirectory(dir: string) {
+		await this.context.globalState.update(
+			PROJECT_SCAN_DIRECTORIES_KEY,
+			this.getProjectScanDirectories().filter((d) => d !== dir),
+		);
+		await this.projectsCache.clear();
+	}
+
+	/**
+	 * Tool requests grouped by config file across the whole machine, from
+	 * `mise ls --all-sources` (2026+). Empty on older mise versions; the
+	 * caller falls back to the parsed tracked configs.
+	 */
+	private async getConfigsFromAllSources() {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+		try {
+			const { stdout } = await this.longTTLCache.execCmd({
+				args: ["ls", "--all-sources", "--json"],
+				setMiseEnv: false,
+			});
+			return configsFromLsAllSources(
+				JSON.parse(stdout) as MiseLsAllSourcesOutput,
+			);
+		} catch (error) {
+			logger.info("mise ls --all-sources is not available", error);
+			return [];
+		}
+	}
+
+	private async loadProjectEntries(): Promise<MiseProjectsData> {
+		const [trackedConfigs, allSourcesConfigs] = await Promise.all([
+			// still needed even when `mise ls --all-sources` works: it only
+			// reports tools, so task-only configs would be missed
+			this.getTrackedConfigFiles().catch(
+				() => [] as Array<{ path: string; tools: Record<string, unknown> }>,
+			),
+			this.getConfigsFromAllSources(),
+		]);
+
+		const scanDirs = this.getProjectScanDirectories().map((dir) =>
+			expandPath(dir),
+		);
+		const scannedPaths = (
+			await Promise.all(
+				scanDirs.map((dir) => findMiseConfigsInDir(dir).catch(() => [])),
+			)
+		).flat();
+
+		const configsByPath = new Map(
+			trackedConfigs.map((config) => [config.path, config]),
+		);
+		// mise's own resolution wins over our parsed values, tool by tool
+		for (const config of allSourcesConfigs) {
+			configsByPath.set(config.path, {
+				path: config.path,
+				tools: { ...configsByPath.get(config.path)?.tools, ...config.tools },
+			});
+		}
+
+		const scannedConfigs = await Promise.all(
+			scannedPaths
+				.filter((configPath) => !configsByPath.has(configPath))
+				.map((configPath) => this.parseConfigFileTools(configPath)),
+		);
+		for (const config of scannedConfigs) {
+			if (config && !configsByPath.has(config.path)) {
+				configsByPath.set(config.path, config);
+			}
+		}
+
+		const globalConfigFile = process.env.MISE_GLOBAL_CONFIG_FILE;
+		return {
+			...buildProjectsData([...configsByPath.values()], {
+				globalConfigPaths: globalConfigFile ? [globalConfigFile] : [],
+			}),
+			scanDirectories: this.getProjectScanDirectories(),
+		};
 	}
 
 	dispose() {

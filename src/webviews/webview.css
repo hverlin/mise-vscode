@@ -9,6 +9,12 @@
 	background-color: var(--vscode-list-hoverBackground);
 }
 
+.vscode-table__row--selected,
+.vscode-table__row--selected:hover {
+	background-color: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
 .vscode-table__sort-button {
 	display: flex;
 	align-items: center;

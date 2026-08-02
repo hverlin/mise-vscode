@@ -14,6 +14,12 @@ interface WebviewStore {
 
 	showActiveToolsOnly: boolean;
 	setShowActiveToolsOnly: (value: boolean) => void;
+
+	showIdiomaticFiles: boolean;
+	setShowIdiomaticFiles: (value: boolean) => void;
+
+	showFlatFileView: boolean;
+	setShowFlatFileView: (value: boolean) => void;
 }
 
 export const useWebviewStore = create<WebviewStore>()(
@@ -32,6 +38,13 @@ export const useWebviewStore = create<WebviewStore>()(
 			showActiveToolsOnly: true,
 			setShowActiveToolsOnly: (value: boolean) =>
 				set({ showActiveToolsOnly: value }),
+
+			showIdiomaticFiles: false,
+			setShowIdiomaticFiles: (value: boolean) =>
+				set({ showIdiomaticFiles: value }),
+
+			showFlatFileView: false,
+			setShowFlatFileView: (value: boolean) => set({ showFlatFileView: value }),
 		}),
 		{
 			name: "webview-store",

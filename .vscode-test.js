@@ -74,6 +74,28 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "projects",
+		files: "src/e2e-tests/projects/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "projects-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's own tracked configs and global config out of the
+			// projects view so results match between dev machines and CI.
+			MISE_STATE_DIR: path.join(fixturesPath, "projects-workspace", ".state"),
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"projects-workspace",
+				"global-config.toml",
+			),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),
