@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.17.0](https://github.com/hverlin/mise-vscode/compare/v1.16.0...v1.17.0) (2026-08-02)
+
+
+### Features
+
+* replace tracked config view with projects list view ([#253](https://github.com/hverlin/mise-vscode/issues/253)) ([dbfb766](https://github.com/hverlin/mise-vscode/commit/dbfb766c381e761b8d1d6b2f8b07d07886d8aa0c))
+
+
+### Bug Fixes
+
+* improve tombi file association ([3c0865b](https://github.com/hverlin/mise-vscode/commit/3c0865be842aff1e36e5acb0c5a0ee3a161c7e31))
+* improve usage support ([#255](https://github.com/hverlin/mise-vscode/issues/255)) ([b74766f](https://github.com/hverlin/mise-vscode/commit/b74766f49b4f7e3c96a35f002d3381547e9d17d4))
+
 ## [1.16.0](https://github.com/hverlin/mise-vscode/compare/v1.15.0...v1.16.0) (2026-08-02)
 
 
