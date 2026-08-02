@@ -14,7 +14,8 @@
 		"strict": true,
 		"target": "es2022",
 		"jsx": "react-jsx",
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"types": ["node", "bun", "mocha"]
 	},
 	"exclude": [
 		"node_modules",
