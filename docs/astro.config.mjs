@@ -1,3 +1,4 @@
+import { unified } from "@astrojs/markdown-remark";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightImageZoom from "starlight-image-zoom";
@@ -6,6 +7,11 @@ import starlightLinksValidator from "starlight-links-validator";
 export default defineConfig({
 	site: "https://hverlin.github.io/mise-vscode/",
 	base: "mise-vscode",
+	// starlight-image-zoom does not yet support the Sätteri Markdown processor
+	// https://github.com/HiDeoo/starlight-image-zoom/issues/63
+	markdown: {
+		processor: unified(),
+	},
 	redirects: {
 		"/getting-started": "/mise-vscode/tutorials/getting-started/",
 	},
