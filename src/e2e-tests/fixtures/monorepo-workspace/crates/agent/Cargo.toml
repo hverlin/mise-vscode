@@ -1,0 +1,13 @@
+[package]
+name = "agent"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+renamed-protocol = { package = "protocol", path = "../protocol" }
+
+[dev-dependencies]
+shared = { workspace = true }
+
+[target.'cfg(unix)'.build-dependencies]
+build-helper = { path = "../build-helper" }

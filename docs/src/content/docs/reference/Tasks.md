@@ -119,7 +119,14 @@ Navigation understands all the ways tasks can reference each other:
 - `depends = ["//projects/...:build"]`, `depends = ["//projects/frontend:*"]` —
   wildcards. Hovering shows all the matching tasks, and go-to-definition opens
   each of them.
+- `depends = ["^build"]` — the `build` tasks of the projects the current
+  project depends on, following the workspace projects graph
 - task aliases (`alias = "fmt"`), including in other projects
+
+Tasks declared with `extends = "<name>"` support go-to-definition to the
+`[task_templates.<name>]` entry, in the same file or a parent config file.
+Dependencies added by `[monorepo.task_defaults]` in the root config are shown
+in the task tooltips and included when searching for task references.
 
 ### package.json scripts
 
@@ -130,11 +137,29 @@ as tasks (e.g. `node:frontend#test`, also addressable as
 `package.json` file and can be run like any other task. Go-to-definition on a
 reference to such a task jumps to the script in the `package.json` file.
 
+If a mise task in the project's `mise.toml` has the same name as a script, the
+toml task takes precedence and keeps the script name as an alias.
+
+With a `turbo.json` file, mise (2026.8.0+) imports the supported metadata of
+each script (`dependsOn`, `inputs`, `outputs`, `cache`). Imported dependencies
+show up in task tooltips and are included when searching for task references.
+
 ### Workspace projects graph
 
 `Mise: Visualize task dependencies` (also available from the mise status bar
 menu, under _Task dependencies_) shows the workspace project graph inferred by
 mise from ecosystem manifests, in addition to the task dependency graph.
+
+With mise `2026.8.0` or later, projects and their dependency edges are
+inferred from Node (`package.json` workspaces or `pnpm-workspace.yaml`), Cargo,
+uv, and Go workspace manifests, without needing the underlying toolchains
+installed. Go dependency edges are not inferred from `go.mod`; they can be
+declared with `[monorepo.projects]` in the monorepo root config:
+
+```toml
+[monorepo.projects."go:example.com/fixture/gateway"]
+depends = ["go:example.com/fixture/auth"]
+```
 
 ### Tools and environment variables
 

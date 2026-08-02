@@ -1,10 +1,11 @@
 {
-	"name": "frontend",
-	"scripts": {
-		"test": "echo 'testing frontend'",
-		"start": "echo 'starting frontend'"
-	},
-	"dependencies": {
-		"backend": "*"
-	}
+  "name": "frontend",
+  "scripts": {
+    "test": "echo 'testing frontend'",
+    "start": "echo 'starting frontend'"
+  },
+  "dependencies": {
+    "backend": "*",
+    "@fixture/shared": "*"
+  }
 }

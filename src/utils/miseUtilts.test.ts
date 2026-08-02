@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { getWebsiteForTool } from "./miseUtilts";
+import { getWebsiteForTool, renderDepsArray } from "./miseUtilts";
 
 // Mock MiseToolInfo objects matching exact `mise tool X --json` outputs
 
@@ -95,5 +95,24 @@ describe("getWebsiteForTool", () => {
 		// @ts-expect-error intentional
 		const result = await getWebsiteForTool({ backend: "unknown" });
 		expect(result).toBeUndefined();
+	});
+});
+
+describe("renderDepsArray", () => {
+	it("renders string, array, and provider-suggested object entries", () => {
+		expect(
+			renderDepsArray([
+				"build",
+				["lint", "--fix"],
+				{ task: "//projects/ui:build", optional: true },
+				{ task: "//projects/api:build" },
+			]),
+		).toBe(
+			"build, lint --fix, //projects/ui:build (optional), //projects/api:build",
+		);
+	});
+
+	it("returns an empty string without deps", () => {
+		expect(renderDepsArray(undefined)).toBe("");
 	});
 });

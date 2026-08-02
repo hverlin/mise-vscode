@@ -1,0 +1,3 @@
+[tasks.build]
+description = "Build the go gateway"
+run = "echo 'Building go gateway'"

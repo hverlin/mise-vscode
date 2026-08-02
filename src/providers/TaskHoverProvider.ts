@@ -118,10 +118,15 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		}
 
 		const pattern = document.getText(patternRange);
+		// `^task` refers to upstream projects, which requires the projects graph
+		const projects = pattern.startsWith("^")
+			? await this.miseService.getTasksGraph()
+			: [];
 		const matchingTasks = findTasksMatchingDependsPattern(
 			tasks,
 			pattern,
 			documentPath,
+			projects,
 		);
 
 		const [firstTask] = matchingTasks;

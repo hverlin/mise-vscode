@@ -1,0 +1,4 @@
+[tasks.build]
+description = "Depends on a task of another crate"
+depends = ["//crates/protocol:build"]
+run = "echo 'Building agent crate'"

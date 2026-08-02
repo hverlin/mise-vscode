@@ -1,5 +1,6 @@
 import micromatch from "micromatch";
 import { expandPath } from "./fileUtils";
+import { DEPENDS_KEYWORDS } from "./miseUtilts";
 
 // https://mise.jdx.dev/tasks/monorepo.html
 // Mise reports monorepo tasks as `//path:task` while config files keep local
@@ -22,9 +23,10 @@ export const TASK_NAME_REGEX = /[\w/:-]+/;
 
 /**
  * Wider than TASK_NAME_REGEX to capture wildcards (`//projects/...:build`,
- * `:test*`). Only safe inside depends values, where quotes delimit the entry.
+ * `:test*`) and upstream references (`^build`). Only safe inside depends
+ * values, where quotes delimit the entry.
  */
-export const TASK_PATTERN_REGEX = /[\w/:.*?{},-]+/;
+export const TASK_PATTERN_REGEX = /[\w^/:.*?{},-]+/;
 
 export type TaskNameParts = {
 	/**
@@ -72,6 +74,23 @@ function getProviderScriptName(name: string): string | undefined {
 		return undefined;
 	}
 	return name.slice(hashIndex + 1) || undefined;
+}
+
+/**
+ * The task pattern of a depends entry. Entries can be a string, a
+ * [task, ...args] array, or an object for provider-suggested dependencies
+ * (e.g. imported from turbo.json).
+ */
+export function getDependsEntryPattern(
+	depend: NonNullable<MiseTask["depends"]>[number],
+): string | undefined {
+	if (typeof depend === "string") {
+		return depend;
+	}
+	if (Array.isArray(depend)) {
+		return depend[0];
+	}
+	return depend.task;
 }
 
 export function getAllTaskNames(task: MiseTask): string[] {
@@ -228,18 +247,95 @@ export function resolveTaskReference(
 	return tasks.find((t) => getAllTaskNames(t).includes(word));
 }
 
-/** Tasks a depends entry refers to (several for wildcard patterns) */
+/**
+ * Tasks a depends entry refers to (several for wildcard patterns).
+ * `projects` is only needed to resolve `^task` upstream references.
+ */
 export function findTasksMatchingDependsPattern(
 	tasks: MiseTask[],
 	pattern: string,
 	documentPath?: string,
+	projects: MiseProject[] = [],
 ): MiseTask[] {
 	const ownerConfigRoot = documentPath
 		? getConfigRootForSource(tasks, documentPath)
 		: null;
+
+	const [taskPattern] = pattern.split(/\s+/);
+	if (taskPattern?.startsWith("^")) {
+		return findUpstreamTasksMatchingPattern(
+			tasks,
+			taskPattern.slice(1),
+			ownerConfigRoot,
+			projects,
+		);
+	}
+
 	return tasks.filter((t) =>
 		dependsPatternMatchesTask(pattern, ownerConfigRoot, t),
 	);
+}
+
+/** The workspace projects graph reports the monorepo root as "." */
+function normalizeProjectRoot(root: string): string {
+	return root === "." ? "" : root;
+}
+
+/**
+ * Config roots of the projects the owner project transitively depends on,
+ * following the workspace projects graph.
+ */
+export function getUpstreamConfigRoots(
+	projects: MiseProject[],
+	ownerConfigRoot: string,
+): Set<string> {
+	const byId = new Map(projects.map((p) => [p.id, p]));
+	const visited = new Set<string>();
+	const queue = projects
+		.filter((p) => normalizeProjectRoot(p.root) === ownerConfigRoot)
+		.flatMap((p) => p.dependencies ?? []);
+
+	const roots = new Set<string>();
+	while (queue.length > 0) {
+		const id = queue.shift();
+		if (!id || visited.has(id)) {
+			continue;
+		}
+		visited.add(id);
+		const project = byId.get(id);
+		if (!project) {
+			continue;
+		}
+		roots.add(normalizeProjectRoot(project.root));
+		queue.push(...(project.dependencies ?? []));
+	}
+	roots.delete(ownerConfigRoot);
+	return roots;
+}
+
+/**
+ * `^task` in depends refers to tasks of the projects the owner project
+ * depends on (as in turbo.json `dependsOn`).
+ */
+function findUpstreamTasksMatchingPattern(
+	tasks: MiseTask[],
+	namePattern: string,
+	ownerConfigRoot: string | null,
+	projects: MiseProject[],
+): MiseTask[] {
+	if (ownerConfigRoot === null || !namePattern) {
+		return [];
+	}
+	const upstreamRoots = getUpstreamConfigRoots(projects, ownerConfigRoot);
+	return tasks.filter((task) => {
+		const taskConfigRoot = getTaskConfigRoot(task);
+		if (taskConfigRoot === null || !upstreamRoots.has(taskConfigRoot)) {
+			return false;
+		}
+		return getTaskLocalNames(task).some((localName) =>
+			micromatch.isMatch(localName, namePattern, MICROMATCH_OPTIONS),
+		);
+	});
 }
 
 /**
@@ -305,4 +401,34 @@ export function dependsPatternMatchesTask(
 	return getAllTaskNames(target).some((name) =>
 		micromatch.isMatch(name, taskPattern, MICROMATCH_OPTIONS),
 	);
+}
+
+/**
+ * Whether `task` depends on `target` through any of its depends arrays.
+ * The owner config root comes from the qualified alias when the task name is
+ * a provider one (`node:pkg#script`), so their bare depends entries resolve
+ * within their own project.
+ */
+export function isTaskDependency(task: MiseTask, target: MiseTask): boolean {
+	const ownerConfigRoot = getTaskConfigRoot(task);
+
+	for (const keyword of DEPENDS_KEYWORDS) {
+		const depends = task[keyword];
+		if (!depends) {
+			continue;
+		}
+
+		for (const depend of depends) {
+			const pattern = getDependsEntryPattern(depend);
+			if (!pattern) {
+				continue;
+			}
+
+			if (dependsPatternMatchesTask(pattern, ownerConfigRoot, target)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }

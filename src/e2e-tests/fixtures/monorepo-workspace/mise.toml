@@ -1,7 +1,26 @@
 monorepo_root = true
 
 [monorepo]
-config_roots = ["projects/*", "projects/backend/integration"]
+config_roots = [
+	"projects/*",
+	"projects/backend/integration",
+	"crates/*",
+	"go/*",
+]
+
+# Go project dependencies are not inferred from go.mod; they are declared here
+[monorepo.projects."go:example.com/fixture/gateway"]
+depends = ["go:example.com/fixture/auth"]
+
+# applied to every project task named `build`; ^build refers to the build
+# tasks of the projects the owner project depends on
+[monorepo.task_defaults.build]
+env = { BUILT_WITH_DEFAULTS = "1" }
+depends = ["^build"]
+
+[task_templates.project-info]
+description = "Show information about the project"
+run = "echo 'project info'"
 
 [settings]
 # package.json script tasks and `mise tasks graph` are experimental-gated
@@ -21,7 +40,7 @@ run = "echo 'Hello from the monorepo root'"
 
 [tasks.build-all]
 description = "Build all the projects"
-depends = ["//projects/...:build"]
+depends = ["//projects/...:build", "//crates/...:build"]
 
 [tasks.verify]
 description = "Covers name wildcards, wait_for, and depends_post"

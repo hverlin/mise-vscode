@@ -3,11 +3,15 @@ import {
 	dependsPatternMatchesTask,
 	findTasksMatchingDependsPattern,
 	getConfigRootPaths,
+	getDependsEntryPattern,
 	getLocalTaskName,
+	getTaskConfigRoot,
 	getTaskDefinitionNameCandidates,
 	getTaskDisplayName,
 	getTaskNameParts,
+	getUpstreamConfigRoots,
 	isMonorepoTaskName,
+	isTaskDependency,
 	qualifyTaskName,
 	resolveTaskReference,
 } from "./taskNames";
@@ -444,5 +448,180 @@ describe("findTasksMatchingDependsPattern", () => {
 			"/repo/mise.toml",
 		);
 		expect(matches.map((t) => t.name)).toEqual(["docs:build"]);
+	});
+});
+
+describe("getDependsEntryPattern", () => {
+	it("returns string entries as-is", () => {
+		expect(getDependsEntryPattern("build")).toBe("build");
+	});
+
+	it("returns the first element of [task, ...args] entries", () => {
+		expect(getDependsEntryPattern(["build", "--quick"])).toBe("build");
+	});
+
+	it("returns the task of provider-suggested object entries", () => {
+		expect(
+			getDependsEntryPattern({ task: "//projects/ui:build", optional: true }),
+		).toBe("//projects/ui:build");
+	});
+});
+
+describe("isTaskDependency", () => {
+	// depends imported from turbo.json are reported as objects
+	const scriptTaskWithTurboDeps = {
+		...createTask(
+			"node:frontend#test",
+			"/repo/projects/frontend/package.json",
+			["//projects/frontend:test"],
+		),
+		depends: [
+			{ task: "//projects/backend:test", optional: true },
+			// same-package turbo deps are reported as bare local names
+			"start",
+		],
+	};
+	const backendScriptTask = createTask(
+		"node:backend#test",
+		"/repo/projects/backend/package.json",
+		["//projects/backend:test"],
+	);
+	// a toml task that shadows a package.json script keeps the provider name
+	// as alias
+	const collidingTomlTask = createTask(
+		"//projects/frontend:start",
+		"/repo/projects/frontend/mise.toml",
+		["node:frontend#start"],
+	);
+
+	it("matches provider-suggested object entries", () => {
+		expect(isTaskDependency(scriptTaskWithTurboDeps, backendScriptTask)).toBe(
+			true,
+		);
+	});
+
+	it("resolves bare entries of provider tasks within their own project", () => {
+		expect(isTaskDependency(scriptTaskWithTurboDeps, collidingTomlTask)).toBe(
+			true,
+		);
+	});
+
+	it("does not match bare entries across projects", () => {
+		const otherProjectTask = createTask(
+			"//projects/backend:start",
+			"/repo/projects/backend/mise.toml",
+		);
+		expect(isTaskDependency(scriptTaskWithTurboDeps, otherProjectTask)).toBe(
+			false,
+		);
+	});
+
+	it("matches [task, ...args] entries", () => {
+		const owner = {
+			...createTask(
+				"//projects/backend:release",
+				"/repo/projects/backend/mise.toml",
+			),
+			depends: [["build", "--quick"]],
+		};
+		const target = createTask(
+			"//projects/backend:build",
+			"/repo/projects/backend/mise.toml",
+		);
+		expect(isTaskDependency(owner, target)).toBe(true);
+	});
+});
+
+describe("getUpstreamConfigRoots", () => {
+	const projects: MiseProject[] = [
+		{ id: "node:app", root: "packages/app", dependencies: ["node:bridge"] },
+		{ id: "node:bridge", root: "packages/bridge", dependencies: ["node:core"] },
+		{ id: "node:core", root: "packages/core", dependencies: [] },
+		{ id: "uv:root", root: ".", dependencies: [] },
+		{ id: "cargo:tool", root: "crates/tool", dependencies: ["cargo:tool"] },
+	];
+
+	it("collects transitive upstream roots", () => {
+		expect(
+			[...getUpstreamConfigRoots(projects, "packages/app")].sort(),
+		).toEqual(["packages/bridge", "packages/core"]);
+	});
+
+	it("returns an empty set for projects without upstream projects", () => {
+		expect(getUpstreamConfigRoots(projects, "packages/core").size).toBe(0);
+		expect(getUpstreamConfigRoots(projects, "").size).toBe(0);
+	});
+
+	it("excludes the owner root and survives cycles", () => {
+		expect(getUpstreamConfigRoots(projects, "crates/tool").size).toBe(0);
+	});
+});
+
+describe("findTasksMatchingDependsPattern with ^ upstream references", () => {
+	const projects: MiseProject[] = [
+		{
+			id: "node:frontend",
+			root: "projects/frontend",
+			dependencies: ["node:backend", "node:shared"],
+		},
+		{ id: "node:backend", root: "projects/backend", dependencies: [] },
+		{ id: "node:shared", root: "projects/shared", dependencies: [] },
+	];
+	const tasks = [
+		createTask("//projects/backend:build", "/repo/projects/backend/mise.toml"),
+		// same name in the owner project must not match
+		createTask(
+			"//projects/frontend:build",
+			"/repo/projects/frontend/mise.toml",
+		),
+		// not an upstream project
+		createTask("//projects/other:build", "/repo/projects/other/mise.toml"),
+	];
+
+	it("matches tasks of upstream projects only", () => {
+		const matches = findTasksMatchingDependsPattern(
+			tasks,
+			"^build",
+			"/repo/projects/frontend/mise.toml",
+			projects,
+		);
+		expect(matches.map((t) => t.name)).toEqual(["//projects/backend:build"]);
+	});
+
+	it("supports name wildcards", () => {
+		const matches = findTasksMatchingDependsPattern(
+			tasks,
+			"^bu*",
+			"/repo/projects/frontend/mise.toml",
+			projects,
+		);
+		expect(matches.map((t) => t.name)).toEqual(["//projects/backend:build"]);
+	});
+
+	it("returns nothing without the projects graph", () => {
+		const matches = findTasksMatchingDependsPattern(
+			tasks,
+			"^build",
+			"/repo/projects/frontend/mise.toml",
+		);
+		expect(matches).toEqual([]);
+	});
+});
+
+describe("scoped package script tasks", () => {
+	const scopedTask = createTask(
+		"node:@fixture/shared#lint",
+		"/repo/projects/shared/package.json",
+		["//projects/shared:lint"],
+	);
+
+	it("derives the config root from the qualified alias", () => {
+		expect(getTaskConfigRoot(scopedTask)).toBe("projects/shared");
+	});
+
+	it("resolves the qualified alias to the scoped task", () => {
+		expect(
+			resolveTaskReference([scopedTask], "//projects/shared:lint")?.name,
+		).toBe("node:@fixture/shared#lint");
 	});
 });

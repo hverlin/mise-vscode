@@ -15,3 +15,13 @@ run = "echo 'Starting frontend dev server'"
 description = "Depends on a sibling toml task and a package.json script"
 depends = ["build", ":test"]
 
+# collides with the package.json `start` script: the toml task takes
+# precedence and keeps the script name as an alias
+[tasks.start]
+description = "Start the frontend"
+run = "echo 'Starting frontend from toml'"
+
+[tasks.package]
+description = "Depends on the build tasks of upstream projects"
+depends = ["^build"]
+run = "echo 'Packaging frontend'"
