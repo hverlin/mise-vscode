@@ -1199,7 +1199,7 @@
     "sinon": "^22.1.0",
     "tmp": "^0.2.7",
     "tsx": "^4.23.1",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "@rsbuild/plugin-node-polyfill": "^1.4.6",
