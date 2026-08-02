@@ -1357,19 +1357,6 @@ export class MiseService {
 		return configuredPath;
 	}
 
-	async getTaskDependencies(tasks: string[] | undefined) {
-		if (!this.getMiseBinaryPath()) {
-			return "";
-		}
-
-		const taskString = tasks ? tasks.map((task) => `"${task}"`).join(" ") : "";
-
-		const { stdout } = await this.cache.execCmd({
-			command: `tasks deps ${taskString} --dot`,
-		});
-		return stdout;
-	}
-
 	/**
 	 * Project graph inferred from ecosystem manifests. Empty outside of a
 	 * workspace or when mise does not support `tasks graph` yet.

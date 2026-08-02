@@ -260,7 +260,20 @@ export function findTasksMatchingDependsPattern(
 	const ownerConfigRoot = documentPath
 		? getConfigRootForSource(tasks, documentPath)
 		: null;
+	return findTasksMatchingDependsPatternForRoot(
+		tasks,
+		pattern,
+		ownerConfigRoot,
+		projects,
+	);
+}
 
+function findTasksMatchingDependsPatternForRoot(
+	tasks: MiseTask[],
+	pattern: string,
+	ownerConfigRoot: string | null,
+	projects: MiseProject[],
+): MiseTask[] {
 	const [taskPattern] = pattern.split(/\s+/);
 	if (taskPattern?.startsWith("^")) {
 		return findUpstreamTasksMatchingPattern(
@@ -274,6 +287,68 @@ export function findTasksMatchingDependsPattern(
 	return tasks.filter((t) =>
 		dependsPatternMatchesTask(pattern, ownerConfigRoot, t),
 	);
+}
+
+export type TaskGraphEdge = {
+	/** name of the task declaring the dependency */
+	from: string;
+	/** name of the task it depends on */
+	to: string;
+	kind: (typeof DEPENDS_KEYWORDS)[number];
+	optional?: boolean;
+};
+
+/**
+ * Dependency edges between tasks, resolving every depends form (qualified
+ * names, wildcards, `^task` upstream references, provider-suggested objects).
+ */
+export function getTaskDependencyEdges(
+	tasks: MiseTask[],
+	projects: MiseProject[] = [],
+): TaskGraphEdge[] {
+	const edges: TaskGraphEdge[] = [];
+	const seen = new Set<string>();
+
+	for (const task of tasks) {
+		const ownerConfigRoot = getTaskConfigRoot(task);
+		for (const kind of DEPENDS_KEYWORDS) {
+			for (const depend of task[kind] ?? []) {
+				const pattern = getDependsEntryPattern(depend);
+				if (!pattern) {
+					continue;
+				}
+				const optional =
+					typeof depend === "object" && !Array.isArray(depend)
+						? depend.optional
+						: undefined;
+
+				const targets = findTasksMatchingDependsPatternForRoot(
+					tasks,
+					pattern,
+					ownerConfigRoot,
+					projects,
+				);
+				for (const target of targets) {
+					if (target.name === task.name) {
+						continue;
+					}
+					const key = `${task.name}\0${target.name}\0${kind}`;
+					if (seen.has(key)) {
+						continue;
+					}
+					seen.add(key);
+					edges.push({
+						from: task.name,
+						to: target.name,
+						kind,
+						...(optional ? { optional } : {}),
+					});
+				}
+			}
+		}
+	}
+
+	return edges;
 }
 
 /** The workspace projects graph reports the monorepo root as "." */

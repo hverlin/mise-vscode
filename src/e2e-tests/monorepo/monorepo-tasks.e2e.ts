@@ -522,6 +522,30 @@ suite("Monorepo Tasks Test Suite", function () {
 		assert.equal(editor.selection.start.line, expectedLine);
 	});
 
+	test("Should open the tasks dependencies graph panel", async () => {
+		await vscode.commands.executeCommand("mise.visualizeTasksDeps");
+
+		const findGraphTab = () =>
+			vscode.window.tabGroups.all
+				.flatMap((group) => group.tabs)
+				.find(
+					(tab) =>
+						tab.input instanceof vscode.TabInputWebview &&
+						tab.label === "Mise: Tasks Dependencies",
+				);
+
+		// the webview tab shows up asynchronously
+		let graphTab = findGraphTab();
+		for (let attempt = 0; attempt < 50 && !graphTab; attempt++) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			graphTab = findGraphTab();
+		}
+
+		assert.ok(graphTab, "The tasks dependencies webview should be open");
+
+		await vscode.window.tabGroups.close(graphTab);
+	});
+
 	test("Should offer fully qualified task names in the run task picker", async () => {
 		const getSelectedLabel = stubShowQuickPickWithText(
 			sandbox,

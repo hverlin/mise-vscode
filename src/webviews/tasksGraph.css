@@ -1,0 +1,389 @@
+/* the graph manages its own viewport, the page must not scroll */
+body.graph-view {
+	overflow: hidden;
+}
+
+.graph-page {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.graph-shell {
+	display: flex;
+	min-height: 300px;
+	border: 1px solid var(--vscode-editorWidget-border, transparent);
+	/* viewport minus the tab bar and the toolbar */
+	height: calc(100dvh - 160px);
+}
+
+.graph-standalone .graph-shell {
+	height: calc(100dvh - 110px);
+}
+
+.graph-canvas {
+	flex: 1;
+	min-width: 0;
+}
+
+.graph-node {
+	width: 240px;
+	min-height: 54px;
+	box-sizing: border-box;
+	padding: 8px 10px;
+	border-radius: 4px;
+	border: 1px solid var(--vscode-editorWidget-border, #555);
+	background: var(
+		--vscode-editorWidget-background,
+		var(--vscode-editor-background)
+	);
+	color: var(--vscode-foreground);
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.graph-node-selected {
+	border-color: var(--vscode-focusBorder);
+	box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.graph-node-title {
+	font-weight: 600;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.graph-node-subtitle {
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.graph-node-detail {
+	margin-top: 2px;
+	font-size: 11px;
+	font-style: italic;
+	color: var(--vscode-descriptionForeground);
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
+}
+
+/* floating card over the canvas, the graph keeps the full width */
+.details-panel {
+	position: absolute;
+	right: 10px;
+	bottom: 10px;
+	z-index: 5;
+	width: 320px;
+	max-height: min(65%, 480px);
+	overflow-y: auto;
+	padding: 10px 12px;
+	border: 1px solid var(--vscode-editorWidget-border, #555);
+	border-radius: 4px;
+	background: var(
+		--vscode-editorWidget-background,
+		var(--vscode-sideBar-background)
+	);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.details-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.details-title {
+	font-weight: 600;
+	word-break: break-all;
+}
+
+.details-actions {
+	display: flex;
+	gap: 6px;
+	margin-bottom: 10px;
+}
+
+.details-row {
+	margin-bottom: 8px;
+}
+
+.details-label {
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	text-transform: uppercase;
+	margin-bottom: 1px;
+}
+
+.details-value {
+	word-break: break-word;
+}
+
+.details-code {
+	margin: 0;
+	padding: 6px;
+	background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.1));
+	border-radius: 3px;
+	white-space: pre-wrap;
+	word-break: break-all;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: 11px;
+}
+
+.link-button {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+	font-size: inherit;
+	font-family: inherit;
+	text-align: left;
+}
+
+.link-button:hover {
+	text-decoration: underline;
+}
+
+.details-list-item {
+	display: block;
+	margin-bottom: 2px;
+}
+
+/* react-flow theme integration */
+.react-flow {
+	background: var(--vscode-editor-background);
+}
+
+.react-flow__attribution {
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+}
+
+.react-flow__edge-path {
+	stroke: var(--vscode-editorWidget-border, #888);
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+	stroke: var(--vscode-focusBorder);
+}
+
+.react-flow__edge-textbg {
+	fill: var(--vscode-editor-background);
+}
+
+.react-flow__edge-text {
+	fill: var(--vscode-descriptionForeground);
+	font-size: 10px;
+}
+
+.react-flow__handle {
+	width: 6px;
+	height: 6px;
+	background: var(--vscode-editorWidget-border, #888);
+	border: none;
+}
+
+.react-flow__controls {
+	box-shadow: none;
+	border: 1px solid var(--vscode-editorWidget-border, #555);
+}
+
+.react-flow__controls-button {
+	background: var(
+		--vscode-editorWidget-background,
+		var(--vscode-editor-background)
+	);
+	border-bottom: 1px solid var(--vscode-editorWidget-border, #555);
+}
+
+.react-flow__controls-button:hover {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.react-flow__controls-button svg {
+	fill: var(--vscode-foreground);
+}
+
+.graph-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.graph-toolbar-grow {
+	flex: 1;
+	min-width: 0;
+}
+
+.graph-toolbar-end {
+	justify-content: flex-end;
+}
+
+/* selection highlighting: connected edges stand out, the rest dims */
+.react-flow__edge.edge-highlighted .react-flow__edge-path {
+	stroke: var(--vscode-focusBorder);
+	stroke-width: 2;
+}
+
+.react-flow__edge.edge-highlighted .react-flow__edge-text {
+	fill: var(--vscode-foreground);
+}
+
+.react-flow__edge.edge-dimmed {
+	opacity: 0.25;
+}
+
+.react-flow__node.graph-node-dimmed {
+	opacity: 0.35;
+}
+
+.graph-toolbar {
+	flex-wrap: wrap;
+	row-gap: 6px;
+}
+
+.graph-toolbar-search {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.graph-search-count {
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.graph-toolbar-search vscode-textfield {
+	width: 200px;
+}
+
+.graph-node-match .graph-node {
+	border-color: var(--vscode-focusBorder);
+}
+
+/* project group containers */
+.react-flow__node-projectGroup {
+	border: 1px dashed var(--vscode-editorWidget-border, #666);
+	border-radius: 6px;
+	background: color-mix(
+		in srgb,
+		var(--vscode-editorWidget-background, #80808020) 30%,
+		transparent
+	);
+}
+
+.graph-group-title {
+	padding: 6px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--vscode-descriptionForeground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* breathing room between the tab bar and the toolbar */
+vscode-tab-panel .graph-page {
+	padding-top: 8px;
+}
+
+.graph-node-aliases {
+	color: var(--vscode-descriptionForeground);
+	font-size: 10px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.graph-shell {
+	position: relative;
+}
+
+/* in-webview full screen: cover the whole panel including tabs/toolbar */
+.graph-shell-expanded {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	height: auto;
+	min-height: 0;
+	border: none;
+	background: var(--vscode-editor-background);
+}
+
+.graph-exit-expand {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 10;
+}
+
+.react-flow__controls-button.control-button-active {
+	color: var(--vscode-focusBorder);
+	background: var(
+		--vscode-list-activeSelectionBackground,
+		rgba(128, 128, 128, 0.2)
+	);
+}
+
+.react-flow__controls-button .codicon {
+	font-size: 14px;
+	color: var(--vscode-foreground);
+}
+
+.react-flow__controls-button.control-button-active .codicon {
+	color: var(--vscode-focusBorder);
+}
+
+.graph-context-menu {
+	position: fixed;
+	z-index: 1000;
+	min-width: 180px;
+	padding: 4px 0;
+	border: 1px solid
+		var(--vscode-menu-border, var(--vscode-editorWidget-border, #555));
+	border-radius: 5px;
+	background: var(
+		--vscode-menu-background,
+		var(--vscode-editorWidget-background)
+	);
+	color: var(--vscode-menu-foreground, var(--vscode-foreground));
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.graph-context-menu-item {
+	display: block;
+	width: 100%;
+	padding: 5px 14px;
+	background: none;
+	border: none;
+	color: inherit;
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.graph-context-menu-item:hover {
+	background: var(
+		--vscode-menu-selectionBackground,
+		var(--vscode-list-hoverBackground)
+	);
+	color: var(--vscode-menu-selectionForeground, inherit);
+}
+
+.graph-selection-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: auto;
+	max-height: none;
+}

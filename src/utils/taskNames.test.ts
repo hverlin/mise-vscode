@@ -7,6 +7,7 @@ import {
 	getLocalTaskName,
 	getTaskConfigRoot,
 	getTaskDefinitionNameCandidates,
+	getTaskDependencyEdges,
 	getTaskDisplayName,
 	getTaskNameParts,
 	getUpstreamConfigRoots,
@@ -623,5 +624,133 @@ describe("scoped package script tasks", () => {
 		expect(
 			resolveTaskReference([scopedTask], "//projects/shared:lint")?.name,
 		).toBe("node:@fixture/shared#lint");
+	});
+});
+
+describe("getTaskDependencyEdges", () => {
+	const projects: MiseProject[] = [
+		{
+			id: "node:frontend",
+			root: "projects/frontend",
+			dependencies: ["node:backend"],
+		},
+		{ id: "node:backend", root: "projects/backend", dependencies: [] },
+	];
+
+	const graphTasks = [
+		{
+			...createTask("//:build-all", "/repo/mise.toml"),
+			depends: ["//projects/...:build"],
+		},
+		{
+			...createTask(
+				"//projects/frontend:ci",
+				"/repo/projects/frontend/mise.toml",
+			),
+			depends: ["build", ":test"],
+			wait_for: ["//projects/backend:build"],
+			depends_post: [["build", "--quick"]],
+		},
+		{
+			...createTask(
+				"//projects/frontend:package",
+				"/repo/projects/frontend/mise.toml",
+			),
+			depends: ["^build"],
+		},
+		createTask(
+			"//projects/frontend:build",
+			"/repo/projects/frontend/mise.toml",
+		),
+		{
+			...createTask(
+				"node:frontend#test",
+				"/repo/projects/frontend/package.json",
+				["//projects/frontend:test"],
+			),
+			depends: [{ task: "//projects/backend:test", optional: true }],
+		},
+		createTask("//projects/backend:build", "/repo/projects/backend/mise.toml"),
+		{
+			...createTask(
+				"node:backend#test",
+				"/repo/projects/backend/package.json",
+				["//projects/backend:test"],
+			),
+		},
+	];
+
+	it("resolves every depends form into edges", () => {
+		const edges = getTaskDependencyEdges(graphTasks, projects);
+
+		expect(edges).toContainEqual({
+			from: "//:build-all",
+			to: "//projects/frontend:build",
+			kind: "depends",
+		});
+		expect(edges).toContainEqual({
+			from: "//:build-all",
+			to: "//projects/backend:build",
+			kind: "depends",
+		});
+		// bare name and :name resolve within the project
+		expect(edges).toContainEqual({
+			from: "//projects/frontend:ci",
+			to: "//projects/frontend:build",
+			kind: "depends",
+		});
+		expect(edges).toContainEqual({
+			from: "//projects/frontend:ci",
+			to: "node:frontend#test",
+			kind: "depends",
+		});
+		// wait_for and depends_post keep their kind
+		expect(edges).toContainEqual({
+			from: "//projects/frontend:ci",
+			to: "//projects/backend:build",
+			kind: "wait_for",
+		});
+		expect(edges).toContainEqual({
+			from: "//projects/frontend:ci",
+			to: "//projects/frontend:build",
+			kind: "depends_post",
+		});
+		// ^build follows the projects graph
+		expect(edges).toContainEqual({
+			from: "//projects/frontend:package",
+			to: "//projects/backend:build",
+			kind: "depends",
+		});
+		// provider-suggested object entries keep the optional flag
+		expect(edges).toContainEqual({
+			from: "node:frontend#test",
+			to: "node:backend#test",
+			kind: "depends",
+			optional: true,
+		});
+	});
+
+	it("does not create self edges", () => {
+		const selfReferencing = [
+			{
+				...createTask(
+					"//projects/frontend:verify",
+					"/repo/projects/frontend/mise.toml",
+				),
+				depends: ["//projects/frontend:*"],
+			},
+			createTask(
+				"//projects/frontend:build",
+				"/repo/projects/frontend/mise.toml",
+			),
+		];
+		const edges = getTaskDependencyEdges(selfReferencing);
+		expect(edges).toEqual([
+			{
+				from: "//projects/frontend:verify",
+				to: "//projects/frontend:build",
+				kind: "depends",
+			},
+		]);
 	});
 });
