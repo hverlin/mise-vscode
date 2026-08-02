@@ -6,9 +6,17 @@ import * as vscode from "vscode";
 import {
 	MISE_EDIT_SETTING,
 	MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,
+	MISE_OPEN_TASK_DEFINITION,
+	MISE_RUN_TASK,
 } from "./commands";
 import type { MiseService } from "./miseService";
+import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
+import {
+	getTaskConfigRoot,
+	getTaskDependencyEdges,
+	getTaskDisplayName,
+} from "./utils/taskNames";
 
 type PanelView =
 	| "TOOLS"
@@ -80,7 +88,9 @@ export default class WebViewPanel {
 			`Mise: ${panelTitleForView(this.view)}`,
 			column,
 			{
-				retainContextWhenHidden: false,
+				// keep the graph state (selection, filters, viewport) when the
+				// panel is hidden behind another editor tab
+				retainContextWhenHidden: this.view === "TASKS_DEPS",
 				enableScripts: true,
 				localResourceRoots: [this._extensionUri],
 			},
@@ -142,15 +152,57 @@ export default class WebViewPanel {
 									this.miseService.getTrackedConfigFiles(),
 								);
 							}
-							case "taskDeps": {
-								return executeAction(message, () =>
-									this.miseService.getTaskDependencies(message.variables.tasks),
-								);
-							}
 							case "tasksGraph": {
-								return executeAction(message, () =>
-									this.miseService.getTasksGraph(),
-								);
+								return executeAction(message, async () => {
+									const projects = await this.miseService.getTasksGraph();
+									const workspaceRoot =
+										this.miseService.getCurrentWorkspaceFolderPath();
+									return projects.map((project) => ({
+										...project,
+										// absolute path of the manifest the project was inferred
+										// from, so the webview can open it
+										manifestPath:
+											workspaceRoot && project.provenance?.source
+												? expandPath(
+														path.join(workspaceRoot, project.provenance.source),
+													)
+												: undefined,
+									}));
+								});
+							}
+							case "taskFlowGraph": {
+								return executeAction(message, async () => {
+									const [tasks, projects] = await Promise.all([
+										this.miseService.getAllCachedTasks(),
+										this.miseService.getTasksGraph(),
+									]);
+									const workspaceRoot =
+										this.miseService.getCurrentWorkspaceFolderPath();
+									return {
+										tasks: tasks.map((task) => {
+											// group key: the config root in a monorepo, otherwise
+											// the directory of the source file
+											const configRoot = getTaskConfigRoot(task);
+											const sourceDir = path.dirname(expandPath(task.source));
+											return {
+												...task,
+												displayName: getTaskDisplayName(task),
+												sourceLabel: displayPathRelativeTo(
+													task.source,
+													workspaceRoot,
+												),
+												projectKey: configRoot ?? sourceDir,
+												projectLabel:
+													configRoot ||
+													(configRoot === ""
+														? "monorepo root"
+														: displayPathRelativeTo(sourceDir, workspaceRoot) ||
+															"."),
+											};
+										}),
+										edges: getTaskDependencyEdges(tasks, projects),
+									};
+								});
 							}
 							case "tasks": {
 								return executeAction(message, () =>
@@ -199,6 +251,35 @@ export default class WebViewPanel {
 									vscode.window.showTextDocument(
 										vscode.Uri.file(message.variables?.path as string),
 										{ preview: true, viewColumn: vscode.ViewColumn.One },
+									),
+								);
+							}
+							case "openTaskDefinition": {
+								return executeAction(message, async () => {
+									const tasks = await this.miseService.getAllCachedTasks();
+									const task = tasks.find(
+										(t) => t.name === message.variables?.taskName,
+									);
+									if (task) {
+										await vscode.commands.executeCommand(
+											MISE_OPEN_TASK_DEFINITION,
+											task,
+										);
+									}
+								});
+							}
+							case "toggleMaximizedEditor": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(
+										"workbench.action.toggleMaximizeEditorGroup",
+									),
+								);
+							}
+							case "runTask": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(
+										MISE_RUN_TASK,
+										message.variables?.taskName,
 									),
 								);
 							}

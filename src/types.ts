@@ -43,6 +43,8 @@ type MiseProject = {
 	metadata?: Record<string, string>;
 	/** ids of the projects this project depends on */
 	dependencies?: string[];
+	/** which provider inferred the project, from which manifest */
+	provenance?: { provider?: string; source?: string };
 };
 
 type MiseTool = {
