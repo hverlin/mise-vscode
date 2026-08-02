@@ -72,10 +72,15 @@ suite("Monorepo Tasks Test Suite", function () {
 			"//:clean",
 			"//:root-task",
 			"//:verify",
+			"//crates/agent:build",
+			"//crates/protocol:build",
+			"//go/gateway:build",
 			"//projects/backend/integration:test",
 			"//projects/backend:build",
 			"//projects/backend:deploy",
 			"//projects/backend:format",
+			// declared with `extends = "project-info"`
+			"//projects/backend:info",
 			"//projects/backend:release",
 			"//projects/backend:seed",
 			"//projects/frontend:build",
@@ -84,8 +89,12 @@ suite("Monorepo Tasks Test Suite", function () {
 			"//projects/frontend:db:reset",
 			"//projects/frontend:dev",
 			"//projects/frontend:e2e",
+			// depends on the build tasks of upstream projects with `^build`
+			"//projects/frontend:package",
+			// toml task shadowing the package.json `start` script
+			"//projects/frontend:start",
+			"node:@fixture/shared#lint",
 			"node:backend#test",
-			"node:frontend#start",
 			"node:frontend#test",
 		]);
 	});
@@ -114,6 +123,92 @@ suite("Monorepo Tasks Test Suite", function () {
 		await executeTaskAndWait(fileTask);
 	});
 
+	test("Should execute a task of a rust crate project via the VSCode tasks API", async () => {
+		const tasks = await vscode.tasks.fetchTasks({ type: "mise" });
+		const crateTask = tasks.find((t) => t.name === "//crates/agent:build");
+		assert.ok(crateTask, "//crates/agent:build task should be found");
+
+		// runs //crates/protocol:build first through its depends
+		await executeTaskAndWait(crateTask);
+	});
+
+	test("Should report workspace projects of every ecosystem in the tasks graph", () => {
+		const stdout = execSync("mise tasks graph --json", {
+			cwd: workspaceRoot,
+			encoding: "utf8",
+		});
+		const graph = JSON.parse(stdout) as {
+			projects: Array<{ id: string; root: string; dependencies?: string[] }>;
+		};
+		const byId = new Map(graph.projects.map((p) => [p.id, p]));
+
+		assert.deepEqual(
+			[...byId.keys()].sort(),
+			[
+				"cargo:agent",
+				// not a workspace member, registered through a path dependency
+				"cargo:build-helper",
+				"cargo:protocol",
+				"cargo:shared",
+				"go:example.com/fixture/auth",
+				"go:example.com/fixture/gateway",
+				"node:@fixture/shared",
+				"node:backend",
+				"node:frontend",
+				"uv:monorepo-fixture",
+				"uv:py-service",
+				"uv:py-shared",
+			],
+			"every ecosystem should contribute its workspace projects",
+		);
+
+		// cargo edges cover renamed, workspace-inherited dev, and
+		// target-specific build dependencies
+		assert.deepEqual(byId.get("cargo:agent")?.dependencies, [
+			"cargo:build-helper",
+			"cargo:protocol",
+			"cargo:shared",
+		]);
+		assert.deepEqual(byId.get("uv:py-service")?.dependencies, ["uv:py-shared"]);
+		assert.deepEqual(byId.get("node:frontend")?.dependencies, [
+			"node:@fixture/shared",
+			"node:backend",
+		]);
+		// edge declared with [monorepo.projects] in the root config
+		assert.deepEqual(byId.get("go:example.com/fixture/gateway")?.dependencies, [
+			"go:example.com/fixture/auth",
+		]);
+	});
+
+	test("Should report turbo.json dependsOn as depends of script tasks", () => {
+		const stdout = execSync("mise tasks ls --all --json", {
+			cwd: workspaceRoot,
+			encoding: "utf8",
+		});
+		const tasks = JSON.parse(stdout) as Array<{
+			name: string;
+			depends?: Array<string | string[] | { task: string; optional?: boolean }>;
+			sources?: string[];
+			outputs?: string[];
+		}>;
+		const frontendTest = tasks.find((t) => t.name === "node:frontend#test");
+		assert.ok(frontendTest, "node:frontend#test should be found");
+
+		// `^test` from turbo.json resolves to the test task of every dependency
+		// package, reported as object entries (missing ones are optional)
+		const dependsTasks = (frontendTest.depends ?? []).map((d) =>
+			typeof d === "string" || Array.isArray(d) ? d : d.task,
+		);
+		assert.deepEqual(dependsTasks.sort(), [
+			"//projects/backend:test",
+			"//projects/shared:test",
+		]);
+
+		// inputs/outputs metadata is imported from turbo.json
+		assert.deepEqual(frontendTest.sources, ["src/**"]);
+		assert.deepEqual(frontendTest.outputs, ["coverage/**"]);
+	});
+
 	test("Should provide code lenses with fully qualified task names", async () => {
 		const uri = vscode.Uri.file(
 			path.join(workspaceRoot, "projects", "frontend", "mise.toml"),
@@ -133,6 +228,8 @@ suite("Monorepo Tasks Test Suite", function () {
 			"//projects/frontend:build",
 			"//projects/frontend:ci",
 			"//projects/frontend:dev",
+			"//projects/frontend:package",
+			"//projects/frontend:start",
 		]);
 	});
 
@@ -251,6 +348,85 @@ suite("Monorepo Tasks Test Suite", function () {
 		);
 	});
 
+	test("Should resolve ^task depends to the tasks of upstream projects", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "frontend", "mise.toml"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const lines = document.getText().split("\n");
+		const lineIndex = lines.findIndex((line) => line.includes('"^build"'));
+		assert.ok(lineIndex >= 0, "depends line should be found in the fixture");
+		const character = (lines[lineIndex]?.indexOf("^build") ?? 0) + 1;
+
+		const locations = await vscode.commands.executeCommand<
+			(vscode.Location | vscode.LocationLink)[]
+		>(
+			"vscode.executeDefinitionProvider",
+			uri,
+			new vscode.Position(lineIndex, character),
+		);
+
+		const targetPaths = locations.map(
+			(location) =>
+				("targetUri" in location ? location.targetUri : location.uri).path,
+		);
+		// of the upstream projects (backend, @fixture/shared), only the backend
+		// defines a build task
+		assert.equal(
+			targetPaths.length,
+			1,
+			`expected a single upstream build task, got ${JSON.stringify(targetPaths)}`,
+		);
+		assert.ok(
+			targetPaths[0]?.endsWith("projects/backend/mise.toml"),
+			`^build should resolve to the backend config, got ${targetPaths[0]}`,
+		);
+	});
+
+	test("Should resolve extends to the task template definition", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "backend", "mise.toml"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const lines = document.getText().split("\n");
+		const lineIndex = lines.findIndex((line) =>
+			line.includes('extends = "project-info"'),
+		);
+		assert.ok(lineIndex >= 0, "extends line should be found in the fixture");
+		const character = (lines[lineIndex]?.indexOf("project-info") ?? 0) + 1;
+
+		const locations = await vscode.commands.executeCommand<
+			(vscode.Location | vscode.LocationLink)[]
+		>(
+			"vscode.executeDefinitionProvider",
+			uri,
+			new vscode.Position(lineIndex, character),
+		);
+
+		assert.equal(locations.length, 1, "the template definition should resolve");
+		const location = locations[0];
+		assert.ok(location, "A definition location should be returned");
+		const targetUri =
+			"targetUri" in location ? location.targetUri : location.uri;
+		assert.ok(
+			targetUri.path.endsWith("monorepo-workspace/mise.toml"),
+			`extends should resolve to the root config, got ${targetUri.path}`,
+		);
+
+		const rootDocument = await vscode.workspace.openTextDocument(targetUri);
+		const expectedLine = rootDocument
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes("[task_templates.project-info]"));
+		const targetRange =
+			"range" in location
+				? location.range
+				: (location.targetSelectionRange ?? location.targetRange);
+		assert.equal(targetRange.start.line, expectedLine);
+	});
+
 	test("Should find dependent tasks across the monorepo", async () => {
 		const uri = vscode.Uri.file(
 			path.join(workspaceRoot, "projects", "frontend", "mise.toml"),
@@ -304,6 +480,46 @@ suite("Monorepo Tasks Test Suite", function () {
 			!editor.selection.isEmpty,
 			"The task definition should be selected",
 		);
+	});
+
+	test("Should open the toml definition of a task shadowing a package.json script", async () => {
+		stubShowQuickPickWithText(sandbox, "//projects/frontend:start");
+
+		await vscode.commands.executeCommand("mise.openTaskDefinition");
+
+		const editor = vscode.window.activeTextEditor;
+		assert.ok(editor, "An editor should be opened");
+		assert.ok(
+			editor.document.uri.fsPath.endsWith(
+				path.join("projects", "frontend", "mise.toml"),
+			),
+			`Should open the frontend config, got ${editor.document.uri.fsPath}`,
+		);
+		const expectedLine = editor.document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes("[tasks.start]"));
+		assert.equal(editor.selection.start.line, expectedLine);
+	});
+
+	test("Should open the task definition from the search action without running it", async () => {
+		stubShowQuickPickWithText(sandbox, "//projects/backend:build");
+
+		await vscode.commands.executeCommand("mise.searchTasks");
+
+		const editor = vscode.window.activeTextEditor;
+		assert.ok(editor, "An editor should be opened");
+		assert.ok(
+			editor.document.uri.fsPath.endsWith(
+				path.join("projects", "backend", "mise.toml"),
+			),
+			`Should open the backend config, got ${editor.document.uri.fsPath}`,
+		);
+		const expectedLine = editor.document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes("[tasks.build]"));
+		assert.equal(editor.selection.start.line, expectedLine);
 	});
 
 	test("Should offer fully qualified task names in the run task picker", async () => {

@@ -4,38 +4,11 @@ import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { findTaskDefinition } from "../utils/miseFileParser";
-import { DEPENDS_KEYWORDS } from "../utils/miseUtilts";
 import {
-	dependsPatternMatchesTask,
-	getTaskNameParts,
+	isTaskDependency,
 	resolveTaskReference,
 	TASK_NAME_REGEX,
 } from "../utils/taskNames";
-
-// https://mise.jdx.dev/tasks/running-tasks.html#wildcards
-function isTaskDependency(task: MiseTask, target: MiseTask): boolean {
-	const ownerConfigRoot = getTaskNameParts(task.name).configRoot;
-
-	for (const keyword of DEPENDS_KEYWORDS) {
-		const depends = task[keyword];
-		if (!depends) {
-			continue;
-		}
-
-		for (const depend of depends) {
-			const pattern = typeof depend === "string" ? depend : depend[0];
-			if (!pattern) {
-				continue;
-			}
-
-			if (dependsPatternMatchesTask(pattern, ownerConfigRoot, target)) {
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
 
 export async function getReferencesForTask(task: MiseTask, tasks: MiseTask[]) {
 	const tasksReference = tasks.filter((t) => isTaskDependency(t, task));

@@ -7,6 +7,7 @@ import { getTaskDefinitionNameCandidates } from "./taskNames";
 export type MiseTomlType = {
 	tools?: Record<string, string | object>;
 	tasks?: Record<string, string | object>;
+	task_templates?: Record<string, string | object>;
 	env?: Record<string, string>;
 };
 
@@ -457,5 +458,53 @@ export function findTaskDefinition(
 	} catch (error) {
 		logger.info("Error finding task definition:", error as Error);
 		return TOP_OF_FILE;
+	}
+}
+
+/**
+ * Position of a `[task_templates.<name>]` entry, or undefined when the
+ * document does not define it (unlike task definitions, the caller searches
+ * several config files).
+ */
+export function findTaskTemplatePosition(
+	document: vscode.TextDocument,
+	templateName: string,
+): { start: vscode.Position; end: vscode.Position } | undefined {
+	if (!document.fileName.endsWith(".toml")) {
+		return undefined;
+	}
+
+	try {
+		const tomlParser = getCachedTomlParser(document);
+		const templates = tomlParser?.parsed?.task_templates;
+		if (!tomlParser || !templates) {
+			return undefined;
+		}
+
+		const keyPosition = tomlParser.sourceTracker.getKeySource(
+			templates,
+			templateName,
+		);
+		const valuePosition = tomlParser.sourceTracker.getValueSource(
+			templates,
+			templateName,
+		);
+		if (!keyPosition || !valuePosition) {
+			return undefined;
+		}
+
+		const startPosition = tomlParser.calculatePositionFromSourceOffset(
+			keyPosition.start,
+		);
+		const endPosition = tomlParser.calculatePositionFromSourceOffset(
+			valuePosition.end,
+		);
+		return {
+			start: new vscode.Position(startPosition.line, startPosition.character),
+			end: new vscode.Position(endPosition.line, endPosition.character),
+		};
+	} catch (error) {
+		logger.info("Error finding task template:", error as Error);
+		return undefined;
 	}
 }

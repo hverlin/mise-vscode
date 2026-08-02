@@ -1,0 +1,10 @@
+{
+	"tasks": {
+		"test": {
+			"dependsOn": ["^test"],
+			"inputs": ["src/**"],
+			"outputs": ["coverage/**"],
+			"cache": false
+		}
+	}
+}

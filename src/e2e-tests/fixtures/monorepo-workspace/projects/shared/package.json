@@ -1,0 +1,7 @@
+{
+  "name": "@fixture/shared",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "echo 'linting shared'"
+  }
+}

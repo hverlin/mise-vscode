@@ -1,6 +1,9 @@
 /** biome-ignore-all lint/correctness/noUnusedVariables: export types */
 
-type depsArray = Array<string | string[]>;
+/** provider-suggested entries (e.g. imported from turbo.json) are objects */
+type depsArray = Array<
+	string | string[] | { task: string; optional?: boolean }
+>;
 
 type MiseTask = {
 	name: string;
@@ -33,7 +36,7 @@ type MiseToolSource = {
 
 /** A project of the workspace graph reported by `mise tasks graph --json` */
 type MiseProject = {
-	/** e.g. `node:frontend` */
+	/** e.g. `node:frontend`, `cargo:my-crate`, `uv:my-pkg`, `go:example.com/mod` */
 	id: string;
 	/** path relative to the monorepo root, e.g. `projects/frontend` */
 	root: string;

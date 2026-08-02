@@ -285,7 +285,17 @@ export function renderDepsArray(deps?: depsArray) {
 		return "";
 	}
 
-	return deps.map((d) => (typeof d === "string" ? d : d.join(" "))).join(", ");
+	return deps
+		.map((d) => {
+			if (typeof d === "string") {
+				return d;
+			}
+			if (Array.isArray(d)) {
+				return d.join(" ");
+			}
+			return d.optional ? `${d.task} (optional)` : d.task;
+		})
+		.join(", ");
 }
 
 export const isMiseTomlFile = (filename: string) => {

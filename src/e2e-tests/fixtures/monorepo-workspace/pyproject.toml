@@ -1,0 +1,6 @@
+[project]
+name = "monorepo-fixture"
+version = "0.1.0"
+
+[tool.uv.workspace]
+members = ["python/*"]

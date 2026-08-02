@@ -17,3 +17,6 @@ run = "echo 'Formatting backend'"
 [tasks.release]
 description = "Covers arguments in depends and alias references"
 depends = ["build --quick", "fmt"]
+
+[tasks.info]
+extends = "project-info"

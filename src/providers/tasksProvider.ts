@@ -8,6 +8,7 @@ import {
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
 	MISE_RUN_TASK,
+	MISE_SEARCH_TASKS,
 	MISE_WATCH_TASK,
 } from "../commands";
 import { isMiseExtensionEnabled } from "../configuration";
@@ -136,14 +137,30 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return this.miseService.getTasks();
 	}
 
+	async getParent(element: TreeNode): Promise<TreeNode | undefined> {
+		if (element instanceof TaskItem) {
+			const source = getTaskGroupSource(element.task);
+			const groups = await this.getTasksSourceGroupItems();
+			return groups.find((group) => group.source === source);
+		}
+		return undefined;
+	}
+
+	/** The tree item of a task, for `TreeView.reveal` (matched by id) */
+	async findTaskItem(taskName: string): Promise<TaskItem | undefined> {
+		const tasks = await this.miseService.getTasks();
+		const task = tasks.find((t) => t.name === taskName);
+		if (!task) {
+			return undefined;
+		}
+		return new TaskItem(task, await getFileTaskIconUri(task));
+	}
+
 	private groupTasksBySource(tasks: MiseTask[]): Record<string, MiseTask[]> {
 		const groupedTasks: Record<string, MiseTask[]> = {};
 
 		for (const task of tasks) {
-			const source =
-				(task.source.endsWith(".toml") || task.source.endsWith("package.json")
-					? expandPath(task.source)
-					: task.source.split("/").slice(0, -1).join("/")) || "Unknown";
+			const source = getTaskGroupSource(task);
 			if (!groupedTasks[source]) {
 				groupedTasks[source] = [];
 			}
@@ -307,6 +324,15 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 type TreeNode = TasksSourceGroupItem | TaskItem;
 
+/** Key of the group a task is shown under in the tree */
+function getTaskGroupSource(task: MiseTask): string {
+	return (
+		(task.source.endsWith(".toml") || task.source.endsWith("package.json")
+			? expandPath(task.source)
+			: task.source.split("/").slice(0, -1).join("/")) || "Unknown"
+	);
+}
+
 class TasksSourceGroupItem extends vscode.TreeItem {
 	constructor(
 		readonly currentWorkspaceFolderPath: string,
@@ -318,6 +344,8 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 		super(
 			`${pathShown} (${tasks.length} ${tasks.length === 1 ? "task" : "tasks"})`,
 		);
+		// stable id so `TreeView.reveal` can match recreated items
+		this.id = source;
 		this.tooltip = `Source: ${source}`;
 
 		this.contextValue = source.endsWith(".toml")
@@ -370,6 +398,8 @@ class TaskItem extends vscode.TreeItem {
 	) {
 		// the group already shows the source file, avoid repeating the qualifier
 		super(getTaskDisplayName(task), vscode.TreeItemCollapsibleState.None);
+		// stable id so `TreeView.reveal` can match recreated items
+		this.id = `${task.source}:${task.name}`;
 		const runInfo = task.run?.join(" ");
 		this.tooltip = [
 			["Task", task.name],
@@ -408,6 +438,7 @@ class TaskItem extends vscode.TreeItem {
 export function registerTasksCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,
+	tasksTreeView?: vscode.TreeView<TreeNode>,
 ) {
 	const miseService = taskProvider.getMiseService();
 
@@ -436,6 +467,34 @@ export function registerTasksCommands(
 				});
 			},
 		),
+		// search icon in the tasks view title: select the picked task in the
+		// panel and open its definition (without running it)
+		vscode.commands.registerCommand(MISE_SEARCH_TASKS, async () => {
+			const taskName = await vscode.window.showQuickPick(
+				taskProvider.getTasksNames(),
+				{ placeHolder: "Search for a task" },
+			);
+			if (!taskName) {
+				return;
+			}
+
+			const taskItem = await taskProvider.findTaskItem(taskName);
+			if (!taskItem) {
+				return;
+			}
+
+			if (tasksTreeView) {
+				try {
+					await tasksTreeView.reveal(taskItem, { select: true, expand: true });
+				} catch (error) {
+					logger.info("Could not reveal the task in the panel", error as Error);
+				}
+			}
+			await vscode.commands.executeCommand(
+				MISE_OPEN_TASK_DEFINITION,
+				taskItem.task,
+			);
+		}),
 		vscode.commands.registerCommand(
 			MISE_WATCH_TASK,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {

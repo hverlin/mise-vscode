@@ -183,14 +183,27 @@ export class MiseExtension {
 		const envsProvider = new MiseEnvsProvider(this.miseService);
 		const bootstrapProvider = new MiseBootstrapProvider(this.miseService);
 
-		registerTasksCommands(context, tasksProvider);
+		const tasksTreeView = vscode.window.createTreeView("miseTasksView", {
+			treeDataProvider: tasksProvider,
+			showCollapseAll: true,
+		});
+		context.subscriptions.push(
+			tasksTreeView,
+			vscode.window.createTreeView("miseToolsView", {
+				treeDataProvider: toolsProvider,
+				showCollapseAll: true,
+			}),
+			vscode.window.createTreeView("miseEnvsView", {
+				treeDataProvider: envsProvider,
+				showCollapseAll: true,
+			}),
+		);
+
+		registerTasksCommands(context, tasksProvider, tasksTreeView);
 		registerToolsCommands(context, this.miseService);
 		registerEnvsCommands(context, envsProvider, this.miseService);
 		registerBootstrapCommands(context, this.miseService);
 
-		vscode.window.registerTreeDataProvider("miseTasksView", tasksProvider);
-		vscode.window.registerTreeDataProvider("miseToolsView", toolsProvider);
-		vscode.window.registerTreeDataProvider("miseEnvsView", envsProvider);
 		vscode.window.registerTreeDataProvider(
 			"miseBootstrapView",
 			bootstrapProvider,

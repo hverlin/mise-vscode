@@ -1,0 +1,3 @@
+[tasks.build]
+description = "Build the protocol crate"
+run = "echo 'Building protocol crate'"

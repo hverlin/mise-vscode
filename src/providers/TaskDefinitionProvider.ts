@@ -5,6 +5,7 @@ import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import {
 	findTaskDefinition,
+	findTaskTemplatePosition,
 	getCachedTomlParser,
 } from "../utils/miseFileParser";
 import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
@@ -52,6 +53,10 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			return null;
 		}
 
+		if (keyPath[0] === "tasks" && keyPath.at(-1) === "extends") {
+			return this.provideTaskTemplateDefinition(document, position);
+		}
+
 		if (
 			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")
@@ -95,10 +100,15 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 		}
 
 		const pattern = document.getText(patternRange);
+		// `^task` refers to upstream projects, which requires the projects graph
+		const projects = pattern.startsWith("^")
+			? await this.miseService.getTasksGraph()
+			: [];
 		const matchingTasks = findTasksMatchingDependsPattern(
 			tasks,
 			pattern,
 			documentPath,
+			projects,
 		);
 
 		return Promise.all(
@@ -122,5 +132,59 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 				};
 			}),
 		);
+	}
+
+	/**
+	 * `extends = "<name>"` refers to a `[task_templates.<name>]` entry, defined
+	 * in this config file or one of the parent config files.
+	 */
+	private async provideTaskTemplateDefinition(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<vscode.LocationLink[] | null> {
+		const templateNameRange = document.getWordRangeAtPosition(
+			position,
+			TASK_NAME_REGEX,
+		);
+		if (!templateNameRange) {
+			return null;
+		}
+		const templateName = document.getText(templateNameRange);
+
+		const configPaths = [
+			document.uri.fsPath,
+			...(await this.miseService.getMiseConfigFiles()).map((f) => f.path),
+		];
+		const seen = new Set<string>();
+		for (const configPath of configPaths) {
+			const expanded = expandPath(configPath);
+			if (seen.has(expanded)) {
+				continue;
+			}
+			seen.add(expanded);
+
+			let templateDocument: vscode.TextDocument;
+			try {
+				templateDocument = await vscode.workspace.openTextDocument(
+					vscode.Uri.file(configPath.replace(/^~/, os.homedir())),
+				);
+			} catch {
+				continue;
+			}
+
+			const found = findTaskTemplatePosition(templateDocument, templateName);
+			if (!found) {
+				continue;
+			}
+			return [
+				{
+					originSelectionRange: templateNameRange,
+					targetUri: templateDocument.uri,
+					targetRange: new vscode.Range(found.start, found.end),
+					targetSelectionRange: new vscode.Range(found.start, found.start),
+				},
+			];
+		}
+		return null;
 	}
 }

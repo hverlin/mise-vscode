@@ -698,6 +698,12 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.searchTasks",
+        "title": "Mise: Search tasks",
+        "icon": "$(search)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.watchTask",
         "title": "Mise: Run Task in Watch Mode",
         "icon": "$(eye-watch)",
@@ -952,6 +958,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "mise.searchTasks",
+          "when": "view == miseTasksView",
+          "group": "navigation@0"
+        },
         {
           "command": "mise.createTomlTaskTopMenu",
           "when": "view == miseTasksView",
