@@ -1,17 +1,20 @@
 import dagre from "@dagrejs/dagre";
 import {
 	Background,
-	ControlButton,
-	Controls,
+	BaseEdge,
 	type Edge,
+	type EdgeProps,
+	EdgeText,
+	getBezierPath,
 	type Node,
 	type NodeTypes,
+	Panel,
 	Position,
 	ReactFlow,
 	useReactFlow,
 	useStore,
 } from "@xyflow/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
 /** A request to bring a node into view (token distinguishes repeats) */
@@ -91,9 +94,13 @@ const handlePositions = (direction: LayoutDirection) =>
 		? { targetPosition: Position.Left, sourcePosition: Position.Right }
 		: { targetPosition: Position.Top, sourcePosition: Position.Bottom };
 
-const nodeSize = (node: Node) => ({
+/**
+ * Layout runs before the cards are measured, so it works with an estimated
+ * height; callers can raise the estimate when cards render more content.
+ */
+const nodeSize = (node: Node, estimatedHeight: number = NODE_HEIGHT) => ({
 	width: (node.width as number | undefined) ?? NODE_WIDTH,
-	height: (node.height as number | undefined) ?? NODE_HEIGHT,
+	height: (node.height as number | undefined) ?? estimatedHeight,
 });
 
 /**
@@ -105,6 +112,7 @@ export function layoutGraph<NodeType extends Node>(
 	nodes: NodeType[],
 	edges: Edge[],
 	direction: LayoutDirection = "TB",
+	nodeHeight: number = NODE_HEIGHT,
 ): NodeType[] {
 	const connectedIds = new Set(edges.flatMap((e) => [e.source, e.target]));
 	const connected = nodes.filter((n) => connectedIds.has(n.id));
@@ -112,9 +120,9 @@ export function layoutGraph<NodeType extends Node>(
 
 	const graph = new dagre.graphlib.Graph();
 	graph.setDefaultEdgeLabel(() => ({}));
-	graph.setGraph({ rankdir: direction, nodesep: 30, ranksep: 60 });
+	graph.setGraph({ rankdir: direction, nodesep: 40, ranksep: 80 });
 	for (const node of connected) {
-		graph.setNode(node.id, nodeSize(node));
+		graph.setNode(node.id, nodeSize(node, nodeHeight));
 	}
 	for (const edge of edges) {
 		if (connectedIds.has(edge.source) && connectedIds.has(edge.target)) {
@@ -125,7 +133,7 @@ export function layoutGraph<NodeType extends Node>(
 
 	const positionedConnected = connected.map((node) => {
 		const { x, y } = graph.node(node.id);
-		const { width, height } = nodeSize(node);
+		const { width, height } = nodeSize(node, nodeHeight);
 		return {
 			...node,
 			...handlePositions(direction),
@@ -137,7 +145,7 @@ export function layoutGraph<NodeType extends Node>(
 	for (const node of positionedConnected) {
 		gridStartY = Math.max(
 			gridStartY,
-			node.position.y + nodeSize(node).height + 80,
+			node.position.y + nodeSize(node, nodeHeight).height + 80,
 		);
 	}
 
@@ -147,7 +155,7 @@ export function layoutGraph<NodeType extends Node>(
 	let cursorY = gridStartY;
 	let rowHeight = 0;
 	const positionedIsolated = isolated.map((node, index) => {
-		const { width, height } = nodeSize(node);
+		const { width, height } = nodeSize(node, nodeHeight);
 		if (index > 0 && index % columns === 0) {
 			cursorX = 0;
 			cursorY += rowHeight + GRID_GAP_Y;
@@ -172,6 +180,7 @@ export function layoutGroupedGraph<NodeType extends Node>(
 	edges: Edge[],
 	direction: LayoutDirection,
 	getGroup: (node: NodeType) => { key: string; label: string },
+	nodeHeight: number = NODE_HEIGHT,
 ): Node[] {
 	const groups = new Map<string, { label: string; members: NodeType[] }>();
 	for (const node of nodes) {
@@ -197,12 +206,17 @@ export function layoutGroupedGraph<NodeType extends Node>(
 		const innerEdges = edges.filter(
 			(e) => memberIds.has(e.source) && memberIds.has(e.target),
 		);
-		const laidOut = layoutGraph(group.members, innerEdges, direction);
+		const laidOut = layoutGraph(
+			group.members,
+			innerEdges,
+			direction,
+			nodeHeight,
+		);
 
 		let maxX = 0;
 		let maxY = 0;
 		for (const node of laidOut) {
-			const { width, height } = nodeSize(node);
+			const { width, height } = nodeSize(node, nodeHeight);
 			maxX = Math.max(maxX, node.position.x + width);
 			maxY = Math.max(maxY, node.position.y + height);
 		}
@@ -260,6 +274,174 @@ export function layoutGroupedGraph<NodeType extends Node>(
 	];
 }
 
+/**
+ * Default bezier edge plus a sparkle that travels along the path. The
+ * sparkle only shows while the edge is highlighted (CSS, tasksGraph.css),
+ * keeping the line itself solid.
+ */
+function SparkleEdge({
+	id,
+	sourceX,
+	sourceY,
+	targetX,
+	targetY,
+	sourcePosition,
+	targetPosition,
+	style,
+	markerEnd,
+	label,
+}: EdgeProps) {
+	const [path, labelX, labelY] = getBezierPath({
+		sourceX,
+		sourceY,
+		sourcePosition,
+		targetX,
+		targetY,
+		targetPosition,
+	});
+	// CSS motion path, not SMIL <animateMotion>: Chromium freezes SMIL
+	// animations for good when React re-creates the SVG elements (e.g. on
+	// search), while a CSS animation restarts whenever the sparkle shows up
+	const sparkleStyle: React.CSSProperties = { offsetPath: `path("${path}")` };
+	return (
+		<>
+			<BaseEdge id={id} path={path} style={style} markerEnd={markerEnd} />
+			{label ? <EdgeText x={labelX} y={labelY} label={label} /> : null}
+			<circle className="edge-sparkle-halo" r={6} style={sparkleStyle} />
+			<circle className="edge-sparkle" r={2.5} style={sparkleStyle} />
+		</>
+	);
+}
+
+const edgeTypes = { default: SparkleEdge };
+
+/**
+ * Liam-style floating toolbar at the bottom of the canvas: zoom controls,
+ * fit view, layout direction, plus an optional graph-specific section
+ * (e.g. the card display mode menu).
+ */
+function BottomToolbar({
+	direction,
+	onDirectionChange,
+	extra,
+}: {
+	direction: LayoutDirection;
+	onDirectionChange: (direction: LayoutDirection) => void;
+	extra?: React.ReactNode;
+}) {
+	const { zoomIn, zoomOut, fitView } = useReactFlow();
+	const zoom = useStore((s) => s.transform[2]);
+	return (
+		<Panel position="bottom-center" className="graph-bottom-toolbar">
+			<button
+				type="button"
+				className="graph-toolbar-button"
+				title="Zoom out"
+				onClick={() => zoomOut({ duration: 150 })}
+			>
+				<i className="codicon codicon-remove" />
+			</button>
+			<span className="graph-zoom-level">{Math.round(zoom * 100)}%</span>
+			<button
+				type="button"
+				className="graph-toolbar-button"
+				title="Zoom in"
+				onClick={() => zoomIn({ duration: 150 })}
+			>
+				<i className="codicon codicon-add" />
+			</button>
+			<span className="graph-toolbar-separator" />
+			<button
+				type="button"
+				className="graph-toolbar-button"
+				title="Fit view"
+				onClick={() => fitView({ duration: 200, maxZoom: 1 })}
+			>
+				<i className="codicon codicon-target" />
+			</button>
+			<button
+				type="button"
+				className={`graph-toolbar-button ${
+					direction === "TB" ? "graph-toolbar-button-active" : ""
+				}`}
+				title="Vertical layout"
+				onClick={() => onDirectionChange("TB")}
+			>
+				<i className="codicon codicon-arrow-down" />
+			</button>
+			<button
+				type="button"
+				className={`graph-toolbar-button ${
+					direction === "LR" ? "graph-toolbar-button-active" : ""
+				}`}
+				title="Horizontal layout"
+				onClick={() => onDirectionChange("LR")}
+			>
+				<i className="codicon codicon-arrow-right" />
+			</button>
+			{extra ? (
+				<>
+					<span className="graph-toolbar-separator" />
+					{extra}
+				</>
+			) : null}
+		</Panel>
+	);
+}
+
+const appendClassName = (current: string | undefined, extra: string) =>
+	current ? `${current} ${extra}` : extra;
+
+/**
+ * Hovering a node spotlights it: the node, its direct neighbors and their
+ * connecting edges get accent styling while the rest of the graph dims
+ * (independent from — and layered on top of — selection highlighting).
+ */
+function useHoverHighlight(nodes: Node[], edges: Edge[]) {
+	const [hoveredId, setHoveredId] = useState<string>();
+
+	return useMemo(() => {
+		if (!hoveredId || !nodes.some((n) => n.id === hoveredId)) {
+			return { nodes, edges, setHoveredId };
+		}
+		const neighbors = new Set([hoveredId]);
+		for (const edge of edges) {
+			if (edge.source === hoveredId) {
+				neighbors.add(edge.target);
+			}
+			if (edge.target === hoveredId) {
+				neighbors.add(edge.source);
+			}
+		}
+		return {
+			// group containers stay untouched, they are structure, not data
+			nodes: nodes.map((node) =>
+				node.type === "projectGroup"
+					? node
+					: {
+							...node,
+							className: appendClassName(
+								node.className,
+								neighbors.has(node.id)
+									? "graph-node-hover-related"
+									: "graph-node-hover-dimmed",
+							),
+						},
+			),
+			edges: edges.map((edge) => ({
+				...edge,
+				className: appendClassName(
+					edge.className,
+					edge.source === hoveredId || edge.target === hoveredId
+						? "edge-hover-highlighted"
+						: "edge-hover-dimmed",
+				),
+			})),
+			setHoveredId,
+		};
+	}, [nodes, edges, hoveredId]);
+}
+
 export function FlowGraph({
 	nodes,
 	edges,
@@ -270,6 +452,7 @@ export function FlowGraph({
 	direction,
 	onDirectionChange,
 	refitSignal,
+	toolbarExtra,
 }: {
 	nodes: Node[];
 	edges: Edge[];
@@ -281,16 +464,21 @@ export function FlowGraph({
 	onDirectionChange: (direction: LayoutDirection) => void;
 	/** any change of this value re-fits the viewport to the graph */
 	refitSignal?: string;
+	/** extra section appended to the bottom toolbar */
+	toolbarExtra?: React.ReactNode;
 }) {
 	const colorMode = document.body.classList.contains("vscode-light")
 		? "light"
 		: "dark";
 
+	const hover = useHoverHighlight(nodes, edges);
+
 	return (
 		<ReactFlow
-			nodes={nodes}
-			edges={edges}
+			nodes={hover.nodes}
+			edges={hover.edges}
 			nodeTypes={nodeTypes}
+			edgeTypes={edgeTypes}
 			colorMode={colorMode}
 			fitView
 			minZoom={0.2}
@@ -306,25 +494,20 @@ export function FlowGraph({
 					onNodeContextMenu?.(event, node.id);
 				}
 			}}
+			onNodeMouseEnter={(_event, node) => {
+				if (node.type !== "projectGroup") {
+					hover.setHoveredId(node.id);
+				}
+			}}
+			onNodeMouseLeave={() => hover.setHoveredId(undefined)}
 			onPaneClick={() => onSelect(undefined)}
 		>
 			<Background gap={16} />
-			<Controls showInteractive={false}>
-				<ControlButton
-					title="Vertical layout"
-					className={direction === "TB" ? "control-button-active" : ""}
-					onClick={() => onDirectionChange("TB")}
-				>
-					<i className="codicon codicon-arrow-down" />
-				</ControlButton>
-				<ControlButton
-					title="Horizontal layout"
-					className={direction === "LR" ? "control-button-active" : ""}
-					onClick={() => onDirectionChange("LR")}
-				>
-					<i className="codicon codicon-arrow-right" />
-				</ControlButton>
-			</Controls>
+			<BottomToolbar
+				direction={direction}
+				onDirectionChange={onDirectionChange}
+				extra={toolbarExtra}
+			/>
 			<FitOnFocus focus={focus} />
 			<FitOnChange signal={refitSignal} />
 		</ReactFlow>

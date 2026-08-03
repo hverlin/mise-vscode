@@ -28,10 +28,9 @@ body.graph-view {
 
 .graph-node {
 	width: 240px;
-	min-height: 54px;
 	box-sizing: border-box;
-	padding: 8px 10px;
-	border-radius: 4px;
+	overflow: hidden;
+	border-radius: 8px;
 	border: 1px solid var(--vscode-editorWidget-border, #555);
 	background: var(
 		--vscode-editorWidget-background,
@@ -40,6 +39,26 @@ body.graph-view {
 	color: var(--vscode-foreground);
 	font-size: 12px;
 	cursor: pointer;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+/* Liam-style card: a distinct header band, body rows below a divider */
+.graph-node-header {
+	padding: 7px 12px;
+	background: color-mix(
+		in srgb,
+		var(--vscode-editorWidget-background, #252526) 94%,
+		var(--vscode-foreground)
+	);
+}
+
+.graph-node-body {
+	padding: 6px 12px 8px;
+	border-top: 1px solid
+		color-mix(in srgb, var(--vscode-editorWidget-border, #555) 60%, transparent);
 }
 
 .graph-node-selected {
@@ -49,6 +68,7 @@ body.graph-view {
 
 .graph-node-title {
 	font-weight: 600;
+	font-size: 13px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -63,7 +83,7 @@ body.graph-view {
 }
 
 .graph-node-detail {
-	margin-top: 2px;
+	margin-top: 0;
 	font-size: 11px;
 	font-style: italic;
 	color: var(--vscode-descriptionForeground);
@@ -158,9 +178,10 @@ body.graph-view {
 	margin-bottom: 2px;
 }
 
-/* react-flow theme integration */
+/* react-flow theme integration; the canvas sits a touch darker than the
+ * cards so they stand out (in light themes: a touch darker than white) */
 .react-flow {
-	background: var(--vscode-editor-background);
+	background: color-mix(in srgb, var(--vscode-editor-background) 96%, black);
 }
 
 .react-flow__attribution {
@@ -169,7 +190,8 @@ body.graph-view {
 }
 
 .react-flow__edge-path {
-	stroke: var(--vscode-editorWidget-border, #888);
+	stroke: color-mix(in srgb, var(--vscode-foreground) 35%, transparent);
+	stroke-width: 1.5;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
@@ -192,25 +214,143 @@ body.graph-view {
 	border: none;
 }
 
-.react-flow__controls {
-	box-shadow: none;
+/* floating pill toolbar at the bottom of the canvas (Liam-style) */
+.graph-bottom-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 6px;
+	border-radius: 10px;
 	border: 1px solid var(--vscode-editorWidget-border, #555);
-}
-
-.react-flow__controls-button {
 	background: var(
 		--vscode-editorWidget-background,
 		var(--vscode-editor-background)
 	);
-	border-bottom: 1px solid var(--vscode-editorWidget-border, #555);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-.react-flow__controls-button:hover {
+.graph-toolbar-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--vscode-foreground);
+	cursor: pointer;
+}
+
+.graph-toolbar-button:hover {
 	background: var(--vscode-list-hoverBackground);
 }
 
-.react-flow__controls-button svg {
-	fill: var(--vscode-foreground);
+.graph-toolbar-button-active {
+	color: var(--vscode-focusBorder);
+	background: var(
+		--vscode-list-activeSelectionBackground,
+		rgba(128, 128, 128, 0.2)
+	);
+}
+
+.graph-toolbar-button .codicon {
+	font-size: 14px;
+}
+
+.graph-zoom-level {
+	min-width: 40px;
+	text-align: center;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	color: var(--vscode-foreground);
+}
+
+.graph-toolbar-separator {
+	width: 1px;
+	height: 18px;
+	margin: 0 6px;
+	background: var(--vscode-editorWidget-border, #555);
+}
+
+.graph-show-menu {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.graph-show-label {
+	color: var(--vscode-descriptionForeground);
+	font-size: 12px;
+}
+
+.graph-show-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+	border: none;
+	border-radius: 6px;
+	background: var(
+		--vscode-list-activeSelectionBackground,
+		rgba(128, 128, 128, 0.2)
+	);
+	color: var(--vscode-foreground);
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.graph-show-button .codicon {
+	font-size: 12px;
+}
+
+.graph-show-popup {
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 10px);
+	z-index: 20;
+	min-width: 180px;
+	padding: 4px;
+	border: 1px solid
+		var(--vscode-menu-border, var(--vscode-editorWidget-border, #555));
+	border-radius: 8px;
+	background: var(
+		--vscode-menu-background,
+		var(--vscode-editorWidget-background)
+	);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.graph-show-item {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 6px 10px;
+	border: none;
+	border-radius: 5px;
+	background: none;
+	color: var(--vscode-menu-foreground, var(--vscode-foreground));
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.graph-show-item:hover {
+	background: var(
+		--vscode-menu-selectionBackground,
+		var(--vscode-list-hoverBackground)
+	);
+	color: var(--vscode-menu-selectionForeground, inherit);
+}
+
+.graph-show-item .codicon {
+	font-size: 14px;
+	color: var(--vscode-focusBorder);
 }
 
 .graph-toolbar {
@@ -246,6 +386,103 @@ body.graph-view {
 	opacity: 0.35;
 }
 
+/*
+ * Hover spotlight (rules ordered after the selection ones so hover wins):
+ * the hovered node and its direct neighbors glow in the accent color while
+ * the rest of the graph fades into the background.
+ */
+.react-flow__node {
+	transition: opacity 0.15s ease;
+}
+
+.react-flow__edge {
+	transition: opacity 0.15s ease;
+}
+
+.react-flow__edge-path {
+	transition:
+		stroke 0.15s ease,
+		stroke-width 0.15s ease;
+}
+
+.react-flow__node.graph-node-hover-related {
+	opacity: 1;
+}
+
+.react-flow__node.graph-node-hover-related .graph-node {
+	border-color: var(--vscode-focusBorder);
+	box-shadow:
+		0 0 0 1px var(--vscode-focusBorder),
+		0 0 14px color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent),
+		0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.react-flow__node.graph-node-hover-dimmed {
+	opacity: 0.25;
+}
+
+.react-flow__edge.edge-hover-highlighted {
+	opacity: 1;
+}
+
+.react-flow__edge.edge-hover-highlighted .react-flow__edge-path {
+	stroke: var(--vscode-focusBorder);
+	stroke-width: 2;
+}
+
+/*
+ * Liam-style edge animation: the line stays solid, a glowing sparkle
+ * travels along it. The circles are rendered by SparkleEdge (FlowGraph.tsx)
+ * and only shown while their edge is highlighted.
+ */
+.edge-sparkle,
+.edge-sparkle-halo {
+	display: none;
+	pointer-events: none;
+}
+
+@keyframes edge-sparkle-travel {
+	from {
+		offset-distance: 0%;
+	}
+	to {
+		offset-distance: 100%;
+	}
+}
+
+.react-flow__edge.edge-highlighted .edge-sparkle,
+.react-flow__edge.edge-hover-highlighted .edge-sparkle {
+	display: block;
+	fill: var(--vscode-focusBorder);
+	animation: edge-sparkle-travel 1.4s linear infinite;
+}
+
+.react-flow__edge.edge-highlighted .edge-sparkle-halo,
+.react-flow__edge.edge-hover-highlighted .edge-sparkle-halo {
+	display: block;
+	fill: var(--vscode-focusBorder);
+	opacity: 0.3;
+	filter: blur(3px);
+	animation: edge-sparkle-travel 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.react-flow__edge.edge-highlighted .edge-sparkle,
+	.react-flow__edge.edge-hover-highlighted .edge-sparkle,
+	.react-flow__edge.edge-highlighted .edge-sparkle-halo,
+	.react-flow__edge.edge-hover-highlighted .edge-sparkle-halo {
+		display: none;
+	}
+}
+
+.react-flow__edge.edge-hover-highlighted .react-flow__edge-text {
+	fill: var(--vscode-foreground);
+}
+
+.react-flow__edge.edge-hover-dimmed {
+	opacity: 0.15;
+}
+
 .graph-toolbar {
 	flex-wrap: wrap;
 	row-gap: 6px;
@@ -271,7 +508,9 @@ body.graph-view {
 	border-color: var(--vscode-focusBorder);
 }
 
-/* project group containers */
+/* project group containers; click-through so the canvas pans when dragging
+ * on the group area (react-flow sets pointer-events inline, hence important).
+ * The member nodes are separate DOM elements and stay interactive. */
 .react-flow__node-projectGroup {
 	border: 1px dashed var(--vscode-editorWidget-border, #666);
 	border-radius: 6px;
@@ -280,6 +519,8 @@ body.graph-view {
 		var(--vscode-editorWidget-background, #80808020) 30%,
 		transparent
 	);
+	/* biome-ignore lint/complexity/noImportantStyles: must beat the inline style */
+	pointer-events: none !important;
 }
 
 .graph-group-title {
@@ -305,6 +546,25 @@ vscode-tab-panel .graph-page {
 	text-overflow: ellipsis;
 }
 
+/* the task's run command, scrollable when it outgrows the card
+ * (nowheel/nodrag classes keep react-flow from zooming/dragging) */
+.graph-node-run {
+	margin: 0;
+	padding: 5px 7px;
+	max-height: 96px;
+	overflow: auto;
+	background: var(--vscode-textCodeBlock-background, rgba(128, 128, 128, 0.1));
+	border-radius: 4px;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: 10px;
+	line-height: 1.5;
+	white-space: pre;
+}
+
+.graph-node-detail + .graph-node-run {
+	margin-top: 6px;
+}
+
 .graph-shell {
 	position: relative;
 }
@@ -325,23 +585,6 @@ vscode-tab-panel .graph-page {
 	top: 10px;
 	right: 10px;
 	z-index: 10;
-}
-
-.react-flow__controls-button.control-button-active {
-	color: var(--vscode-focusBorder);
-	background: var(
-		--vscode-list-activeSelectionBackground,
-		rgba(128, 128, 128, 0.2)
-	);
-}
-
-.react-flow__controls-button .codicon {
-	font-size: 14px;
-	color: var(--vscode-foreground);
-}
-
-.react-flow__controls-button.control-button-active .codicon {
-	color: var(--vscode-focusBorder);
 }
 
 .graph-context-menu {

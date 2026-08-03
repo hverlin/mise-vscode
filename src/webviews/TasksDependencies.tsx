@@ -92,24 +92,118 @@ const renderDependsEntry = (
 	return entry.optional ? `${entry.task} (optional)` : entry.task;
 };
 
+/** How much of a task the cards show, like Liam's "show mode" */
+type CardDisplayMode = "minimal" | "description" | "run";
+
+/** estimated card height per mode, used by the (pre-render) layout */
+const CARD_HEIGHT_ESTIMATE: Record<CardDisplayMode, number> = {
+	minimal: 64,
+	description: 100,
+	run: 190,
+};
+
+const CARD_MODE_LABELS: Record<CardDisplayMode, string> = {
+	minimal: "Title only",
+	description: "Description",
+	run: "Description + run",
+};
+
+/** Liam-style "show <mode>" dropdown; the popup opens above the toolbar */
+function ShowModeMenu({
+	mode,
+	onChange,
+}: {
+	mode: CardDisplayMode;
+	onChange: (mode: CardDisplayMode) => void;
+}) {
+	const [open, setOpen] = useState(false);
+
+	useEffect(() => {
+		if (!open) {
+			return;
+		}
+		const close = () => setOpen(false);
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				close();
+			}
+		};
+		window.addEventListener("click", close);
+		window.addEventListener("keydown", onKeyDown);
+		return () => {
+			window.removeEventListener("click", close);
+			window.removeEventListener("keydown", onKeyDown);
+		};
+	}, [open]);
+
+	return (
+		<div className="graph-show-menu">
+			<span className="graph-show-label">show</span>
+			<button
+				type="button"
+				className="graph-show-button"
+				aria-haspopup="menu"
+				aria-expanded={open}
+				onClick={(e) => {
+					e.stopPropagation();
+					setOpen((value) => !value);
+				}}
+			>
+				{CARD_MODE_LABELS[mode]}
+				<i className="codicon codicon-chevron-down" />
+			</button>
+			{open ? (
+				<div className="graph-show-popup" role="menu">
+					{(Object.keys(CARD_MODE_LABELS) as CardDisplayMode[]).map((value) => (
+						<button
+							key={value}
+							type="button"
+							role="menuitemradio"
+							aria-checked={value === mode}
+							className="graph-show-item"
+							onClick={() => onChange(value)}
+						>
+							<span>{CARD_MODE_LABELS[value]}</span>
+							{value === mode ? <i className="codicon codicon-check" /> : null}
+						</button>
+					))}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
 function TaskNode({
 	data,
 	selected,
 	sourcePosition,
 	targetPosition,
-}: NodeProps<Node<{ task: FlowTask }>>) {
-	const { task } = data;
+}: NodeProps<Node<{ task: FlowTask; mode: CardDisplayMode }>>) {
+	const { task, mode } = data;
+	const showRun = mode === "run" && Boolean(task.run?.length);
+	const hasBody = mode !== "minimal" && Boolean(task.description || showRun);
 	return (
 		<div className={`graph-node ${selected ? "graph-node-selected" : ""}`}>
 			<Handle type="target" position={targetPosition ?? Position.Top} />
-			<div className="graph-node-title">{task.displayName}</div>
-			<div className="graph-node-subtitle">{task.sourceLabel}</div>
-			{task.description ? (
-				<div className="graph-node-detail">{task.description}</div>
-			) : null}
-			{task.aliases?.length ? (
-				<div className="graph-node-aliases">
-					alias: {task.aliases.join(", ")}
+			<div className="graph-node-header">
+				<div className="graph-node-title">{task.displayName}</div>
+				<div className="graph-node-subtitle">{task.sourceLabel}</div>
+				{task.aliases?.length ? (
+					<div className="graph-node-aliases">
+						alias: {task.aliases.join(", ")}
+					</div>
+				) : null}
+			</div>
+			{hasBody ? (
+				<div className="graph-node-body">
+					{task.description ? (
+						<div className="graph-node-detail">{task.description}</div>
+					) : null}
+					{showRun ? (
+						<pre className="graph-node-run nowheel nodrag">
+							{task.run?.join("\n")}
+						</pre>
+					) : null}
 				</div>
 			) : null}
 			<Handle type="source" position={sourcePosition ?? Position.Bottom} />
@@ -128,10 +222,14 @@ function ProjectNode({
 	return (
 		<div className={`graph-node ${selected ? "graph-node-selected" : ""}`}>
 			<Handle type="target" position={targetPosition ?? Position.Top} />
-			<div className="graph-node-title">
-				<VscodeBadge>{provider}</VscodeBadge> {rest.join(":")}
+			<div className="graph-node-header">
+				<div className="graph-node-title">
+					<VscodeBadge>{provider}</VscodeBadge> {rest.join(":")}
+				</div>
 			</div>
-			<div className="graph-node-subtitle">{project.root || "."}</div>
+			<div className="graph-node-body">
+				<div className="graph-node-subtitle">{project.root || "."}</div>
+			</div>
 			<Handle type="source" position={sourcePosition ?? Position.Bottom} />
 		</div>
 	);
@@ -522,6 +620,8 @@ const TaskDepsGraph = () => {
 	const [direction, setDirection] = useState<LayoutDirection>("TB");
 	const [onlyConnected, setOnlyConnected] = useState(false);
 	const [groupByProject, setGroupByProject] = useState(true);
+	const [displayMode, setDisplayMode] =
+		useState<CardDisplayMode>("description");
 	const [searchTerm, setSearchTerm] = useState("");
 	const [focus, setFocus] = useState<NodeFocusRequest | undefined>();
 	const [contextMenu, setContextMenu] = useState<
@@ -601,15 +701,22 @@ const TaskDepsGraph = () => {
 				position: { x: 0, y: 0 },
 				selected: selectedSet.has(task.name),
 				className: classNames || undefined,
-				data: { task },
+				data: { task, mode: displayMode },
 			};
 		});
+		const nodeHeight = CARD_HEIGHT_ESTIMATE[displayMode];
 		const flowNodes = groupingEnabled
-			? layoutGroupedGraph(taskNodes, flowEdges, direction, (node) => {
-					const { task } = node.data as { task: FlowTask };
-					return { key: task.projectKey, label: task.projectLabel };
-				})
-			: layoutGraph(taskNodes, flowEdges, direction);
+			? layoutGroupedGraph(
+					taskNodes,
+					flowEdges,
+					direction,
+					(node) => {
+						const { task } = node.data as { task: FlowTask };
+						return { key: task.projectKey, label: task.projectLabel };
+					},
+					nodeHeight,
+				)
+			: layoutGraph(taskNodes, flowEdges, direction, nodeHeight);
 		return { nodes: flowNodes, edges: flowEdges, searchMatches };
 	}, [
 		tasks,
@@ -620,6 +727,7 @@ const TaskDepsGraph = () => {
 		groupingEnabled,
 		searchTerm,
 		direction,
+		displayMode,
 	]);
 
 	const selectedTask =
@@ -750,11 +858,15 @@ const TaskDepsGraph = () => {
 						focus={focus}
 						direction={direction}
 						onDirectionChange={setDirection}
+						toolbarExtra={
+							<ShowModeMenu mode={displayMode} onChange={setDisplayMode} />
+						}
 						refitSignal={[
 							direction,
 							groupingEnabled,
 							onlyConnected,
 							expanded,
+							displayMode,
 							selectedOptions.join("|"),
 						].join(";")}
 					/>
