@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.18.0](https://github.com/hverlin/mise-vscode/compare/v1.17.0...v1.18.0) (2026-08-03)
+
+
+### Features
+
+* tool-stub ([#261](https://github.com/hverlin/mise-vscode/issues/261)) ([7584450](https://github.com/hverlin/mise-vscode/commit/758445063d6a788de83e44501cf7570cca8600d3))
+
+
+### Bug Fixes
+
+* make toolSources match both registry short names and backend sources ([#192](https://github.com/hverlin/mise-vscode/issues/192)) ([#264](https://github.com/hverlin/mise-vscode/issues/264)) ([5e57ce3](https://github.com/hverlin/mise-vscode/commit/5e57ce3248798ef7fd57c85c6ce2d1938b1b6d73))
+
 ## [1.17.0](https://github.com/hverlin/mise-vscode/compare/v1.16.0...v1.17.0) (2026-08-02)
 
 
