@@ -1,0 +1,21 @@
+[settings]
+# the task output cache is experimental (mise 2026.8.1+)
+experimental = true
+
+[tasks.build]
+description = "cached build"
+run = "sleep 1 && mkdir -p dist && cp src/input.txt dist/output.txt"
+sources = ["src/input.txt"]
+outputs = ["dist"]
+cache = { enabled = true }
+
+[tasks.probe]
+description = "cached build whose cache key runs a command"
+run = "mkdir -p dist-probe && cp src/input.txt dist-probe/output.txt"
+sources = ["src/input.txt"]
+outputs = ["dist-probe"]
+cache = { enabled = true, command_inputs = ["echo v1"] }
+
+[tasks.plain]
+description = "task without an output cache"
+run = "echo plain"

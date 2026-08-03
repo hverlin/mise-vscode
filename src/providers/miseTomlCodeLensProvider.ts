@@ -4,14 +4,22 @@ import {
 	MISE_LIST_ALL_TOOLS,
 	MISE_RUN_TASK,
 	MISE_SHOW_SETTINGS,
+	MISE_SHOW_TASK_CACHE_MENU,
 	MISE_USE_TOOL,
 	MISE_WATCH_TASK,
 } from "../commands";
 import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
+import { getCachedTomlParser } from "../utils/miseFileParser";
 import { isMiseTomlFile } from "../utils/miseUtilts";
-import { qualifyTaskName } from "../utils/taskNames";
+import {
+	findCacheEnabledTasks,
+	formatBytes,
+	formatCacheSummary,
+	totalCacheSize,
+} from "../utils/taskCache";
+import { getLocalTaskName, qualifyTaskName } from "../utils/taskNames";
 
 function createRunTaskCodeLens(
 	taskName: string,
@@ -77,6 +85,21 @@ function addSettingsListCodeLens(range: vscode.Range): vscode.CodeLens {
 	});
 }
 
+function createTaskCacheCodeLens(
+	taskName: string,
+	entries: MiseTaskCacheEntry[],
+	range: vscode.Range,
+): vscode.CodeLens {
+	return new vscode.CodeLens(range, {
+		title: entries.length
+			? `$(database) Cache · ${formatBytes(totalCacheSize(entries))}`
+			: "$(database) Cache",
+		tooltip: `Task output cache of ${taskName} (${formatCacheSummary(entries)})`,
+		command: MISE_SHOW_TASK_CACHE_MENU,
+		arguments: [taskName],
+	});
+}
+
 function createInstallMissingToolsCodeLens(
 	range: vscode.Range,
 ): vscode.CodeLens {
@@ -107,6 +130,16 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				this._onDidChangeCodeLenses.fire();
 			}
 		});
+
+		// the task cache lens reports state that changes without the document
+		// being touched, e.g. when a cached task runs in a terminal
+		const refresh = () => {
+			if (isMiseExtensionEnabled() && isCodeLensEnabled()) {
+				this._onDidChangeCodeLenses.fire();
+			}
+		};
+		miseService.subscribeToTaskCacheEvent(refresh);
+		miseService.subscribeToReloadEvent(refresh);
 	}
 
 	private handleInTasksSection(i: number, lineContent: string) {
@@ -287,6 +320,54 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		return codeLenses;
 	}
 
+	/**
+	 * A cache lens next to the run lens of every task that opts into the
+	 * experimental output cache. Nothing is fetched for documents without one,
+	 * so the common case costs a single TOML parse (already cached).
+	 */
+	private async addTaskCacheLenses(
+		document: vscode.TextDocument,
+		codeLenses: vscode.CodeLens[],
+	): Promise<vscode.CodeLens[]> {
+		const parsed = getCachedTomlParser(document)?.parsed;
+		if (!parsed) {
+			return codeLenses;
+		}
+
+		const cacheEnabledTasks = findCacheEnabledTasks(parsed);
+		if (cacheEnabledTasks.size === 0) {
+			return codeLenses;
+		}
+
+		// a cached task can run without the extension noticing (from a terminal,
+		// or outside of the editor), so the entries have to be watched
+		this.miseService.ensureTaskCacheWatcher();
+
+		const cacheInfo = await this.miseService.getTaskCacheInfo();
+		const withCacheLenses: vscode.CodeLens[] = [];
+		for (const codeLens of codeLenses) {
+			withCacheLenses.push(codeLens);
+
+			const { command } = codeLens;
+			// task names are already qualified at this point
+			const taskName = command?.arguments?.[0];
+			if (command?.command !== MISE_RUN_TASK || typeof taskName !== "string") {
+				continue;
+			}
+			if (!cacheEnabledTasks.has(getLocalTaskName(taskName))) {
+				continue;
+			}
+
+			const entries =
+				cacheInfo.find((info) => info.task === taskName)?.entries ?? [];
+			withCacheLenses.push(
+				createTaskCacheCodeLens(taskName, entries, codeLens.range),
+			);
+		}
+
+		return withCacheLenses;
+	}
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -311,6 +392,9 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			? await this.handleMiseTomlFile(document)
 			: this.handleTaskFile(document);
 
-		return this.qualifyTaskNamesInLenses(document, codeLenses);
+		return this.addTaskCacheLenses(
+			document,
+			await this.qualifyTaskNamesInLenses(document, codeLenses),
+		);
 	}
 }

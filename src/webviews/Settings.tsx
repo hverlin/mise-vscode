@@ -44,7 +44,7 @@ export const Settings = () => {
 		return <div>Error: {settingsQuery.error.message}</div>;
 	}
 
-	const settingValues = Object.entries(settingsQuery.data ?? {})
+	const reportedSettings = Object.entries(settingsQuery.data ?? {})
 		.flatMap(([key, { value, source }]) => {
 			if (typeof value === "object" && !Array.isArray(value)) {
 				return Object.entries(value).map(([subKey, subValue]) => ({
@@ -68,8 +68,32 @@ export const Settings = () => {
 					? schemaDef.defaultValue
 					: getDefaultForType(schemaDef?.type),
 				deprecated: schemaDef?.deprecated ?? "",
+				unset: false,
 			};
 		});
+
+	// `mise settings` only reports settings that resolve to a value, so the ones
+	// without a default (`task.cache_max_size`, `node.mirror_url`, ...) would
+	// otherwise be impossible to discover or edit from here
+	const reportedKeys = new Set(reportedSettings.map(({ key }) => key));
+	const unsetSettings = schema
+		.filter((schemaDef) => !reportedKeys.has(schemaDef.key))
+		.filter((schemaDef) => !schemaDef.deprecated)
+		.map((schemaDef) => ({
+			key: schemaDef.key,
+			value: schemaDef.defaultValue,
+			source: undefined,
+			description: schemaDef.description ?? "",
+			type: schemaDef.type ?? "",
+			enum: schemaDef.enum ?? [],
+			defaultValue: schemaDef.defaultValue,
+			deprecated: "",
+			unset: true,
+		}));
+
+	const settingValues = [...reportedSettings, ...unsetSettings].sort((a, b) =>
+		a.key.localeCompare(b.key),
+	);
 
 	const modifiedSettings = settingValues.filter((value) => value.source);
 
@@ -161,7 +185,9 @@ export const Settings = () => {
 											gap: 8,
 										}}
 									>
-										<pre style={{ padding: 0, margin: 0 }}>{actual}</pre>{" "}
+										<pre style={{ padding: 0, margin: 0 }}>
+											{row.original.unset ? "not set" : actual}
+										</pre>{" "}
 										<IconButton
 											style={{ margin: 0, padding: 0 }}
 											iconName="edit"

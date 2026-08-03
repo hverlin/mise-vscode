@@ -16,6 +16,7 @@ import {
 	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
 	shouldCheckForNewMiseVersion,
+	shouldKeepReplacedVersionOnUpgrade,
 	shouldResolveMonorepoProjectConfigs,
 	shouldSkipWorkspaceBinaryApproval,
 	updateBinPath,
@@ -87,6 +88,10 @@ const flattenSettings = (obj: object, prefix = "") => {
 const MIN_MISE_VERSION = [2025, 1, 5] as const;
 // `mise bootstrap` (with `bootstrap status --json`) was consolidated in 2026.7.16
 const MIN_MISE_VERSION_FOR_BOOTSTRAP = [2026, 7, 16] as const;
+// `mise upgrade --no-prune` was added in 2026.8.1
+const MIN_MISE_VERSION_FOR_UPGRADE_NO_PRUNE = [2026, 8, 1] as const;
+// `mise cache task` and `mise cache clear --task` were added in 2026.8.1
+const MIN_MISE_VERSION_FOR_TASK_CACHE = [2026, 8, 1] as const;
 
 function compareVersions(
 	a: readonly [number, number, number],
@@ -132,6 +137,75 @@ export class MiseService {
 
 	subscribeToReloadEvent(listener: () => void): vscode.Disposable {
 		return this.eventEmitter.event(listener);
+	}
+
+	private readonly taskCacheEventEmitter = new vscode.EventEmitter<void>();
+
+	/**
+	 * Fired when the task output cache changed on disk, so the views showing it
+	 * do not have to wait for a config change to refresh.
+	 */
+	subscribeToTaskCacheEvent(listener: () => void): vscode.Disposable {
+		return this.taskCacheEventEmitter.event(listener);
+	}
+
+	async invalidateTaskCacheInfo() {
+		await this.taskCacheCache.clear();
+		this.taskCacheEventEmitter.fire();
+	}
+
+	private taskCacheWatcherStarted: Promise<void> | undefined;
+	private taskCacheDebounce: ReturnType<typeof setTimeout> | undefined;
+
+	/**
+	 * Start watching the task artifact cache, once. Cached tasks publish their
+	 * entries outside of the workspace, and a task run from a terminal reports
+	 * nothing back to the extension, so watching the artifacts is the only way
+	 * the cache views know they went stale.
+	 * Called when a task opting into the cache is first seen: resolving the
+	 * directory costs a mise call, and most workspaces never need it.
+	 */
+	ensureTaskCacheWatcher() {
+		if (this.taskCacheWatcherStarted) {
+			return;
+		}
+
+		this.taskCacheWatcherStarted = this.startTaskCacheWatcher().catch(
+			(error) => {
+				logger.info("Unable to watch the task cache:", error as Error);
+			},
+		);
+	}
+
+	private async startTaskCacheWatcher() {
+		const taskCacheDir = await this.getTaskCacheDir();
+		if (!taskCacheDir) {
+			return;
+		}
+
+		// mise only creates the directory when a task first publishes an entry,
+		// and a watcher on a missing directory reports nothing
+		await mkdirp(taskCacheDir);
+
+		const watcher = vscode.workspace.createFileSystemWatcher(
+			new vscode.RelativePattern(vscode.Uri.file(taskCacheDir), "**"),
+		);
+		this.context.subscriptions.push(watcher);
+
+		// a single run writes an archive and a manifest: coalesce the events
+		const onTaskCacheChange = () => {
+			clearTimeout(this.taskCacheDebounce);
+			this.taskCacheDebounce = setTimeout(() => {
+				this.invalidateTaskCacheInfo().catch((error) => {
+					logger.info("Error while refreshing the task cache:", error as Error);
+				});
+			}, 300);
+		};
+
+		watcher.onDidChange(onTaskCacheChange);
+		watcher.onDidCreate(onTaskCacheChange);
+		watcher.onDidDelete(onTaskCacheChange);
+		logger.info(`Watching the task cache: ${taskCacheDir}`);
 	}
 
 	private hasVerifiedMiseVersion = false;
@@ -188,6 +262,21 @@ export class MiseService {
 			return flattenJsonSchema(json.$defs.settings);
 		});
 
+	// task cache entries change whenever a cached task runs, which the config
+	// file watcher cannot see: keep them briefly and invalidate on disk changes
+	private taskCacheCache = createCache({
+		ttl: 10,
+		storage: { type: "memory" },
+	}).define("getTaskCacheInfo", async () => {
+		const { stdout } = await this.execMiseCommand([
+			"cache",
+			"task",
+			"*",
+			"--json",
+		]);
+		return stdout ? (JSON.parse(stdout) as MiseTaskCacheInfo[]) : [];
+	});
+
 	// scanning the project directories reads many files: keep the result for a
 	// while instead of re-walking on every webview refresh
 	private projectsCache = createCache({
@@ -202,6 +291,7 @@ export class MiseService {
 			this.cache.clear(),
 			this.longTTLCache.clear(),
 			this.projectsCache.clear(),
+			this.taskCacheCache.clear(),
 		]);
 		this.eventEmitter.fire();
 	}
@@ -619,6 +709,112 @@ export class MiseService {
 		return [...new Set(tasks.map((task) => task.source))];
 	}
 
+	/**
+	 * Output cache entries of every task. `mise cache task '*'` reports all
+	 * tasks in one call, with no entries for the ones that do not cache, and
+	 * does not require the experimental flag to be enabled.
+	 * Empty on mise versions without the subcommand.
+	 */
+	async getTaskCacheInfo(): Promise<MiseTaskCacheInfo[]> {
+		if (!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_TASK_CACHE))) {
+			return [];
+		}
+
+		try {
+			return await this.taskCacheCache.getTaskCacheInfo();
+		} catch (error) {
+			logger.info("Error fetching task cache entries:", error as Error);
+			return [];
+		}
+	}
+
+	/**
+	 * Directory holding the task output cache artifacts, watched to know when a
+	 * task published or restored an entry.
+	 */
+	async getTaskCacheDir(): Promise<string | undefined> {
+		if (!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_TASK_CACHE))) {
+			return undefined;
+		}
+
+		// `settings get` fails when the setting has no value, which is the
+		// default: fall back to the standard location under the mise cache dir
+		const configuredDir = await this.getSetting("task.cache_dir")
+			.then((dir) => dir?.trim())
+			.catch(() => undefined);
+		if (configuredDir) {
+			return expandPath(configuredDir);
+		}
+
+		try {
+			const { stdout } = await this.execMiseCommand(["cache", "path"]);
+			const cacheDir = stdout.trim();
+			return cacheDir
+				? path.join(expandPath(cacheDir), "task-artifacts")
+				: undefined;
+		} catch (error) {
+			logger.info(
+				"Could not resolve the task cache directory:",
+				error as Error,
+			);
+			return undefined;
+		}
+	}
+
+	/**
+	 * Cache key the task would use if it ran now, which is the only way to know
+	 * whether the next run hits the cache: the `current` flag of the stored
+	 * entries reports the last key mise recorded, not one recomputed from the
+	 * inputs as they are now.
+	 *
+	 * Computing the key runs the `cache.command_inputs` of the task, so callers
+	 * must only ask for tasks that declare none. Nothing else is executed: the
+	 * dry run reports missing tools instead of installing them.
+	 */
+	async getTaskCacheKey(taskName: string): Promise<string | undefined> {
+		if (!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_TASK_CACHE))) {
+			return undefined;
+		}
+
+		try {
+			// the explanations are JSON lines on stdout, task output goes to stderr
+			const { stdout } = await this.dedupeCache.execCmd({
+				args: ["run", "--dry-run", "--task-cache-explain-json", taskName],
+			});
+			for (const line of stdout.split("\n")) {
+				if (!line.trim()) {
+					continue;
+				}
+				const explanation = JSON.parse(line) as {
+					task?: string;
+					cache_key?: string;
+				};
+				if (explanation.task === taskName && explanation.cache_key) {
+					return explanation.cache_key;
+				}
+			}
+		} catch (error) {
+			logger.info(
+				`Could not compute the cache key of ${taskName}:`,
+				error as Error,
+			);
+		}
+		return undefined;
+	}
+
+	/** Cache entries of a single task, empty when it has none */
+	async getTaskCacheEntries(taskName: string): Promise<MiseTaskCacheEntry[]> {
+		const cacheInfo = await this.getTaskCacheInfo();
+		return cacheInfo.find((info) => info.task === taskName)?.entries ?? [];
+	}
+
+	async clearTaskCacheInConsole(taskName: string) {
+		await this.runMiseToolActionInConsole(
+			["cache", "clear", "--task", taskName],
+			`mise cache clear ${taskName}`,
+		);
+	}
+
 	async getCurrentConfigFiles(): Promise<string[]> {
 		const files = await Promise.all([
 			this.getTasks().then((tasks) => tasks.map((task) => task.source)),
@@ -954,11 +1150,23 @@ export class MiseService {
 		await this.execMiseCommand(["fmt"], { setMiseEnv: false });
 	}
 
-	async runTask(taskName: string, ...args: string[]): Promise<void> {
+	/**
+	 * `mise run [runFlags] <task> [args]`. Flags of `mise run` itself have to
+	 * precede the task name, everything after it is passed to the task.
+	 */
+	async runTask(
+		taskName: string,
+		{ runFlags = [], args = [] }: { runFlags?: string[]; args?: string[] } = {},
+	): Promise<void> {
 		const terminal = this.getOrCreateTerminal(`run ${taskName}`);
 		terminal.show();
 
-		const command = this.createMiseCommand(["run", taskName, ...args]);
+		const command = this.createMiseCommand([
+			"run",
+			...runFlags,
+			taskName,
+			...args,
+		]);
 		ensureMiseCommand(command);
 		await runInVscodeTerminal(terminal, command);
 	}
@@ -1633,9 +1841,19 @@ export class MiseService {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole(
-			bump ? ["up", "--bump", toolName] : ["up", toolName],
-		);
+		const args = ["up"];
+		if (bump) {
+			args.push("--bump");
+		}
+		if (
+			shouldKeepReplacedVersionOnUpgrade() &&
+			(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_UPGRADE_NO_PRUNE))
+		) {
+			args.push("--no-prune");
+		}
+		args.push(toolName);
+
+		await this.runMiseToolActionInConsole(args);
 	}
 
 	async installToolInConsole(toolName: string, version: string) {

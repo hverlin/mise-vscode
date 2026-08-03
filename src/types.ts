@@ -29,6 +29,33 @@ type MiseTask = {
 	file?: string;
 };
 
+/**
+ * One stored artifact of a task output cache entry, as reported by
+ * `mise cache task <pattern> --json` (mise 2026.8.1+, experimental).
+ */
+type MiseTaskCacheEntry = {
+	key: string;
+	artifact_checksum?: string;
+	/** whether the entry matches the cache key the task would compute now */
+	current: boolean;
+	/** size of the stored artifact */
+	size_bytes: number;
+	/** size of the files a cache hit would restore */
+	restored_bytes: number;
+	/** how long the cached run took, i.e. what a hit saves */
+	execution_duration_ns: number;
+	/** unix timestamp, in seconds */
+	last_accessed: number;
+	outputs: string[];
+};
+
+/** Cache entries of a single task. Tasks without caching report no entries. */
+type MiseTaskCacheInfo = {
+	task: string;
+	root: string;
+	entries: MiseTaskCacheEntry[];
+};
+
 type MiseToolSource = {
 	type: string;
 	path: string;

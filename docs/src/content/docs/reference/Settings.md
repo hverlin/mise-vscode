@@ -211,6 +211,16 @@ Check if a new mise version is available on startup.
 
 ---
 
+##### `mise.keepReplacedVersionOnUpgrade`
+- **Type:** `boolean`
+- **Default:** `false`
+
+Pass `--no-prune` to `mise upgrade` so the version being replaced stays installed. Useful when something outside of mise still points at it, such as a virtualenv built from a mise-managed Python.
+
+Requires mise 2026.8.1 or later; ignored on older versions.
+
+---
+
 ##### `mise.showToolVersionsDecorations`
 - **Type:** `boolean`
 - **Default:** `true`

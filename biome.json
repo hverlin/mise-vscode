@@ -15,7 +15,10 @@
 			"!**/.vscode",
 			"!**/package.json",
 			"!**/.vscode-test",
-			"!**/.vscode-test-web"
+			"!**/.vscode-test-web",
+			"!**/.mise-cache",
+			"!**/.mise-data",
+			"!**/.mise-state"
 		]
 	},
 	"formatter": {
