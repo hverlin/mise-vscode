@@ -139,6 +139,118 @@ export function isPositionInToolsContext(
 	return { inContext: false, isInline: false, inToolOptionsSection: false };
 }
 
+const CONFIG_ROOTS_ASSIGNMENT = /^\s*(monorepo\s*\.\s*)?config_roots\s*=\s*\[/;
+
+/**
+ * Checks if the given position is inside the value of a
+ * `[monorepo] config_roots = [...]` array (or a top-level
+ * `monorepo.config_roots = [...]` dotted assignment), including multiline
+ * arrays.
+ *
+ * When in context, `inQuote` tells whether the cursor is inside an open
+ * string literal and `partial` holds the path typed so far — the content of
+ * the open string, or the bare (not yet quoted) token before the cursor.
+ */
+export function getConfigRootsArrayContext(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): { inQuote: boolean; partial: string } | undefined {
+	let openLine = -1;
+	let openChar = 0;
+	let hasMonorepoPrefix = false;
+
+	for (let i = position.line; i >= 0; i--) {
+		const lineText =
+			i === position.line
+				? document.lineAt(i).text.slice(0, position.character)
+				: document.lineAt(i).text;
+
+		const match = lineText.match(CONFIG_ROOTS_ASSIGNMENT);
+		if (match) {
+			openLine = i;
+			openChar = match[0].length;
+			hasMonorepoPrefix = Boolean(match[1]);
+			break;
+		}
+
+		const trimmed = lineText.trim();
+		// a section header or another assignment means the cursor is not
+		// inside a config_roots array value
+		if (/^\[/.test(trimmed) || /^[\w."'-]+\s*=/.test(trimmed)) {
+			return undefined;
+		}
+	}
+	if (openLine === -1) {
+		return undefined;
+	}
+
+	if (!hasMonorepoPrefix && !isInMonorepoSection(document, openLine - 1)) {
+		return undefined;
+	}
+
+	// text from just after the opening `[` to the cursor
+	const parts: string[] = [];
+	for (let i = openLine; i <= position.line; i++) {
+		let text = document.lineAt(i).text;
+		if (i === position.line) {
+			text = text.slice(0, position.character);
+		}
+		parts.push(i === openLine ? text.slice(openChar) : text);
+	}
+	const region = parts.join("\n");
+
+	let depth = 1;
+	let stringQuote: string | undefined;
+	let stringStart = 0;
+	let bareStart = 0;
+	for (let idx = 0; idx < region.length; idx++) {
+		const ch = region[idx] ?? "";
+		if (stringQuote) {
+			if (ch === stringQuote || ch === "\n") {
+				stringQuote = undefined;
+				bareStart = idx + 1;
+			}
+		} else if (ch === '"' || ch === "'") {
+			stringQuote = ch;
+			stringStart = idx + 1;
+		} else if (ch === "[") {
+			depth++;
+		} else if (ch === "]") {
+			depth--;
+			if (depth === 0) {
+				return undefined;
+			}
+		} else if (ch === "#") {
+			while (idx < region.length && region[idx] !== "\n") {
+				idx++;
+			}
+			bareStart = idx + 1;
+		} else if (/[\s,]/.test(ch)) {
+			bareStart = idx + 1;
+		}
+	}
+
+	return stringQuote
+		? { inQuote: true, partial: region.slice(stringStart) }
+		: { inQuote: false, partial: region.slice(bareStart) };
+}
+
+function isInMonorepoSection(
+	document: vscode.TextDocument,
+	fromLine: number,
+): boolean {
+	for (let i = fromLine; i >= 0; i--) {
+		const headerMatch = document
+			.lineAt(i)
+			.text.trim()
+			.match(/^\[([^\]]+)\]/);
+		if (headerMatch) {
+			return headerMatch[1]?.trim() === "monorepo";
+		}
+	}
+	return false;
+}
+
 /**
  * Parses the text before the cursor when completing the `version` value inside
  * an inline options table:

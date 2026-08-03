@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type * as vscode from "vscode";
 import {
+	getConfigRootsArrayContext,
 	isPositionInToolsContext,
 	parseInlineTableVersionPrefix,
 	parseToolsSectionHeader,
@@ -249,5 +250,99 @@ describe("isPositionInToolsContext", () => {
 			isInline: true,
 			inToolOptionsSection: false,
 		});
+	});
+});
+
+describe("getConfigRootsArrayContext", () => {
+	const position = (line: number, character: number) =>
+		({ line, character }) as vscode.Position;
+
+	const doc = fakeDocument(
+		[
+			/* 0 */ "monorepo_root = true",
+			/* 1 */ "",
+			/* 2 */ "[monorepo]",
+			/* 3 */ "config_roots = [",
+			/* 4 */ '\t"projects/*",',
+			/* 5 */ '\t"crates/agent', // being typed, quote still open
+			/* 6 */ "\t", // empty element position
+			/* 7 */ "]",
+			/* 8 */ "",
+			/* 9 */ "[tasks.build]",
+			/* 10 */ 'depends = ["projects',
+		].join("\n"),
+	);
+
+	it("detects the cursor inside an open string of a multiline array", () => {
+		expect(getConfigRootsArrayContext(doc, position(5, 14))).toEqual({
+			inQuote: true,
+			partial: "crates/agent",
+		});
+	});
+
+	it("detects an element position outside a string", () => {
+		expect(getConfigRootsArrayContext(doc, position(6, 1))).toEqual({
+			inQuote: false,
+			partial: "",
+		});
+	});
+
+	it("ignores completed elements on the cursor line", () => {
+		expect(getConfigRootsArrayContext(doc, position(4, 13))).toEqual({
+			inQuote: false,
+			partial: "",
+		});
+	});
+
+	it("captures a bare token typed without quotes", () => {
+		const bare = fakeDocument(
+			["[monorepo]", "config_roots = [", '\t"crates/*",', "\tpro"].join("\n"),
+		);
+		expect(getConfigRootsArrayContext(bare, position(3, 4))).toEqual({
+			inQuote: false,
+			partial: "pro",
+		});
+	});
+
+	it("is not in context after the array is closed", () => {
+		expect(getConfigRootsArrayContext(doc, position(8, 0))).toBeUndefined();
+	});
+
+	it("is not in context in other arrays", () => {
+		expect(getConfigRootsArrayContext(doc, position(10, 20))).toBeUndefined();
+	});
+
+	it("detects single-line arrays", () => {
+		const singleLine = fakeDocument(
+			["[monorepo]", 'config_roots = ["projects/'].join("\n"),
+		);
+		expect(getConfigRootsArrayContext(singleLine, position(1, 26))).toEqual({
+			inQuote: true,
+			partial: "projects/",
+		});
+	});
+
+	it("detects dotted monorepo.config_roots assignments", () => {
+		const dotted = fakeDocument('monorepo.config_roots = ["cra');
+		expect(getConfigRootsArrayContext(dotted, position(0, 29))).toEqual({
+			inQuote: true,
+			partial: "cra",
+		});
+	});
+
+	it("requires the [monorepo] section", () => {
+		const wrongSection = fakeDocument(
+			["[settings]", 'config_roots = ["projects/'].join("\n"),
+		);
+		expect(
+			getConfigRootsArrayContext(wrongSection, position(1, 26)),
+		).toBeUndefined();
+	});
+
+	it("requires a section header for a bare config_roots key", () => {
+		const noSection = fakeDocument('config_roots = ["projects/');
+		expect(
+			getConfigRootsArrayContext(noSection, position(0, 26)),
+		).toBeUndefined();
 	});
 });

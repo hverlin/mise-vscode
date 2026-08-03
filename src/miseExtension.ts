@@ -45,6 +45,7 @@ import {
 	MiseBootstrapProvider,
 	registerBootstrapCommands,
 } from "./providers/bootstrapProvider";
+import { ConfigRootsCompletionProvider } from "./providers/configRootsCompletionProvider";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
@@ -536,6 +537,11 @@ export class MiseExtension {
 				allTomlFilesSelector,
 				new MiseCompletionProvider(this.miseService),
 				...['"', "'", "[", ","],
+			),
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
+				new ConfigRootsCompletionProvider(),
+				...['"', "'", "[", ",", "/"],
 			),
 			vscode.languages.registerDefinitionProvider(
 				allTomlFilesSelector,
