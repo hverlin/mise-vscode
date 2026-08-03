@@ -68,6 +68,12 @@ syntax highlighting even though they have no `.toml` extension.
 
 Code completion is provided for `depends = ["task_name"]`, `depends_post = ["task_name"]`, `wait_for = ["task_name"]`.
 
+`extends = "template_name"` completes the
+[task templates](https://mise.jdx.dev/tasks/templates.html) declared in the file
+being edited and in its parent config files. See the
+[task templates section](/reference/tasks/#task-templates) of the tasks
+reference for the hover, go-to-definition, and find-references support.
+
 ### Task arguments (usage spec)
 
 Task arguments are declared with the
@@ -120,6 +126,9 @@ This extension adds the following code lens features:
 
 - Cmd/Ctrl+Click on an included file will open that file (example:
   `include = ["tasks.toml"`])
+- Cmd/Ctrl+Click on `extends = "template_name"` opens the
+  `[task_templates.template_name]` declaration; _Find all references_ on a
+  declaration lists every task extending it
 
 ### Syntax highlighting for shebang
 

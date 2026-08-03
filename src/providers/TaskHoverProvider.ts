@@ -18,6 +18,16 @@ import {
 	TASK_NAME_REGEX,
 	TASK_PATTERN_REGEX,
 } from "../utils/taskNames";
+import {
+	collectTaskTemplates,
+	collectTaskTemplateUsages,
+	findTaskTemplatesInDocument,
+	findTaskTemplateUsagesInDocument,
+	formatTaskTemplateMarkdown,
+	isMiseConfigFile,
+	isTaskExtendsKeyPath,
+	isTaskTemplateKeyPath,
+} from "../utils/taskTemplates";
 
 /**
  * What the hover knows about the output cache of a task: its stored entries,
@@ -31,6 +41,8 @@ type TaskCacheState = {
 function createMarkdownString(
 	task: MiseTask,
 	cacheState: TaskCacheState = { entries: [] },
+	/** name of the task template the declaration extends, when it does */
+	extendsTemplate?: string,
 ): vscode.MarkdownString {
 	const markdownString = new vscode.MarkdownString();
 	markdownString.supportHtml = true;
@@ -43,6 +55,11 @@ function createMarkdownString(
 	}
 	if (task.file) {
 		markdownString.appendMarkdown(`\n\nFile: ${task.file}`);
+	}
+	if (extendsTemplate) {
+		markdownString.appendMarkdown(
+			`\n\nExtends template \`${extendsTemplate}\``,
+		);
 	}
 	appendCacheSection(markdownString, cacheState);
 	return markdownString;
@@ -164,6 +181,74 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		});
 	}
 
+	/** Task sources and config files, i.e. everywhere a template can be used */
+	private async getScannableConfigPaths(): Promise<string[]> {
+		const [taskSources, configFiles] = await Promise.all([
+			this.miseService.getAllCachedTasksSources(),
+			this.miseService.getMiseConfigFiles(),
+		]);
+		return [...taskSources, ...configFiles.map((file) => file.path)];
+	}
+
+	/**
+	 * Hovering `extends = "<name>"` shows the template it resolves to and where
+	 * it comes from; hovering a `[task_templates.<name>]` declaration shows the
+	 * template and how many tasks extend it.
+	 */
+	private async provideTaskTemplateHover(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		keyPath: string[],
+	): Promise<vscode.Hover | null> {
+		const nameRange = document.getWordRangeAtPosition(
+			position,
+			TASK_NAME_REGEX,
+		);
+		if (!nameRange) {
+			return null;
+		}
+
+		if (isTaskTemplateKeyPath(keyPath)) {
+			const templateName = String(keyPath[1]);
+			const template = findTaskTemplatesInDocument(document).find(
+				(candidate) => candidate.name === templateName,
+			);
+			if (!template) {
+				return null;
+			}
+
+			const markdown = formatTaskTemplateMarkdown(template);
+			const usages = await collectTaskTemplateUsages(
+				await this.getScannableConfigPaths(),
+				templateName,
+			);
+			markdown.appendMarkdown(
+				`\n\n---\n\nExtended by ${usages.length} task${usages.length === 1 ? "" : "s"}`,
+			);
+			return new vscode.Hover(markdown, nameRange);
+		}
+
+		const templateName = document.getText(nameRange);
+		const configPaths = (await this.miseService.getMiseConfigFiles()).map(
+			(file) => file.path,
+		);
+		const template = (await collectTaskTemplates(document, configPaths)).find(
+			(candidate) => candidate.name === templateName,
+		);
+		if (!template) {
+			return null;
+		}
+
+		const markdown = formatTaskTemplateMarkdown(template);
+		if (expandPath(template.source) !== expandPath(document.uri.fsPath)) {
+			const uri = vscode.Uri.file(template.source);
+			markdown.appendMarkdown(
+				`\n\nDeclared in [${vscode.workspace.asRelativePath(template.source)}](${uri}#L${template.nameRange.start.line + 1})`,
+			);
+		}
+		return new vscode.Hover(markdown, nameRange);
+	}
+
 	public async provideHover(
 		document: vscode.TextDocument,
 		position: vscode.Position,
@@ -175,9 +260,6 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		const tasks = await this.miseService.getAllCachedTasks();
 		const documentPath = expandPath(document.uri.fsPath);
 		const tasksSources = tasks.map((t) => expandPath(t.source));
-		if (!tasksSources.includes(documentPath)) {
-			return null;
-		}
 
 		const tomParser = getCachedTomlParser(document);
 		if (!tomParser) {
@@ -190,9 +272,26 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			return null;
 		}
 
+		// a config file may declare task templates without declaring any task
+		const isTemplateKey =
+			isTaskExtendsKeyPath(keyPath) || isTaskTemplateKeyPath(keyPath);
+		if (
+			!tasksSources.includes(documentPath) &&
+			!(
+				isTemplateKey &&
+				(await isMiseConfigFile(this.miseService, documentPath))
+			)
+		) {
+			return null;
+		}
+
 		// `depends` under [tools.*] refers to other tools, not tasks
 		if (keyPath[0] === "tools") {
 			return null;
+		}
+
+		if (isTemplateKey) {
+			return this.provideTaskTemplateHover(document, position, keyPath);
 		}
 
 		if (
@@ -215,7 +314,13 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			}
 
 			return new vscode.Hover(
-				createMarkdownString(task, await this.getCacheState(task, document)),
+				createMarkdownString(
+					task,
+					await this.getCacheState(task, document),
+					findTaskTemplateUsagesInDocument(document).find(
+						(usage) => usage.taskName === localName,
+					)?.templateName,
+				),
 				taskNameRange,
 			);
 		}

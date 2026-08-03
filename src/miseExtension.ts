@@ -69,6 +69,7 @@ import {
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
 import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
+import { TaskTemplateCompletionProvider } from "./providers/TaskTemplateCompletionProvider";
 import { ToolCompletionProvider } from "./providers/ToolCompletionProvider";
 import { registerTomlFileLinks } from "./providers/taskIncludesNavigation";
 import {
@@ -542,6 +543,11 @@ export class MiseExtension {
 				allTomlFilesSelector,
 				new ConfigRootsCompletionProvider(),
 				...['"', "'", "[", ",", "/"],
+			),
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
+				new TaskTemplateCompletionProvider(this.miseService),
+				...['"', "'", "=", ":"],
 			),
 			vscode.languages.registerDefinitionProvider(
 				allTomlFilesSelector,

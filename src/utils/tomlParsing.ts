@@ -139,6 +139,60 @@ export function isPositionInToolsContext(
 	return { inContext: false, isInline: false, inToolOptionsSection: false };
 }
 
+/**
+ * Checks if the given position in a TOML document is within a task definition
+ * context. This includes:
+ * 1. Inside a `[tasks]` block
+ * 2. Inside a `[tasks.taskName]` section (including its header line)
+ * 3. Inside a `tasks.taskName = { ... }` line
+ *
+ * `[task_templates.*]` sections are not task definitions: templates are
+ * resolved for tasks only.
+ */
+export function isPositionInTasksContext(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): boolean {
+	const lineText = document.lineAt(position.line).text;
+	if (/^\s*tasks\s*\.\s*(?:["'][^"']+["']|[^\s=]+)\s*=/.test(lineText)) {
+		return true;
+	}
+
+	for (let i = position.line; i >= 0; i--) {
+		const sectionName = document
+			.lineAt(i)
+			.text.trim()
+			.match(/^\[([^\]]+)\]/)?.[1]
+			?.trim();
+		if (sectionName === undefined) {
+			continue;
+		}
+		return sectionName === "tasks" || /^tasks\s*\./.test(sectionName);
+	}
+
+	return false;
+}
+
+/**
+ * Parses the text before the cursor when completing the value of an `extends`
+ * key, which names a task template:
+ *
+ * - `extends = "py` → { quote: '"', partial: "py" }
+ * - `extends = ` → { quote: "", partial: "" }
+ * - `info = { extends = '` → { quote: "'", partial: "" }
+ *
+ * Returns undefined when the cursor is not on an `extends` value.
+ */
+export function parseExtendsValuePrefix(
+	linePrefix: string,
+): { quote: string; partial: string } | undefined {
+	const match = linePrefix.match(/(?:^|[\s{,])extends\s*=\s*(["']?)([^"']*)$/);
+	if (!match) {
+		return undefined;
+	}
+	return { quote: match[1] ?? "", partial: match[2] ?? "" };
+}
+
 const CONFIG_ROOTS_ASSIGNMENT = /^\s*(monorepo\s*\.\s*)?config_roots\s*=\s*\[/;
 
 /**

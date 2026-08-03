@@ -58,7 +58,7 @@ To enable auto-configuration, set [`mise.configureExtensionsAutomatically`](http
 
 **Important:** By default, tools from your global mise configuration (`~/.config/mise/config.toml`) are included when auto-configuring other VS Code extensions ([`mise.configureExtensionsIncludeGlobalTools`](https://hverlin.github.io/mise-vscode/reference/settings/#miseconfigureextensionsincludeglobaltools) is `true` for backward compatibility). You can set it to `false` to keep your `.vscode/settings.json` clean and ensure extensions are only configured for tools actually used in your project.
 
-## ✨ Features
+## Features
 
 The mise-vscode extension integrates mise's core functionality into VS Code, helping you manage your development environment directly from the editor. You can handle task running, tool versions, and environment variables through a simple interface. Here's what's available:
 
@@ -80,6 +80,8 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📝 View task definitions
 - ➕ Create new toml & file tasks
 - ⚡ Autocompletion of task dependencies
+- 🧬 Autocompletion, hover, go to definition and find references for
+  [task templates](https://mise.jdx.dev/tasks/templates.html) (`extends`)
 - 🕸️ View graph of task dependencies
 
 ### [Tool Management](https://hverlin.github.io/mise-vscode/reference/tools/)
