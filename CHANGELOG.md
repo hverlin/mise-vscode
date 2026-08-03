@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.19.0](https://github.com/hverlin/mise-vscode/compare/v1.18.0...v1.19.0) (2026-08-03)
+
+
+### Features
+
+* auto-complete monorepo config_roots paths ([6f1bcf9](https://github.com/hverlin/mise-vscode/commit/6f1bcf96923df804beaf076dd651685b4cbc4d59))
+* improve task graph ([fc885a4](https://github.com/hverlin/mise-vscode/commit/fc885a4f85acfcf0537c11a9be5346cf96be205e))
+
 ## [1.18.0](https://github.com/hverlin/mise-vscode/compare/v1.17.0...v1.18.0) (2026-08-03)
 
 
