@@ -1,7 +1,9 @@
 # mise-vscode 🛠️
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/hverlin.mise-vscode)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
+[![VS Code Marketplace](https://vsmarketplacebadges.dev/version/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
+[![VS Code Marketplace](https://vsmarketplacebadges.dev/installs-short/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![Open VSX](https://img.shields.io/open-vsx/v/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
+[![Open VSX](https://img.shields.io/open-vsx/dt/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
 [![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/)
 
 Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`). [Documentation](https://hverlin.github.io/mise-vscode/)
