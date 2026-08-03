@@ -47,6 +47,23 @@ In `.tool-versions` files, backend prefixes (`core:`, `npm:`, `cargo:`, ...) are
 also autocompleted, and typing a prefix such as `core:` suggests the registry
 tools of that backend (e.g. `core:node`).
 
+### Tool stubs
+
+[Tool stubs](https://mise.jdx.dev/dev-tools/tool-stubs.html) are executable
+files (usually committed under `bin/`) whose body is TOML under a
+`#!/usr/bin/env -S mise tool-stub` shebang:
+
+```toml
+#!/usr/bin/env -S mise tool-stub
+
+version = "2.96.0"
+tool = "github:cli/cli"
+bin = "bin/gh"
+```
+
+The extension detects the shebang and opens stub files as TOML, so they get
+syntax highlighting even though they have no `.toml` extension.
+
 #### Autocompletion for tasks
 
 Code completion is provided for `depends = ["task_name"]`, `depends_post = ["task_name"]`, `wait_for = ["task_name"]`.

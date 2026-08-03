@@ -66,6 +66,8 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 🧩 Autocompletion & hover for [task arguments](https://mise.jdx.dev/tasks/task-arguments.html)
   (`usage` field, `#USAGE`/`#MISE` comments in file tasks, `$usage_*` variables)
 - 🔗 Go to definition, find references for mise tasks
+- 🪄 Syntax highlighting for extensionless
+  [tool stub](https://mise.jdx.dev/dev-tools/tool-stubs.html) files
 
 ### [Task Management](https://hverlin.github.io/mise-vscode/reference/tasks/)
 

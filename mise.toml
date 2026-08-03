@@ -1,12 +1,16 @@
 [tools]
 pkl = "0.29.1"
-node = '24'
+node = "24"
 hk = "1.18.1"
 aube = "1.37.0"
 bun = "1.3.14"
 
 [settings]
 lockfile = true
+experimental = true
+
+[deps.aube]
+auto = true
 
 [env]
 _.path = ["./node_modules/.bin"]
@@ -15,112 +19,97 @@ CODE_CMD = "code"
 ### Main tasks
 
 [tasks.dev]
-description = 'Starts the project in watch mode and opens the extension in VSCode'
-depends = ['dev-extension', 'dev-webviews', 'start-vscode']
+description = "Starts the project in watch mode and opens the extension in VSCode"
+depends = ["dev-extension", "dev-webviews", "start-vscode"]
 
 [tasks.dev-web]
-description = 'Starts the project in watch mode and opens the extension in VSCode Web'
-depends = ['dev-extension-web', 'dev-webviews', 'start-vscode-web']
+description = "Starts the project in watch mode and opens the extension in VSCode Web"
+depends = ["dev-extension-web", "dev-webviews", "start-vscode-web"]
 
 [tasks.check]
 description = "Lint, type-check, and test the project"
-depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings']
+depends = ["lint-fix", "test", "ts-check", "docs:extractSettings"]
 
 [tasks.check-all]
 description = "Lint, type-check, test, build docs, and run e2e tests"
-depends = ['lint-fix', 'test', 'ts-check', 'docs:extractSettings', 'docs:build', 'e2e-tests']
+depends = ["check", "docs:build", "e2e-tests"] # Simplified by nesting 'check'
 
 #####################
 
 [tasks."docs:extractSettings"]
-run = 'bun src/extract-settings.mjs'
+run = "bun src/extract-settings.mjs"
 dir = "{{config_root}}/docs"
 
 [tasks."docs:dev"]
-alias = 'docs'
-description = 'Builds the documentation'
-run = 'exec node --run dev'
+alias = "docs"
+description = "Builds the documentation"
+run = "exec node --run dev"
 dir = "{{config_root}}/docs"
-depends = ['docs:extractSettings', 'install']
+depends = ["docs:extractSettings"] # 'aube' auto-runs if needed via deps
 
 [tasks."docs:build"]
-run = 'node --run build'
+run = "node --run build"
 dir = "{{config_root}}/docs"
 
 [tasks."docs:preview"]
-run = 'node --run preview'
+run = "node --run preview"
 dir = "{{config_root}}/docs"
-depends = ['docs:build']
-
-[tasks.install]
-description = 'Installs dependencies with aube'
-run = 'aube install'
+depends = ["docs:build"]
 
 [tasks.start-vscode]
-description = 'Starts VSCode with the extension loaded'
-run = '$CODE_CMD --inspect-extensions=5858 --extensionDevelopmentPath={{cwd}}'
-wait_for = ['install']
+description = "Starts VSCode with the extension loaded"
+run = "$CODE_CMD --inspect-extensions=5858 --extensionDevelopmentPath={{cwd}}"
 
 [tasks.start-vscode-web]
-description = 'Starts VSCode Web with the extension loaded'
-run = 'npx @vscode/test-web --extensionDevelopmentPath={{cwd}}'
-wait_for = ['install']
+description = "Starts VSCode Web with the extension loaded"
+run = "npx @vscode/test-web --extensionDevelopmentPath={{cwd}}"
 
 [tasks.watch-vscode]
-run = 'mise watch -t start-vscode'
+run = "mise watch -t start-vscode"
 
 [tasks.start-vscode-inspect-brk]
-description = 'Starts VSCode with the extension loaded. Pauses on the first line of the extension'
-run = '$CODE_CMD --inspect-brk-extensions=5858 --extensionDevelopmentPath={{cwd}}'
+description = "Starts VSCode with the extension loaded. Pauses on the first line of the extension"
+run = "$CODE_CMD --inspect-brk-extensions=5858 --extensionDevelopmentPath={{cwd}}"
 
 [tasks.dev-extension]
-depends = ['install']
-description = 'Builds the project in watch mode'
-run = 'rsbuild dev'
+description = "Builds the project in watch mode"
+run = "rsbuild dev"
 
 [tasks.dev-extension-web]
-depends = ['install']
-description = 'Builds the project for VSCode Web in watch mode'
-run = 'rslib build -c rslib.browser.config.ts --watch --config-loader jiti'
+description = "Builds the project for VSCode Web in watch mode"
+run = "rslib build -c rslib.browser.config.ts --watch --config-loader jiti"
 
 [tasks.dev-webviews]
-description = 'Render webviews in watch mode.'
-run = 'node --run dev-webviews'
-depends = ['install']
+description = "Render webviews in watch mode."
+run = "node --run dev-webviews"
 
 [tasks.dev-reload-vscode]
-description = 'Starts the project in watch mode and opens the extension in VSCode. Reload VSCode on changes'
-depends = ['dev-extension', 'dev-webviews', 'watch-vscode']
+description = "Starts the project in watch mode and opens the extension in VSCode. Reload VSCode on changes"
+depends = ["dev-extension", "dev-webviews", "watch-vscode"]
 
 [tasks.ts-check]
-description = 'Type-check the project'
-depends = ['install']
-run = 'hk check --step tsc -a'
+description = "Type-check the project"
+run = "hk check --step tsc -a"
 
 [tasks.biome-lint]
-description = 'Lint the project with biome'
-depends = ['install']
-run = 'hk check --step biome -a'
+description = "Lint the project with biome"
+run = "hk check --step biome -a"
 
 [tasks.lint]
-description = 'Lint the project + type-check'
-depends = ['install']
-run = 'hk check'
+description = "Lint the project + type-check"
+run = "hk check"
 
 [tasks.lint-fix]
-description = 'Lint the project + type-check and fix issues'
-depends = ['install']
-run = 'hk fix'
+description = "Lint the project + type-check and fix issues"
+run = "hk fix"
 
 [tasks.test]
-description = 'Run tests'
-depends = ['install']
-run = 'node --run test'
+description = "Run tests"
+run = "node --run test"
 
 [tasks.e2e-tests]
-run = 'node --run e2e-tests'
-depends = ['install']
+run = "node --run e2e-tests"
 
 [tasks.e2e-test-action]
-tools = { act = 'latest' }
-run = 'act push -j e2e-tests'
+tools = { act = "latest" }
+run = "act push -j e2e-tests"

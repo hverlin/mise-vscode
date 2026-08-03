@@ -1,0 +1,6 @@
+#!/usr/bin/env -S mise tool-stub
+# GitHub CLI pinned for this repo
+
+version = "2.96.0"
+tool = "github:cli/cli"
+bin = "bin/gh"

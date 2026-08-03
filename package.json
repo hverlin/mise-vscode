@@ -77,6 +77,7 @@
         "filenamePatterns": [
           "mise.*.lock"
         ],
+        "firstLine": "^#!\\s*/usr/bin/env\\s+(-S\\s+)?mise\\s+tool-stub\\b",
         "configuration": "./syntaxes/toml-language-configuration.json"
       },
       {
