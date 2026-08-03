@@ -2,13 +2,17 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import {
+	MISE_CLEAR_TASK_CACHE,
 	MISE_CREATE_FILE_TASK,
 	MISE_CREATE_TOML_TASK,
 	MISE_CREATE_TOML_TASK_TOP_MENU,
+	MISE_EXPLAIN_TASK_CACHE,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
 	MISE_RUN_TASK,
+	MISE_RUN_TASK_WITHOUT_CACHE,
 	MISE_SEARCH_TASKS,
+	MISE_SHOW_TASK_CACHE_MENU,
 	MISE_WATCH_TASK,
 } from "../commands";
 import { isMiseExtensionEnabled } from "../configuration";
@@ -30,6 +34,7 @@ import {
 	renderDepsArray,
 } from "../utils/miseUtilts";
 import { safeExec } from "../utils/shell";
+import { formatCacheSummary } from "../utils/taskCache";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 import { getTaskDisplayName } from "../utils/taskNames";
 
@@ -268,7 +273,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return cmdArgs;
 	}
 
-	async runTask(taskName: string) {
+	async runTask(
+		taskName: string,
+		{ runFlags = [] }: { runFlags?: string[] } = {},
+	) {
 		try {
 			const taskInfo = await this.miseService.getTaskInfo(taskName);
 			if (!taskInfo) {
@@ -284,9 +292,9 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 					return;
 				}
 
-				await this.miseService.runTask(taskName, ...args);
+				await this.miseService.runTask(taskName, { runFlags, args });
 			} else {
-				await this.miseService.runTask(taskName);
+				await this.miseService.runTask(taskName, { runFlags });
 			}
 		} catch (error) {
 			vscode.window.showErrorMessage(
@@ -465,6 +473,36 @@ class TaskItem extends vscode.TreeItem {
 	}
 }
 
+/**
+ * Commands are invoked from the palette (no argument), the tasks view (a
+ * `TaskItem`), a code lens (a task name) or a hover (a `MiseTask`).
+ */
+function taskNameFromArgument(
+	taskName: undefined | string | MiseTask | TaskItem,
+): string | undefined {
+	if (!taskName) {
+		return undefined;
+	}
+	if (typeof taskName === "string") {
+		return taskName;
+	}
+	return taskName instanceof TaskItem ? taskName.task.name : taskName.name;
+}
+
+/** Task name from a command argument, asking the user when there is none */
+async function resolveTaskName(
+	taskProvider: MiseTasksProvider,
+	taskName: undefined | string | MiseTask | TaskItem,
+	placeHolder: string,
+): Promise<string | undefined> {
+	return (
+		taskNameFromArgument(taskName) ??
+		(await vscode.window.showQuickPick(taskProvider.getTasksNames(), {
+			placeHolder,
+		}))
+	);
+}
+
 export function registerTasksCommands(
 	context: vscode.ExtensionContext,
 	taskProvider: MiseTasksProvider,
@@ -544,6 +582,120 @@ export function registerTasksCommands(
 				taskProvider.watchTask(name).catch((error) => {
 					logger.error(`Failed to run task (watch mode) '${taskName}':`, error);
 				});
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_RUN_TASK_WITHOUT_CACHE,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				const name = await resolveTaskName(
+					taskProvider,
+					taskName,
+					"Select a task to run without its output cache",
+				);
+				if (!name) {
+					return;
+				}
+
+				await vscode.workspace.saveAll(false);
+				await taskProvider
+					.runTask(name, { runFlags: ["--task-cache", "off"] })
+					.catch((error) => {
+						logger.error(`Failed to run task '${name}' without cache:`, error);
+					});
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_EXPLAIN_TASK_CACHE,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				const name = await resolveTaskName(
+					taskProvider,
+					taskName,
+					"Select a task to explain the cache key of",
+				);
+				if (!name) {
+					return;
+				}
+
+				// --dry-run keeps the task itself (and its command inputs) from running
+				await miseService.runTask(name, {
+					runFlags: ["--dry-run", "--task-cache-explain"],
+				});
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_CLEAR_TASK_CACHE,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				let name = taskNameFromArgument(taskName);
+				if (!name) {
+					const cacheInfo = await miseService.getTaskCacheInfo();
+					const cachedTasks = cacheInfo.filter(
+						(info) => info.entries.length > 0,
+					);
+					if (cachedTasks.length === 0) {
+						vscode.window.showInformationMessage(
+							"No task has cached results to clear.",
+						);
+						return;
+					}
+
+					const picked = await vscode.window.showQuickPick(
+						cachedTasks.map((info) => ({
+							label: info.task,
+							description: formatCacheSummary(info.entries),
+						})),
+						{ placeHolder: "Select a task to clear the output cache of" },
+					);
+					name = picked?.label;
+				}
+
+				if (!name) {
+					return;
+				}
+
+				await miseService.clearTaskCacheInConsole(name);
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_SHOW_TASK_CACHE_MENU,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				const name = await resolveTaskName(
+					taskProvider,
+					taskName,
+					"Select a task to inspect the output cache of",
+				);
+				if (!name) {
+					return;
+				}
+
+				const entries = await miseService.getTaskCacheEntries(name);
+				const actions: Array<vscode.QuickPickItem & { command: string }> = [
+					{
+						label: "$(list-tree) Explain cache key",
+						description: "mise run --dry-run --task-cache-explain",
+						command: MISE_EXPLAIN_TASK_CACHE,
+					},
+					{
+						label: "$(debug-restart) Run without cache",
+						description: "mise run --task-cache off",
+						command: MISE_RUN_TASK_WITHOUT_CACHE,
+					},
+				];
+				if (entries.length > 0) {
+					actions.push({
+						label: "$(trash) Clear cache",
+						description: `mise cache clear --task (${formatCacheSummary(entries)})`,
+						command: MISE_CLEAR_TASK_CACHE,
+					});
+				}
+
+				const picked = await vscode.window.showQuickPick(actions, {
+					placeHolder: `Task cache: ${name} (${formatCacheSummary(entries)})`,
+				});
+				if (!picked) {
+					return;
+				}
+
+				await vscode.commands.executeCommand(picked.command, name);
 			},
 		),
 		vscode.commands.registerCommand(

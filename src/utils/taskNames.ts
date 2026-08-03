@@ -16,6 +16,20 @@ const MICROMATCH_OPTIONS = {
 };
 
 /**
+ * Match a task name against a wildcard pattern the way mise does (2026.8.1+):
+ * `:` separates task groups, `*` (and `?`, character classes, braces) stays
+ * inside a single group while `**` spans zero or more groups. micromatch only
+ * treats `/` as a separator, so both sides are normalized to path-like names.
+ */
+function matchesTaskName(name: string, pattern: string) {
+	return micromatch.isMatch(
+		name.replaceAll(":", "/"),
+		pattern.replaceAll(":", "/"),
+		MICROMATCH_OPTIONS,
+	);
+}
+
+/**
  * "." is deliberately excluded: it would make `[tasks.build]` headers resolve
  * to `tasks.build` instead of `build`.
  */
@@ -408,7 +422,7 @@ function findUpstreamTasksMatchingPattern(
 			return false;
 		}
 		return getTaskLocalNames(task).some((localName) =>
-			micromatch.isMatch(localName, namePattern, MICROMATCH_OPTIONS),
+			matchesTaskName(localName, namePattern),
 		);
 	});
 }
@@ -416,7 +430,8 @@ function findUpstreamTasksMatchingPattern(
 /**
  * Wildcards (https://mise.jdx.dev/tasks/monorepo.html):
  * - `...` matches any number of path segments (`//projects/...:build`)
- * - `*` matches within task names (`:test*`, `//projects/frontend:*`)
+ * - `*` matches within one task group (`:test*`, `//projects/frontend:*`)
+ * - `**` matches across task groups (`test:**:local`)
  */
 export function dependsPatternMatchesTask(
 	pattern: string,
@@ -433,7 +448,7 @@ export function dependsPatternMatchesTask(
 	const targetLocalNames = getTaskLocalNames(target);
 	const matchesLocalName = (namePattern: string) =>
 		targetLocalNames.some((localName) =>
-			micromatch.isMatch(localName, namePattern, MICROMATCH_OPTIONS),
+			matchesTaskName(localName, namePattern),
 		);
 
 	if (isMonorepoTaskName(taskPattern)) {
@@ -474,7 +489,7 @@ export function dependsPatternMatchesTask(
 	}
 
 	return getAllTaskNames(target).some((name) =>
-		micromatch.isMatch(name, taskPattern, MICROMATCH_OPTIONS),
+		matchesTaskName(name, taskPattern),
 	);
 }
 

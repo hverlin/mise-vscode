@@ -356,6 +356,13 @@
           "default": true,
           "markdownDescription": "Check if a new mise version is available on startup."
         },
+        "mise.keepReplacedVersionOnUpgrade": {
+          "order": 8.1,
+          "type": "boolean",
+          "title": "Keep replaced versions when upgrading tools",
+          "default": false,
+          "markdownDescription": "Pass `--no-prune` to `mise upgrade` so the version being replaced stays installed. Useful when something outside of mise still points at it, such as a virtualenv built from a mise-managed Python.\n\nRequires mise 2026.8.1 or later; ignored on older versions."
+        },
         "mise.showToolVersionsDecorations": {
           "order": 9,
           "type": "boolean",
@@ -749,6 +756,30 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.runTaskWithoutCache",
+        "title": "Mise: Run task without its output cache",
+        "icon": "$(debug-restart)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.explainTaskCache",
+        "title": "Mise: Explain task cache key",
+        "icon": "$(list-tree)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.clearTaskCache",
+        "title": "Mise: Clear task output cache",
+        "icon": "$(trash)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showTaskCacheMenu",
+        "title": "Mise: Task output cache",
+        "icon": "$(database)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.createFileTask",
         "title": "Mise: Create File Task",
         "icon": "$(new-file)",
@@ -956,6 +987,10 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "mise.showTaskCacheMenu",
+          "when": "false"
+        },
+        {
           "command": "mise.createTomlTaskTopMenu",
           "when": "false"
         },
@@ -1093,6 +1128,21 @@
           "when": "view == miseTasksView && viewItem == miseTask",
           "command": "mise.watchTask",
           "group": "2_modification"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.runTaskWithoutCache",
+          "group": "3_cache"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.explainTaskCache",
+          "group": "3_cache"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.clearTaskCache",
+          "group": "3_cache"
         },
         {
           "command": "mise.removeTool",

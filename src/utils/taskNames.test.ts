@@ -404,6 +404,50 @@ describe("dependsPatternMatchesTask", () => {
 		const docsBuild = createTask("docs:build", "/repo/mise.toml", ["docs"]);
 		expect(dependsPatternMatchesTask("docs", null, docsBuild)).toBe(true);
 	});
+
+	// mise 2026.8.1: `*` stays inside one task group, `**` spans groups
+	it("keeps * inside a single task group", () => {
+		const unitLocal = createTask("test:unit:local", "/repo/mise.toml");
+		const happyLocal = createTask("test:e2e:happy:local", "/repo/mise.toml");
+
+		expect(dependsPatternMatchesTask("test:*:local", null, unitLocal)).toBe(
+			true,
+		);
+		expect(dependsPatternMatchesTask("test:*:local", null, happyLocal)).toBe(
+			false,
+		);
+		expect(dependsPatternMatchesTask("test:*", null, unitLocal)).toBe(false);
+	});
+
+	it("lets ** span task groups", () => {
+		const unitLocal = createTask("test:unit:local", "/repo/mise.toml");
+		const happyLocal = createTask("test:e2e:happy:local", "/repo/mise.toml");
+
+		expect(dependsPatternMatchesTask("test:**:local", null, unitLocal)).toBe(
+			true,
+		);
+		expect(dependsPatternMatchesTask("test:**:local", null, happyLocal)).toBe(
+			true,
+		);
+		expect(dependsPatternMatchesTask("test:**", null, happyLocal)).toBe(true);
+	});
+
+	it("applies group boundaries to monorepo task names", () => {
+		const docsBuild = createTask(
+			"//projects/frontend:docs:build",
+			"/repo/projects/frontend/mise.toml",
+		);
+
+		expect(
+			dependsPatternMatchesTask("//projects/frontend:*", "", docsBuild),
+		).toBe(false);
+		expect(
+			dependsPatternMatchesTask("//projects/frontend:**", "", docsBuild),
+		).toBe(true);
+		expect(
+			dependsPatternMatchesTask("//projects/frontend:docs:*", "", docsBuild),
+		).toBe(true);
+	});
 });
 
 describe("findTasksMatchingDependsPattern", () => {

@@ -131,6 +131,32 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "task-cache",
+		files: "src/e2e-tests/task-cache/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "task-cache-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// keep the task artifact cache and the source freshness state of the
+			// suite inside the fixture, out of the machine's own mise directories
+			MISE_CACHE_DIR: path.join(
+				fixturesPath,
+				"task-cache-workspace",
+				".mise-cache",
+			),
+			MISE_STATE_DIR: path.join(
+				fixturesPath,
+				"task-cache-workspace",
+				".mise-state",
+			),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),

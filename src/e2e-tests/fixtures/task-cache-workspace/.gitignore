@@ -1,0 +1,4 @@
+# Written at runtime by the task-cache e2e suite
+.mise-cache/
+.mise-state/
+dist*/

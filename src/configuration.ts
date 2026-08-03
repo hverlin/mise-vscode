@@ -24,6 +24,7 @@ export const CONFIGURATION_FLAGS = {
 	showToolEnvVarsDecorations: "showToolEnvVarsDecorations",
 	showOutdatedToolGutterDecorations: "showOutdatedToolGutterDecorations",
 	checkForNewMiseVersion: "checkForNewMiseVersion",
+	keepReplacedVersionOnUpgrade: "keepReplacedVersionOnUpgrade",
 	updateEnvAutomatically: "updateEnvAutomatically",
 	updateEnvAutomaticallyIncludePath: "updateEnvAutomaticallyIncludePath",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
@@ -232,6 +233,10 @@ export const shouldShowOutdatedToolGutterDecorations = () => {
 
 export const shouldCheckForNewMiseVersion = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.checkForNewMiseVersion, true);
+};
+
+export const shouldKeepReplacedVersionOnUpgrade = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.keepReplacedVersionOnUpgrade, false);
 };
 
 export const shouldUpdateEnv = () => {
