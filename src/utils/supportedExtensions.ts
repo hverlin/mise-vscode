@@ -22,6 +22,8 @@ type GenerateConfigProps = {
 export type ConfigurableExtension = {
 	extensionId: string;
 	toolNames: string[];
+	/** true for entries from mise.customBinaryExtensions/customFolderExtensions */
+	isCustom?: boolean;
 	generateConfiguration: ({
 		tool,
 		miseConfig,
@@ -830,6 +832,7 @@ export function createCustomBinaryExtensionConfig(customConfig: {
 	return {
 		extensionId: customConfig.extensionId,
 		toolNames: customConfig.toolSources,
+		isCustom: true,
 		generateConfiguration: async ({
 			tool,
 			miseService,
@@ -888,6 +891,7 @@ export function createCustomFolderExtensionConfig(customConfig: {
 	return {
 		extensionId: customConfig.extensionId,
 		toolNames: customConfig.toolSources,
+		isCustom: true,
 		generateConfiguration: async ({ tool, miseService, useSymLinks }) => {
 			const shouldUseSymLinks =
 				customConfig.supportsSymlinks !== false && useSymLinks;
@@ -923,17 +927,4 @@ export function getAllConfigurableExtensions(): ConfigurableExtension[] {
 	const folderExtensions = folderConfigs.map(createCustomFolderExtensionConfig);
 
 	return [...SUPPORTED_EXTENSIONS, ...binaryExtensions, ...folderExtensions];
-}
-
-export const CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME = new Map<
-	string,
-	ConfigurableExtension[]
->();
-
-for (const extension of SUPPORTED_EXTENSIONS) {
-	for (const toolName of extension.toolNames) {
-		const extensions = CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(toolName) ?? [];
-		extensions.push(extension);
-		CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.set(toolName, extensions);
-	}
 }

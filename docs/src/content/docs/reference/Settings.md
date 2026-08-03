@@ -339,7 +339,7 @@ Custom binary extensions to automatically configure VSCode extensions with mise 
 
 Each entry requires:
 - `extensionId`: VSCode extension ID
-- `toolSources`: Array of mise tool registry sources to match
+- `toolSources`: Array of tool names to match. Both the registry short name (e.g. `shfmt`) and the backend source (e.g. `aqua:mvdan/sh`) match, whichever one mise.toml declares
 - `vscodeSetting.key`: VSCode setting key to write
 
 Optional:
@@ -359,7 +359,7 @@ Custom folder extensions to automatically configure VSCode extensions with mise 
 
 Each entry requires:
 - `extensionId`: VSCode extension ID
-- `toolSources`: Array of mise tool registry sources to match
+- `toolSources`: Array of tool names to match. Both the registry short name (e.g. `shfmt`) and the backend source (e.g. `aqua:mvdan/sh`) match, whichever one mise.toml declares
 - `vscodeSetting.key`: VSCode setting key to write
 - `folderName`: Name for the symlink folder
 

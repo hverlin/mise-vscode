@@ -96,6 +96,41 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "custom-extensions",
+		files: "src/e2e-tests/custom-extensions/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "custom-extensions-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's real global config out of the tests, and keep the
+			// tools installed by the suite out of the machine's mise data dir.
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"custom-extensions-workspace",
+				"global-config.toml",
+			),
+			MISE_DATA_DIR: path.join(
+				fixturesPath,
+				"custom-extensions-workspace",
+				".mise-data",
+			),
+			MISE_CACHE_DIR: path.join(
+				fixturesPath,
+				"custom-extensions-workspace",
+				".mise-cache",
+			),
+		},
+		// foxundermoon.shell-format is the target extension under test: its
+		// `shellformat.path` setting is window-scoped, so the extension is
+		// allowed to write it to the workspace settings.
+		installExtensions: ["foxundermoon.shell-format"],
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 120_000,
+		},
+	},
+	{
 		label: "monorepo",
 		files: "src/e2e-tests/monorepo/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "monorepo-workspace"),
