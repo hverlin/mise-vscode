@@ -10,6 +10,40 @@ You can configure any VS Code extension to use mise tools via settings:
 - **`mise.customBinaryExtensions`**: Configure extensions that need a binary path
 - **`mise.customFolderExtensions`**: Configure extensions that need a folder path (e.g., JDK home)
 
+## How tools are matched
+
+`toolSources` values are matched against the tool names reported by `mise ls --json`
+(the names exactly as the tools are declared in your `mise.toml`) and their
+[mise registry](https://mise.jdx.dev/registry.html) equivalents. A registry short
+name matches its backend sources and vice versa: `"toolSources": ["shfmt"]` and
+`"toolSources": ["aqua:mvdan/sh"]` both match the tool whether your `mise.toml`
+declares it as `shfmt = "3"` or `"aqua:mvdan/sh" = "3"`.
+
+```json
+{
+  "mise.customBinaryExtensions": [
+    {
+      "binName": "shfmt",
+      "extensionId": "foxundermoon.shell-format",
+      "toolSources": ["shfmt"],
+      "vscodeSetting": { "key": "shellformat.path" }
+    }
+  ]
+}
+```
+
+Tools from custom backends without a registry entry (e.g. `github:acme/tool`)
+only match their declared name.
+
+:::note
+The target VS Code setting must be writable in the workspace settings.
+Some extensions declare their settings with `"scope": "machine"`
+(for example, `opentofu.languageServer.tofu.path`), and VS Code refuses to write
+such settings to `.vscode/settings.json`, so they cannot be configured this way.
+:::
+
+## Examples
+
 Example for binary mode (string value):
 
 ```json
@@ -45,7 +79,7 @@ Example for folder mode:
   "mise.customFolderExtensions": [
     {
       "extensionId": "example.java-extension",
-      "toolSources": ["jfox:java", "asdf:openjdk"],
+      "toolSources": ["java"],
       "vscodeSetting": { "key": "java.jdkHome" },
       "folderName": "custom-jdk"
     }

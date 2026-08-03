@@ -1312,19 +1312,22 @@ export class MiseService {
 			setMiseEnv: false,
 		});
 
-		return stdout
-			.trim()
-			.split("\n")
-			.slice(1)
-			.map((line) => {
-				const [short, full] = line.split(/\s+/);
-				return { short, full };
-			})
-			.filter((entry) => entry.short && entry.full)
-			.filter(
-				(entry, index, self) =>
-					self.findIndex((e) => e.short === entry.short) === index,
-			);
+		return (
+			stdout
+				.trim()
+				.split("\n")
+				.map((line) => {
+					const [short = "", ...backends] = line.trim().split(/\s+/);
+					return { short, full: backends[0], backends };
+				})
+				// backends are always `backend:tool` strings; this also drops a
+				// potential header line
+				.filter((entry) => entry.short && entry.full?.includes(":"))
+				.filter(
+					(entry, index, self) =>
+						self.findIndex((e) => e.short === entry.short) === index,
+				)
+		);
 	}
 
 	async miseBackends() {

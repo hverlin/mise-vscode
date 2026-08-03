@@ -34,9 +34,10 @@ import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import { getWebsiteForTool } from "../utils/miseUtilts";
 import {
-	CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME,
+	type ConfigurableExtension,
 	getAllConfigurableExtensions,
 } from "../utils/supportedExtensions";
+import { expandToolNames } from "../utils/toolNameMatching";
 
 type TreeItem = ToolsSourceItem | ToolItem;
 
@@ -234,6 +235,35 @@ export function registerToolsCommands(
 	context: vscode.ExtensionContext,
 	miseService: MiseService,
 ) {
+	// Tool names are matched against both the name a tool is declared with in
+	// mise.toml and its registry equivalents (short name <-> backend source),
+	// so `shfmt` and `aqua:mvdan/sh` both match either declaration
+	const buildConfigurableExtensionsLookup = async () => {
+		const allExtensions = getAllConfigurableExtensions();
+
+		const extByToolName = new Map<string, ConfigurableExtension[]>();
+		for (const ext of allExtensions) {
+			for (const toolName of ext.toolNames) {
+				const existing = extByToolName.get(toolName) ?? [];
+				existing.push(ext);
+				extByToolName.set(toolName, existing);
+			}
+		}
+
+		const registry = await miseService.miseRegistry();
+		const forToolName = (toolName: string) => {
+			const extensions = new Set<ConfigurableExtension>();
+			for (const name of expandToolNames(toolName, registry)) {
+				for (const ext of extByToolName.get(name) ?? []) {
+					extensions.add(ext);
+				}
+			}
+			return [...extensions];
+		};
+
+		return { allExtensions, forToolName };
+	};
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
 			MISE_OPEN_TOOL_DEFINITION,
@@ -524,12 +554,10 @@ export function registerToolsCommands(
 
 				let selectedToolName = toolName;
 
+				const { forToolName } = await buildConfigurableExtensionsLookup();
 				const tools = await miseService.getCurrentTools();
 				const configurableTools = tools.filter((tool) => {
-					const configurableExtensions =
-						CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(tool.name);
-
-					return configurableExtensions?.some((configurableExtension) => {
+					return forToolName(tool.name).some((configurableExtension) => {
 						return vscode.extensions.getExtension(
 							configurableExtension.extensionId,
 						);
@@ -543,10 +571,7 @@ export function registerToolsCommands(
 					return;
 				}
 
-				if (
-					selectedToolName &&
-					!CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.has(selectedToolName)
-				) {
+				if (selectedToolName && !forToolName(selectedToolName).length) {
 					vscode.window.showErrorMessage(
 						`Tool ${toolName} is not configurable (not supported yet)`,
 					);
@@ -579,10 +604,9 @@ export function registerToolsCommands(
 				const selectedTool = configurableTools.find(
 					(tool) => tool.name === selectedToolName,
 				);
-				const configurableExtensions =
-					CONFIGURABLE_EXTENSIONS_BY_TOOL_NAME.get(selectedToolName);
+				const configurableExtensions = forToolName(selectedToolName);
 
-				if (!configurableExtensions?.length || !selectedTool) {
+				if (!configurableExtensions.length || !selectedTool) {
 					return;
 				}
 
@@ -630,23 +654,33 @@ export function registerToolsCommands(
 			const ignoreList = getIgnoreList();
 			const includeList = getIncludeList();
 
-			const allExtensions = getAllConfigurableExtensions();
-
-			const extByToolName = new Map<string, typeof allExtensions>();
-			for (const ext of allExtensions) {
-				for (const toolName of ext.toolNames) {
-					const existing = extByToolName.get(toolName) ?? [];
-					existing.push(ext);
-					extByToolName.set(toolName, existing);
-				}
-			}
+			const { allExtensions, forToolName } =
+				await buildConfigurableExtensionsLookup();
 
 			const tools = shouldIncludeGlobalTools()
 				? await miseService.getCurrentTools()
 				: await miseService.getCurrentTools({ local: true });
+
+			const matchedCustomExtensions = new Set<ConfigurableExtension>();
+			for (const tool of tools) {
+				for (const ext of forToolName(tool.name)) {
+					if (ext.isCustom) {
+						matchedCustomExtensions.add(ext);
+					}
+				}
+			}
+
+			for (const ext of allExtensions) {
+				if (ext.isCustom && !matchedCustomExtensions.has(ext)) {
+					logger.warn(
+						`Custom extension config for ${ext.extensionId}: no current tool matches toolSources [${ext.toolNames.join(", ")}]. toolSources are matched against the tool names from \`mise ls\` and their registry equivalents.`,
+					);
+				}
+			}
+
 			const configurableTools = tools.filter((tool) => {
-				const configurableExtensions = extByToolName.get(tool.name);
-				if (!configurableExtensions?.length) {
+				const configurableExtensions = forToolName(tool.name);
+				if (!configurableExtensions.length) {
 					return false;
 				}
 
@@ -678,13 +712,7 @@ export function registerToolsCommands(
 			const configurableExtensionsWithTools = configurableTools
 				.filter((tool) => tool.installed)
 				.flatMap((tool) => {
-					const configurableExtensions = extByToolName.get(tool.name);
-
-					if (!configurableExtensions?.length) {
-						return [];
-					}
-
-					return configurableExtensions.map((configurableExtension) => ({
+					return forToolName(tool.name).map((configurableExtension) => ({
 						tool,
 						configurableExtension,
 					}));
