@@ -71,7 +71,7 @@ Code completion is provided for `depends = ["task_name"]`, `depends_post = ["tas
 `extends = "template_name"` completes the
 [task templates](https://mise.jdx.dev/tasks/templates.html) declared in the file
 being edited and in its parent config files. See the
-[task templates section](/reference/tasks/#task-templates) of the tasks
+[task templates section](/mise-vscode/reference/tasks/#task-templates) of the tasks
 reference for the hover, go-to-definition, and find-references support.
 
 ### Task arguments (usage spec)
