@@ -8,6 +8,8 @@ import * as vscode from "vscode";
 
 const execFileAsync = promisify(execFile);
 
+const CACHE_REFRESH_DEADLINE_MS = 20_000;
+
 /**
  * The experimental task output cache (mise 2026.8.1+): code lens, hover and the
  * cache commands. The fixture keeps its artifacts in a workspace-local cache
@@ -151,8 +153,10 @@ suite("Task Cache Test Suite", function () {
 	test("never predicts for a task declaring command inputs", async () => {
 		await runMise(["run", "--force", "probe"]);
 
-		// the entry list is cached briefly, wait for the watcher to invalidate it
-		const deadline = Date.now() + 6_000;
+		// the entry list is cached briefly: the artifact watcher normally
+		// invalidates it right away, but the file watcher can stay silent on a
+		// loaded CI runner, so wait past the cache ttl that backs it up
+		const deadline = Date.now() + CACHE_REFRESH_DEADLINE_MS;
 		let hoverText = await getHoverText("[tasks.probe]");
 		while (!hoverText.includes("Cache:") && Date.now() < deadline) {
 			await new Promise((resolve) => setTimeout(resolve, 250));
@@ -238,9 +242,10 @@ suite("Task Cache Test Suite", function () {
 
 		await runMise(["run", "--force", "build"]);
 
-		// the document is never touched: the artifact watcher is what invalidates
-		// the cached `mise cache task` output
-		const deadline = Date.now() + 6_000;
+		// the document is never touched: the cached `mise cache task` output is
+		// invalidated by the artifact watcher, or by its ttl when the file watcher
+		// misses the run
+		const deadline = Date.now() + CACHE_REFRESH_DEADLINE_MS;
 		let title = await cacheLensTitle();
 		while (!/Cache · \d/.test(title ?? "") && Date.now() < deadline) {
 			await new Promise((resolve) => setTimeout(resolve, 250));
