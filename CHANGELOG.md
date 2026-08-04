@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.20.0](https://github.com/hverlin/mise-vscode/compare/v1.19.0...v1.20.0) (2026-08-04)
+
+
+### Features
+
+* add support for task cache ([#267](https://github.com/hverlin/mise-vscode/issues/267)) ([5471613](https://github.com/hverlin/mise-vscode/commit/5471613852aa714d34dd942c6b40f4fae412e99f))
+* add support for task templates ([#269](https://github.com/hverlin/mise-vscode/issues/269)) ([4302ed9](https://github.com/hverlin/mise-vscode/commit/4302ed91fbef9d3a4e468f6cd554c7ea047ec1bd))
+
 ## [1.19.0](https://github.com/hverlin/mise-vscode/compare/v1.18.0...v1.19.0) (2026-08-03)
 
 
