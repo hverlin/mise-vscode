@@ -25,6 +25,15 @@
 		"description": "Create a simple mise task",
 		"body": ["[tasks.${1:taskname}]", "run = \"echo 'running...'\"", "$0"]
 	},
+	"tomlTaskTemplate": {
+		"prefix": "task_template",
+		"description": "Create a reusable task template that tasks can extend",
+		"body": [
+			"[task_templates.${1:my:template}]",
+			"${2:description = '${3:Template description}'\n}${4:tools = { ${5:node} = \"${6:latest}\" }\n}run = \"echo 'running...'\"",
+			"$0"
+		]
+	},
 	"tomlTaskScript": {
 		"prefix": "task_script",
 		"description": "Create a mise task with multiline script",

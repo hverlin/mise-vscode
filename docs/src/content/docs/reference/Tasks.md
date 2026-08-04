@@ -146,6 +146,41 @@ context menu in the activity bar:
 This requires mise `2026.8.1` or later. Nothing is shown for tasks that do not
 enable the cache.
 
+## Task templates
+
+[Task templates](https://mise.jdx.dev/tasks/templates.html) are reusable task
+definitions declared in a `[task_templates.<name>]` section. A task picks one up
+with `extends = "<name>"`, and can override any of its fields:
+
+```toml
+[task_templates."python:build"]
+description = "Build a python package"
+run = "uv build"
+tools = { python = "3.12", uv = "latest" }
+
+[tasks.build]
+extends = "python:build"
+run = "uv build --wheel" # overrides the template command
+```
+
+The extension resolves templates the way mise does, from the config file
+declaring the task and from its parent config files, which makes them
+particularly useful in a [monorepo](#monorepo-tasks). It provides:
+
+- **Autocompletion** of the template names in `extends = "<name>"`, showing the
+  declared fields and which config file each template comes from
+- **Hover** on `extends = "<name>"`, showing the template it resolves to, and on
+  a `[task_templates.<name>]` declaration, showing how many tasks extend it
+- **Go to definition** from `extends = "<name>"` to the `[task_templates.<name>]`
+  entry, in the same file or in a parent config file
+- **Find references** from a template declaration to every task extending it,
+  anywhere in the workspace
+- Task templates in the outline view, and `task_template` / `task_extends`
+  snippets
+
+Task hovers show the template a task extends. The fields shown for the task
+itself are the ones mise resolved, i.e. after the template has been merged in.
+
 ## Monorepo tasks
 
 The extension supports
@@ -173,8 +208,8 @@ Navigation understands all the ways tasks can reference each other:
   project depends on, following the workspace projects graph
 - task aliases (`alias = "fmt"`), including in other projects
 
-Tasks declared with `extends = "<name>"` support go-to-definition to the
-`[task_templates.<name>]` entry, in the same file or a parent config file.
+[Task templates](#task-templates) declared in the monorepo root config are
+resolved for the tasks of every project extending them.
 Dependencies added by `[monorepo.task_defaults]` in the root config are shown
 in the task tooltips and included when searching for task references.
 

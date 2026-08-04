@@ -15,6 +15,26 @@ mock.module("vscode", () => {
 		) {}
 	}
 
+	class MarkdownString {
+		public supportHtml = false;
+		constructor(public value = "") {}
+
+		appendMarkdown(markdown: string) {
+			this.value += markdown;
+			return this;
+		}
+
+		appendText(text: string) {
+			this.value += text;
+			return this;
+		}
+
+		appendCodeblock(code: string, language = "") {
+			this.value += `\n\`\`\`${language}\n${code}\n\`\`\`\n`;
+			return this;
+		}
+	}
+
 	return {
 		workspace: {},
 		window: {
@@ -25,7 +45,16 @@ mock.module("vscode", () => {
 			createOutputChannel: () => {},
 		},
 		ConfigurationTarget: {},
+		MarkdownString,
 		Position,
 		Range: Range,
+		Uri: {
+			file: (fsPath: string) => ({
+				fsPath,
+				path: fsPath,
+				scheme: "file",
+				toString: () => `file://${fsPath}`,
+			}),
+		},
 	};
 });

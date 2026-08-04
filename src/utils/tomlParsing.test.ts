@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 import type * as vscode from "vscode";
 import {
 	getConfigRootsArrayContext,
+	isPositionInTasksContext,
 	isPositionInToolsContext,
+	parseExtendsValuePrefix,
 	parseInlineTableVersionPrefix,
 	parseToolsSectionHeader,
 	splitDottedToolKey,
@@ -344,5 +346,82 @@ describe("getConfigRootsArrayContext", () => {
 		expect(
 			getConfigRootsArrayContext(noSection, position(0, 26)),
 		).toBeUndefined();
+	});
+});
+
+describe("isPositionInTasksContext", () => {
+	const doc = fakeDocument(
+		[
+			"[tools]", // 0
+			'node = "22"', // 1
+			"", // 2
+			"[tasks]", // 3
+			'build = { extends = "base" }', // 4
+			"", // 5
+			"[tasks.test]", // 6
+			'extends = "base"', // 7
+			"", // 8
+			"[task_templates.base]", // 9
+			'run = "echo hi"', // 10
+			"", // 11
+			'tasks.lint = { extends = "base" }', // 12
+		].join("\n"),
+	);
+
+	it("is true inside a [tasks] section", () => {
+		expect(isPositionInTasksContext(doc, positionAt(4))).toBe(true);
+	});
+
+	it("is true inside a [tasks.<name>] section and on its header", () => {
+		expect(isPositionInTasksContext(doc, positionAt(6))).toBe(true);
+		expect(isPositionInTasksContext(doc, positionAt(7))).toBe(true);
+	});
+
+	it("is true on a dotted tasks assignment", () => {
+		expect(isPositionInTasksContext(doc, positionAt(12))).toBe(true);
+	});
+
+	it("is false in [task_templates] and other sections", () => {
+		expect(isPositionInTasksContext(doc, positionAt(10))).toBe(false);
+		expect(isPositionInTasksContext(doc, positionAt(1))).toBe(false);
+	});
+
+	it("is false without any section header", () => {
+		expect(
+			isPositionInTasksContext(fakeDocument('run = "x"'), positionAt(0)),
+		).toBe(false);
+	});
+});
+
+describe("parseExtendsValuePrefix", () => {
+	it("parses a partially typed name", () => {
+		expect(parseExtendsValuePrefix('extends = "py')).toEqual({
+			quote: '"',
+			partial: "py",
+		});
+	});
+
+	it("parses an empty value, quoted or not", () => {
+		expect(parseExtendsValuePrefix("extends = ")).toEqual({
+			quote: "",
+			partial: "",
+		});
+		expect(parseExtendsValuePrefix("extends = '")).toEqual({
+			quote: "'",
+			partial: "",
+		});
+	});
+
+	it("parses an extends key of an inline table", () => {
+		expect(parseExtendsValuePrefix('info = { extends = "pro')).toEqual({
+			quote: '"',
+			partial: "pro",
+		});
+	});
+
+	it("returns undefined outside of an extends value", () => {
+		expect(parseExtendsValuePrefix('run = "echo')).toBeUndefined();
+		expect(parseExtendsValuePrefix('extends = "base"')).toBeUndefined();
+		expect(parseExtendsValuePrefix('depends_extends = "b')).toBeUndefined();
 	});
 });

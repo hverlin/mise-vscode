@@ -4,6 +4,7 @@ import {
 	type MiseTomlType,
 	type TomlParser,
 } from "../utils/miseFileParser";
+import { TASK_TEMPLATES_SECTION } from "../utils/taskTemplates";
 
 type VscodeLike = Pick<
 	typeof vscode,
@@ -128,7 +129,9 @@ export class MiseTomlTaskSymbolProvider
 					const value = entries[key];
 					const keyData = this.getKeyData(entries, sourceTracker, lines, key);
 
-					const isTask = mainKey === "tasks";
+					// task templates are declared like tasks and show up the same way
+					const isTask =
+						mainKey === "tasks" || mainKey === TASK_TEMPLATES_SECTION;
 					const isComplexEntry = typeof value === "object" && value !== null;
 
 					sectionSymbol.children.push(

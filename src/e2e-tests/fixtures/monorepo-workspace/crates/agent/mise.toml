@@ -1,4 +1,6 @@
 [tasks.build]
+# overrides the description and the run command of the root task template
+extends = "rust:build"
 description = "Depends on a task of another crate"
 depends = ["//crates/protocol:build"]
 run = "echo 'Building agent crate'"

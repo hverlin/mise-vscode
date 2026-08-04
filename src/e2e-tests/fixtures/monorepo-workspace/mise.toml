@@ -22,6 +22,11 @@ depends = ["^build"]
 description = "Show information about the project"
 run = "echo 'project info'"
 
+# namespaced template name, extended by several crates
+[task_templates."rust:build"]
+description = "Build a rust crate"
+run = "echo 'Building crate'"
+
 [settings]
 # package.json script tasks and `mise tasks graph` are experimental-gated
 experimental = true

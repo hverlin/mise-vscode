@@ -427,6 +427,144 @@ suite("Monorepo Tasks Test Suite", function () {
 		assert.equal(targetRange.start.line, expectedLine);
 	});
 
+	test("Should complete task template names in extends", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "crates", "protocol", "mise.toml"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const lineIndex = document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes("extends ="));
+		assert.ok(lineIndex >= 0, "extends line should be found in the fixture");
+		// just after the opening quote, i.e. with nothing typed yet
+		const character = document.lineAt(lineIndex).text.indexOf('"') + 1;
+
+		const completions =
+			await vscode.commands.executeCommand<vscode.CompletionList>(
+				"vscode.executeCompletionItemProvider",
+				uri,
+				new vscode.Position(lineIndex, character),
+			);
+		const labels = completions.items.map((item) =>
+			typeof item.label === "string" ? item.label : item.label.label,
+		);
+
+		// both templates of the root config are offered, not only the local one
+		for (const expected of ["rust:build", "project-info"]) {
+			assert.ok(
+				labels.includes(expected),
+				`expected ${expected} in ${JSON.stringify(labels)}`,
+			);
+		}
+	});
+
+	test("Should show the resolved template when hovering extends", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "crates", "protocol", "mise.toml"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const lineIndex = document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes("extends ="));
+		assert.ok(lineIndex >= 0, "extends line should be found in the fixture");
+		const character = document.lineAt(lineIndex).text.indexOf("rust:build") + 1;
+
+		const hovers =
+			(await vscode.commands.executeCommand<vscode.Hover[]>(
+				"vscode.executeHoverProvider",
+				uri,
+				new vscode.Position(lineIndex, character),
+			)) ?? [];
+		const hoverText = hovers
+			.flatMap((hover) => hover.contents)
+			.map((content) =>
+				typeof content === "string"
+					? content
+					: (content as { value: string }).value,
+			)
+			.join("\n");
+
+		assert.ok(
+			hoverText.includes("Build a rust crate"),
+			`the hover should describe the template, got ${hoverText}`,
+		);
+		assert.ok(
+			hoverText.includes("echo 'Building crate'"),
+			`the hover should show the template command, got ${hoverText}`,
+		);
+		// the template comes from the root config, not from this one
+		assert.ok(
+			hoverText.includes("mise.toml"),
+			`the hover should link to the declaring config, got ${hoverText}`,
+		);
+	});
+
+	test("Should find every task extending a task template", async () => {
+		const uri = vscode.Uri.file(path.join(workspaceRoot, "mise.toml"));
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const headerLine = document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes('[task_templates."rust:build"]'));
+		assert.ok(headerLine >= 0, "the template header should be in the fixture");
+		const character = document.lineAt(headerLine).text.indexOf("rust:build");
+
+		const locations = await vscode.commands.executeCommand<vscode.Location[]>(
+			"vscode.executeReferenceProvider",
+			uri,
+			new vscode.Position(headerLine, character),
+		);
+		const locationPaths = locations.map((location) => location.uri.path);
+
+		for (const expected of [
+			"crates/agent/mise.toml",
+			"crates/protocol/mise.toml",
+		]) {
+			assert.ok(
+				locationPaths.some((locationPath) => locationPath.endsWith(expected)),
+				`expected an extends in ${expected}, got ${JSON.stringify(locationPaths)}`,
+			);
+		}
+	});
+
+	test("Should report how many tasks extend a template on hover", async () => {
+		const uri = vscode.Uri.file(path.join(workspaceRoot, "mise.toml"));
+		const document = await vscode.workspace.openTextDocument(uri);
+
+		const headerLine = document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.includes('[task_templates."rust:build"]'));
+		assert.ok(headerLine >= 0, "the template header should be in the fixture");
+		const character =
+			document.lineAt(headerLine).text.indexOf("rust:build") + 1;
+
+		const hovers =
+			(await vscode.commands.executeCommand<vscode.Hover[]>(
+				"vscode.executeHoverProvider",
+				uri,
+				new vscode.Position(headerLine, character),
+			)) ?? [];
+		const hoverText = hovers
+			.flatMap((hover) => hover.contents)
+			.map((content) =>
+				typeof content === "string"
+					? content
+					: (content as { value: string }).value,
+			)
+			.join("\n");
+
+		assert.ok(
+			hoverText.includes("Extended by 2 tasks"),
+			`the hover should count the extending tasks, got ${hoverText}`,
+		);
+	});
+
 	test("Should find dependent tasks across the monorepo", async () => {
 		const uri = vscode.Uri.file(
 			path.join(workspaceRoot, "projects", "frontend", "mise.toml"),
