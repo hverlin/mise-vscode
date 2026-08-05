@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.0](https://github.com/hverlin/mise-vscode/compare/v1.20.0...v1.21.0) (2026-08-05)
+
+
+### Features
+
+* bootstrap code lens ([#272](https://github.com/hverlin/mise-vscode/issues/272)) ([5202de5](https://github.com/hverlin/mise-vscode/commit/5202de56776e62ac872174f82eb748bc1ed9f0e9))
+* bootstrap plan support ([#270](https://github.com/hverlin/mise-vscode/issues/270)) ([f58770a](https://github.com/hverlin/mise-vscode/commit/f58770aeec5a5d6c2a9a7c089f75f4e9b002dde0))
+
+
+### Bug Fixes
+
+* be more resilient to invalid config files ([#273](https://github.com/hverlin/mise-vscode/issues/273)) ([39b5b3b](https://github.com/hverlin/mise-vscode/commit/39b5b3b65821e6b7265c26cc16b6fc7ca1ad056d))
+
 ## [1.20.0](https://github.com/hverlin/mise-vscode/compare/v1.19.0...v1.20.0) (2026-08-04)
 
 
