@@ -23,6 +23,7 @@ import {
 	isBootstrapEntryPending,
 } from "../utils/bootstrapUtils";
 import { expandPath } from "../utils/fileUtils";
+import { logger } from "../utils/logger";
 import { getCachedTomlParser } from "../utils/miseFileParser";
 import { isMiseTomlFile } from "../utils/miseUtilts";
 import {
@@ -200,6 +201,21 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		};
 		miseService.subscribeToTaskCacheEvent(refresh);
 		miseService.subscribeToReloadEvent(refresh);
+
+		// nothing is kept from before a save the user asked for: a config broken
+		// by hand shows as broken instead of hiding behind the previous lenses
+		miseService.subscribeToRetainedStateDropped((uri) => {
+			if (uri) {
+				this.lastGoodLenses.delete(uri.toString());
+			} else {
+				this.lastGoodLenses.clear();
+			}
+			refresh();
+		});
+
+		vscode.workspace.onDidCloseTextDocument((document) => {
+			this.lastGoodLenses.delete(document.uri.toString());
+		});
 	}
 
 	private handleInTasksSection(i: number, lineContent: string) {
@@ -449,7 +465,12 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return codeLenses;
 		}
 
-		const status = await this.miseService.getBootstrapStatus();
+		// a config file being edited does not parse, and every mise query fails
+		// until it does. Never let that drop the lenses of the other features
+		const status = await this.miseService.getBootstrapStatus().catch(() => {
+			logger.debug("Skipping bootstrap lenses: could not read the status");
+			return undefined;
+		});
 		if (!status) {
 			return codeLenses;
 		}
@@ -474,6 +495,18 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		];
 	}
 
+	/**
+	 * Lenses of the last resolution that read a valid config, per document.
+	 *
+	 * With auto save on, a config file reaches disk half typed: mise then fails
+	 * every query until the file parses again, and returning nothing would make
+	 * the lenses blink out and the editor jump on nearly every keystroke. The
+	 * previous lenses are shown instead until the file parses again. Their
+	 * ranges can be a few lines off while typing, which is invisible next to
+	 * the whole set disappearing and coming back.
+	 */
+	private readonly lastGoodLenses = new Map<string, vscode.CodeLens[]>();
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -485,11 +518,37 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
+		try {
+			const codeLenses = await this.resolveCodeLenses(document);
+			this.lastGoodLenses.set(document.uri.toString(), codeLenses);
+			return codeLenses;
+		} catch (error) {
+			const previous = this.lastGoodLenses.get(document.uri.toString());
+			if (!previous) {
+				throw error;
+			}
+			logger.debug(
+				`Keeping the previous code lenses of ${document.fileName}: ${error}`,
+			);
+			return previous;
+		}
+	}
+
+	private async resolveCodeLenses(
+		document: vscode.TextDocument,
+	): Promise<vscode.CodeLens[]> {
 		if (!document.fileName.endsWith(".toml")) {
 			return [];
 		}
 
 		const files = await this.miseService.getCurrentConfigFiles();
+		// mise lists no config file at all only when it could not read them, and
+		// the caller keeps the previous lenses rather than blanking the document.
+		// A non-empty list that leaves this document out is an answer, not a
+		// failure: the file really is not part of the configuration
+		if (files.length === 0) {
+			throw new Error("mise returned no config file");
+		}
 		if (!files.includes(expandPath(document.uri.fsPath))) {
 			return [];
 		}

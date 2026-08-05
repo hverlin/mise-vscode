@@ -76,6 +76,8 @@ suite("Bootstrap Test Suite", function () {
 			"mise.runBootstrapDryRun",
 			"mise.runBootstrapPlan",
 			"mise.showBootstrap",
+			"mise.reloadConfiguration",
+			"mise.refreshEntry",
 			"mise.openBootstrapEntryDefinition",
 		]) {
 			assert.ok(

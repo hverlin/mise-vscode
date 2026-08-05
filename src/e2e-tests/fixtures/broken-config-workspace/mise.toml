@@ -1,0 +1,10 @@
+# Fixture for the broken-config e2e suite. The tests break this file on purpose
+# and restore it, so nothing here is installed or run: only reads and the state
+# the views keep while the file does not parse.
+
+[env]
+MISE_VSCODE_E2E_BROKEN_CONFIG = "1"
+
+[tasks.hello]
+description = "Task the views list before the file is broken"
+run = "echo hello"

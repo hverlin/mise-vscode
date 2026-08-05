@@ -28,8 +28,9 @@ import {
 import { logger } from "../utils/logger";
 import { findEnvVarPosition } from "../utils/miseFileParser";
 import { buildUnsetCommands, runInVscodeTerminal } from "../utils/shell";
+import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
 
-type EnvTreeNode = EnvItem | EnvsSourceGroupItem;
+type EnvTreeNode = EnvItem | EnvsSourceGroupItem | MiseErrorItem;
 
 export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvTreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -188,7 +189,8 @@ export class MiseEnvsProvider implements vscode.TreeDataProvider<EnvTreeNode> {
 				"mise.envProviderError",
 				true,
 			);
-			return [];
+			// say what mise said, with the actions that help for it
+			return buildMiseErrorItems(e, "environment variables");
 		}
 	}
 }

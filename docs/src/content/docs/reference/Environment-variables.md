@@ -12,6 +12,9 @@ variable to find where it's defined.
 
 ![env-list.png](../../../assets/env-1.png)
 
+While a config file does not parse, the list keeps showing the previous
+values. See [While a config file is being edited](/mise-vscode/reference/misetoml-language-support/#while-a-config-file-is-being-edited).
+
 ## Loading environment variables
 
 `mise-vscode` will automatically load all the environment variables provided by

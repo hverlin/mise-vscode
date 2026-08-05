@@ -32,14 +32,19 @@ import {
 } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
-import { getWebsiteForTool } from "../utils/miseUtilts";
+import {
+	getWebsiteForTool,
+	UNPARSED_CONFIG_DESCRIPTION,
+	UNPARSED_CONFIG_TOOLTIP,
+} from "../utils/miseUtilts";
 import {
 	type ConfigurableExtension,
 	getAllConfigurableExtensions,
 } from "../utils/supportedExtensions";
 import { expandToolNames } from "../utils/toolNameMatching";
+import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
 
-type TreeItem = ToolsSourceItem | ToolItem;
+type TreeItem = ToolsSourceItem | ToolItem | MiseErrorItem;
 
 export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<
@@ -102,7 +107,12 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 			)
 			.map(
 				([source, tools]) =>
-					new ToolsSourceItem(currentWorkspaceFolderPath || "", source, tools),
+					new ToolsSourceItem(
+						currentWorkspaceFolderPath || "",
+						source,
+						tools,
+						this.miseService.isConfigFileUnparsed(source),
+					),
 			);
 	}
 
@@ -121,7 +131,8 @@ export class MiseToolsProvider implements vscode.TreeDataProvider<TreeItem> {
 					"mise.toolsProviderError",
 					true,
 				);
-				return [];
+				// say what mise said, with the actions that help for it
+				return buildMiseErrorItems(error, "tools");
 			}
 		}
 
@@ -150,6 +161,7 @@ class ToolsSourceItem extends vscode.TreeItem {
 		readonly workspaceFolderPath: string,
 		public readonly source: string,
 		public readonly tools: MiseTool[],
+		unparsed = false,
 	) {
 		const pathShown = displayPathRelativeTo(source, workspaceFolderPath);
 
@@ -162,10 +174,22 @@ class ToolsSourceItem extends vscode.TreeItem {
 					: vscode.TreeItemCollapsibleState.Expanded,
 		);
 
-		this.tooltip = `Source: ${source}
+		this.tooltip = unparsed
+			? UNPARSED_CONFIG_TOOLTIP
+			: `Source: ${source}
 Number of tools: ${tools.length}`;
+		if (unparsed) {
+			this.iconPath = new vscode.ThemeIcon(
+				"warning",
+				new vscode.ThemeColor("list.warningForeground"),
+			);
+		}
 
 		this.contextValue = "miseToolGroup";
+		if (unparsed) {
+			this.description = UNPARSED_CONFIG_DESCRIPTION;
+			return;
+		}
 		this.description = `(${
 			tools.length === 0
 				? "no tools"

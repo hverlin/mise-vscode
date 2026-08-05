@@ -617,7 +617,7 @@
     "viewsWelcome": [
       {
         "view": "miseTasksView",
-        "contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.refreshEntry))\n[Add task](command:mise.createTomlTask)",
+        "contents": "[Tasks](https://mise.jdx.dev/tasks/) will be displayed here. ([refresh](command:mise.reloadConfiguration))\n[Add task](command:mise.createTomlTask)",
         "when": "config.mise.binPath && config.mise.enable && !mise.tasksProviderError"
       },
       {
@@ -627,7 +627,7 @@
       },
       {
         "view": "miseTasksView",
-        "contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.refreshEntry)\n[Configure](command:mise.openExtensionSettings)",
+        "contents": "[Install mise](https://mise.jdx.dev/getting-started.html) to get started.\nOnce mise is installed, click reload.\n[Reload](command:mise.reloadConfiguration)\n[Configure](command:mise.openExtensionSettings)",
         "when": "!config.mise.binPath"
       },
       {
@@ -709,6 +709,11 @@
     "commands": [
       {
         "command": "mise.refreshEntry",
+        "title": "Mise: Reload configuration (internal)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.reloadConfiguration",
         "title": "Mise: Reload configuration",
         "icon": "$(refresh)",
         "enablement": "!isWeb"
@@ -1000,6 +1005,10 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "mise.refreshEntry",
+          "when": "false"
+        },
+        {
           "command": "mise.showTaskCacheMenu",
           "when": "false"
         },
@@ -1111,7 +1120,7 @@
           "group": "navigation@3"
         },
         {
-          "command": "mise.refreshEntry",
+          "command": "mise.reloadConfiguration",
           "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView || view == miseBootstrapView",
           "group": "navigation@4"
         }

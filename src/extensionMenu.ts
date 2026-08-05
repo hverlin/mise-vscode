@@ -7,7 +7,7 @@ import {
 	MISE_MISSING_TOOLS_MENU,
 	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_MENU,
-	MISE_RELOAD,
+	MISE_RELOAD_FROM_USER,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_PROJECTS,
@@ -27,6 +27,19 @@ export function createMenu(miseService: MiseService) {
 		const miseVersion = await miseService.getVersion();
 		const pick = await vscode.window.showQuickPick(
 			[
+				// the views are showing state from before a config file broke: say
+				// so first, and offer the way back to the current state
+				miseService.isServingRetainedState
+					? {
+							label: "A config file does not parse",
+							detail:
+								"The panels show the last state that could be read. Reload to update them.",
+							iconPath: new vscode.ThemeIcon("warning"),
+						}
+					: undefined,
+				miseService.isServingRetainedState
+					? { label: "", kind: vscode.QuickPickItemKind.Separator }
+					: undefined,
 				{
 					label: "Mise tools",
 					detail: "List & manage Mise tools",
@@ -109,7 +122,8 @@ export function createMenu(miseService: MiseService) {
 				await vscode.commands.executeCommand(MISE_SHOW_BOOTSTRAP);
 				break;
 			case "Reload configuration":
-				await vscode.commands.executeCommand(MISE_RELOAD);
+			case "A config file does not parse":
+				await vscode.commands.executeCommand(MISE_RELOAD_FROM_USER);
 				break;
 			case "Select workspace":
 				await vscode.commands.executeCommand(MISE_SELECT_WORKSPACE_FOLDER);

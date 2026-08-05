@@ -16,6 +16,7 @@ import {
 	MISE_OPEN_LOGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
+	MISE_RELOAD_FROM_USER,
 	MISE_REVIEW_WORKSPACE_BINARY,
 	MISE_REVOKE_WORKSPACE_BINARIES,
 	MISE_SELECT_WORKSPACE_FOLDER,
@@ -347,6 +348,36 @@ export class MiseExtension {
 		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_RELOAD, async () => {
 				await globalCmdCache.reload();
+			}),
+			// only the reload the user asked for drops what was kept from before a
+			// config file broke: the internal reloads above must not empty the
+			// views while the file is still being typed
+			vscode.commands.registerCommand(MISE_RELOAD_FROM_USER, async () => {
+				this.miseService.forgetRetainedState();
+				await vscode.commands.executeCommand(MISE_RELOAD);
+			}),
+		);
+
+		// Auto save writes a config file in the middle of typing, and the views
+		// keep their previous state rather than emptying until it parses again.
+		// A save the user asked for is different: it is deliberate, so nothing is
+		// carried over and a broken config shows as broken.
+		// the indicator has to appear the moment a read falls back, and clear as
+		// soon as the file parses again, without waiting for a reload
+		context.subscriptions.push(
+			this.miseService.subscribeToRetainedStateChange(() => {
+				this.updateStatusBar({});
+			}),
+		);
+
+		context.subscriptions.push(
+			vscode.workspace.onWillSaveTextDocument((e) => {
+				if (
+					e.reason === vscode.TextDocumentSaveReason.Manual &&
+					e.document.fileName.endsWith(".toml")
+				) {
+					this.miseService.notifyManualSave(e.document.uri);
+				}
 			}),
 		);
 
@@ -844,6 +875,8 @@ export class MiseExtension {
 		state?: "loading" | "error" | "ready" | "disabled" | "unapproved";
 		errorMsg?: string;
 	}) {
+		this.lastStatusBarState = state ?? this.lastStatusBarState;
+
 		if (state === "error") {
 			this.setErrorState(errorMsg ?? "");
 			return;
@@ -851,6 +884,11 @@ export class MiseExtension {
 
 		if (state === "unapproved") {
 			this.setUnapprovedBinaryState();
+			return;
+		}
+
+		if (this.miseService.isServingRetainedState) {
+			this.setRetainedStateIndicator();
 			return;
 		}
 
@@ -947,6 +985,34 @@ export class MiseExtension {
 			].join("\n\n"),
 		);
 		this.statusBarItem.tooltip = tooltip;
+	}
+
+	/** Last state asked for, so the indicator can hand it back when it clears */
+	private lastStatusBarState:
+		| "loading"
+		| "error"
+		| "ready"
+		| "disabled"
+		| "unapproved"
+		| undefined;
+
+	/**
+	 * A config file does not parse, so the views are showing the state from
+	 * before it broke rather than what mise reports now. Saying so beats both
+	 * emptying the views and letting the stale state pass for current.
+	 */
+	private setRetainedStateIndicator() {
+		this.statusBarItem.text = "$(warning) Mise";
+		this.statusBarItem.color = new vscode.ThemeColor(
+			"statusBarItem.warningForeground",
+		);
+		this.statusBarItem.backgroundColor = new vscode.ThemeColor(
+			"statusBarItem.warningBackground",
+		);
+		this.statusBarItem.tooltip =
+			"A mise config file does not parse. The panels show the last state that could be read.";
+		this.statusBarItem.command = MISE_OPEN_MENU;
+		this.statusBarItem.show();
 	}
 
 	setErrorState(errorMsg: string) {
