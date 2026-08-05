@@ -448,6 +448,21 @@ describe("dependsPatternMatchesTask", () => {
 			dependsPatternMatchesTask("//projects/frontend:docs:*", "", docsBuild),
 		).toBe(true);
 	});
+
+	// regression: `//:name` (root-config task) crashed micromatch with an empty
+	// path pattern when the target task lived in a non-root config root.
+	it("matches //:name against root tasks only", () => {
+		expect(
+			dependsPatternMatchesTask("//:root-task", "projects/frontend", rootTask),
+		).toBe(true);
+		expect(
+			dependsPatternMatchesTask(
+				"//:root-task",
+				"projects/frontend",
+				frontendBuild,
+			),
+		).toBe(false);
+	});
 });
 
 describe("findTasksMatchingDependsPattern", () => {
@@ -772,6 +787,23 @@ describe("getTaskDependencyEdges", () => {
 			kind: "depends",
 			optional: true,
 		});
+	});
+
+	// regression: a `//:root-task` depends entry crashed graph resolution as
+	// soon as any target task lived in a non-root config root.
+	it("resolves //:name depends without crashing on non-root targets", () => {
+		const tasks = [
+			createTask("//:root-task", "/repo/mise.toml"),
+			{
+				...createTask("//pkg-a:child", "/repo/pkg-a/mise.toml"),
+				depends: ["//:root-task"],
+			},
+			createTask("//pkg-b:other", "/repo/pkg-b/mise.toml"),
+		];
+		const edges = getTaskDependencyEdges(tasks);
+		expect(edges).toEqual([
+			{ from: "//pkg-a:child", to: "//:root-task", kind: "depends" },
+		]);
 	});
 
 	it("does not create self edges", () => {

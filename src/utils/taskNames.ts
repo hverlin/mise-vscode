@@ -22,6 +22,11 @@ const MICROMATCH_OPTIONS = {
  * treats `/` as a separator, so both sides are normalized to path-like names.
  */
 function matchesTaskName(name: string, pattern: string) {
+	// picomatch throws on empty patterns; an empty name pattern (e.g. `//path:`)
+	// has no meaningful match against real task names.
+	if (!pattern) {
+		return false;
+	}
 	return micromatch.isMatch(
 		name.replaceAll(":", "/"),
 		pattern.replaceAll(":", "/"),
@@ -461,15 +466,18 @@ export function dependsPatternMatchesTask(
 		}
 		const pathPattern = taskPattern.slice(2, separatorIndex);
 		const namePattern = taskPattern.slice(separatorIndex + 1);
+		// `//:name` targets the root config root only; exact-match handles it, so
+		// skip micromatch (which throws on empty patterns) for non-root targets.
 		const pathMatches =
 			pathPattern === "..."
 				? true
 				: pathPattern === targetConfigRoot ||
-					micromatch.isMatch(
-						targetConfigRoot,
-						pathPattern.replaceAll("...", "**"),
-						MICROMATCH_OPTIONS,
-					);
+					(pathPattern !== "" &&
+						micromatch.isMatch(
+							targetConfigRoot,
+							pathPattern.replaceAll("...", "**"),
+							MICROMATCH_OPTIONS,
+						));
 		return pathMatches && matchesLocalName(namePattern);
 	}
 
