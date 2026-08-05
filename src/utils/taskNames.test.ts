@@ -5,6 +5,7 @@ import {
 	getConfigRootPaths,
 	getDependsEntryPattern,
 	getLocalTaskName,
+	getRunTaskReferences,
 	getTaskConfigRoot,
 	getTaskDefinitionNameCandidates,
 	getTaskDependencyEdges,
@@ -579,6 +580,36 @@ describe("isTaskDependency", () => {
 		);
 	});
 
+	it("matches the task entries of a run array", () => {
+		const owner = {
+			...createTask(
+				"//projects/backend:release",
+				"/repo/projects/backend/mise.toml",
+			),
+			run: [
+				"echo releasing",
+				{ task: "build", args: ["--quick"] },
+				{ tasks: ["//projects/frontend:build", "test"] },
+			],
+		};
+		const localTask = createTask(
+			"//projects/backend:build",
+			"/repo/projects/backend/mise.toml",
+		);
+		const parallelTask = createTask(
+			"//projects/frontend:build",
+			"/repo/projects/frontend/mise.toml",
+		);
+		const unrelated = createTask(
+			"//projects/backend:deploy",
+			"/repo/projects/backend/mise.toml",
+		);
+
+		expect(isTaskDependency(owner, localTask)).toBe(true);
+		expect(isTaskDependency(owner, parallelTask)).toBe(true);
+		expect(isTaskDependency(owner, unrelated)).toBe(false);
+	});
+
 	it("matches [task, ...args] entries", () => {
 		const owner = {
 			...createTask(
@@ -592,6 +623,30 @@ describe("isTaskDependency", () => {
 			"/repo/projects/backend/mise.toml",
 		);
 		expect(isTaskDependency(owner, target)).toBe(true);
+	});
+});
+
+describe("getRunTaskReferences", () => {
+	const withRun = (run: MiseTask["run"]) => ({
+		...createTask("//:release", "/repo/mise.toml"),
+		run,
+	});
+
+	it("returns the tasks referenced by the table entries", () => {
+		expect(
+			getRunTaskReferences(
+				withRun([
+					"echo start",
+					{ task: "build", args: ["--quick"] },
+					{ tasks: ["lint", "test"] },
+				]),
+			),
+		).toEqual(["build", "lint", "test"]);
+	});
+
+	it("returns nothing for a plain command", () => {
+		expect(getRunTaskReferences(withRun(["echo hello"]))).toEqual([]);
+		expect(getRunTaskReferences(withRun(undefined))).toEqual([]);
 	});
 });
 

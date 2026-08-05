@@ -27,9 +27,24 @@ type MiseTask = {
 	quiet?: boolean;
 	silent?: boolean;
 	tools?: Record<string, string>;
-	run?: string[];
+	run?: MiseRunEntry[];
 	file?: string;
 };
+
+/**
+ * One entry of a task `run` array: a shell command, or a table referencing
+ * other tasks (https://mise.jdx.dev/tasks/task-configuration.html#run).
+ * mise reports the tables as-is in `mise tasks ls --json`.
+ */
+type MiseRunEntry =
+	| string
+	| {
+			task?: string;
+			/** tasks to run in parallel, with their dependencies */
+			tasks?: string[];
+			args?: string[];
+			env?: Record<string, string>;
+	  };
 
 /**
  * One stored artifact of a task output cache entry, as reported by

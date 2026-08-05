@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type * as vscode from "vscode";
 import {
 	getConfigRootsArrayContext,
+	getTaskNameValueContext,
 	isPositionInTasksContext,
 	isPositionInToolsContext,
 	parseExtendsValuePrefix,
@@ -423,5 +424,136 @@ describe("parseExtendsValuePrefix", () => {
 		expect(parseExtendsValuePrefix('run = "echo')).toBeUndefined();
 		expect(parseExtendsValuePrefix('extends = "base"')).toBeUndefined();
 		expect(parseExtendsValuePrefix('depends_extends = "b')).toBeUndefined();
+	});
+});
+
+describe("getTaskNameValueContext", () => {
+	/** Context at the cursor, marked with `|` in the toml passed in */
+	const contextAt = (toml: string) => {
+		const lines = toml.split("\n");
+		const line = lines.findIndex((text) => text.includes("|"));
+		const character = (lines[line] ?? "").indexOf("|");
+		return getTaskNameValueContext(fakeDocument(toml.replace("|", "")), {
+			line,
+			character,
+		} as vscode.Position);
+	};
+
+	describe("run entries", () => {
+		it("completes the task of an entry", () => {
+			expect(contextAt('[tasks.a]\nrun = [{ task = "l|" }]')).toEqual({
+				inQuote: true,
+			});
+		});
+
+		it("completes the tasks of a parallel entry", () => {
+			expect(contextAt('[tasks.a]\nrun = [{ tasks = ["t2", "t|"] }]')).toEqual({
+				inQuote: true,
+			});
+		});
+
+		it("completes a multiline array", () => {
+			expect(
+				contextAt(
+					[
+						"[tasks.grouped]",
+						"run = [",
+						'  { task = "t1" },',
+						'  { task = "t|" },',
+						'  "echo end",',
+						"]",
+					].join("\n"),
+				),
+			).toEqual({ inQuote: true });
+		});
+
+		it("completes an entry before its quotes are typed", () => {
+			expect(contextAt("[tasks.a]\nrun = [{ task = | }]")).toEqual({
+				inQuote: false,
+			});
+		});
+
+		it("ignores shell commands", () => {
+			expect(contextAt('[tasks.a]\nrun = "echo |"')).toBeUndefined();
+			expect(contextAt('[tasks.a]\nrun = ["echo |"]')).toBeUndefined();
+			expect(
+				contextAt('[tasks.a]\nrun = [{ task = "b" }, "echo |"]'),
+			).toBeUndefined();
+		});
+
+		it("ignores the args and env of an entry", () => {
+			expect(
+				contextAt('[tasks.a]\nrun = [{ task = "b", args = ["--re|"] }]'),
+			).toBeUndefined();
+			expect(
+				contextAt('[tasks.a]\nrun = [{ task = "b", env = { RUST = "|" } }]'),
+			).toBeUndefined();
+		});
+
+		it("completes run_windows too", () => {
+			expect(contextAt('[tasks.a]\nrun_windows = [{ task = "|" }]')).toEqual({
+				inQuote: true,
+			});
+		});
+	});
+
+	describe("depends entries", () => {
+		it("completes an array entry", () => {
+			expect(contextAt('[tasks.a]\ndepends = ["bu|"]')).toEqual({
+				inQuote: true,
+			});
+			expect(contextAt('[tasks.a]\nwait_for = ["bu|"]')).toEqual({
+				inQuote: true,
+			});
+			expect(contextAt('[tasks.a]\ndepends_post = ["bu|"]')).toEqual({
+				inQuote: true,
+			});
+		});
+
+		it("completes a bare string value", () => {
+			expect(contextAt('[tasks.a]\ndepends = "bu|"')).toEqual({
+				inQuote: true,
+			});
+			expect(contextAt("[tasks.a]\ndepends = |")).toEqual({ inQuote: false });
+		});
+
+		it("completes the task of an inline table entry", () => {
+			expect(
+				contextAt('[tasks.a]\ndepends = [{ task = "b|", optional = true }]'),
+			).toEqual({ inQuote: true });
+		});
+
+		it("ignores the other keys of an inline table entry", () => {
+			expect(
+				contextAt('[tasks.a]\ndepends = [{ task = "b", optional = |true }]'),
+			).toBeUndefined();
+		});
+
+		it("completes only the task of a [task, args] entry", () => {
+			expect(contextAt('[tasks.a]\ndepends = [["bu|"]]')).toEqual({
+				inQuote: true,
+			});
+			expect(
+				contextAt('[tasks.a]\ndepends = [["build", "--ar|"]]'),
+			).toBeUndefined();
+		});
+
+		it("completes a dotted assignment and an inline task table", () => {
+			expect(contextAt('tasks.a.depends = ["bu|"]')).toEqual({ inQuote: true });
+			expect(contextAt('tasks.a = { depends = ["bu|"] }')).toEqual({
+				inQuote: true,
+			});
+			expect(contextAt('tasks.a = { run = [{ task = "bu|" }] }')).toEqual({
+				inQuote: true,
+			});
+		});
+	});
+
+	it("returns undefined outside a task reference", () => {
+		expect(contextAt('[tasks.a]\ndescription = "bu|"')).toBeUndefined();
+		expect(contextAt('[tasks.a]\nsources = ["src/|"]')).toBeUndefined();
+		expect(contextAt('[tasks.a]\ndepends = ["build"] |')).toBeUndefined();
+		expect(contextAt('[tasks.a]\ndepends = ["build"]\n|')).toBeUndefined();
+		expect(contextAt('[tasks.a]\nrun = [{ |task = "b" }]')).toBeUndefined();
 	});
 });

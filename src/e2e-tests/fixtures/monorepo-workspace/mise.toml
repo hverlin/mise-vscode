@@ -57,3 +57,9 @@ description = "Covers name wildcards, wait_for, and depends_post"
 depends = ["//projects/frontend:*"]
 wait_for = ["build-all"]
 depends_post = [":root-task"]
+# task references of a run array, next to a plain shell command
+run = [
+	{ task = "//:root-task" },
+	{ tasks = ["//crates/agent:build", "//crates/protocol:build"] },
+	"echo verified",
+]

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
+	formatRunEntries,
 	formatTaskOutputs,
 	getTaskDescription,
-	getTaskPickDescription,
 } from "./taskDisplay";
 
 const task = (overrides: Partial<MiseTask>): MiseTask =>
@@ -26,6 +26,12 @@ describe("getTaskDescription", () => {
 		);
 	});
 
+	it("describes an undocumented task by the tasks its run references", () => {
+		expect(getTaskDescription(task({ run: [{ task: "lint" }] }))).toBe(
+			"task: lint",
+		);
+	});
+
 	it("is empty when the task has neither", () => {
 		expect(getTaskDescription(task({}))).toBe("");
 	});
@@ -37,36 +43,26 @@ describe("getTaskDescription", () => {
 	});
 });
 
-describe("getTaskPickDescription", () => {
-	it("falls back to the script of a file task, relative to the workspace", () => {
+describe("formatRunEntries", () => {
+	it("keeps the shell commands as written", () => {
+		expect(formatRunEntries(["echo a", "echo b"])).toEqual([
+			"echo a",
+			"echo b",
+		]);
+	});
+
+	it("renders the task entries with the keys of the config", () => {
 		expect(
-			getTaskPickDescription(
-				task({ file: "/home/me/project/mise-tasks/build" }),
-				"/home/me/project",
-			),
-		).toBe("mise-tasks/build");
+			formatRunEntries([
+				{ task: "build" },
+				{ task: "build", args: ["--release"] },
+				{ tasks: ["lint", "test"] },
+			]),
+		).toEqual(["task: build", "task: build --release", "tasks: lint, test"]);
 	});
 
-	it("keeps the full script path when there is no workspace folder", () => {
-		expect(getTaskPickDescription(task({ file: "/opt/tasks/build" }))).toBe(
-			"/opt/tasks/build",
-		);
-	});
-
-	it("prefers the description over the command and the script", () => {
-		expect(
-			getTaskPickDescription(
-				task({
-					description: "Build",
-					run: ["npm run build"],
-					file: "/a/build",
-				}),
-			),
-		).toBe("Build");
-	});
-
-	it("is empty when the task has none of them", () => {
-		expect(getTaskPickDescription(task({}))).toBe("");
+	it("handles a task without a run", () => {
+		expect(formatRunEntries(undefined)).toEqual([]);
 	});
 });
 

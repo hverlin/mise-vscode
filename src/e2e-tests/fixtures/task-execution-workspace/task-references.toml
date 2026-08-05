@@ -1,0 +1,17 @@
+# Task references, in every form mise accepts. This file is deliberately not a
+# name mise loads: the toml language features apply to any toml file, and the
+# tasks of the workspace (mise.toml) stay the ones the other suites expect.
+
+[tasks.grouped]
+run = [
+  { task = "echo-hello" },
+  { task = "greet", args = ["--loud"], env = { LOUD = "1" } },
+  { tasks = ["echo-hello", "test-e2e"] },
+  "echo end",
+]
+
+[tasks.after]
+depends = ["echo-hello"]
+depends_post = [["greet", "--loud"]]
+wait_for = [{ task = "test-e2e", optional = true }]
+run = "echo done"

@@ -18,7 +18,7 @@ import {
 	Position,
 } from "@xyflow/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { formatTaskOutputs } from "../utils/taskDisplay";
+import { formatRunEntries, formatTaskOutputs } from "../utils/taskDisplay";
 import { DebouncedInput } from "./components/DebouncedInput";
 import {
 	FlowGraph,
@@ -202,7 +202,7 @@ function TaskNode({
 					) : null}
 					{showRun ? (
 						<pre className="graph-node-run nowheel nodrag">
-							{task.run?.join("\n")}
+							{formatRunEntries(task.run).join("\n")}
 						</pre>
 					) : null}
 				</div>
@@ -452,7 +452,9 @@ function TaskDetailsPanel({
 			{task.run?.length ? (
 				<div className="details-row">
 					<div className="details-label">Run</div>
-					<pre className="details-code">{task.run.join("\n")}</pre>
+					<pre className="details-code">
+						{formatRunEntries(task.run).join("\n")}
+					</pre>
 				</div>
 			) : null}
 		</aside>

@@ -535,31 +535,38 @@ export function dependsPatternMatchesTask(
 }
 
 /**
- * Whether `task` depends on `target` through any of its depends arrays.
+ * Task names referenced by the table entries of a `run` array
+ * (https://mise.jdx.dev/tasks/task-configuration.html#run). The strings of the
+ * same array are shell commands and name nothing.
+ */
+export function getRunTaskReferences(task: MiseTask): string[] {
+	return (task.run ?? []).flatMap((entry) => {
+		if (typeof entry === "string") {
+			return [];
+		}
+		return [...(entry.task ? [entry.task] : []), ...(entry.tasks ?? [])];
+	});
+}
+
+/**
+ * Whether `task` references `target`, through any of its depends arrays or
+ * through a task entry of its `run` array.
  * The owner config root comes from the qualified alias when the task name is
- * a provider one (`node:pkg#script`), so their bare depends entries resolve
- * within their own project.
+ * a provider one (`node:pkg#script`), so their bare entries resolve within
+ * their own project.
  */
 export function isTaskDependency(task: MiseTask, target: MiseTask): boolean {
 	const ownerConfigRoot = getTaskConfigRoot(task);
 
-	for (const keyword of DEPENDS_KEYWORDS) {
-		const depends = task[keyword];
-		if (!depends) {
-			continue;
-		}
+	const patterns = [
+		...DEPENDS_KEYWORDS.flatMap((keyword) =>
+			(task[keyword] ?? []).map(getDependsEntryPattern),
+		),
+		...getRunTaskReferences(task),
+	];
 
-		for (const depend of depends) {
-			const pattern = getDependsEntryPattern(depend);
-			if (!pattern) {
-				continue;
-			}
-
-			if (dependsPatternMatchesTask(pattern, ownerConfigRoot, target)) {
-				return true;
-			}
-		}
-	}
-
-	return false;
+	return patterns.some(
+		(pattern) =>
+			pattern && dependsPatternMatchesTask(pattern, ownerConfigRoot, target),
+	);
 }

@@ -6,7 +6,10 @@ import type {
 } from "vscode";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
-import { isPositionInToolsContext } from "../utils/tomlParsing";
+import {
+	getTaskNameValueContext,
+	isPositionInToolsContext,
+} from "../utils/tomlParsing";
 
 export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 	private tasksCache: MiseTask[];
@@ -18,12 +21,15 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 		document: TextDocument,
 		position: Position,
 		_token: CancellationToken,
-		context: CompletionContext,
+		_context: CompletionContext,
 	) {
-		const lineText = document.lineAt(position.line).text;
-		if (!this.isDependsArrayContext(lineText, position.character)) {
+		const valueContext = getTaskNameValueContext(document, position);
+		if (!valueContext) {
 			return [];
 		}
+		// the name completes the string the cursor is in, or brings its own
+		const asValue = (name: string) =>
+			valueContext.inQuote ? name : `"${name}"`;
 
 		// `depends` on a tool (in a [tools.*] section or a tool's inline options
 		// table) refers to other tools, not tasks
@@ -42,10 +48,7 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 					name,
 					vscode.CompletionItemKind.Module,
 				);
-				completionItem.insertText =
-					context.triggerCharacter === '"' || context.triggerCharacter === "'"
-						? name
-						: `"${name}"`;
+				completionItem.insertText = asValue(name);
 				return completionItem;
 			});
 		}
@@ -66,29 +69,9 @@ export class MiseCompletionProvider implements vscode.CompletionItemProvider {
 						task.description,
 					);
 				}
-				completionItem.insertText =
-					context.triggerCharacter === '"' || context.triggerCharacter === "'"
-						? task.name
-						: `"${task.name}"`;
+				completionItem.insertText = asValue(task.name);
 				return completionItem;
 			})
 			.filter((item) => item.insertText);
-	}
-
-	private isDependsArrayContext(lineText: string, position: number): boolean {
-		const dependsMatch = /(depends|wait_for|depends_post)\s*=/.test(lineText);
-		if (!dependsMatch) {
-			return false;
-		}
-
-		if (lineText.includes("]")) {
-			const arrayStart = lineText.indexOf("[", lineText.indexOf("depends"));
-			const arrayEnd = lineText.indexOf("]", arrayStart);
-
-			return position > arrayStart && position <= arrayEnd;
-		}
-
-		const arrayStart = lineText.indexOf("[", lineText.indexOf("depends"));
-		return position > arrayStart;
 	}
 }

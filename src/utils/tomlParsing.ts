@@ -173,6 +173,220 @@ export function isPositionInTasksContext(
 	return false;
 }
 
+/** Task fields whose entries are task names (`depends = ["build"]`) */
+const TASK_DEPENDS_FIELDS = new Set(["depends", "depends_post", "wait_for"]);
+/** Task fields whose entries are shell commands, task names only in tables */
+const TASK_RUN_FIELDS = new Set(["run", "run_windows"]);
+
+const TOML_ASSIGNMENT = /^\s*([\w.'"-]+)\s*=/;
+/** a header holds a single (dotted) key, unlike an array element line */
+const TOML_SECTION_HEADER = /^\s*\[\[?[^,=[\]]*\]\]?\s*(?:#.*)?$/;
+
+/** An open `[` array or `{` inline table around the cursor */
+type TomlFrame =
+	| { kind: "array"; index: number }
+	| { kind: "table"; key: string | undefined };
+
+/** The assignment the cursor sits in the value of, looking at earlier lines */
+function findEnclosingAssignment(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): { field: string; line: number; valueStart: number } | undefined {
+	for (let i = position.line; i >= 0; i--) {
+		const text =
+			i === position.line
+				? document.lineAt(i).text.slice(0, position.character)
+				: document.lineAt(i).text;
+
+		const match = text.match(TOML_ASSIGNMENT);
+		if (match?.[1]) {
+			// `tasks.build.depends = [` is the same field as `depends = [`
+			const segments = match[1].split(".");
+			return {
+				field: extractTomlKey(segments[segments.length - 1] ?? ""),
+				line: i,
+				valueStart: match[0].length,
+			};
+		}
+		if (TOML_SECTION_HEADER.test(text)) {
+			return undefined;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Walks the value of `assignment` up to the cursor, returning the containers
+ * still open there and whether the cursor is inside a string literal.
+ * `undefined` when the value ended before the cursor.
+ */
+function scanTomlValue(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+	assignment: { line: number; valueStart: number },
+): { frames: TomlFrame[]; inQuote: boolean } | undefined {
+	const parts: string[] = [];
+	for (let i = assignment.line; i <= position.line; i++) {
+		const text =
+			i === position.line
+				? document.lineAt(i).text.slice(0, position.character)
+				: document.lineAt(i).text;
+		parts.push(
+			i === assignment.line ? text.slice(assignment.valueStart) : text,
+		);
+	}
+	const region = parts.join("\n");
+
+	const frames: TomlFrame[] = [];
+	let quote: string | undefined;
+	// characters since the last separator, i.e. the key of a pending assignment
+	let token = "";
+
+	for (let i = 0; i < region.length; i++) {
+		const char = region[i] ?? "";
+		if (quote) {
+			// a literal string ends at the end of the line, whatever it contains
+			if (char === "\\" && quote === '"') {
+				i++;
+			} else if (char === quote || char === "\n") {
+				quote = undefined;
+			}
+			continue;
+		}
+
+		if (char === '"' || char === "'") {
+			quote = char;
+			token = "";
+		} else if (char === "#") {
+			while (i < region.length && region[i] !== "\n") {
+				i++;
+			}
+			token = "";
+		} else if (char === "[") {
+			frames.push({ kind: "array", index: 0 });
+			token = "";
+		} else if (char === "{") {
+			frames.push({ kind: "table", key: undefined });
+			token = "";
+		} else if (char === "]" || char === "}") {
+			frames.pop();
+			token = "";
+			if (!frames.length) {
+				return undefined;
+			}
+		} else if (char === ",") {
+			const frame = frames[frames.length - 1];
+			if (frame?.kind === "array") {
+				frame.index++;
+			} else if (frame?.kind === "table") {
+				frame.key = undefined;
+			}
+			token = "";
+		} else if (char === "=") {
+			const frame = frames[frames.length - 1];
+			if (frame?.kind === "table") {
+				frame.key = extractTomlKey(token);
+			}
+			token = "";
+		} else {
+			token += char;
+		}
+	}
+
+	// a scalar value that is already written, e.g. `depends = "build"|`
+	if (!frames.length && !quote && region.trim()) {
+		return undefined;
+	}
+
+	return { frames, inQuote: Boolean(quote) };
+}
+
+/**
+ * Checks whether the position is on a value naming a task, in any of the forms
+ * mise accepts (https://mise.jdx.dev/tasks/task-configuration.html):
+ *
+ * - `depends`, `depends_post` and `wait_for` entries, as a bare string, an
+ *   array entry, the first element of a `["task", "--arg"]` entry, or the
+ *   `task` key of a `{ task = "build", args = [...] }` entry
+ * - `run` and `run_windows` entries that reference tasks: `{ task = "..." }`
+ *   and `{ tasks = ["...", "..."] }`. Plain strings there are shell commands,
+ *   and `args`/`env` values are not task names.
+ *
+ * Multiline arrays are supported. `inQuote` tells whether the cursor sits
+ * inside a string literal, i.e. whether the name still needs its own quotes.
+ */
+export function getTaskNameValueContext(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): { inQuote: boolean } | undefined {
+	const assignment = findEnclosingAssignment(document, position);
+	if (!assignment) {
+		return undefined;
+	}
+
+	const scanned = scanTomlValue(document, position, assignment);
+	if (!scanned) {
+		return undefined;
+	}
+
+	const { frames, inQuote } = scanned;
+	const frame = frames[frames.length - 1];
+	const parent = frames[frames.length - 2];
+
+	// the key path of the cursor, arrays being transparent: `run = [{ task =`
+	// gives ["run", "task"], and `tasks.a = { run = [{ task =` ["a", "run",
+	// "task"]
+	const path = [
+		assignment.field,
+		...frames
+			.filter((entry) => entry.kind === "table")
+			.map((entry) => entry.key),
+	];
+	const key = path[path.length - 1];
+	const owner = path[path.length - 2];
+
+	// `{ |` and `{ opt|` are key positions, not values
+	if (frame?.kind === "table" && !frame.key) {
+		return undefined;
+	}
+
+	if (
+		key === "task" &&
+		frame?.kind === "table" &&
+		isTaskReferenceField(owner)
+	) {
+		return { inQuote };
+	}
+	if (
+		key === "tasks" &&
+		frame?.kind === "array" &&
+		owner !== undefined &&
+		TASK_RUN_FIELDS.has(owner)
+	) {
+		return { inQuote };
+	}
+	if (key !== undefined && TASK_DEPENDS_FIELDS.has(key)) {
+		// `depends = [["build", "--arg"]]`: only the first element is a task
+		if (
+			frame?.kind === "array" &&
+			parent?.kind === "array" &&
+			frame.index > 0
+		) {
+			return undefined;
+		}
+		return { inQuote };
+	}
+
+	return undefined;
+}
+
+function isTaskReferenceField(field: string | undefined): boolean {
+	return (
+		field !== undefined &&
+		(TASK_DEPENDS_FIELDS.has(field) || TASK_RUN_FIELDS.has(field))
+	);
+}
+
 /**
  * Parses the text before the cursor when completing the value of an `extends`
  * key, which names a task template:

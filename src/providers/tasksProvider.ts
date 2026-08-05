@@ -39,10 +39,7 @@ import {
 } from "../utils/miseUtilts";
 import { safeExec } from "../utils/shell";
 import { formatCacheSummary } from "../utils/taskCache";
-import {
-	getTaskDescription,
-	getTaskPickDescription,
-} from "../utils/taskDisplay";
+import { formatRunEntries, getTaskDescription } from "../utils/taskDisplay";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 import {
 	getTaskConfigRoot,
@@ -582,7 +579,7 @@ class TaskItem extends vscode.TreeItem {
 		super(getTaskDisplayName(task), vscode.TreeItemCollapsibleState.None);
 		// stable id so `TreeView.reveal` can match recreated items
 		this.id = `${task.source}:${task.name}`;
-		const runInfo = task.run?.join(" ");
+		const runInfo = formatRunEntries(task.run).join(" ");
 		this.tooltip = [
 			["Task", task.name],
 			["Description", task.description],
@@ -645,7 +642,11 @@ async function pickTaskName(
 	const picked = await vscode.window.showQuickPick(
 		tasks.map((task) => ({
 			label: task.name,
-			description: getTaskPickDescription(task, workspaceRoot),
+			// a flat list has no group header to locate a file task, so its
+			// script stands in when nothing else describes it
+			description:
+				getTaskDescription(task) ||
+				(task.file ? displayPathRelativeTo(task.file, workspaceRoot) : ""),
 		})),
 		{ placeHolder, matchOnDescription: true },
 	);

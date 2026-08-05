@@ -11,6 +11,7 @@ import {
 	formatDuration,
 	formatLastAccessed,
 } from "../utils/taskCache";
+import { formatRunEntries } from "../utils/taskDisplay";
 import {
 	findTasksMatchingDependsPattern,
 	getTaskDefinitionNameCandidates,
@@ -28,6 +29,7 @@ import {
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "../utils/taskTemplates";
+import { getTaskNameValueContext } from "../utils/tomlParsing";
 
 /**
  * What the hover knows about the output cache of a task: its stored entries,
@@ -51,7 +53,10 @@ function createMarkdownString(
 		markdownString.appendMarkdown(`<br />${task.description}`);
 	}
 	if (task.run) {
-		markdownString.appendCodeblock(task.run?.join("\n") || "", "shell");
+		markdownString.appendCodeblock(
+			formatRunEntries(task.run).join("\n"),
+			"shell",
+		);
 	}
 	if (task.file) {
 		markdownString.appendMarkdown(`\n\nFile: ${task.file}`);
@@ -325,7 +330,12 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 			);
 		}
 
-		if (!isDependsKeyword(keyPath.at(-1) || "")) {
+		// `run` entries reference tasks in their table form, e.g.
+		// `run = [{ task = "build" }, { tasks = ["a", "b"] }]`
+		if (
+			!isDependsKeyword(keyPath.at(-1) || "") &&
+			!getTaskNameValueContext(document, position)
+		) {
 			return null;
 		}
 

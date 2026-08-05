@@ -20,6 +20,7 @@ import {
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "../utils/taskTemplates";
+import { getTaskNameValueContext } from "../utils/tomlParsing";
 
 export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	private miseService: MiseService;
@@ -121,7 +122,12 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			];
 		}
 
-		if (!isDependsKeyword(keyPath.at(-1) || "")) {
+		// `run` entries reference tasks in their table form, e.g.
+		// `run = [{ task = "build" }, { tasks = ["a", "b"] }]`
+		if (
+			!isDependsKeyword(keyPath.at(-1) || "") &&
+			!getTaskNameValueContext(document, position)
+		) {
 			return null;
 		}
 
