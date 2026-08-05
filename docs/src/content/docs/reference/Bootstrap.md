@@ -54,6 +54,24 @@ Selecting an entry jumps to its declaration.
 Secrets are listed by name and by the environment variable they are read from.
 Their values are never read by the extension.
 
+## Section code lens
+
+Each `[bootstrap.*]` table gets a code lens on its header reporting how many of
+its entries are not in their desired state, for example
+`⚠ Bootstrap · 2/5 pending`. A section whose entries are all converged reads
+`✓ Bootstrap · 5 ok`, and one mise could not inspect here (a Linux-only section
+on macOS, Docker not running) reads `⊘ Bootstrap · not applicable here`.
+Hovering lists the entries behind the count, and clicking opens the bootstrap
+status view.
+
+Counts cover only the entries of the file you are looking at. `mise bootstrap
+status` merges every config file, so a workspace `mise.toml` does not report the
+packages or files declared in your global config.
+
+Reading the status inspects the machine, so it is only read for files that
+declare a bootstrap section. Set `mise.enableBootstrapCodeLens` to `false` to
+turn the lens off, or `mise.enableCodeLens` to turn off every code lens.
+
 ## Bootstrap plan
 
 `Mise: Show mise bootstrap plan` (or the diff icon in the `Bootstrap` panel)
@@ -62,6 +80,13 @@ what the declarative resources would change without applying anything, followed
 by a summary of the create/update/remove/unchanged counts.
 
 This requires mise `2026.8.2` or later.
+
+A plan only covers the sections that have moved to mise's declarative resource
+model. The others are still applied by `mise bootstrap`, they just never show up
+in a plan, so a configuration made only of those plans nothing at all. mise
+grows this coverage as more sections adopt the model, so
+[the mise bootstrap docs](https://mise.jdx.dev/bootstrap.html) are the reference
+for what a plan reports today.
 
 ## Bootstrap status view
 

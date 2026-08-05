@@ -5,6 +5,12 @@
 [bootstrap.repos]
 "vendor/mise-e2e-repo" = { url = "https://example.invalid/mise-e2e-repo.git" }
 
+# a shorthand written as a dotted key rather than as its own table. It parses
+# to the identical table, but it is not written on a header line, so the code
+# lens has to anchor on the enclosing header rather than on the key
+[bootstrap.macos]
+dock.autohide = true
+
 [bootstrap.macos.defaults]
 "com.example.mise-vscode-e2e" = { ExampleKey = true }
 

@@ -6,6 +6,7 @@ import {
 	findKeyInText,
 	getBootstrapSections,
 	getMacosDefaultsShorthandDefinitions,
+	isBootstrapEntryPending,
 } from "./bootstrapUtils";
 
 // captured from `mise bootstrap status --json` (mise 2026.7.18)
@@ -483,6 +484,29 @@ describe("getBootstrapSections (declarative resources)", () => {
 			tablePath: ["bootstrap", "compose"],
 			key: "web",
 		});
+	});
+
+	test("only entries that are not converged or neutral count as pending", () => {
+		const entriesOf = (table: string) =>
+			getBootstrapSections(resourceStatus)
+				.flatMap((section) => section.entries)
+				.filter((entry) => entry.definition.tablePath.join(".") === table);
+
+		// `create` is actionable
+		expect(entriesOf("bootstrap.files").map(isBootstrapEntryPending)).toEqual([
+			true,
+		]);
+		// `noop` is converged
+		expect(
+			entriesOf("bootstrap.directories").map(isBootstrapEntryPending),
+		).toEqual([false]);
+		expect(
+			entriesOf("bootstrap.services").map(isBootstrapEntryPending),
+		).toEqual([false]);
+		// `unknown` is not actionable, so it must not raise a warning
+		expect(entriesOf("bootstrap.linux").map(isBootstrapEntryPending)).toEqual([
+			false,
+		]);
 	});
 
 	test("resource tooltips carry current, desired and dependencies", () => {

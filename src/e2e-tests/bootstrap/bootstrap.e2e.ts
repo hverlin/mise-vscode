@@ -195,14 +195,18 @@ suite("Bootstrap Test Suite", function () {
 			[
 				fixturePath(".mise-vscode-e2e-dir"),
 				fixturePath(".mise-vscode-e2e-dir-two"),
+				// [bootstrap.files] and [bootstrap.directories] merge across config
+				// files, so the global config contributes to the same section
+				fixturePath(".mise-vscode-e2e-global-dir"),
 				fixturePath(".mise-vscode-e2e-file.conf"),
+				fixturePath(".mise-vscode-e2e-global.conf"),
 				fixturePath(".mise-vscode-e2e-secret.conf"),
 			],
 			"directories and files share one section, in mise's order",
 		);
-		assert.equal(files.entries[2]?.state, "create");
+		assert.equal(files.entries[3]?.state, "create");
 		// the secret this file templates is never set, so mise cannot inspect it
-		assert.equal(files.entries[3]?.state, "unknown");
+		assert.equal(files.entries[5]?.state, "unknown");
 
 		const secrets = byLabel("Secrets");
 		assert.ok(secrets, "Secrets section should be present");
@@ -235,12 +239,14 @@ suite("Bootstrap Test Suite", function () {
 			[
 				{ kind: "directory", name: fixturePath(".mise-vscode-e2e-dir") },
 				{ kind: "directory", name: fixturePath(".mise-vscode-e2e-dir-two") },
+				{ kind: "directory", name: fixturePath(".mise-vscode-e2e-global-dir") },
 				{ kind: "file", name: fixturePath(".mise-vscode-e2e-file.conf") },
+				{ kind: "file", name: fixturePath(".mise-vscode-e2e-global.conf") },
 				{ kind: "file", name: fixturePath(".mise-vscode-e2e-secret.conf") },
 			],
 		);
 		assert.deepEqual(plan.summary, {
-			create: 3,
+			create: 5,
 			update: 0,
 			remove: 0,
 			unchanged: 0,
@@ -298,5 +304,116 @@ suite("Bootstrap Test Suite", function () {
 			lineOf("e2e_token ="),
 			"Selection should be on the secret declaration line",
 		);
+	});
+
+	test("shows a code lens on every bootstrap section of the document", async () => {
+		const lenses = (
+			(await vscode.commands.executeCommand<vscode.CodeLens[]>(
+				"vscode.executeCodeLensProvider",
+				miseTomlDocument.uri,
+			)) ?? []
+		).filter((lens) => lens.command?.command === "mise.showBootstrap");
+
+		// one lens per table declared in the fixture, anchored on its header
+		const byTable = new Map(
+			lenses.map((lens) => [
+				lens.command?.arguments?.[0] as string,
+				{ title: lens.command?.title ?? "", line: lens.range.start.line },
+			]),
+		);
+
+		assert.deepEqual(
+			[...byTable.keys()].sort(),
+			[
+				"bootstrap.directories",
+				"bootstrap.files",
+				// the friendly shorthands are reported as com.apple.* defaults, but
+				// they are written here, so their lenses belong on these tables
+				"bootstrap.macos.dock",
+				"bootstrap.macos.finder",
+				"bootstrap.macos.defaults.com.example.mise-vscode-e2e",
+				"bootstrap.repos",
+				"bootstrap.secrets",
+				"dotfiles",
+			].sort(),
+			"every bootstrap table of the fixture should get a lens",
+		);
+
+		assert.equal(
+			byTable.get("bootstrap.macos.finder")?.line,
+			lineOf("[bootstrap.macos.finder]"),
+			"the shorthand lens should sit on the shorthand table, not on defaults",
+		);
+		// `dock.autohide` is a dotted key inside [bootstrap.macos]: the lens has
+		// to anchor on that header, not on the line the key happens to be written
+		// on, or it renders in the middle of the table
+		assert.equal(
+			byTable.get("bootstrap.macos.dock")?.line,
+			lineOf("[bootstrap.macos]"),
+			"a dotted-key shorthand should anchor on its enclosing table header",
+		);
+
+		assert.equal(
+			byTable.get("bootstrap.repos")?.line,
+			lineOf("[bootstrap.repos]"),
+			"the lens should sit on the table header",
+		);
+
+		// the fixture entries all point at resources that do not exist
+		assert.match(
+			byTable.get("bootstrap.repos")?.title ?? "",
+			/^\$\(warning\) Bootstrap · 1\/1 pending$/,
+		);
+		assert.match(
+			byTable.get("bootstrap.secrets")?.title ?? "",
+			/^\$\(warning\) Bootstrap · 1\/1 pending$/,
+		);
+		// two files here, one of which mise cannot inspect without the secret: an
+		// uninspectable entry is not actionable, so it must not be reported. The
+		// global config declares a third file, which merges into the same status
+		// section and must not be counted by this document's lens
+		assert.match(
+			byTable.get("bootstrap.files")?.title ?? "",
+			/^\$\(warning\) Bootstrap · 1\/2 pending$/,
+		);
+		// likewise: two directories here, a third in the global config
+		assert.match(
+			byTable.get("bootstrap.directories")?.title ?? "",
+			/^\$\(warning\) Bootstrap · 2\/2 pending$/,
+		);
+	});
+
+	test("each config file gets a lens for its own entries only", async () => {
+		// the global config declares one file and one directory of its own, which
+		// merge into the same status sections as the workspace ones: its lenses
+		// must report only its two entries, not all six
+		const globalConfig = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "global-config.toml"),
+		);
+
+		const lenses = (
+			(await vscode.commands.executeCommand<vscode.CodeLens[]>(
+				"vscode.executeCodeLensProvider",
+				globalConfig.uri,
+			)) ?? []
+		).filter((lens) => lens.command?.command === "mise.showBootstrap");
+
+		assert.deepEqual(
+			lenses.map((lens) => lens.command?.arguments?.[0]).sort(),
+			["bootstrap.directories", "bootstrap.files"],
+			"only the sections the global config declares should get a lens",
+		);
+		for (const lens of lenses) {
+			assert.match(
+				lens.command?.title ?? "",
+				/^\$\(warning\) Bootstrap · 1\/1 pending$/,
+				`${lens.command?.arguments?.[0]} should count one entry`,
+			);
+			assert.match(
+				lens.command?.tooltip ?? "",
+				/mise-vscode-e2e-global/,
+				"the tooltip should list the entry of this document",
+			);
+		}
 	});
 });

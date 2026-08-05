@@ -3,13 +3,25 @@ import {
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
 	MISE_RUN_TASK,
+	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TASK_CACHE_MENU,
 	MISE_USE_TOOL,
 	MISE_WATCH_TASK,
 } from "../commands";
-import { isCodeLensEnabled, isMiseExtensionEnabled } from "../configuration";
+import {
+	isBootstrapCodeLensEnabled,
+	isCodeLensEnabled,
+	isMiseExtensionEnabled,
+} from "../configuration";
 import type { MiseService } from "../miseService";
+import { groupBootstrapEntriesByDeclaringTable } from "../utils/bootstrapDocument";
+import {
+	BOOTSTRAP_OK_STATES,
+	type BootstrapEntry,
+	getBootstrapSections,
+	isBootstrapEntryPending,
+} from "../utils/bootstrapUtils";
 import { expandPath } from "../utils/fileUtils";
 import { getCachedTomlParser } from "../utils/miseFileParser";
 import { isMiseTomlFile } from "../utils/miseUtilts";
@@ -97,6 +109,54 @@ function createTaskCacheCodeLens(
 		tooltip: `Task output cache of ${taskName} (${formatCacheSummary(entries)})`,
 		command: MISE_SHOW_TASK_CACHE_MENU,
 		arguments: [taskName],
+	});
+}
+
+/** entries listed in a lens tooltip before it is summarised */
+const MAX_LISTED = 10;
+
+/** `[bootstrap.packages]` reads as `bootstrap.packages`, `[dotfiles]` as `dotfiles` */
+function tableLabel(tablePath: string[]): string {
+	return tablePath.join(".");
+}
+
+function createBootstrapCodeLens(
+	tablePath: string[],
+	entries: BootstrapEntry[],
+	range: vscode.Range,
+): vscode.CodeLens {
+	const pending = entries.filter(isBootstrapEntryPending);
+	const label = tableLabel(tablePath);
+
+	// entries mise could not inspect here (a Linux section on macOS, docker
+	// down) are not actionable: reporting them as pending would be a false
+	// alarm, and reporting them as ok would claim a state nobody checked
+	const converged = entries.filter((entry) =>
+		BOOTSTRAP_OK_STATES.has(entry.state),
+	);
+	// `1/2 pending` reads the same way as the bootstrap tree view sections
+	let title: string;
+	if (pending.length) {
+		title = `$(warning) Bootstrap · ${pending.length}/${entries.length} pending`;
+	} else if (converged.length) {
+		title = `$(check) Bootstrap · ${converged.length} ok`;
+	} else {
+		title = "$(circle-slash) Bootstrap · not applicable here";
+	}
+
+	const listed = (pending.length ? pending : entries).slice(0, MAX_LISTED);
+	const detail = listed
+		.map((entry) => `${entry.label} (${entry.state})`)
+		.join("\n");
+	const remaining = (pending.length || entries.length) - listed.length;
+
+	return new vscode.CodeLens(range, {
+		title,
+		tooltip: `[${label}] (${entries.length} ${
+			entries.length === 1 ? "entry" : "entries"
+		})\n${detail}${remaining > 0 ? `\n+${remaining} more` : ""}`,
+		command: MISE_SHOW_BOOTSTRAP,
+		arguments: [label],
 	});
 }
 
@@ -368,6 +428,52 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		return withCacheLenses;
 	}
 
+	/**
+	 * One lens per `[bootstrap.*]` table declared in this document, reporting
+	 * how many of its entries are not in their desired state. Documents without
+	 * a bootstrap section never read the status, which is what keeps this cheap:
+	 * `mise bootstrap status` inspects the machine.
+	 */
+	private async addBootstrapLenses(
+		document: vscode.TextDocument,
+		codeLenses: vscode.CodeLens[],
+	): Promise<vscode.CodeLens[]> {
+		if (!isBootstrapCodeLensEnabled()) {
+			return codeLenses;
+		}
+
+		const parsed = getCachedTomlParser(document)?.parsed as
+			| { bootstrap?: unknown; dotfiles?: unknown }
+			| undefined;
+		if (!parsed?.bootstrap && !parsed?.dotfiles) {
+			return codeLenses;
+		}
+
+		const status = await this.miseService.getBootstrapStatus();
+		if (!status) {
+			return codeLenses;
+		}
+
+		// the status merges every config file, and an entry is not always written
+		// in the table it is reported under, so the grouping is resolved against
+		// this document rather than taken from the status
+		const entries = getBootstrapSections(status).flatMap(
+			(section) => section.entries,
+		);
+
+		return [
+			...codeLenses,
+			...groupBootstrapEntriesByDeclaringTable(document, entries).map(
+				(section) =>
+					createBootstrapCodeLens(
+						section.tablePath,
+						section.entries,
+						section.range,
+					),
+			),
+		];
+	}
+
 	public async provideCodeLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
@@ -392,9 +498,12 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			? await this.handleMiseTomlFile(document)
 			: this.handleTaskFile(document);
 
-		return this.addTaskCacheLenses(
+		return this.addBootstrapLenses(
 			document,
-			await this.qualifyTaskNamesInLenses(document, codeLenses),
+			await this.addTaskCacheLenses(
+				document,
+				await this.qualifyTaskNamesInLenses(document, codeLenses),
+			),
 		);
 	}
 }
