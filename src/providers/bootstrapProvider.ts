@@ -8,17 +8,19 @@ import {
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
+	bootstrapEntryKeyCandidates,
+	findKeyInTomlDocument,
+} from "../utils/bootstrapDocument";
+import {
 	BOOTSTRAP_NEUTRAL_STATES,
 	BOOTSTRAP_OK_STATES,
-	type BootstrapDefinition,
 	type BootstrapEntry,
 	type BootstrapSection,
 	findKeyInText,
 	getBootstrapSections,
 } from "../utils/bootstrapUtils";
-import { collapseHomePath, expandPath } from "../utils/fileUtils";
+import { expandPath } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
-import { getCachedTomlParser } from "../utils/miseFileParser";
 
 type TreeItem = BootstrapSectionItem | BootstrapEntryItem;
 
@@ -127,46 +129,6 @@ class BootstrapEntryItem extends vscode.TreeItem {
 	}
 }
 
-function findKeyInTomlDocument(
-	document: vscode.TextDocument,
-	tablePath: string[],
-	key: string,
-) {
-	const parser = getCachedTomlParser(document);
-	if (!parser) {
-		return undefined;
-	}
-
-	let table: unknown = parser.parsed;
-	for (const part of tablePath) {
-		if (!table || typeof table !== "object") {
-			return undefined;
-		}
-		table = (table as Record<string, unknown>)[part];
-	}
-	if (!table || typeof table !== "object") {
-		return undefined;
-	}
-
-	return parser.findRange(table as object, key);
-}
-
-/**
- * `mise bootstrap status` reports resource paths expanded, but they are usually
- * declared with `~` (e.g. `[bootstrap.files."~/.config/app.conf"]`), so every
- * path-shaped key also gets looked up in its `~` form.
- */
-function withHomePathVariants(
-	definitions: BootstrapDefinition[],
-): BootstrapDefinition[] {
-	return definitions.flatMap((definition) => {
-		const collapsed = collapseHomePath(definition.key);
-		return collapsed
-			? [definition, { ...definition, key: collapsed }]
-			: [definition];
-	});
-}
-
 async function openBootstrapEntryDefinition(
 	miseService: MiseService,
 	entry: BootstrapEntry | undefined,
@@ -197,10 +159,7 @@ async function openBootstrapEntryDefinition(
 	// declarations (e.g. the [bootstrap.macos.finder] shorthand of a macOS
 	// default); only when nothing is found anywhere, fall back to the
 	// enclosing table (e.g. the domain table of a macOS default)
-	const keyCandidates = withHomePathVariants([
-		entry.definition,
-		...(entry.alternates ?? []),
-	]);
+	const keyCandidates = bootstrapEntryKeyCandidates(entry);
 	const candidates = [...keyCandidates];
 	if (tablePath.length > 0) {
 		candidates.push({
@@ -292,6 +251,29 @@ export function registerBootstrapCommands(
 				);
 				return;
 			}
+
+			// only the sections that adopted mise's resource model are planned, so
+			// a configuration made of the others plans nothing at all. Which ones
+			// those are is mise's to say and keeps growing, so ask for the plan
+			// instead of naming them here
+			const plan = await miseService.getBootstrapPlan().catch(() => {
+				// let the plan itself report whatever is wrong
+				return undefined;
+			});
+			if (plan?.resources.length === 0) {
+				const learnMore = "Learn more";
+				const selection = await vscode.window.showInformationMessage(
+					'Nothing to plan: no section of this configuration is covered by `mise bootstrap plan`. They still apply with "Run mise bootstrap".',
+					learnMore,
+				);
+				if (selection === learnMore) {
+					await vscode.env.openExternal(
+						vscode.Uri.parse("https://mise.jdx.dev/bootstrap.html"),
+					);
+				}
+				return;
+			}
+
 			await miseService.runBootstrapPlanInConsole();
 		}),
 		vscode.commands.registerCommand(

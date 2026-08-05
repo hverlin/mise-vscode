@@ -1,2 +1,13 @@
 # Used as MISE_GLOBAL_CONFIG_FILE for the bootstrap e2e suite so the machine's
 # real global config (tools, bootstrap sections) never leaks into the tests.
+
+# `bootstrap status` merges [bootstrap.files] and [bootstrap.directories]
+# across config files (unlike [bootstrap.repos], which the closest config wins
+# outright). These entries are what proves each code lens counts only the
+# entries of its own document.
+[bootstrap.directories."~/.mise-vscode-e2e-global-dir"]
+mode = "0755"
+
+[bootstrap.files."~/.mise-vscode-e2e-global.conf"]
+content = "global = true\n"
+mode = "0644"

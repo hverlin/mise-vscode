@@ -288,6 +288,26 @@ export class MiseService {
 		storage: { type: "memory" },
 	}).define("getProjects", () => this.loadProjectEntries());
 
+	/**
+	 * `mise bootstrap status` inspects the machine: it shells out to the package
+	 * managers, `defaults`, docker and git, which costs far more than the default
+	 * command ttl is meant for. The code lens re-renders on every keystroke, so
+	 * the result is kept long enough that typing never spawns a subprocess.
+	 *
+	 * Everything the extension can observe invalidates this eagerly through
+	 * `invalidateCache`: running bootstrap from the extension reloads on task
+	 * end, and editing a config file reloads through the file watcher. What
+	 * stays unobservable is the machine changing on its own (`brew install` in a
+	 * terminal, `docker compose up`, `defaults write`), and the ttl is the only
+	 * thing that recovers from that.
+	 */
+	private bootstrapCache = createCache({
+		ttl: 30,
+		storage: { type: "memory" },
+	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv }),
+	);
+
 	async invalidateCache() {
 		await Promise.all([
 			this.dedupeCache.clear(),
@@ -296,6 +316,7 @@ export class MiseService {
 			this.longTTLCache.clear(),
 			this.projectsCache.clear(),
 			this.taskCacheCache.clear(),
+			this.bootstrapCache.clear(),
 		]);
 		this.eventEmitter.fire();
 	}
@@ -1976,7 +1997,7 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.cache.execCmd({
+			const { stdout } = await this.bootstrapCache.execCmd({
 				args: ["bootstrap", "status", "--json"],
 			});
 			return JSON.parse(stdout) as MiseBootstrapStatus;
@@ -2019,7 +2040,7 @@ export class MiseService {
 		}
 
 		try {
-			const { stdout } = await this.cache.execCmd({
+			const { stdout } = await this.bootstrapCache.execCmd({
 				args: ["bootstrap", "plan", "--json"],
 			});
 			return JSON.parse(stdout) as MiseBootstrapPlan;

@@ -269,6 +269,16 @@ Show the tools and environment variables of each [monorepo](https://mise.jdx.dev
 
 ---
 
+##### `mise.enableBootstrapCodeLens`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a code lens on each `[bootstrap.*]` section reporting how many of its entries are not in their desired state.
+
+Requires `#mise.enableCodeLens#` and mise 2026.7.16+. Reading the status runs `mise bootstrap status`, which inspects the machine (installed packages, cloned repos, macOS defaults, Docker Compose projects); the result is cached and only read for files that declare a bootstrap section.
+
+---
+
 ##### `mise.showNotificationIfMissingTools`
 - **Type:** `boolean`
 - **Default:** `true`

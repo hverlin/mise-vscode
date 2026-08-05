@@ -19,6 +19,7 @@ export const CONFIGURATION_FLAGS = {
 	configureExtensionsAutomaticallyIncludeList:
 		"configureExtensionsAutomaticallyIncludeList",
 	enableCodeLens: "enableCodeLens",
+	enableBootstrapCodeLens: "enableBootstrapCodeLens",
 	enableToolLinks: "enableToolLinks",
 	showToolVersionsDecorations: "showToolVersionsDecorations",
 	showToolEnvVarsDecorations: "showToolEnvVarsDecorations",
@@ -210,6 +211,10 @@ export const enableExtensionForWorkspace = async () => {
 
 export const isCodeLensEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableCodeLens, true);
+};
+
+export const isBootstrapCodeLensEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableBootstrapCodeLens, true);
 };
 
 export const isToolLinksEnabled = () => {

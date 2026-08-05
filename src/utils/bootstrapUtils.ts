@@ -303,6 +303,13 @@ export function findKeyInText(
 	return undefined;
 }
 
+export function isBootstrapEntryPending(entry: BootstrapEntry): boolean {
+	return (
+		!BOOTSTRAP_OK_STATES.has(entry.state) &&
+		!BOOTSTRAP_NEUTRAL_STATES.has(entry.state)
+	);
+}
+
 export function getBootstrapSections(
 	status: MiseBootstrapStatus,
 ): BootstrapSection[] {
