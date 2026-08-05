@@ -19,6 +19,7 @@ type BootstrapRow = {
 	tooltip?: string;
 	state: string;
 	definition: BootstrapEntry["definition"];
+	alternates?: BootstrapEntry["alternates"];
 };
 
 const StateCell = ({ state }: { state: string }) => {
@@ -56,6 +57,12 @@ export const Bootstrap = () => {
 				mutationKey: ["runBootstrap"],
 				variables: { dryRun },
 			}),
+	});
+
+	const runPlanMutation = useMutation({
+		mutationKey: ["runBootstrapPlan"],
+		mutationFn: () =>
+			vscodeClient.request({ mutationKey: ["runBootstrapPlan"] }),
 	});
 
 	const openDefinitionMutation = useMutation({
@@ -98,6 +105,7 @@ export const Bootstrap = () => {
 				tooltip: entry.tooltip,
 				state: entry.state,
 				definition: entry.definition,
+				alternates: entry.alternates,
 			})),
 	);
 
@@ -151,6 +159,16 @@ export const Bootstrap = () => {
 							onClick={() => runBootstrap(true)}
 						>
 							Dry run
+						</VscodeButton>
+						<VscodeButton
+							secondary
+							disabled={runPlanMutation.isPending}
+							title={
+								"Run mise bootstrap plan (preview declarative resource changes, requires mise 2026.8.2+)"
+							}
+							onClick={() => runPlanMutation.mutate()}
+						>
+							Plan
 						</VscodeButton>
 					</div>
 				}

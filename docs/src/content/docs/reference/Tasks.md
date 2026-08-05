@@ -222,6 +222,21 @@ as tasks (e.g. `node:frontend#test`, also addressable as
 `package.json` file and can be run like any other task. Go-to-definition on a
 reference to such a task jumps to the script in the `package.json` file.
 
+Since mise `2026.8.2`, this inference is opt-in per workspace provider: list
+`node` in
+[`task.auto_infer`](https://mise.jdx.dev/configuration/settings.html#taskauto_infer)
+in the monorepo root `mise.toml`, otherwise no script task shows up.
+
+```toml
+[settings]
+experimental = true
+task.auto_infer = ["node"]
+```
+
+`node` is currently the only provider that infers tasks. The other workspace
+providers (`cargo`, `go`, `uv`) contribute projects and dependency edges to the
+[workspace projects graph](#workspace-projects-graph), which needs no opt-in.
+
 If a mise task in the project's `mise.toml` has the same name as a script, the
 toml task takes precedence and keeps the script name as an alias.
 

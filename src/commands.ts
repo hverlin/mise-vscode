@@ -35,6 +35,7 @@ export const MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION =
 	"mise.openBootstrapEntryDefinition";
 export const MISE_RUN_BOOTSTRAP = "mise.runBootstrap";
 export const MISE_RUN_BOOTSTRAP_DRY_RUN = "mise.runBootstrapDryRun";
+export const MISE_RUN_BOOTSTRAP_PLAN = "mise.runBootstrapPlan";
 export const MISE_SHOW_BOOTSTRAP = "mise.showBootstrap";
 export const MISE_RUN_TASK = "mise.runTask";
 export const MISE_SEARCH_TASKS = "mise.searchTasks";

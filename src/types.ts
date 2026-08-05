@@ -271,6 +271,62 @@ type MiseBootstrapTool = {
 	installed: boolean;
 };
 
+/**
+ * Identity of one declarative bootstrap resource. `kind` is the resource type
+ * mise reports: `user`, `group`, `package`, `file`, `directory`, `service`,
+ * `firewall`, `firewall-rule` or `compose`.
+ */
+type MiseBootstrapResourceId = {
+	kind: string;
+	name: string;
+};
+
+/** The operation needed to converge a declarative resource */
+type MiseBootstrapResourceAction =
+	| "create"
+	| "update"
+	| "remove"
+	| "noop"
+	| "unknown";
+
+/**
+ * One declarative bootstrap resource, as reported by the `files`, `services`,
+ * `firewall`, `compose` and `accounts` sections of `bootstrap status --json`
+ * and by `bootstrap plan --json` (mise 2026.8.2+).
+ */
+type MiseBootstrapResource = {
+	id: MiseBootstrapResourceId;
+	/** human-readable current state, e.g. `absent`, `file mode 0644 uid 0 gid 0` */
+	current: string;
+	/** human-readable desired state, e.g. `file mode 0644` */
+	desired: string;
+	action: MiseBootstrapResourceAction;
+	/** resources that must converge first; omitted when empty */
+	depends_on?: MiseBootstrapResourceId[];
+};
+
+/** A `[bootstrap.secrets]` input, reported without ever revealing its value */
+type MiseBootstrapSecret = {
+	name: string;
+	/** environment variable the value is read from */
+	env: string;
+	/** e.g. `available`, `missing`, `empty`, `invalid_unicode` */
+	state: string;
+	description?: string;
+};
+
+/** Output of `mise bootstrap plan --json` (mise 2026.8.2+) */
+type MiseBootstrapPlan = {
+	resources: MiseBootstrapResource[];
+	summary: {
+		create: number;
+		update: number;
+		remove: number;
+		unchanged: number;
+		unknown: number;
+	};
+};
+
 /** Output of `mise bootstrap status --json` */
 type MiseBootstrapStatus = {
 	packages: Record<string, MiseBootstrapPackageManager>;
@@ -290,6 +346,20 @@ type MiseBootstrapStatus = {
 	login_shell: MiseBootstrapLoginShell | null;
 	tools: MiseBootstrapTool[];
 	plugin_deps?: unknown[];
+	// declarative provisioning sections, added in mise 2026.8.2 — optional so
+	// status from an older mise still type-checks
+	/** `[bootstrap.secrets]` inputs referenced by a template */
+	secrets?: MiseBootstrapSecret[];
+	/** `[bootstrap.users]` and `[bootstrap.groups]` (Linux) */
+	accounts?: MiseBootstrapResource[];
+	/** `[bootstrap.files]` and `[bootstrap.directories]` */
+	files?: MiseBootstrapResource[];
+	/** `[bootstrap.services]` systemd system services (Linux) */
+	services?: MiseBootstrapResource[];
+	/** `[bootstrap.linux.firewall]` policy and rules (Linux) */
+	firewall?: MiseBootstrapResource[];
+	/** `[bootstrap.compose]` Docker Compose projects */
+	compose?: MiseBootstrapResource[];
 };
 
 /*

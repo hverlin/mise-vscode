@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { mkdtemp, rm, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import {
+	collapseHomePath,
 	compareSourcePaths,
+	expandPath,
 	getShebangFileExtension,
 	getSourceProximityRank,
 	isPathInside,
@@ -291,5 +293,34 @@ describe("isPathInside", () => {
 		expect(isPathInside(root, path.resolve("/repo/project-evil/mise"))).toBe(
 			false,
 		);
+	});
+});
+
+describe("collapseHomePath", () => {
+	it("rewrites a path inside the home directory to its ~ form", () => {
+		expect(collapseHomePath(path.join(homedir(), ".config", "app.conf"))).toBe(
+			"~/.config/app.conf",
+		);
+	});
+
+	it("round-trips with expandPath", () => {
+		const collapsed = collapseHomePath(path.join(homedir(), "src", "repo"));
+		expect(collapsed).toBeDefined();
+		expect(expandPath(collapsed as string)).toBe(
+			expandPath(path.join(homedir(), "src", "repo")),
+		);
+	});
+
+	it("returns undefined when there is nothing to collapse", () => {
+		// mise reports bootstrap resource paths expanded; anything outside the
+		// home directory (or already using ~) has no second form to look up
+		expect(collapseHomePath("/etc/example/app.conf")).toBeUndefined();
+		expect(collapseHomePath("~/.config/app.conf")).toBeUndefined();
+		expect(collapseHomePath(homedir())).toBeUndefined();
+		expect(collapseHomePath("brew:jq")).toBeUndefined();
+	});
+
+	it("is not fooled by a sibling sharing the home directory prefix", () => {
+		expect(collapseHomePath(`${homedir()}-backup/app.conf`)).toBeUndefined();
 	});
 });

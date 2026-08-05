@@ -5,12 +5,39 @@
 [bootstrap.repos]
 "vendor/mise-e2e-repo" = { url = "https://example.invalid/mise-e2e-repo.git" }
 
-[dotfiles]
-"~/.mise-vscode-e2e-dotfile" = { mode = "symlink" }
-
 [bootstrap.macos.defaults]
 "com.example.mise-vscode-e2e" = { ExampleKey = true }
 
 # friendly shorthand: resolves to `com.apple.finder ShowPathbar` in status
 [bootstrap.macos.finder]
 show_pathbar = true
+
+# Declarative resources (mise 2026.8.2+). Only the sections that report
+# identically on macOS and Linux live here — services, firewall, compose and
+# users/groups are Linux/docker only, so those are covered by unit tests and by
+# navigation tests that pass synthetic entries.
+[bootstrap.secrets]
+e2e_token = "MISE_VSCODE_E2E_SECRET_THAT_IS_NEVER_SET"
+
+# two declarations per kind: the navigation tests target the second one, which
+# the enclosing-table fallback cannot reach — it always lands on the first
+[bootstrap.directories."~/.mise-vscode-e2e-dir"]
+mode = "0755"
+
+[bootstrap.directories."~/.mise-vscode-e2e-dir-two"]
+mode = "0700"
+
+[bootstrap.files."~/.mise-vscode-e2e-file.conf"]
+content = "e2e = true\n"
+mode = "0644"
+
+# the secret is never available, so mise reports this file as `unknown` rather
+# than inspecting it — which is exactly the neutral state the views must render
+[bootstrap.files."~/.mise-vscode-e2e-secret.conf"]
+content = "token = {{ secret(name='e2e_token') }}\n"
+template = true
+mode = "0600"
+
+# kept last so every [bootstrap.*] table stays contiguous
+[dotfiles]
+"~/.mise-vscode-e2e-dotfile" = { mode = "symlink" }
