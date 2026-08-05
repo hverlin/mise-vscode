@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.22.0](https://github.com/hverlin/mise-vscode/compare/v1.21.0...v1.22.0) (2026-08-05)
+
+
+### Features
+
+* run task references ([3eaa690](https://github.com/hverlin/mise-vscode/commit/3eaa690214b6219257e9b27809febb5e4afd20c5))
+* show task description in search/run/watch task action ([6db882d](https://github.com/hverlin/mise-vscode/commit/6db882d0a44b43cacb2ce3dd8093c2cb92feb397))
+* **tasks:** support grouping tasks by projects in monorepos ([#276](https://github.com/hverlin/mise-vscode/issues/276)) ([a0c01b6](https://github.com/hverlin/mise-vscode/commit/a0c01b610c3c72cde7e2bb7edb191d3c540b73bc))
+
+
+### Bug Fixes
+
+* handle //:name depends without crashing task graph ([#274](https://github.com/hverlin/mise-vscode/issues/274)) ([9db4aae](https://github.com/hverlin/mise-vscode/commit/9db4aaefe858320a8d4badd54fc5c3711a82768a))
+
 ## [1.21.0](https://github.com/hverlin/mise-vscode/compare/v1.20.0...v1.21.0) (2026-08-05)
 
 
