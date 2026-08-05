@@ -61,5 +61,6 @@ depends_post = [":root-task"]
 run = [
 	{ task = "//:root-task" },
 	{ tasks = ["//crates/agent:build", "//crates/protocol:build"] },
-	"echo verified",
+	# a shell command, even though it names a task
+	"echo build-all",
 ]

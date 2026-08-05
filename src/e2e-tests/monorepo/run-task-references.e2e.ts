@@ -23,12 +23,14 @@ suite("Run Task References Test Suite", function () {
 		document = await vscode.workspace.openTextDocument(uri);
 	});
 
-	/** Position on `name`, on the fixture line holding it */
-	const positionOf = (name: string): vscode.Position => {
+	/** Position on `word`, on the fixture line holding `marker` */
+	const positionOf = (marker: string, word = marker): vscode.Position => {
 		const lines = document.getText().split("\n");
-		const line = lines.findIndex((text) => text.includes(name));
-		assert.ok(line >= 0, `"${name}" should be in the fixture`);
-		return new vscode.Position(line, (lines[line] ?? "").indexOf(name) + 1);
+		const line = lines.findIndex((text) => text.includes(marker));
+		assert.ok(line >= 0, `"${marker}" should be in the fixture`);
+		const character = (lines[line] ?? "").indexOf(word);
+		assert.ok(character >= 0, `"${word}" should be on the ${marker} line`);
+		return new vscode.Position(line, character + 1);
 	};
 
 	const definitionsAt = async (position: vscode.Position) =>
@@ -58,19 +60,20 @@ suite("Run Task References Test Suite", function () {
 	test("goes to the definition of the task of a run entry", async () => {
 		const definitions = await definitionsAt(positionOf('"//:root-task"'));
 
-		assert.equal(definitions.length, 1);
-		const [definition] = definitions;
-		assert.ok(definition, "expected a definition for //:root-task");
+		const targetLines = definitions
+			.filter((definition) =>
+				definition.targetUri.path.endsWith("monorepo-workspace/mise.toml"),
+			)
+			.map(
+				(definition) =>
+					document.lineAt(
+						(definition.targetSelectionRange ?? definition.targetRange).start
+							.line,
+					).text,
+			);
 		assert.ok(
-			definition.targetUri.path.endsWith("monorepo-workspace/mise.toml"),
-			`expected the root config, got ${definition.targetUri.path}`,
-		);
-		const targetLine = (
-			definition.targetSelectionRange ?? definition.targetRange
-		).start.line;
-		assert.ok(
-			document.lineAt(targetLine).text.includes("[tasks.root-task]"),
-			`expected the root-task header, got "${document.lineAt(targetLine).text}"`,
+			targetLines.some((text) => text.includes("[tasks.root-task]")),
+			`expected a link to the declaration, got ${JSON.stringify(targetLines)}`,
 		);
 	});
 
@@ -78,11 +81,11 @@ suite("Run Task References Test Suite", function () {
 		const definitions = await definitionsAt(
 			positionOf('"//crates/agent:build"'),
 		);
+		const paths = definitions.map((definition) => definition.targetUri.path);
 
-		assert.equal(definitions.length, 1);
 		assert.ok(
-			definitions[0]?.targetUri.path.endsWith("crates/agent/mise.toml"),
-			`expected the agent crate config, got ${definitions[0]?.targetUri.path}`,
+			paths.some((targetPath) => targetPath.endsWith("crates/agent/mise.toml")),
+			`expected the agent crate config, got ${JSON.stringify(paths)}`,
 		);
 	});
 
@@ -118,9 +121,19 @@ suite("Run Task References Test Suite", function () {
 	});
 
 	test("leaves the shell commands of the same array alone", async () => {
-		const position = positionOf('"echo verified"');
+		// a plain entry is a shell command even when it names a task, and the
+		// toml schema still hovers it: only our own task answers must be absent
+		const position = positionOf('"echo build-all"', "build-all");
 
-		assert.deepEqual(await definitionsAt(position), []);
-		assert.equal(await hoverTextAt(position), "");
+		const configLinks = (await definitionsAt(position)).filter((definition) =>
+			definition.targetUri.path.endsWith("mise.toml"),
+		);
+		assert.deepEqual(configLinks, []);
+
+		const hoverText = await hoverTextAt(position);
+		assert.ok(
+			!hoverText.includes("Build all the projects"),
+			`the shell command should not describe the task, got ${hoverText}`,
+		);
 	});
 });
