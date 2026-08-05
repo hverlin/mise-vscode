@@ -136,7 +136,15 @@ function enclosingTableHeader(
 	document: vscode.TextDocument,
 	line: number,
 ): vscode.Range | undefined {
-	for (let current = line; current >= 0; current--) {
+	// while the document is mid-edit the parser serves its last good parse, so
+	// the line can point past the end of the text as it is now. Clamping keeps
+	// the lens roughly in place instead of throwing, which would drop every lens
+	// in the document and make the editor jump
+	for (
+		let current = Math.min(line, document.lineCount - 1);
+		current >= 0;
+		current--
+	) {
 		const text = document.lineAt(current).text;
 		if (TABLE_HEADER.test(text)) {
 			const indent = text.length - text.trimStart().length;

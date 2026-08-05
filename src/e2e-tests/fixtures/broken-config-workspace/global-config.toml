@@ -1,0 +1,2 @@
+# Used as MISE_GLOBAL_CONFIG_FILE so the machine's real global config never
+# leaks into the suite.

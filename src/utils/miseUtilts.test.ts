@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { getWebsiteForTool, renderDepsArray, toWebUrl } from "./miseUtilts";
+import {
+	getWebsiteForTool,
+	isMiseConfigParseError,
+	parseMiseError,
+	renderDepsArray,
+	toWebUrl,
+} from "./miseUtilts";
 
 // Mock MiseToolInfo objects matching exact `mise tool X --json` outputs
 
@@ -167,5 +173,132 @@ describe("renderDepsArray", () => {
 
 	it("returns an empty string without deps", () => {
 		expect(renderDepsArray(undefined)).toBe("");
+	});
+});
+
+describe("isMiseConfigParseError", () => {
+	// captured from mise 2026.8.2 while a config file was being edited
+	const failed = (stderr: string) =>
+		new Error(`Command failed: mise tasks ls --json\n${stderr}`);
+
+	it("recognises a config file that does not parse", () => {
+		expect(
+			isMiseConfigParseError(
+				failed(
+					"Error loading settings file: TOML parse error at line 3, column 5\n  |\n3 | [boo\n  |     ^\nunclosed table, expected `]`",
+				),
+			),
+		).toBe(true);
+		expect(
+			isMiseConfigParseError(
+				failed("mise ERROR error parsing config file: /repo/mise.toml"),
+			),
+		).toBe(true);
+		expect(
+			isMiseConfigParseError(
+				failed("× Invalid TOML in config file: /repo/mise.toml"),
+			),
+		).toBe(true);
+	});
+
+	it("does not swallow the failures that are worth reporting", () => {
+		// a stale result must never hide these: they do not fix themselves when
+		// the next keystroke lands
+		expect(
+			isMiseConfigParseError(
+				failed("Config files in /repo are not trusted. Trust them with"),
+			),
+		).toBe(false);
+		expect(isMiseConfigParseError(failed("No such file or directory"))).toBe(
+			false,
+		);
+		expect(isMiseConfigParseError(failed("error: unknown flag --nope"))).toBe(
+			false,
+		);
+		expect(isMiseConfigParseError(undefined)).toBe(false);
+		expect(isMiseConfigParseError("some string")).toBe(false);
+	});
+});
+
+describe("parseMiseError", () => {
+	// captured from mise 2026.8.2
+	const failed = (stderr: string) =>
+		new Error(`Command failed: mise tasks ls --json\n${stderr}`);
+
+	it("reads the position and reason out of a located parse error", () => {
+		const parsed = parseMiseError(
+			failed(`mise::config::parse_error
+
+  × Invalid TOML in config file: /Users/me/projects/demo/mise.toml
+   ╭─[/Users/me/projects/demo/mise.toml:5:45]
+ 4 │ [tasks."slides:build"]
+ 5 │ description = "Compile the slide deck to PDF
+   ·                                             ▲
+   ·                                             ╰── invalid basic string, expected \`"\`
+   ╰────`),
+		);
+
+		expect(parsed.kind).toBe("parse");
+		expect(parsed.file).toBe("/Users/me/projects/demo/mise.toml");
+		expect(parsed.line).toBe(5);
+		expect(parsed.column).toBe(45);
+		expect(parsed.reason).toBe('invalid basic string, expected `"`');
+	});
+
+	it("reads the position and reason when mise does not name the file", () => {
+		const parsed = parseMiseError(
+			failed(`Error loading settings file: TOML parse error at line 2, column 20
+  |
+2 | description = "oops
+  |                    ^
+invalid basic string, expected \`"\``),
+		);
+
+		expect(parsed.kind).toBe("parse");
+		expect(parsed.file).toBeUndefined();
+		expect(parsed.line).toBe(2);
+		expect(parsed.column).toBe(20);
+		expect(parsed.reason).toBe('invalid basic string, expected `"`');
+	});
+
+	it("reads a bad config value with the key it belongs to", () => {
+		const parsed = parseMiseError(
+			failed(`Error loading settings file: invalid type: string "not-a-number", expected usize
+in \`settings.jobs\``),
+		);
+
+		expect(parsed.kind).toBe("settings");
+		expect(parsed.reason).toBe(
+			'invalid type: string "not-a-number", expected usize (settings.jobs)',
+		);
+	});
+
+	it("does not mistake the box border for the reason", () => {
+		// `╰────` closes the snippet box and used to be read as the reason,
+		// which showed up in the sidebar as a row of dashes
+		const parsed = parseMiseError(
+			failed(`mise::config::parse_error
+
+  × Invalid TOML in config file: ~/projects/demo/mise.toml
+   ╭─[~/projects/demo/mise.toml:23:1]
+ 22 │ run = "echo hi"
+ 23 │ [tasks.
+    ·        ▲
+    ·        ╰── invalid table header, expected \`]\`
+   ╰────`),
+		);
+
+		expect(parsed.reason).toBe("invalid table header, expected `]`");
+		expect(parsed.line).toBe(23);
+		// mise abbreviates the home directory, the caller has to expand it
+		expect(parsed.file).toBe("~/projects/demo/mise.toml");
+	});
+
+	it("gives up rather than guessing", () => {
+		// the views fall back to their generic message for these
+		expect(parseMiseError(failed("No such file or directory")).kind).toBe(
+			"unknown",
+		);
+		expect(parseMiseError(undefined).kind).toBe("unknown");
 	});
 });

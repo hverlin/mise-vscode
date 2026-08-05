@@ -137,3 +137,31 @@ If you are using [multi-lines task script](https://mise.jdx.dev/tasks/toml-tasks
 The following languages are supported: Python, Node.js, Deno, Bun, Deno, Ruby, Bash, and Shell.
 
 ![screenshot showing syntax highlighting support when shebang is used](./syntax-highlighting-shebang.png)
+
+### While a config file is being edited
+
+With auto save enabled, a config file is written while you are still typing it.
+mise cannot read a file that does not parse, so every command fails until it
+does.
+
+Instead of clearing the panels, the extension keeps showing the last state it
+could read. The status bar shows a warning while this is the case, and config
+files that do not parse are marked in the activity bar.
+
+If a command never succeeded, its error is shown as usual. Opening a project
+with a config file that is already broken shows errors.
+
+Running or watching a task is refused while a config file does not parse. You
+get a message pointing at the file, instead of a mise error about a task that
+does not exist.
+
+The kept state is dropped when:
+
+- the file parses again
+- you save it yourself with `Cmd`/`Ctrl`+`S`
+- you reload the configuration from the activity bar, the status bar or the
+  command palette
+
+Reloads the extension does on its own, for example after running a task, do not
+drop it. There is no timeout: the state is kept for as long as the file does not
+parse.

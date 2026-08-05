@@ -23,6 +23,9 @@ in the current project. You can also the list of global tools.
 
 ![img.png](../../../assets/tools-activity-bar.png)
 
+A config file that does not parse is marked in the explorer. Its tools are the
+ones from the last time the file parsed. See [While a config file is being edited](/mise-vscode/reference/misetoml-language-support/#while-a-config-file-is-being-edited).
+
 ## Tools list
 
 Use the list `List all tools` button to list all installed tools.

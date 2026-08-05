@@ -32,11 +32,14 @@ import {
 	allowedFileTaskDirs,
 	idiomaticFiles,
 	renderDepsArray,
+	UNPARSED_CONFIG_DESCRIPTION,
+	UNPARSED_CONFIG_TOOLTIP,
 } from "../utils/miseUtilts";
 import { safeExec } from "../utils/shell";
 import { formatCacheSummary } from "../utils/taskCache";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 import { getTaskDisplayName } from "../utils/taskNames";
+import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private _onDidChangeTreeData: vscode.EventEmitter<
@@ -99,6 +102,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 						currentWorkspaceFolderPath || "",
 						source,
 						tasks,
+						this.miseService.isConfigFileUnparsed(source),
 					),
 			);
 	}
@@ -118,7 +122,8 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 					"mise.tasksProviderError",
 					true,
 				);
-				return [];
+				// say what mise said, with the actions that help for it
+				return buildMiseErrorItems(e, "tasks");
 			}
 		}
 
@@ -277,6 +282,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		taskName: string,
 		{ runFlags = [] }: { runFlags?: string[] } = {},
 	) {
+		if (!(await this.miseService.confirmConfigParses(`run "${taskName}"`))) {
+			return;
+		}
+
 		try {
 			const taskInfo = await this.miseService.getTaskInfo(taskName);
 			if (!taskInfo) {
@@ -304,6 +313,10 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 
 	async watchTask(taskName: string) {
+		if (!(await this.miseService.confirmConfigParses(`watch "${taskName}"`))) {
+			return;
+		}
+
 		const [res1, res2] = await Promise.allSettled([
 			this.miseService.getCurrentTools(),
 			safeExec("which", ["watchexec"]),
@@ -360,7 +373,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 }
 
-type TreeNode = TasksSourceGroupItem | TaskItem;
+type TreeNode = TasksSourceGroupItem | TaskItem | MiseErrorItem;
 
 /** Key of the group a task is shown under in the tree */
 function getTaskGroupSource(task: MiseTask): string {
@@ -376,15 +389,25 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 		readonly currentWorkspaceFolderPath: string,
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
+		unparsed = false,
 	) {
 		const pathShown = displayPathRelativeTo(source, currentWorkspaceFolderPath);
 
 		super(
-			`${pathShown} (${tasks.length} ${tasks.length === 1 ? "task" : "tasks"})`,
+			unparsed
+				? pathShown
+				: `${pathShown} (${tasks.length} ${tasks.length === 1 ? "task" : "tasks"})`,
 		);
 		// stable id so `TreeView.reveal` can match recreated items
 		this.id = source;
-		this.tooltip = `Source: ${source}`;
+		this.tooltip = unparsed ? UNPARSED_CONFIG_TOOLTIP : `Source: ${source}`;
+		if (unparsed) {
+			this.description = UNPARSED_CONFIG_DESCRIPTION;
+			this.iconPath = new vscode.ThemeIcon(
+				"warning",
+				new vscode.ThemeColor("list.warningForeground"),
+			);
+		}
 
 		this.contextValue = source.endsWith(".toml")
 			? "miseTaskGroupEditable"

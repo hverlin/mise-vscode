@@ -30,6 +30,12 @@ export const MISE_OPEN_EXTENSION_SETTINGS = "mise.openExtensionSettings";
 export const MISE_OPEN_TASK_DEFINITION = "mise.openTaskDefinition";
 export const MISE_OPEN_TOOL_DEFINITION = "mise.openToolDefinition";
 export const MISE_RELOAD = "mise.refreshEntry";
+/**
+ * The reload the user asks for, from the sidebar, the status bar or the palette.
+ * `MISE_RELOAD` is also fired internally after tasks, settings and workspace
+ * changes, so only this one drops the state kept while a config does not parse.
+ */
+export const MISE_RELOAD_FROM_USER = "mise.reloadConfiguration";
 export const MISE_REMOVE_TOOL = "mise.removeTool";
 export const MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION =
 	"mise.openBootstrapEntryDefinition";

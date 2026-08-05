@@ -20,6 +20,9 @@ Click on a task to navigate to the file where the task is defined.
 Using the command palette: `cmd|ctrl+shift+p` and search for
 `Mise: Open task definition`.
 
+While a config file does not parse, the task list and the code lens actions
+keep showing the previous tasks. See [While a config file is being edited](/mise-vscode/reference/misetoml-language-support/#while-a-config-file-is-being-edited).
+
 ## Running a task
 
 You have several ways to run a task with the extension:

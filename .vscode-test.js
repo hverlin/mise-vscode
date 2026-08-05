@@ -60,6 +60,25 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "broken-config",
+		files: "src/e2e-tests/broken-config/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "broken-config-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"broken-config-workspace",
+				"global-config.toml",
+			),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "command-injection",
 		files: "src/e2e-tests/command-injection/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "command-injection-workspace"),

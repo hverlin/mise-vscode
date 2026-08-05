@@ -33,6 +33,7 @@ import {
 	flattenJsonSchema,
 	idiomaticFiles,
 	idiomaticFileToTool,
+	isMiseConfigParseError,
 	isToolVersionsFile,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
@@ -228,30 +229,30 @@ export class MiseService {
 	private dedupeCache = createCache({
 		ttl: 0,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
-		this.execMiseCommand(args, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv, retainOnParseError } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv, retainOnParseError }),
 	);
 
 	private cache = createCache({
 		ttl: getCommandTTLCacheSeconds(),
 		storage: { type: "memory" },
-	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
-		this.execMiseCommand(args, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv, retainOnParseError } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv, retainOnParseError }),
 	);
 
 	private slowCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
-		this.execMiseCommand(args, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv, retainOnParseError } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv, retainOnParseError }),
 	);
 
 	private longTTLCache = createCache({
 		ttl: 60,
 		storage: { type: "memory" },
 	})
-		.define("execCmd", ({ args, setMiseEnv } = {}) =>
-			this.execMiseCommand(args, { setMiseEnv }),
+		.define("execCmd", ({ args, setMiseEnv, retainOnParseError } = {}) =>
+			this.execMiseCommand(args, { setMiseEnv, retainOnParseError }),
 		)
 		.define("fetchSchema", async () => {
 			const res = await fetch("https://mise.jdx.dev/schema/mise.json");
@@ -272,12 +273,10 @@ export class MiseService {
 		ttl: 10,
 		storage: { type: "memory" },
 	}).define("getTaskCacheInfo", async () => {
-		const { stdout } = await this.execMiseCommand([
-			"cache",
-			"task",
-			"*",
-			"--json",
-		]);
+		const { stdout } = await this.execMiseCommand(
+			["cache", "task", "*", "--json"],
+			{ retainOnParseError: true },
+		);
 		return stdout ? (JSON.parse(stdout) as MiseTaskCacheInfo[]) : [];
 	});
 
@@ -304,8 +303,8 @@ export class MiseService {
 	private bootstrapCache = createCache({
 		ttl: 30,
 		storage: { type: "memory" },
-	}).define("execCmd", ({ args, setMiseEnv } = {}) =>
-		this.execMiseCommand(args, { setMiseEnv }),
+	}).define("execCmd", ({ args, setMiseEnv, retainOnParseError } = {}) =>
+		this.execMiseCommand(args, { setMiseEnv, retainOnParseError }),
 	);
 
 	async invalidateCache() {
@@ -527,10 +526,120 @@ export class MiseService {
 	}
 
 	/**
+	 * Output of the last successful run of a read-only command, served again
+	 * while a config file is mid-edit. See {@link execMiseCommand}.
+	 */
+	private readonly lastGoodOutput = new Map<
+		string,
+		{ stdout: string; stderr: string }
+	>();
+
+	/** Config files saved by hand and not yet handled by the file watcher */
+	private readonly manualSaves = new Set<string>();
+
+	/**
+	 * Config files that did not parse the last time they were saved. mise does
+	 * not always name the file in its error, so this is recorded where the file
+	 * is parsed rather than read out of the message.
+	 */
+	private readonly unparsedConfigFiles = new Set<string>();
+
+	setConfigFileParses(uri: vscode.Uri, parses: boolean) {
+		const filePath = expandPath(uri.fsPath);
+		if (parses) {
+			this.unparsedConfigFiles.delete(filePath);
+		} else {
+			this.unparsedConfigFiles.add(filePath);
+		}
+	}
+
+	/** Whether this config file failed to parse the last time it was saved */
+	isConfigFileUnparsed(filePath: string): boolean {
+		return this.unparsedConfigFiles.has(expandPath(filePath));
+	}
+
+	private _isServingRetainedState = false;
+
+	private readonly retainedStateEmitter = new vscode.EventEmitter<boolean>();
+
+	/**
+	 * Whether the last reads were answered with the state kept from before a
+	 * config file stopped parsing, rather than with what mise reports now.
+	 */
+	get isServingRetainedState(): boolean {
+		return this._isServingRetainedState;
+	}
+
+	/** Fired when the views start, or stop, showing state kept from before */
+	subscribeToRetainedStateChange(
+		listener: (isRetained: boolean) => void,
+	): vscode.Disposable {
+		return this.retainedStateEmitter.event(listener);
+	}
+
+	private setServingRetainedState(isRetained: boolean) {
+		if (this._isServingRetainedState === isRetained) {
+			return;
+		}
+		this._isServingRetainedState = isRetained;
+		this.retainedStateEmitter.fire(isRetained);
+	}
+
+	private readonly retainedDroppedEmitter = new vscode.EventEmitter<
+		vscode.Uri | undefined
+	>();
+
+	/**
+	 * Fired when what was kept from before has been dropped, so listeners drop
+	 * theirs too. The uri is the config file it was dropped for, or undefined
+	 * when everything was dropped at once.
+	 */
+	subscribeToRetainedStateDropped(
+		listener: (uri: vscode.Uri | undefined) => void,
+	): vscode.Disposable {
+		return this.retainedDroppedEmitter.event(listener);
+	}
+
+	/**
+	 * Drop everything kept from before a config file stopped parsing. Asking for
+	 * a reload means asking for the state as it is now, errors included.
+	 */
+	forgetRetainedState(uri?: vscode.Uri) {
+		this.lastGoodOutput.clear();
+		this.setServingRetainedState(false);
+		this.retainedDroppedEmitter.fire(uri);
+	}
+
+	/**
+	 * Saving by hand is deliberate, unlike the auto save that lands in the middle
+	 * of typing: the state kept to survive a half-written config is dropped, so
+	 * the next read reports what the file says now, errors included.
+	 */
+	notifyManualSave(uri: vscode.Uri) {
+		this.manualSaves.add(expandPath(uri.fsPath));
+		this.forgetRetainedState(uri);
+	}
+
+	/** Whether this change comes from a save the user asked for */
+	consumeManualSave(uri: vscode.Uri): boolean {
+		return this.manualSaves.delete(expandPath(uri.fsPath));
+	}
+
+	/**
 	 * Run mise and return its output. Arguments are passed as an argv array and
 	 * never go through a shell, they may contain any character.
+	 *
+	 * @param retainOnParseError only for commands that read state. When a config
+	 * file does not parse, every mise command fails, which with auto save on
+	 * happens on nearly every keystroke. Read-only commands then serve their
+	 * previous output so the views keep showing the last state the machine was
+	 * actually in, instead of emptying until the file parses again. Any other
+	 * failure still throws, so real errors are never masked.
 	 */
-	async execMiseCommand(args: string[], { setMiseEnv = true } = {}) {
+	async execMiseCommand(
+		args: string[],
+		{ setMiseEnv = true, retainOnParseError = false } = {},
+	) {
 		const miseBinaryPath = this.getMiseBinaryPath();
 		ensureMiseCommand(miseBinaryPath);
 
@@ -541,12 +650,29 @@ export class MiseService {
 			cwd: this.getCurrentWorkspaceFolderPath(),
 		});
 
+		const key = miseArgs.join(" ");
 		if (code !== 0) {
-			throw new Error(
+			const error = new Error(
 				`Command failed: mise ${miseArgs.join(" ")}\n${stderr}`.trim(),
 			);
+
+			const previous = this.lastGoodOutput.get(key);
+			if (retainOnParseError && previous && isMiseConfigParseError(error)) {
+				logger.debug(
+					`Config does not parse, serving the previous output of: mise ${key}`,
+				);
+				this.setServingRetainedState(true);
+				return previous;
+			}
+
+			throw error;
 		}
 
+		if (retainOnParseError) {
+			this.lastGoodOutput.set(key, { stdout, stderr });
+			// the config parses again, so what the views show is current
+			this.setServingRetainedState(false);
+		}
 		return { stdout, stderr };
 	}
 
@@ -705,6 +831,7 @@ export class MiseService {
 		try {
 			const { stdout } = await this.cache.execCmd({
 				args: await this.buildTasksLsArgs({ includeHidden }),
+				retainOnParseError: true,
 			});
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
@@ -725,6 +852,7 @@ export class MiseService {
 
 		const { stdout } = await this.slowCache.execCmd({
 			args: await this.buildTasksLsArgs({ includeHidden: true }),
+			retainOnParseError: true,
 		});
 		return JSON.parse(stdout);
 	}
@@ -906,6 +1034,8 @@ export class MiseService {
 					"--offline",
 					"--json",
 				],
+				// the tool decorations re-read this uncached on every change
+				retainOnParseError: true,
 			});
 
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
@@ -939,6 +1069,7 @@ export class MiseService {
 		try {
 			const { stdout } = await this.cache.execCmd({
 				args: ["ls", "--offline", "--json"],
+				retainOnParseError: true,
 			});
 			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
 				return (tools as MiseTool[]).map((tool) => {
@@ -977,7 +1108,10 @@ export class MiseService {
 			? await this.dedupeCache.execCmd({
 					args: ["outdated", "--bump", "--json"],
 				})
-			: await this.cache.execCmd({ args: ["outdated", "--json"] });
+			: await this.cache.execCmd({
+					args: ["outdated", "--json"],
+					retainOnParseError: true,
+				});
 
 		if (!stdout) {
 			return [];
@@ -1041,6 +1175,7 @@ export class MiseService {
 		try {
 			const { stdout } = await this.cache.execCmd({
 				args: ["env", "--json"],
+				retainOnParseError: true,
 			});
 			return Object.entries(JSON.parse(stdout)).map(([key, value]) => ({
 				name: key,
@@ -1068,6 +1203,7 @@ export class MiseService {
 		}
 
 		const { stdout } = await this.cache.execCmd({
+			retainOnParseError: true,
 			args: [
 				...(configRootPath ? ["-C", configRootPath] : []),
 				"env",
@@ -1176,6 +1312,35 @@ export class MiseService {
 	}
 
 	/**
+	 * Running anything against a config file that does not parse fails deep in
+	 * mise, with a message about the task not existing rather than about the
+	 * file. The views still list what was there before it broke, so this is easy
+	 * to hit: say what is actually wrong, and offer the file.
+	 *
+	 * Returns false when the caller should not run.
+	 */
+	async confirmConfigParses(action: string): Promise<boolean> {
+		if (!this.isServingRetainedState) {
+			return true;
+		}
+
+		const openFile = "Open config file";
+		const broken = [...this.unparsedConfigFiles];
+		const selection = await vscode.window.showWarningMessage(
+			`Cannot ${action}: a mise config file does not parse.`,
+			...(broken.length ? [openFile] : []),
+		);
+
+		if (selection === openFile && broken[0]) {
+			const document = await vscode.workspace.openTextDocument(
+				vscode.Uri.file(broken[0]),
+			);
+			await vscode.window.showTextDocument(document);
+		}
+		return false;
+	}
+
+	/**
 	 * `mise run [runFlags] <task> [args]`. Flags of `mise run` itself have to
 	 * precede the task name, everything after it is passed to the task.
 	 */
@@ -1183,6 +1348,10 @@ export class MiseService {
 		taskName: string,
 		{ runFlags = [], args = [] }: { runFlags?: string[]; args?: string[] } = {},
 	): Promise<void> {
+		if (!(await this.confirmConfigParses(`run "${taskName}"`))) {
+			return;
+		}
+
 		const terminal = this.getOrCreateTerminal(`run ${taskName}`);
 		terminal.show();
 
@@ -1197,6 +1366,10 @@ export class MiseService {
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {
+		if (!(await this.confirmConfigParses(`watch "${taskName}"`))) {
+			return;
+		}
+
 		const terminalName = `watch ${taskName}`;
 		const previousTerminal = this.terminals.get(terminalName);
 		if (previousTerminal) {
@@ -1322,6 +1495,7 @@ export class MiseService {
 
 		const { stdout } = await this.cache.execCmd({
 			args: ["config", "ls", "--json"],
+			retainOnParseError: true,
 		});
 		return JSON.parse(stdout) as Array<{
 			path: string;
@@ -1999,6 +2173,7 @@ export class MiseService {
 		try {
 			const { stdout } = await this.bootstrapCache.execCmd({
 				args: ["bootstrap", "status", "--json"],
+				retainOnParseError: true,
 			});
 			return JSON.parse(stdout) as MiseBootstrapStatus;
 		} catch (error) {

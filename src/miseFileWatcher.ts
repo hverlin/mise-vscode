@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
@@ -115,12 +116,45 @@ export class MiseFileWatcher {
 		logger.debug(patterns.map((p) => [p.baseUri.fsPath, p.pattern]));
 	}
 
+	/**
+	 * A config file saved mid-edit does not parse, and mise refuses to answer
+	 * anything until it does. Reloading then would throw the current state away
+	 * to replace it with nothing, so the change is ignored until the file parses
+	 * again. With auto save on this is the common case, not the exception.
+	 */
+	private async isMidEdit(uri: vscode.Uri): Promise<boolean> {
+		if (!uri.fsPath.endsWith(".toml")) {
+			return false;
+		}
+
+		try {
+			const document = await vscode.workspace.openTextDocument(uri);
+			parse(document.getText());
+			this.miseService.setConfigFileParses(uri, true);
+			return false;
+		} catch (error) {
+			// a deleted file cannot be opened: that is a real change, not an edit
+			if (error instanceof Error && error.message.includes("cannot open")) {
+				return false;
+			}
+			this.miseService.setConfigFileParses(uri, false);
+			logger.debug(`Ignoring ${uri.fsPath} until it parses again`);
+			return true;
+		}
+	}
+
 	private async handleFileChange(uri: vscode.Uri) {
 		if (!isMiseExtensionEnabled()) {
 			return;
 		}
 
 		try {
+			// a save the user asked for is always handled: they want to see what
+			// their file does now, even when the answer is an error
+			const manual = this.miseService.consumeManualSave(uri);
+			if (!manual && (await this.isMidEdit(uri))) {
+				return;
+			}
 			await this.onConfigChangeCallback(uri);
 		} catch (error) {
 			logger.info(`Error while handling file change ${error}`);
