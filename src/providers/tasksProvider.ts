@@ -39,6 +39,10 @@ import {
 } from "../utils/miseUtilts";
 import { safeExec } from "../utils/shell";
 import { formatCacheSummary } from "../utils/taskCache";
+import {
+	getTaskDescription,
+	getTaskPickDescription,
+} from "../utils/taskDisplay";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
 import {
 	getTaskConfigRoot,
@@ -593,7 +597,7 @@ class TaskItem extends vscode.TreeItem {
 			.map(([key, value]) => `${key}: ${value}`)
 			.join("\n");
 
-		this.description = (task.description || task.run?.join(" ")) ?? "";
+		this.description = getTaskDescription(task);
 
 		if (fileTaskIconUri) {
 			this.resourceUri = fileTaskIconUri;
@@ -627,6 +631,25 @@ function taskNameFromArgument(
 		return taskName;
 	}
 	return taskName instanceof TaskItem ? taskName.task.name : taskName.name;
+}
+
+/** Ask the user to pick a task, listing every task with its description */
+async function pickTaskName(
+	taskProvider: MiseTasksProvider,
+	placeHolder: string,
+): Promise<string | undefined> {
+	const tasks = await taskProvider.getTasks();
+	const workspaceRoot = taskProvider
+		.getMiseService()
+		.getCurrentWorkspaceFolderPath();
+	const picked = await vscode.window.showQuickPick(
+		tasks.map((task) => ({
+			label: task.name,
+			description: getTaskPickDescription(task, workspaceRoot),
+		})),
+		{ placeHolder, matchOnDescription: true },
+	);
+	return picked?.label;
 }
 
 /** Task name from a command argument, asking the user when there is none */
@@ -679,10 +702,7 @@ export function registerTasksCommands(
 
 				let name = taskName;
 				if (!name) {
-					name = await vscode.window.showQuickPick(
-						taskProvider.getTasksNames(),
-						{ placeHolder: "Select a task to run" },
-					);
+					name = await pickTaskName(taskProvider, "Select a task to run");
 					if (!name) {
 						return;
 					}
@@ -699,10 +719,7 @@ export function registerTasksCommands(
 		// search icon in the tasks view title: select the picked task in the
 		// panel and open its definition (without running it)
 		vscode.commands.registerCommand(MISE_SEARCH_TASKS, async () => {
-			const taskName = await vscode.window.showQuickPick(
-				taskProvider.getTasksNames(),
-				{ placeHolder: "Search for a task" },
-			);
+			const taskName = await pickTaskName(taskProvider, "Search for a task");
 			if (!taskName) {
 				return;
 			}
@@ -731,10 +748,7 @@ export function registerTasksCommands(
 
 				let name = taskName;
 				if (!name) {
-					name = await vscode.window.showQuickPick(
-						taskProvider.getTasksNames(),
-						{ placeHolder: "Select a task to watch" },
-					);
+					name = await pickTaskName(taskProvider, "Select a task to watch");
 				}
 
 				if (typeof name !== "string") {
