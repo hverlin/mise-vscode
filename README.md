@@ -104,7 +104,9 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 
 ### Snippets
 
-- 📝 Snippets to create tasks in `mise.toml` and task files
+- 📝 `mise-task` snippets to create tasks in `mise.toml` and task files. They
+  are only suggested in the files mise loads, and only where a task can be
+  inserted. Set `mise.enableSnippets` to `false` to turn them off.
 
 ### Integration with VSCode tasks (`launch.json`)
 

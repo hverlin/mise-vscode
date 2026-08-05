@@ -275,7 +275,7 @@ Show the tools and environment variables of each [monorepo](https://mise.jdx.dev
 
 Show a code lens on each `[bootstrap.*]` section reporting how many of its entries are not in their desired state.
 
-Requires `#mise.enableCodeLens#` and mise 2026.7.16+. Reading the status runs `mise bootstrap status`, which inspects the machine (installed packages, cloned repos, macOS defaults, Docker Compose projects); the result is cached and only read for files that declare a bootstrap section.
+Requires `mise.enableCodeLens` and mise 2026.7.16+. Reading the status runs `mise bootstrap status`, which inspects the machine (installed packages, cloned repos, macOS defaults, Docker Compose projects); the result is cached and only read for files that declare a bootstrap section.
 
 ---
 
@@ -316,6 +316,16 @@ Update terminal environment variables automatically based on the mise configurat
 - **Default:** `true`
 
 Enable Tera auto-completion in `mise.toml` files.
+
+---
+
+##### `mise.enableSnippets`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks.
+
+They are also hidden by `editor.snippetSuggestions` set to `none` and by `editor.suggest.showSnippets` set to `false`, which apply to every extension.
 
 ---
 

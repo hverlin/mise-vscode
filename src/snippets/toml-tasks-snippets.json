@@ -1,6 +1,6 @@
 {
 	"tomlTask": {
-		"prefix": "task",
+		"prefix": "mise-task",
 		"description": "Create a new mise task with common options",
 		"body": [
 			"[tasks.${1:my_toml_task}]",
@@ -9,7 +9,7 @@
 		]
 	},
 	"tomlTaskArray": {
-		"prefix": "task_array",
+		"prefix": "mise-task-array",
 		"description": "Create a mise task with multiple commands",
 		"body": [
 			"[tasks.${1:my_task}]",
@@ -20,22 +20,8 @@
 			"$0"
 		]
 	},
-	"tomlTaskSimple": {
-		"prefix": "tasks",
-		"description": "Create a simple mise task",
-		"body": ["[tasks.${1:taskname}]", "run = \"echo 'running...'\"", "$0"]
-	},
-	"tomlTaskTemplate": {
-		"prefix": "task_template",
-		"description": "Create a reusable task template that tasks can extend",
-		"body": [
-			"[task_templates.${1:my:template}]",
-			"${2:description = '${3:Template description}'\n}${4:tools = { ${5:node} = \"${6:latest}\" }\n}run = \"echo 'running...'\"",
-			"$0"
-		]
-	},
 	"tomlTaskScript": {
-		"prefix": "task_script",
+		"prefix": "mise-task-script",
 		"description": "Create a mise task with multiline script",
 		"body": [
 			"[tasks.${1:my_script_task}]",
@@ -47,8 +33,30 @@
 			"$0"
 		]
 	},
+	"tomlTaskUsage": {
+		"prefix": "mise-task-usage",
+		"description": "Create a mise task with arguments defined with the usage spec",
+		"body": [
+			"[tasks.${1:my_task}]",
+			"${2:description = '${3:Task description}'\n}usage = '''",
+			"arg \"<${4:file}>\" help=\"${5:File to use}\"",
+			"flag \"-v --verbose\" help=\"Enable verbose output\"",
+			"'''",
+			"run = 'echo \"\\${usage_$4?}\"'",
+			"$0"
+		]
+	},
+	"tomlTaskTemplate": {
+		"prefix": "mise-task-template",
+		"description": "Create a reusable task template that tasks can extend",
+		"body": [
+			"[task_templates.${1:my:template}]",
+			"${2:description = '${3:Template description}'\n}${4:tools = { ${5:node} = \"${6:latest}\" }\n}run = \"echo 'running...'\"",
+			"$0"
+		]
+	},
 	"nodeTask": {
-		"prefix": "node_task",
+		"prefix": "mise-task-node",
 		"description": "Create a mise task with nodejs",
 		"body": [
 			"[tasks.${1:my_node_task}]",
@@ -60,34 +68,8 @@
 			"$0"
 		]
 	},
-	"denoTask": {
-		"prefix": "deno_task",
-		"description": "Create a mise task with deno",
-		"body": [
-			"[tasks.${1:my_deno_task}]",
-			"${2:description = '${3:Task description}'\n}run = '''",
-			"#!/usr/bin/env -S deno run",
-			"",
-			"${4:console.log('running...')}",
-			"'''",
-			"$0"
-		]
-	},
-	"bunTask": {
-		"prefix": "bun_task",
-		"description": "Create a mise task with bun",
-		"body": [
-			"[tasks.${1:my_bun_task}]",
-			"${2:description = '${3:Task description}'\n}run = '''",
-			"#!/usr/bin/env bun",
-			"",
-			"${4:import { $ \\} from \"bun\";\nawait $`echo 'running...'`}",
-			"'''",
-			"$0"
-		]
-	},
 	"pythonTask": {
-		"prefix": "python_task",
+		"prefix": "mise-task-python",
 		"description": "Create a mise task with python",
 		"body": [
 			"[tasks.${1:my_python_task}]",
@@ -100,7 +82,7 @@
 		]
 	},
 	"uvTask": {
-		"prefix": "uv_run_task",
+		"prefix": "mise-task-uv",
 		"description": "Create a mise task with uv",
 		"body": [
 			"[tasks.${1:my_uv_task}]",
@@ -113,8 +95,34 @@
 			"$0"
 		]
 	},
+	"denoTask": {
+		"prefix": "mise-task-deno",
+		"description": "Create a mise task with deno",
+		"body": [
+			"[tasks.${1:my_deno_task}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env -S deno run",
+			"",
+			"${4:console.log('running...')}",
+			"'''",
+			"$0"
+		]
+	},
+	"bunTask": {
+		"prefix": "mise-task-bun",
+		"description": "Create a mise task with bun",
+		"body": [
+			"[tasks.${1:my_bun_task}]",
+			"${2:description = '${3:Task description}'\n}run = '''",
+			"#!/usr/bin/env bun",
+			"",
+			"${4:import { $ \\} from \"bun\";\nawait $`echo 'running...'`}",
+			"'''",
+			"$0"
+		]
+	},
 	"rubyTask": {
-		"prefix": "ruby_task",
+		"prefix": "mise-task-ruby",
 		"description": "Create a mise task with ruby",
 		"body": [
 			"[tasks.${1:my_ruby_task}]",
@@ -126,21 +134,8 @@
 			"$0"
 		]
 	},
-	"tomlTaskUsage": {
-		"prefix": "task_usage",
-		"description": "Create a mise task with arguments defined with the usage spec",
-		"body": [
-			"[tasks.${1:my_task}]",
-			"${2:description = '${3:Task description}'\n}usage = '''",
-			"arg \"<${4:file}>\" help=\"${5:File to use}\"",
-			"flag \"-v --verbose\" help=\"Enable verbose output\"",
-			"'''",
-			"run = 'echo \"\\${usage_$4?}\"'",
-			"$0"
-		]
-	},
 	"tomlTaskFull": {
-		"prefix": "task_full",
+		"prefix": "mise-task-full",
 		"description": "Create a mise task with all possible options",
 		"body": [
 			"[tasks.${1:task_with_all_options}]",

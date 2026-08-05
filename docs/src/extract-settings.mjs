@@ -29,6 +29,15 @@ access the extension settings.
 
 ## Settings`;
 
+/**
+ * `#editor.snippetSuggestions#` links to another setting in the VS Code
+ * settings UI, the docs show the setting name instead. The markers are dropped
+ * whether or not they are already inside a code span.
+ */
+function renderSettingLinks(description) {
+	return description.replace(/`?#([\w.-]+)#`?/g, "`$1`");
+}
+
 function generateWikiContent(packageJson) {
 	const settings = packageJson.contributes.configuration.properties;
 	const settingsEntries = Object.entries(settings).sort(
@@ -56,7 +65,7 @@ function generateWikiContent(packageJson) {
 			content += `- **Default:** \`${defaultValue}\`\n\n`;
 		}
 
-		content += `${setting.markdownDescription}\n\n`;
+		content += `${renderSettingLinks(setting.markdownDescription)}\n\n`;
 
 		if (setting.items?.enum) {
 			content += "**Available options:**\n\n";

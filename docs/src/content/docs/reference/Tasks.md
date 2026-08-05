@@ -114,6 +114,21 @@ New file tasks are created with a working example of
 flag, argument with a default value, custom completion, and the corresponding
 `$usage_*` variables in the script).
 
+### Using snippets
+
+Type `mise-task` in a mise configuration file to get snippets for the different
+shapes a task can take: `mise-task`, `mise-task-array`, `mise-task-script`,
+`mise-task-usage`, `mise-task-template`, `mise-task-full`, and one per language
+(`mise-task-node`, `mise-task-python`, `mise-task-uv`, `mise-task-deno`,
+`mise-task-bun`, `mise-task-ruby`). In a file task, `mise-task` inserts a
+`#MISE` configuration block and `mise-task-usage` a `#USAGE` argument block.
+
+The snippets are only suggested in the files mise loads, which are the
+[configuration files](https://mise.jdx.dev/configuration.html) and the scripts
+in a [task directory](https://mise.jdx.dev/tasks/file-tasks.html), and only
+where a task can be inserted: at the start of a line, outside of strings,
+arrays and comments. Set `mise.enableSnippets` to `false` to turn them off.
+
 ## Task dependencies
 
 You can visualize the dependencies of a task by using the `Mise: Visualize Tasks Dependencies` command.
@@ -178,8 +193,7 @@ particularly useful in a [monorepo](#monorepo-tasks). It provides:
   entry, in the same file or in a parent config file
 - **Find references** from a template declaration to every task extending it,
   anywhere in the workspace
-- Task templates in the outline view, and `task_template` / `task_extends`
-  snippets
+- Task templates in the outline view, and a `mise-task-template` snippet
 
 Task hovers show the template a task extends. The fields shown for the task
 itself are the ones mise resolved, i.e. after the template has been merged in.

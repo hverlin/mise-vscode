@@ -1,0 +1,13 @@
+# Fixture for the snippet suite. `mise.<env>.toml` files are only loaded with
+# MISE_ENV=<env>, so this one is a mise config file by name without changing the
+# tasks of the workspace.
+
+[tasks.example]
+run = '''
+echo "inside a multiline string"
+
+'''
+depends = [
+  "echo-hello",
+
+]

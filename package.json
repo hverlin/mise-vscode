@@ -178,16 +178,6 @@
         ]
       }
     ],
-    "snippets": [
-      {
-        "language": "toml",
-        "path": "./snippets/toml-tasks-snippets.json"
-      },
-      {
-        "language": "shellscript",
-        "path": "./snippets/file-tasks-snippets.json"
-      }
-    ],
     "configurationDefaults": {
       "[toml]": {
         "editor.quickSuggestions": {
@@ -446,6 +436,13 @@
           "title": "Enable Tera auto-completion",
           "default": true,
           "markdownDescription": "Enable Tera auto-completion in `mise.toml` files."
+        },
+        "mise.enableSnippets": {
+          "order": 14.1,
+          "type": "boolean",
+          "title": "Enable snippets",
+          "default": true,
+          "markdownDescription": "Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks.\n\nThey are also hidden by `#editor.snippetSuggestions#` set to `none` and by `#editor.suggest.showSnippets#` set to `false`, which apply to every extension."
         },
         "mise.automaticallyTrustMiseConfigFiles": {
           "order": 15,

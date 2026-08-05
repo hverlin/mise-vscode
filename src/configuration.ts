@@ -30,6 +30,7 @@ export const CONFIGURATION_FLAGS = {
 	updateEnvAutomaticallyIncludePath: "updateEnvAutomaticallyIncludePath",
 	updateOpenTerminalsEnvAutomatically: "updateOpenTerminalsEnvAutomatically",
 	teraAutoCompletion: "teraAutoCompletion",
+	enableSnippets: "enableSnippets",
 	resolveMonorepoProjectConfigs: "resolveMonorepoProjectConfigs",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
@@ -278,6 +279,10 @@ export const shouldShowNotificationIfMissingTools = () => {
 
 export const isTeraAutoCompletionEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.teraAutoCompletion, true);
+};
+
+export const areSnippetsEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableSnippets, true);
 };
 
 export const getCommandTTLCacheSeconds = () => {

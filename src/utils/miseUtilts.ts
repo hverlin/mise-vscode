@@ -332,6 +332,61 @@ export const isMiseTomlFile = (filename: string) => {
 	);
 };
 
+/** `mise.toml`, `.mise.local.toml`, `config.dev.toml`, ... */
+const MISE_CONFIG_NAME = /^\.?mise(\.[^.]+)*\.toml$/;
+const MISE_CONFIG_DIR_NAME = /^config(\.[^.]+)*\.toml$/;
+
+const pathSegments = (filePath: string) =>
+	filePath.split(/[\\/]/).filter(Boolean);
+
+/**
+ * Whether a path is one of the config files mise loads (see {@link misePatterns}).
+ *
+ * Stricter than {@link isMiseTomlFile}, which counts any `config.toml`: here it
+ * only counts inside a `mise` directory, so a `.cargo/config.toml` is not taken
+ * for a mise config.
+ */
+export function isMiseConfigPath(filePath: string): boolean {
+	const segments = pathSegments(filePath);
+	const fileName = segments.at(-1) ?? "";
+	const parent = segments.at(-2) ?? "";
+
+	if (MISE_CONFIG_NAME.test(fileName)) {
+		return true;
+	}
+
+	return (
+		MISE_CONFIG_DIR_NAME.test(fileName) &&
+		(parent === "mise" || parent === ".mise")
+	);
+}
+
+/**
+ * Whether a path sits in one of the directories mise loads file tasks from
+ * ({@link allowedFileTaskDirs}), at any depth: mise supports nested file tasks.
+ *
+ * Directories added through `task_config.includes` are not matched here; those
+ * files are only known once mise reports them as a task source.
+ */
+export function isFileTaskPath(filePath: string): boolean {
+	const segments = pathSegments(filePath);
+	const taskDirs = allowedFileTaskDirs.map((dir) => dir.split("/"));
+
+	// the last segment is the file itself, its directory has to match
+	for (let i = 0; i < segments.length - 1; i++) {
+		for (const dir of taskDirs) {
+			if (
+				i + dir.length <= segments.length - 1 &&
+				dir.every((part, offset) => segments[i + offset] === part)
+			) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 /**
  * Whether a mise command failed only because a config file does not parse.
  *

@@ -27,6 +27,7 @@ import {
 	MISE_VISUALIZE_TASKS_DEPS,
 } from "./commands";
 import {
+	areSnippetsEnabled,
 	CONFIGURATION_FLAGS,
 	enableAutoConfiguration,
 	getConfiguredBinPath,
@@ -57,6 +58,7 @@ import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentCon
 import { MiseTomlTaskSymbolProvider } from "./providers/MiseTomlTaskSymbolProvider";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
+import { MiseSnippetProvider } from "./providers/miseSnippetProvider";
 import {
 	createTeraHoverProvider,
 	TeraCompletionProvider,
@@ -716,6 +718,25 @@ export class MiseExtension {
 			vscode.languages.registerHoverProvider(
 				{ scheme: "file", language: "shellscript" },
 				new UsageHoverProvider(this.miseService),
+			),
+		);
+
+		const snippetProvider = new MiseSnippetProvider({
+			isEnabled: () => isMiseExtensionEnabled() && areSnippetsEnabled(),
+			isTrackedByMise: async (document) =>
+				(await this.miseService.getCurrentConfigFiles()).includes(
+					expandPath(document.uri.fsPath),
+				),
+		});
+
+		context.subscriptions.push(
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
+				snippetProvider,
+			),
+			vscode.languages.registerCompletionItemProvider(
+				{ scheme: "file", language: "shellscript" },
+				snippetProvider,
 			),
 		);
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
 	getWebsiteForTool,
+	isFileTaskPath,
 	isMiseConfigParseError,
+	isMiseConfigPath,
 	parseMiseError,
 	renderDepsArray,
 	toWebUrl,
@@ -300,5 +302,67 @@ in \`settings.jobs\``),
 			"unknown",
 		);
 		expect(parseMiseError(undefined).kind).toBe("unknown");
+	});
+});
+
+describe("isMiseConfigPath", () => {
+	it("matches the config file names mise loads", () => {
+		for (const path of [
+			"/home/me/project/mise.toml",
+			"/home/me/project/.mise.toml",
+			"/home/me/project/mise.local.toml",
+			"/home/me/project/.mise.local.toml",
+			"/home/me/project/mise.dev.toml",
+			"/home/me/project/mise.dev.local.toml",
+			"/home/me/project/mise/config.toml",
+			"/home/me/project/.mise/config.toml",
+			"/home/me/project/.config/mise/config.toml",
+			"/home/me/project/.config/mise/config.dev.local.toml",
+			"C:\\Users\\me\\project\\mise.toml",
+		]) {
+			expect(isMiseConfigPath(path)).toBe(true);
+		}
+	});
+
+	it("does not match other toml files", () => {
+		for (const path of [
+			"/home/me/project/Cargo.toml",
+			"/home/me/project/task-references.toml",
+			// a config.toml only counts inside a mise directory
+			"/home/me/project/.cargo/config.toml",
+			"/home/me/project/config.toml",
+			"/home/me/project/mise.json",
+			"/home/me/project/my-mise.toml",
+		]) {
+			expect(isMiseConfigPath(path)).toBe(false);
+		}
+	});
+});
+
+describe("isFileTaskPath", () => {
+	it("matches files in the directories mise loads tasks from", () => {
+		for (const path of [
+			"/home/me/project/mise-tasks/build",
+			"/home/me/project/.mise-tasks/build.sh",
+			"/home/me/project/mise/tasks/build",
+			"/home/me/project/.mise/tasks/build",
+			"/home/me/project/.config/mise/tasks/build",
+			// mise supports nested file tasks
+			"/home/me/project/mise-tasks/ci/lint",
+			"C:\\Users\\me\\project\\mise-tasks\\build",
+		]) {
+			expect(isFileTaskPath(path)).toBe(true);
+		}
+	});
+
+	it("does not match files outside of them", () => {
+		for (const path of [
+			"/home/me/project/build.sh",
+			"/home/me/project/tasks/build",
+			"/home/me/project/scripts/mise-tasks",
+			"/home/me/project/mise/build",
+		]) {
+			expect(isFileTaskPath(path)).toBe(false);
+		}
 	});
 });

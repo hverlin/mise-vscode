@@ -1,7 +1,6 @@
 {
 	"mise File Task Configuration": {
 		"prefix": "mise-task",
-		"scope": "shellscript",
 		"description": "Insert a file task configuration block",
 		"body": [
 			"#MISE alias=\"${1:taskname}\"",
@@ -14,7 +13,6 @@
 	},
 	"mise File Task Usage Spec": {
 		"prefix": "mise-task-usage",
-		"scope": "shellscript",
 		"description": "Define file task arguments with the usage spec",
 		"body": [
 			"#USAGE arg \"<${1:file}>\" help=\"${2:File to use}\"",
