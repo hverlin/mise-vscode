@@ -1319,7 +1319,7 @@
     "e2e-tests": "vscode-test"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.10",
+    "@biomejs/biome": "2.5.5",
     "@rsbuild/core": "^1.7.6",
     "@rsbuild/plugin-react": "^1.4.6",
     "@rslib/core": "^0.19.6",
