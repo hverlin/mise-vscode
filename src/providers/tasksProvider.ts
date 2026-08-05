@@ -7,6 +7,8 @@ import {
 	MISE_CREATE_TOML_TASK,
 	MISE_CREATE_TOML_TASK_TOP_MENU,
 	MISE_EXPLAIN_TASK_CACHE,
+	MISE_GROUP_TASKS_BY_PROJECT,
+	MISE_GROUP_TASKS_BY_SOURCE,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
 	MISE_RUN_TASK,
@@ -38,7 +40,13 @@ import {
 import { safeExec } from "../utils/shell";
 import { formatCacheSummary } from "../utils/taskCache";
 import type { MiseTaskInfo } from "../utils/taskInfoParser";
-import { getTaskDisplayName } from "../utils/taskNames";
+import {
+	getTaskConfigRoot,
+	getTaskDisplayName,
+	getTaskProjectKey,
+	getTaskProjectLabel,
+	getTaskProjectRootPath,
+} from "../utils/taskNames";
 import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
 
 export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
@@ -49,7 +57,50 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		TreeNode | undefined | null | void
 	> = this._onDidChangeTreeData.event;
 
+	private grouping: TaskTreeGrouping = "source";
+	private preferredGrouping: TaskTreeGrouping | undefined;
+	private hasMultipleProjects = false;
+
 	constructor(private miseService: MiseService) {}
+
+	setGrouping(grouping: TaskTreeGrouping): void {
+		if (grouping === "project" && !this.hasMultipleProjects) {
+			return;
+		}
+		this.preferredGrouping = grouping;
+		const effectiveGrouping = this.getEffectiveGrouping();
+		if (this.grouping === effectiveGrouping) {
+			return;
+		}
+		this.grouping = effectiveGrouping;
+		this.updateGroupingContext();
+		this.refresh();
+	}
+
+	private getEffectiveGrouping(): TaskTreeGrouping {
+		return this.hasMultipleProjects
+			? (this.preferredGrouping ?? "project")
+			: "source";
+	}
+
+	private updateGroupingAvailability(tasks: MiseTask[]) {
+		this.hasMultipleProjects = new Set(tasks.map(getTaskProjectKey)).size > 1;
+		this.grouping = this.getEffectiveGrouping();
+		this.updateGroupingContext();
+	}
+
+	private updateGroupingContext() {
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.tasksCanGroupByProject",
+			this.hasMultipleProjects,
+		);
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.tasksGroupByProject",
+			this.hasMultipleProjects && this.grouping === "project",
+		);
+	}
 
 	refresh(): void {
 		this._onDidChangeTreeData.fire();
@@ -72,39 +123,70 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			this.miseService.getMiseConfigFiles(),
 		]);
 
-		const groupedTasks = this.groupTasksBySource(tasks);
-		for (const configFile of configFiles) {
-			if (idiomaticFiles.has(path.basename(configFile.path))) {
-				continue;
-			}
+		this.updateGroupingAvailability(tasks);
+		const groupedTasks = this.groupTasks(tasks, currentWorkspaceFolderPath);
+		// In project mode there is no unambiguous config file to create a task
+		// in, so only source mode adds empty config-file groups.
+		if (this.grouping === "source") {
+			for (const configFile of configFiles) {
+				if (idiomaticFiles.has(path.basename(configFile.path))) {
+					continue;
+				}
 
-			// only offer empty groups for toml files (tasks can be created there)
-			if (!configFile.path.endsWith(".toml")) {
-				continue;
-			}
+				// only offer empty groups for toml files (tasks can be created there)
+				if (!configFile.path.endsWith(".toml")) {
+					continue;
+				}
 
-			const expandedPath = expandPath(configFile.path);
-			const isRelativeToWorkspace = expandedPath.startsWith(
-				currentWorkspaceFolderPath || "",
-			);
-			if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
-				groupedTasks[expandedPath] = [];
+				const expandedPath = expandPath(configFile.path);
+				const isRelativeToWorkspace = expandedPath.startsWith(
+					currentWorkspaceFolderPath || "",
+				);
+				if (!groupedTasks[expandedPath] && isRelativeToWorkspace) {
+					groupedTasks[expandedPath] = [];
+				}
 			}
 		}
 
+		const projectRoot =
+			this.grouping === "project" && currentWorkspaceFolderPath
+				? expandPath(currentWorkspaceFolderPath)
+				: undefined;
+		const hasMonorepoRootGroup = Boolean(
+			projectRoot &&
+				groupedTasks[projectRoot]?.some(
+					(task) => getTaskConfigRoot(task) === "",
+				),
+		);
 		return Object.entries(groupedTasks)
-			.sort(([sourceA], [sourceB]) =>
-				compareSourcePaths(sourceA, sourceB, currentWorkspaceFolderPath),
-			)
-			.map(
-				([source, tasks]) =>
-					new TasksSourceGroupItem(
-						currentWorkspaceFolderPath || "",
-						source,
-						tasks,
-						this.miseService.isConfigFileUnparsed(source),
-					),
-			);
+			.sort(([sourceA], [sourceB]) => {
+				// A project group is a directory, whereas source mode normally sorts
+				// files within it. Give the monorepo-root directory an explicit rank.
+				if (projectRoot && hasMonorepoRootGroup) {
+					const isRootA = expandPath(sourceA) === projectRoot;
+					const isRootB = expandPath(sourceB) === projectRoot;
+					if (isRootA !== isRootB) {
+						return isRootA ? -1 : 1;
+					}
+				}
+				return compareSourcePaths(sourceA, sourceB, currentWorkspaceFolderPath);
+			})
+			.map(([source, tasks]) => {
+				const isProjectGroup =
+					this.grouping === "project" && Boolean(currentWorkspaceFolderPath);
+				const projectLabel =
+					isProjectGroup && tasks[0]
+						? getTaskProjectLabel(tasks[0], currentWorkspaceFolderPath)
+						: undefined;
+				return new TasksSourceGroupItem(
+					currentWorkspaceFolderPath || "",
+					source,
+					tasks,
+					this.miseService.isConfigFileUnparsed(source),
+					isProjectGroup,
+					projectLabel,
+				);
+			});
 	}
 
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
@@ -149,7 +231,11 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 	async getParent(element: TreeNode): Promise<TreeNode | undefined> {
 		if (element instanceof TaskItem) {
-			const source = getTaskGroupSource(element.task);
+			const source = getTaskGroupSource(
+				element.task,
+				this.grouping,
+				this.miseService.getCurrentWorkspaceFolderPath(),
+			);
 			const groups = await this.getTasksSourceGroupItems();
 			return groups.find((group) => group.source === source);
 		}
@@ -166,11 +252,18 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		return new TaskItem(task, await getFileTaskIconUri(task));
 	}
 
-	private groupTasksBySource(tasks: MiseTask[]): Record<string, MiseTask[]> {
+	private groupTasks(
+		tasks: MiseTask[],
+		currentWorkspaceFolderPath: string | undefined,
+	): Record<string, MiseTask[]> {
 		const groupedTasks: Record<string, MiseTask[]> = {};
 
 		for (const task of tasks) {
-			const source = getTaskGroupSource(task);
+			const source = getTaskGroupSource(
+				task,
+				this.grouping,
+				currentWorkspaceFolderPath,
+			);
 			if (!groupedTasks[source]) {
 				groupedTasks[source] = [];
 			}
@@ -374,9 +467,23 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 }
 
 type TreeNode = TasksSourceGroupItem | TaskItem | MiseErrorItem;
+type TaskTreeGrouping = "source" | "project";
 
 /** Key of the group a task is shown under in the tree */
-function getTaskGroupSource(task: MiseTask): string {
+function getTaskGroupSource(
+	task: MiseTask,
+	grouping: TaskTreeGrouping,
+	currentWorkspaceFolderPath: string | undefined,
+): string {
+	const projectRoot =
+		grouping === "project" && currentWorkspaceFolderPath
+			? (getTaskProjectRootPath(task, currentWorkspaceFolderPath) ??
+				getTaskProjectKey(task))
+			: undefined;
+	if (projectRoot) {
+		return projectRoot;
+	}
+
 	return (
 		(task.source.endsWith(".toml") || task.source.endsWith("package.json")
 			? expandPath(task.source)
@@ -390,8 +497,11 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 		public readonly source: string,
 		public readonly tasks: MiseTask[],
 		unparsed = false,
+		readonly isProjectGroup = false,
+		readonly projectLabel: string | undefined = undefined,
 	) {
-		const pathShown = displayPathRelativeTo(source, currentWorkspaceFolderPath);
+		const pathShown =
+			projectLabel ?? displayPathRelativeTo(source, currentWorkspaceFolderPath);
 
 		super(
 			unparsed
@@ -400,7 +510,11 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 		);
 		// stable id so `TreeView.reveal` can match recreated items
 		this.id = source;
-		this.tooltip = unparsed ? UNPARSED_CONFIG_TOOLTIP : `Source: ${source}`;
+		this.tooltip = unparsed
+			? UNPARSED_CONFIG_TOOLTIP
+			: projectLabel
+				? `Project: ${projectLabel}`
+				: `${isProjectGroup ? "Project" : "Source"}: ${source}`;
 		if (unparsed) {
 			this.description = UNPARSED_CONFIG_DESCRIPTION;
 			this.iconPath = new vscode.ThemeIcon(
@@ -409,9 +523,11 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 			);
 		}
 
-		this.contextValue = source.endsWith(".toml")
-			? "miseTaskGroupEditable"
-			: "miseTaskGroup";
+		this.contextValue = isProjectGroup
+			? "miseTaskProjectGroup"
+			: source.endsWith(".toml")
+				? "miseTaskGroupEditable"
+				: "miseTaskGroup";
 
 		if (tasks.length === 0) {
 			this.collapsibleState = vscode.TreeItemCollapsibleState.None;
@@ -427,7 +543,8 @@ class TasksSourceGroupItem extends vscode.TreeItem {
 			// the "folder" id is resolved by the file icon theme, which may have
 			// no folder icons; use a plain codicon for directories instead
 			this.iconPath =
-				source.endsWith(".toml") || source.endsWith("package.json")
+				!isProjectGroup &&
+				(source.endsWith(".toml") || source.endsWith("package.json"))
 					? vscode.ThemeIcon.File
 					: new vscode.ThemeIcon("symbol-folder");
 		}
@@ -532,6 +649,27 @@ export function registerTasksCommands(
 	tasksTreeView?: vscode.TreeView<TreeNode>,
 ) {
 	const miseService = taskProvider.getMiseService();
+	// Match the dependency graph's in-memory view controls: source grouping is
+	// restored whenever the extension is activated.
+	void vscode.commands.executeCommand(
+		"setContext",
+		"mise.tasksCanGroupByProject",
+		false,
+	);
+	void vscode.commands.executeCommand(
+		"setContext",
+		"mise.tasksGroupByProject",
+		false,
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(MISE_GROUP_TASKS_BY_PROJECT, () => {
+			taskProvider.setGrouping("project");
+		}),
+		vscode.commands.registerCommand(MISE_GROUP_TASKS_BY_SOURCE, () => {
+			taskProvider.setGrouping("source");
+		}),
+	);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
