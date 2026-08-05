@@ -973,6 +973,12 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.runBootstrapPlan",
+        "title": "Mise: Show mise bootstrap plan",
+        "icon": "$(diff)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.showBootstrap",
         "title": "Mise: Show bootstrap status",
         "icon": "$(list-ordered)",
@@ -1088,9 +1094,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "mise.runBootstrap",
+          "command": "mise.runBootstrapPlan",
           "when": "view == miseBootstrapView",
           "group": "navigation@2"
+        },
+        {
+          "command": "mise.runBootstrap",
+          "when": "view == miseBootstrapView",
+          "group": "navigation@3"
         },
         {
           "command": "mise.refreshEntry",

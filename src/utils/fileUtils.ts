@@ -18,6 +18,25 @@ export function expandPath(filePath: string): string {
 }
 
 /**
+ * Inverse of {@link expandPath}: rewrites a path inside the home directory back
+ * to its `~/` form. Returns undefined when the path is not below the home
+ * directory (or already uses `~`), so callers can skip a redundant candidate.
+ */
+export function collapseHomePath(filePath: string): string | undefined {
+	if (filePath.startsWith("~")) {
+		return undefined;
+	}
+	const home = os.homedir();
+	const prefix = home.endsWith(path.sep) ? home : `${home}${path.sep}`;
+	const compare = (value: string) => (isWindows ? value.toLowerCase() : value);
+	if (!compare(filePath).startsWith(compare(prefix))) {
+		return undefined;
+	}
+	// mise reports POSIX-style paths for bootstrap resources
+	return `~/${filePath.slice(prefix.length).split(path.sep).join("/")}`;
+}
+
+/**
  * SHA-256 of a file, streamed so a large binary does not sit in memory.
  * Returns undefined when the file cannot be read.
  */

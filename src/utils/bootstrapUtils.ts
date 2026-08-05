@@ -15,6 +15,9 @@ export const BOOTSTRAP_OK_STATES = new Set([
 	"running",
 	"up-to-date",
 	"up_to_date",
+	// declarative resources whose action is `noop`, and secrets that resolved
+	"unchanged",
+	"available",
 ]);
 
 // states that are neither converged nor actionable (e.g. wrong OS)
@@ -22,6 +25,9 @@ export const BOOTSTRAP_NEUTRAL_STATES = new Set([
 	"skipped",
 	"unavailable",
 	"unsupported",
+	// declarative resources mise could not inspect (unsupported platform, a
+	// missing secret, docker not running, ...) — nothing for the user to act on
+	"unknown",
 ]);
 
 export type BootstrapDefinition = {
@@ -197,6 +203,71 @@ export type BootstrapSection = {
 };
 
 /**
+ * TOML table each declarative resource kind is declared in.
+ * `firewall` is the policy itself (`[bootstrap.linux.firewall]`), so it is
+ * keyed from the enclosing `[bootstrap.linux]` table.
+ */
+const RESOURCE_KIND_TABLE_PATHS: Record<string, string[]> = {
+	user: ["bootstrap", "users"],
+	group: ["bootstrap", "groups"],
+	package: ["bootstrap", "packages"],
+	file: ["bootstrap", "files"],
+	directory: ["bootstrap", "directories"],
+	service: ["bootstrap", "services"],
+	firewall: ["bootstrap", "linux"],
+	"firewall-rule": ["bootstrap", "linux", "firewall"],
+	compose: ["bootstrap", "compose"],
+};
+
+/**
+ * `mise bootstrap` reports a converged resource as the `noop` action; it is
+ * displayed as `unchanged` (matching mise's own table output).
+ */
+export function bootstrapResourceState(
+	action: MiseBootstrapResourceAction,
+): string {
+	return action === "noop" ? "unchanged" : action;
+}
+
+function bootstrapResourceEntry(
+	resource: MiseBootstrapResource,
+): BootstrapEntry {
+	const { kind, name } = resource.id;
+	const dependsOn = resource.depends_on
+		?.map((dependency) => `${dependency.kind}:${dependency.name}`)
+		.join(", ");
+
+	return {
+		label: name,
+		// mise's own table uses the current state as the detail column
+		description: resource.current,
+		tooltip: `${kind}: ${name}
+Current: ${resource.current}
+Desired: ${resource.desired}
+Action: ${bootstrapResourceState(resource.action)}${
+			dependsOn ? `\nDepends on: ${dependsOn}` : ""
+		}`,
+		state: bootstrapResourceState(resource.action),
+		definition: {
+			// the firewall policy is the `firewall` key of `[bootstrap.linux]`,
+			// every other kind is keyed by the resource name
+			tablePath: RESOURCE_KIND_TABLE_PATHS[kind] ?? ["bootstrap"],
+			key: kind === "firewall" ? "firewall" : name,
+		},
+	};
+}
+
+function bootstrapResourceSection(
+	label: string,
+	resources: MiseBootstrapResource[] | undefined,
+): BootstrapSection[] {
+	if (!resources?.length) {
+		return [];
+	}
+	return [{ label, entries: resources.map(bootstrapResourceEntry) }];
+}
+
+/**
  * Locate a TOML key in raw text — fallback when the structured parser cannot
  * find it (e.g. the file does not fully parse). Prefers quoted occurrences,
  * then bare keys in key position (followed by `=`, `.` or `]`).
@@ -235,7 +306,28 @@ export function findKeyInText(
 export function getBootstrapSections(
 	status: MiseBootstrapStatus,
 ): BootstrapSection[] {
+	// sections follow the order `mise bootstrap` converges them in
 	const sections: BootstrapSection[] = [];
+
+	if (status.secrets?.length) {
+		sections.push({
+			label: "Secrets",
+			entries: status.secrets.map((secret) => ({
+				label: secret.name,
+				description: secret.env,
+				tooltip: `Secret: ${secret.name}
+Environment variable: ${secret.env}
+State: ${secret.state}${secret.description ? `\n${secret.description}` : ""}`,
+				state: secret.state,
+				definition: {
+					tablePath: ["bootstrap", "secrets"],
+					key: secret.name,
+				},
+			})),
+		});
+	}
+
+	sections.push(...bootstrapResourceSection("Accounts", status.accounts));
 
 	const packageEntries = Object.entries(status.packages ?? {}).flatMap(
 		([manager, info]) =>
@@ -256,6 +348,13 @@ State: ${pkg.state}`,
 	if (packageEntries.length > 0) {
 		sections.push({ label: "Packages", entries: packageEntries });
 	}
+
+	sections.push(
+		...bootstrapResourceSection("Files", status.files),
+		...bootstrapResourceSection("Services", status.services),
+		...bootstrapResourceSection("Firewall", status.firewall),
+		...bootstrapResourceSection("Compose", status.compose),
+	);
 
 	if (status.repos?.length) {
 		sections.push({

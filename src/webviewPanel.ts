@@ -7,6 +7,7 @@ import {
 	MISE_EDIT_SETTING,
 	MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,
 	MISE_OPEN_TASK_DEFINITION,
+	MISE_RUN_BOOTSTRAP_PLAN,
 	MISE_RUN_TASK,
 } from "./commands";
 import type { MiseService } from "./miseService";
@@ -334,6 +335,11 @@ export default class WebViewPanel {
 									miseService.runBootstrapInConsole({
 										dryRun: message.variables?.dryRun === true,
 									}),
+								);
+							}
+							case "runBootstrapPlan": {
+								return executeAction(message, async () =>
+									vscode.commands.executeCommand(MISE_RUN_BOOTSTRAP_PLAN),
 								);
 							}
 							case "editSetting": {

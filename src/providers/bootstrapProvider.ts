@@ -3,18 +3,20 @@ import {
 	MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,
 	MISE_RUN_BOOTSTRAP,
 	MISE_RUN_BOOTSTRAP_DRY_RUN,
+	MISE_RUN_BOOTSTRAP_PLAN,
 } from "../commands";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
 	BOOTSTRAP_NEUTRAL_STATES,
 	BOOTSTRAP_OK_STATES,
+	type BootstrapDefinition,
 	type BootstrapEntry,
 	type BootstrapSection,
 	findKeyInText,
 	getBootstrapSections,
 } from "../utils/bootstrapUtils";
-import { expandPath } from "../utils/fileUtils";
+import { collapseHomePath, expandPath } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { getCachedTomlParser } from "../utils/miseFileParser";
 
@@ -149,6 +151,22 @@ function findKeyInTomlDocument(
 	return parser.findRange(table as object, key);
 }
 
+/**
+ * `mise bootstrap status` reports resource paths expanded, but they are usually
+ * declared with `~` (e.g. `[bootstrap.files."~/.config/app.conf"]`), so every
+ * path-shaped key also gets looked up in its `~` form.
+ */
+function withHomePathVariants(
+	definitions: BootstrapDefinition[],
+): BootstrapDefinition[] {
+	return definitions.flatMap((definition) => {
+		const collapsed = collapseHomePath(definition.key);
+		return collapsed
+			? [definition, { ...definition, key: collapsed }]
+			: [definition];
+	});
+}
+
 async function openBootstrapEntryDefinition(
 	miseService: MiseService,
 	entry: BootstrapEntry | undefined,
@@ -179,7 +197,11 @@ async function openBootstrapEntryDefinition(
 	// declarations (e.g. the [bootstrap.macos.finder] shorthand of a macOS
 	// default); only when nothing is found anywhere, fall back to the
 	// enclosing table (e.g. the domain table of a macOS default)
-	const candidates = [entry.definition, ...(entry.alternates ?? [])];
+	const keyCandidates = withHomePathVariants([
+		entry.definition,
+		...(entry.alternates ?? []),
+	]);
+	const candidates = [...keyCandidates];
 	if (tablePath.length > 0) {
 		candidates.push({
 			tablePath: tablePath.slice(0, -1),
@@ -212,7 +234,7 @@ async function openBootstrapEntryDefinition(
 	// the structured lookup can miss (e.g. a config file the TOML parser does
 	// not fully parse): fall back to a plain-text search for the keys
 	const textSearchKeys = [
-		...new Set([key, ...(entry.alternates ?? []).map((alt) => alt.key)]),
+		...new Set(keyCandidates.map((candidate) => candidate.key)),
 	];
 	for (const searchKey of textSearchKeys) {
 		for (const document of documents) {
@@ -262,6 +284,15 @@ export function registerBootstrapCommands(
 		}),
 		vscode.commands.registerCommand(MISE_RUN_BOOTSTRAP_DRY_RUN, async () => {
 			await miseService.runBootstrapInConsole({ dryRun: true });
+		}),
+		vscode.commands.registerCommand(MISE_RUN_BOOTSTRAP_PLAN, async () => {
+			if (!(await miseService.isBootstrapPlanAvailable())) {
+				vscode.window.showWarningMessage(
+					"`mise bootstrap plan` requires mise 2026.8.2 or later.",
+				);
+				return;
+			}
+			await miseService.runBootstrapPlanInConsole();
 		}),
 		vscode.commands.registerCommand(
 			MISE_OPEN_BOOTSTRAP_ENTRY_DEFINITION,

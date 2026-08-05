@@ -29,11 +29,13 @@ suite("Monorepo Tasks Test Suite", function () {
 			);
 		}
 		const tasks = JSON.parse(stdout) as Array<{ name: string }>;
-		// the fixture enables the experimental setting that gates script tasks,
-		// so a missing node: task means the mise version is too old
+		// the fixture opts into script tasks with `experimental` and
+		// `task.auto_infer = ["node"]` (opt-in since mise 2026.8.2), so a missing
+		// node: task means the mise version is too old, or that mise changed how
+		// workspace task inference is enabled again
 		assert.ok(
 			tasks.some((t) => t.name.startsWith("node:")),
-			"This mise version does not discover package.json script tasks, update mise to the latest version to run this suite",
+			"This mise version does not discover package.json script tasks. Update mise to the latest version, and check that `task.auto_infer` in the fixture still matches how mise opts into workspace task inference",
 		);
 	});
 

@@ -30,6 +30,11 @@ run = "echo 'Building crate'"
 [settings]
 # package.json script tasks and `mise tasks graph` are experimental-gated
 experimental = true
+# Since mise 2026.8.2 workspace task inference is opt-in per provider, so the
+# `node:<package>#<script>` tasks below need `node` listed explicitly. Only the
+# node provider infers tasks; cargo/go/uv discover projects and dependency
+# edges for `mise tasks graph`, which needs no opt-in.
+task.auto_infer = ["node"]
 # the declared tools are not installed, don't install them during test runs
 task.run_auto_install = false
 # pick up the node version declared in package.json devEngines

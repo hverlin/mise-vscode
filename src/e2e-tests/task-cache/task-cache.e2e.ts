@@ -51,6 +51,29 @@ suite("Task Cache Test Suite", function () {
 		return sentCommands;
 	};
 
+	/**
+	 * Polls `read` until `matches` accepts its value, then returns it. The
+	 * `mise cache task` output the views are built from is cached briefly: the
+	 * artifact watcher normally invalidates it right away, but the file watcher
+	 * can stay silent on a loaded CI runner, so the ttl backing it up has to be
+	 * waited out. Asserts on the last value seen, so a timeout reports what the
+	 * editor was actually showing instead of a bare deadline.
+	 */
+	const waitFor = async <T>(
+		read: () => Promise<T>,
+		matches: (value: T) => boolean,
+		message: string,
+	): Promise<T> => {
+		const deadline = Date.now() + CACHE_REFRESH_DEADLINE_MS;
+		let value = await read();
+		while (!matches(value) && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+			value = await read();
+		}
+		assert.ok(matches(value), `${message}, last saw: ${value}`);
+		return value;
+	};
+
 	const getHoverText = async (needle: string) => {
 		const document = await vscode.workspace.openTextDocument(miseTomlUri);
 		const lines = document.getText().split("\n");
@@ -79,6 +102,10 @@ suite("Task Cache Test Suite", function () {
 		assert.ok(root, "Workspace root should be available");
 		workspaceRoot = root;
 		miseTomlUri = vscode.Uri.file(path.join(workspaceRoot, "mise.toml"));
+
+		// the cache dir lives inside the fixture and survives between runs, so
+		// start from a known state: the tests assert exact entry counts
+		await runMise(["cache", "clear", "--task", "*"]);
 
 		// --force: a task whose sources are unchanged is skipped, and a skipped
 		// task publishes no cache entry
@@ -153,20 +180,23 @@ suite("Task Cache Test Suite", function () {
 	test("never predicts for a task declaring command inputs", async () => {
 		await runMise(["run", "--force", "probe"]);
 
-		// the entry list is cached briefly: the artifact watcher normally
-		// invalidates it right away, but the file watcher can stay silent on a
-		// loaded CI runner, so wait past the cache ttl that backs it up
-		const deadline = Date.now() + CACHE_REFRESH_DEADLINE_MS;
-		let hoverText = await getHoverText("[tasks.probe]");
-		while (!hoverText.includes("Cache:") && Date.now() < deadline) {
-			await new Promise((resolve) => setTimeout(resolve, 250));
-			hoverText = await getHoverText("[tasks.probe]");
-		}
-
-		assert.ok(
-			hoverText.includes("Cache: 1 entry"),
-			`Expected the cache summary in the hover, got: ${hoverText}`,
+		// check mise published the entry before waiting on the editor: a run that
+		// stored nothing and a hover that never refreshed look identical once the
+		// deadline expires, and they have nothing to do with each other
+		assert.equal(
+			await countCacheEntries("probe"),
+			1,
+			"mise should have stored one cache entry for probe",
 		);
+
+		// wait for the exact text the assertions need, so a transient entry count
+		// cannot end the wait early and fail on the next line instead
+		const hoverText = await waitFor(
+			() => getHoverText("[tasks.probe]"),
+			(text) => text.includes("Cache: 1 entry"),
+			"Expected the probe cache summary in the hover",
+		);
+
 		assert.ok(
 			!hoverText.includes("Next run:"),
 			`Expected no prediction for a task with command inputs, got: ${hoverText}`,
@@ -241,21 +271,18 @@ suite("Task Cache Test Suite", function () {
 		);
 
 		await runMise(["run", "--force", "build"]);
+		assert.equal(
+			await countCacheEntries("build"),
+			1,
+			"mise should have stored one cache entry for build",
+		);
 
-		// the document is never touched: the cached `mise cache task` output is
-		// invalidated by the artifact watcher, or by its ttl when the file watcher
-		// misses the run
-		const deadline = Date.now() + CACHE_REFRESH_DEADLINE_MS;
-		let title = await cacheLensTitle();
-		while (!/Cache · \d/.test(title ?? "") && Date.now() < deadline) {
-			await new Promise((resolve) => setTimeout(resolve, 250));
-			title = await cacheLensTitle();
-		}
-
-		assert.match(
-			title ?? "",
-			/Cache · \d/,
-			"the lens should pick up the new entry without an edit or a save",
+		// the document is never touched: the lens has to pick the new entry up on
+		// its own, without an edit or a save
+		await waitFor(
+			async () => (await cacheLensTitle()) ?? "",
+			(title) => /Cache · \d/.test(title),
+			"Expected the lens to report the new entry",
 		);
 	});
 

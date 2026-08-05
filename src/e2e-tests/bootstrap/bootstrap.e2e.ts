@@ -1,10 +1,14 @@
 import * as assert from "node:assert";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { MiseService } from "../../miseService";
+import { getBootstrapSections } from "../../utils/bootstrapUtils";
 
 /**
  * Bootstrap e2e tests. Everything here is read-only and machine-agnostic:
- * `mise bootstrap` is never executed (only definition navigation and command
+ * `mise bootstrap` is never executed (only status, `bootstrap plan` — which is
+ * a preview and never applies anything — definition navigation and command
  * registration are exercised), the fixture entries point at resources that do
  * not exist anywhere, and the suite isolates the machine's global mise config
  * via MISE_GLOBAL_CONFIG_FILE (see .vscode-test.js), so results are identical
@@ -15,6 +19,21 @@ suite("Bootstrap Test Suite", function () {
 
 	let workspaceRoot: string;
 	let miseTomlDocument: vscode.TextDocument;
+
+	// the service only reads workspaceState from the context
+	const fakeContext = {
+		workspaceState: { get: () => undefined },
+	} as unknown as vscode.ExtensionContext;
+
+	const createMiseService = async () => {
+		const miseService = new MiseService(fakeContext);
+		await miseService.initializeMisePath();
+		assert.ok(miseService.getMiseBinaryPath(), "mise binary should resolve");
+		return miseService;
+	};
+
+	// mise reports resource paths expanded, the fixture declares them with `~`
+	const fixturePath = (name: string) => path.join(os.homedir(), name);
 
 	const lineOf = (text: string): number => {
 		for (let i = 0; i < miseTomlDocument.lineCount; i++) {
@@ -55,6 +74,7 @@ suite("Bootstrap Test Suite", function () {
 		for (const command of [
 			"mise.runBootstrap",
 			"mise.runBootstrapDryRun",
+			"mise.runBootstrapPlan",
 			"mise.showBootstrap",
 			"mise.openBootstrapEntryDefinition",
 		]) {
@@ -156,5 +176,127 @@ suite("Bootstrap Test Suite", function () {
 
 	test("show bootstrap status webview opens without error", async () => {
 		await vscode.commands.executeCommand("mise.showBootstrap");
+	});
+
+	test("status reports the declarative resource sections", async () => {
+		const miseService = await createMiseService();
+
+		const status = await miseService.getBootstrapStatus();
+		assert.ok(status, "bootstrap status should be returned");
+
+		const sections = getBootstrapSections(status);
+		const byLabel = (label: string) =>
+			sections.find((section) => section.label === label);
+
+		const files = byLabel("Files");
+		assert.ok(files, "Files section should be present");
+		assert.deepEqual(
+			files.entries.map((entry) => entry.label),
+			[
+				fixturePath(".mise-vscode-e2e-dir"),
+				fixturePath(".mise-vscode-e2e-dir-two"),
+				fixturePath(".mise-vscode-e2e-file.conf"),
+				fixturePath(".mise-vscode-e2e-secret.conf"),
+			],
+			"directories and files share one section, in mise's order",
+		);
+		assert.equal(files.entries[2]?.state, "create");
+		// the secret this file templates is never set, so mise cannot inspect it
+		assert.equal(files.entries[3]?.state, "unknown");
+
+		const secrets = byLabel("Secrets");
+		assert.ok(secrets, "Secrets section should be present");
+		assert.equal(secrets.entries[0]?.label, "e2e_token");
+		assert.equal(
+			secrets.entries[0]?.description,
+			"MISE_VSCODE_E2E_SECRET_THAT_IS_NEVER_SET",
+		);
+		assert.equal(secrets.entries[0]?.state, "missing");
+
+		// the fixture declares no services, firewall, compose or accounts, so
+		// those sections stay out of the view on every platform
+		for (const label of ["Services", "Firewall", "Compose", "Accounts"]) {
+			assert.equal(byLabel(label), undefined, `${label} should be absent`);
+		}
+	});
+
+	test("plan previews the changes without applying them", async () => {
+		const miseService = await createMiseService();
+		assert.ok(
+			await miseService.isBootstrapPlanAvailable(),
+			"`mise bootstrap plan` requires mise 2026.8.2 or later",
+		);
+
+		const plan = await miseService.getBootstrapPlan();
+		assert.ok(plan, "bootstrap plan should be returned");
+
+		assert.deepEqual(
+			plan.resources.map((resource) => resource.id),
+			[
+				{ kind: "directory", name: fixturePath(".mise-vscode-e2e-dir") },
+				{ kind: "directory", name: fixturePath(".mise-vscode-e2e-dir-two") },
+				{ kind: "file", name: fixturePath(".mise-vscode-e2e-file.conf") },
+				{ kind: "file", name: fixturePath(".mise-vscode-e2e-secret.conf") },
+			],
+		);
+		assert.deepEqual(plan.summary, {
+			create: 3,
+			update: 0,
+			remove: 0,
+			unchanged: 0,
+			unknown: 1,
+		});
+
+		// a plan is a preview: nothing it lists may exist afterwards
+		for (const resource of plan.resources) {
+			assert.equal(
+				await vscode.workspace.fs.stat(vscode.Uri.file(resource.id.name)).then(
+					() => true,
+					() => false,
+				),
+				false,
+				`${resource.id.name} should not have been created`,
+			);
+		}
+	});
+
+	// status reports resource paths expanded, so navigation has to find the `~`
+	// form they are declared with. Both tests target the second declaration of
+	// their kind: the enclosing-table fallback always resolves to the first, so
+	// they fail unless the expanded path is really matched back to its `~` form.
+	test("navigates to a [bootstrap.files] declaration from the expanded path", async () => {
+		const editor = await openDefinition(
+			["bootstrap", "files"],
+			fixturePath(".mise-vscode-e2e-secret.conf"),
+		);
+
+		assert.equal(
+			editor.selection.start.line,
+			lineOf('"~/.mise-vscode-e2e-secret.conf"'),
+			"Selection should be on the file declaration line",
+		);
+	});
+
+	test("navigates to a [bootstrap.directories] declaration from the expanded path", async () => {
+		const editor = await openDefinition(
+			["bootstrap", "directories"],
+			fixturePath(".mise-vscode-e2e-dir-two"),
+		);
+
+		assert.equal(
+			editor.selection.start.line,
+			lineOf('"~/.mise-vscode-e2e-dir-two"'),
+			"Selection should be on the directory declaration line",
+		);
+	});
+
+	test("navigates to a [bootstrap.secrets] declaration", async () => {
+		const editor = await openDefinition(["bootstrap", "secrets"], "e2e_token");
+
+		assert.equal(
+			editor.selection.start.line,
+			lineOf("e2e_token ="),
+			"Selection should be on the secret declaration line",
+		);
 	});
 });

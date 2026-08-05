@@ -88,6 +88,10 @@ const flattenSettings = (obj: object, prefix = "") => {
 const MIN_MISE_VERSION = [2025, 1, 5] as const;
 // `mise bootstrap` (with `bootstrap status --json`) was consolidated in 2026.7.16
 const MIN_MISE_VERSION_FOR_BOOTSTRAP = [2026, 7, 16] as const;
+// `mise bootstrap plan` and the declarative resource sections (files,
+// directories, services, firewall, compose, users/groups, secrets) landed in
+// 2026.8.2
+const MIN_MISE_VERSION_FOR_BOOTSTRAP_PLAN = [2026, 8, 2] as const;
 // `mise upgrade --no-prune` was added in 2026.8.1
 const MIN_MISE_VERSION_FOR_UPGRADE_NO_PRUNE = [2026, 8, 1] as const;
 // `mise cache task` and `mise cache clear --task` were added in 2026.8.1
@@ -1994,5 +1998,46 @@ export class MiseService {
 		await this.runMiseToolActionInConsole(
 			dryRun ? ["bootstrap", "--dry-run"] : ["bootstrap", "--yes"],
 		);
+	}
+
+	async isBootstrapPlanAvailable() {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_BOOTSTRAP_PLAN);
+	}
+
+	/**
+	 * The changes the declarative `[bootstrap.*]` resources would make, without
+	 * applying anything. `undefined` when the installed mise version predates
+	 * `mise bootstrap plan`.
+	 */
+	async getBootstrapPlan(): Promise<MiseBootstrapPlan | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined;
+		}
+
+		if (!(await this.isBootstrapPlanAvailable())) {
+			return undefined;
+		}
+
+		try {
+			const { stdout } = await this.cache.execCmd({
+				args: ["bootstrap", "plan", "--json"],
+			});
+			return JSON.parse(stdout) as MiseBootstrapPlan;
+		} catch (error) {
+			if (error instanceof Error && error.message.includes("mise trust")) {
+				await this.handleUntrustedFile(error);
+				return this.getBootstrapPlan();
+			}
+
+			throw error;
+		}
+	}
+
+	async runBootstrapPlanInConsole() {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		await this.runMiseToolActionInConsole(["bootstrap", "plan"]);
 	}
 }
