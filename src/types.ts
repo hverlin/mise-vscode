@@ -5,6 +5,8 @@ type depsArray = Array<
 	string | string[] | { task: string; optional?: boolean }
 >;
 
+type MiseTaskOutputs = string[] | { auto: true };
+
 type MiseTask = {
 	name: string;
 	/** e.g. `fmt` for a toml task, `//projects/frontend:test` for a workspace script task */
@@ -20,7 +22,7 @@ type MiseTask = {
 	hide?: boolean;
 	raw?: boolean;
 	sources?: string[];
-	outputs?: string[];
+	outputs?: MiseTaskOutputs;
 	shell?: string;
 	quiet?: boolean;
 	silent?: boolean;

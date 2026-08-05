@@ -1,5 +1,6 @@
+import * as path from "node:path";
 import micromatch from "micromatch";
-import { expandPath } from "./fileUtils";
+import { displayPathRelativeTo, expandPath } from "./fileUtils";
 import { DEPENDS_KEYWORDS } from "./miseUtilts";
 
 // https://mise.jdx.dev/tasks/monorepo.html
@@ -128,6 +129,38 @@ export function getTaskConfigRoot(task: MiseTask): string | null {
 		}
 	}
 	return null;
+}
+
+export function getTaskProjectRootPath(
+	task: MiseTask,
+	workspaceRoot: string,
+): string | undefined {
+	const configRoot = getTaskConfigRoot(task);
+	return configRoot === null
+		? undefined
+		: expandPath(path.join(workspaceRoot, configRoot));
+}
+
+/** Project keys for tasks, config root in monorepos, source directory otherwise. */
+export function getTaskProjectKey(task: MiseTask): string {
+	return getTaskConfigRoot(task) ?? path.dirname(expandPath(task.source));
+}
+
+/** Project label shared by task views. */
+export function getTaskProjectLabel(
+	task: MiseTask,
+	workspaceRoot: string | undefined,
+): string {
+	const configRoot = getTaskConfigRoot(task);
+	if (configRoot !== null) {
+		return `${MONOREPO_TASK_PREFIX}${configRoot || " — monorepo root"}`;
+	}
+	return (
+		displayPathRelativeTo(
+			path.dirname(expandPath(task.source)),
+			workspaceRoot,
+		) || "."
+	);
 }
 
 /** All the names a task can be referred to with inside its own config root */

@@ -10,6 +10,9 @@ import {
 	getTaskDependencyEdges,
 	getTaskDisplayName,
 	getTaskNameParts,
+	getTaskProjectKey,
+	getTaskProjectLabel,
+	getTaskProjectRootPath,
 	getUpstreamConfigRoots,
 	isMonorepoTaskName,
 	isTaskDependency,
@@ -665,6 +668,84 @@ describe("findTasksMatchingDependsPattern with ^ upstream references", () => {
 			"/repo/projects/frontend/mise.toml",
 		);
 		expect(matches).toEqual([]);
+	});
+});
+
+describe("getTaskProjectKey", () => {
+	it("uses the config root for a monorepo task", () => {
+		expect(
+			getTaskProjectKey(
+				createTask("//projects/frontend:build", "/repo/shared/build.toml"),
+			),
+		).toBe("projects/frontend");
+	});
+
+	it("uses the source directory outside a monorepo", () => {
+		expect(
+			getTaskProjectKey(createTask("build", "/repo/tasks/build.toml")),
+		).toBe("/repo/tasks");
+	});
+});
+
+describe("getTaskProjectLabel", () => {
+	it("uses a canonical namespace for a monorepo project", () => {
+		expect(
+			getTaskProjectLabel(
+				createTask("//projects/frontend:build", "/repo/shared/build.toml"),
+				"/repo",
+			),
+		).toBe("//projects/frontend");
+	});
+
+	it("uses the root namespace for a monorepo-root task", () => {
+		expect(
+			getTaskProjectLabel(createTask("//:build", "/repo/mise.toml"), "/repo"),
+		).toBe("// — monorepo root");
+	});
+
+	it("uses the workspace-relative source directory outside a monorepo", () => {
+		expect(
+			getTaskProjectLabel(
+				createTask("build", "/repo/tasks/build.toml"),
+				"/repo",
+			),
+		).toBe("tasks");
+	});
+});
+
+describe("getTaskProjectRootPath", () => {
+	it("uses config-root ownership rather than the physical task source", () => {
+		const includedTask = createTask(
+			"//projects/frontend:build",
+			"/repo/shared-tasks/build.toml",
+		);
+		expect(getTaskProjectRootPath(includedTask, "/repo")).toBe(
+			"/repo/projects/frontend",
+		);
+	});
+
+	it("uses a provider task's qualified alias", () => {
+		const task = createTask("node:frontend#test", "/repo/shared/package.json", [
+			"//projects/frontend:test",
+		]);
+		expect(getTaskProjectRootPath(task, "/repo")).toBe(
+			"/repo/projects/frontend",
+		);
+	});
+
+	it("returns the workspace root for a monorepo-root task", () => {
+		expect(
+			getTaskProjectRootPath(
+				createTask("//:build", "/repo/tasks.toml"),
+				"/repo",
+			),
+		).toBe("/repo");
+	});
+
+	it("does not assign a project path to a non-monorepo task", () => {
+		expect(
+			getTaskProjectRootPath(createTask("build", "/repo/mise.toml"), "/repo"),
+		).toBeUndefined();
 	});
 });
 

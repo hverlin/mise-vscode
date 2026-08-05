@@ -14,9 +14,10 @@ import type { MiseService } from "./miseService";
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
-	getTaskConfigRoot,
 	getTaskDependencyEdges,
 	getTaskDisplayName,
+	getTaskProjectKey,
+	getTaskProjectLabel,
 } from "./utils/taskNames";
 
 type PanelView = "TOOLS" | "SETTINGS" | "TASKS_DEPS" | "BOOTSTRAP" | "PROJECTS";
@@ -187,10 +188,6 @@ export default class WebViewPanel {
 										this.miseService.getCurrentWorkspaceFolderPath();
 									return {
 										tasks: tasks.map((task) => {
-											// group key: the config root in a monorepo, otherwise
-											// the directory of the source file
-											const configRoot = getTaskConfigRoot(task);
-											const sourceDir = path.dirname(expandPath(task.source));
 											return {
 												...task,
 												displayName: getTaskDisplayName(task),
@@ -198,13 +195,8 @@ export default class WebViewPanel {
 													task.source,
 													workspaceRoot,
 												),
-												projectKey: configRoot ?? sourceDir,
-												projectLabel:
-													configRoot ||
-													(configRoot === ""
-														? "monorepo root"
-														: displayPathRelativeTo(sourceDir, workspaceRoot) ||
-															"."),
+												projectKey: getTaskProjectKey(task),
+												projectLabel: getTaskProjectLabel(task, workspaceRoot),
 											};
 										}),
 										edges: getTaskDependencyEdges(tasks, projects),

@@ -810,6 +810,18 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.groupTasksByProject",
+        "title": "Mise: Group Tasks by Project",
+        "icon": "$(folder-library)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.groupTasksBySource",
+        "title": "Mise: Group Tasks by Source File",
+        "icon": "$(list-tree)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.openToolDefinition",
         "title": "Mise: Open Tool Definition",
         "enablement": "!isWeb"
@@ -1073,6 +1085,16 @@
           "command": "mise.visualizeTasksDeps",
           "when": "view == miseTasksView",
           "group": "navigation@2"
+        },
+        {
+          "command": "mise.groupTasksByProject",
+          "when": "view == miseTasksView && mise.tasksCanGroupByProject && !mise.tasksGroupByProject",
+          "group": "navigation@3"
+        },
+        {
+          "command": "mise.groupTasksBySource",
+          "when": "view == miseTasksView && mise.tasksCanGroupByProject && mise.tasksGroupByProject",
+          "group": "navigation@3"
         },
         {
           "command": "mise.listAllTools",

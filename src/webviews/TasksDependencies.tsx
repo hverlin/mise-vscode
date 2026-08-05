@@ -18,6 +18,7 @@ import {
 	Position,
 } from "@xyflow/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { formatTaskOutputs } from "../utils/taskDisplay";
 import { DebouncedInput } from "./components/DebouncedInput";
 import {
 	FlowGraph,
@@ -447,7 +448,7 @@ function TaskDetailsPanel({
 				{task.depends_post?.map(renderDependsEntry).join(", ")}
 			</DetailsRow>
 			<DetailsRow label="Sources">{task.sources?.join(", ")}</DetailsRow>
-			<DetailsRow label="Outputs">{task.outputs?.join(", ")}</DetailsRow>
+			<DetailsRow label="Outputs">{formatTaskOutputs(task.outputs)}</DetailsRow>
 			{task.run?.length ? (
 				<div className="details-row">
 					<div className="details-label">Run</div>
