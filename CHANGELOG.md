@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/hverlin/mise-vscode/compare/v1.22.0...v1.23.0) (2026-08-05)
+
+
+### Features
+
+* only provide snippets in files mise support ([3423c8b](https://github.com/hverlin/mise-vscode/commit/3423c8b99ade892c170d54d6e0abcd1865768ad2))
+
 ## [1.22.0](https://github.com/hverlin/mise-vscode/compare/v1.21.0...v1.22.0) (2026-08-05)
 
 
