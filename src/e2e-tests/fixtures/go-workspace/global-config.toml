@@ -1,0 +1,4 @@
+# Stands in for the machine global config. It pins another go on purpose: the
+# extension has to configure the project version, not this one.
+[tools]
+go = "1.24.0"

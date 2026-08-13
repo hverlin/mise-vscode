@@ -29,6 +29,7 @@ import {
 import {
 	areSnippetsEnabled,
 	CONFIGURATION_FLAGS,
+	clearCurrentWorkspaceFolder,
 	enableAutoConfiguration,
 	getConfiguredBinPath,
 	getCurrentWorkspaceFolder,
@@ -36,6 +37,7 @@ import {
 	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
 	isTaskSymbolProviderEnabled,
+	setCurrentWorkspaceFolder,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
 	shouldShowNotificationIfMissingTools,
@@ -285,9 +287,7 @@ export class MiseExtension {
 			}
 		});
 
-		const globalCmdCache = createCache({
-			ttl: 1,
-		}).define("reload", async () => {
+		const reloadConfiguration = async () => {
 			try {
 				logger.info("Reloading Mise configuration");
 				this.updateStatusBar({ state: "loading" });
@@ -345,18 +345,35 @@ export class MiseExtension {
 
 			void this.checkForInvalidMiseConfigFiles();
 			await this.updateStatusBarTooltip();
-		});
+		};
+
+		// internal triggers (file watcher, task end, config change) come in
+		// storms: close reloads are coalesced into one
+		const globalCmdCache = createCache({
+			ttl: 1,
+		}).define("reload", reloadConfiguration);
 
 		context.subscriptions.push(
-			vscode.commands.registerCommand(MISE_RELOAD, async () => {
-				await globalCmdCache.reload();
-			}),
+			vscode.commands.registerCommand(
+				MISE_RELOAD,
+				async (options?: { force?: boolean }) => {
+					if (options?.force) {
+						// a deliberate state change (folder switch, reload asked by
+						// the user) must not be coalesced into an already running
+						// reload, which read the state from before the change
+						await globalCmdCache.clear();
+						await reloadConfiguration();
+						return;
+					}
+					await globalCmdCache.reload();
+				},
+			),
 			// only the reload the user asked for drops what was kept from before a
 			// config file broke: the internal reloads above must not empty the
 			// views while the file is still being typed
 			vscode.commands.registerCommand(MISE_RELOAD_FROM_USER, async () => {
 				this.miseService.forgetRetainedState();
-				await vscode.commands.executeCommand(MISE_RELOAD);
+				await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
 			}),
 		);
 
@@ -393,11 +410,8 @@ export class MiseExtension {
 						);
 
 						if (selectedFolder) {
-							context.workspaceState.update(
-								"selectedWorkspaceFolder",
-								selectedFolder.name,
-							);
-							vscode.commands.executeCommand(MISE_RELOAD);
+							await setCurrentWorkspaceFolder(context, selectedFolder);
+							vscode.commands.executeCommand(MISE_RELOAD, { force: true });
 						}
 						return;
 					}
@@ -412,43 +426,29 @@ export class MiseExtension {
 							.join(" "),
 					});
 					if (selectedFolder) {
-						context.workspaceState.update(
-							"selectedWorkspaceFolder",
-							selectedFolder.name,
-						);
-						vscode.commands.executeCommand(MISE_RELOAD);
+						await setCurrentWorkspaceFolder(context, selectedFolder);
+						vscode.commands.executeCommand(MISE_RELOAD, { force: true });
 					}
 				},
 			),
 		);
 
-		vscode.workspace.onDidChangeWorkspaceFolders(() => {
+		vscode.workspace.onDidChangeWorkspaceFolders(async () => {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders?.length) {
-				context.workspaceState.update("selectedWorkspaceFolder", undefined);
-				vscode.commands.executeCommand(MISE_RELOAD);
+				await clearCurrentWorkspaceFolder(context);
+				vscode.commands.executeCommand(MISE_RELOAD, { force: true });
 				return;
 			}
 
-			const selectedWorkspaceFolderName = context.workspaceState.get(
-				"selectedWorkspaceFolder",
-			);
-
-			const selectedFolder = vscode.workspace.workspaceFolders?.find(
-				(folder) => folder.name === selectedWorkspaceFolderName,
-			);
-
-			if (!selectedWorkspaceFolderName || !selectedFolder) {
-				const firstFolder = workspaceFolders[0];
-				if (!selectedFolder && firstFolder) {
-					context.workspaceState.update(
-						"selectedWorkspaceFolder",
-						firstFolder.name,
-					);
-				}
+			// the folder that was selected may be gone: store whichever one is
+			// current now, which is the first folder when the selection is stale
+			const currentFolder = getCurrentWorkspaceFolder(context);
+			if (currentFolder) {
+				await setCurrentWorkspaceFolder(context, currentFolder);
 			}
 
-			vscode.commands.executeCommand(MISE_RELOAD);
+			vscode.commands.executeCommand(MISE_RELOAD, { force: true });
 		});
 
 		context.subscriptions.push(

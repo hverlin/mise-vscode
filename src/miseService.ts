@@ -135,9 +135,30 @@ function ensureMiseCommand(
 export class MiseService {
 	private readonly context: vscode.ExtensionContext;
 	private readonly eventEmitter: vscode.EventEmitter<void>;
-	constructor(context: vscode.ExtensionContext) {
+	/** When set, mise runs from this directory instead of the selected folder */
+	private readonly configRootOverride: string | undefined;
+	constructor(
+		context: vscode.ExtensionContext,
+		{ configRootOverride }: { configRootOverride?: string } = {},
+	) {
 		this.context = context;
+		this.configRootOverride = configRootOverride;
 		this.eventEmitter = new vscode.EventEmitter();
+	}
+
+	/**
+	 * A service bound to one workspace folder of a multi-root workspace: mise
+	 * commands run from that folder, and tool symlinks land in its own symlink
+	 * directory. The caches are separate too, so a result computed for one
+	 * folder is never served for another.
+	 */
+	forWorkspaceFolder(folderPath: string): MiseService {
+		const service = new MiseService(this.context, {
+			configRootOverride: folderPath,
+		});
+		service._hasValidMiseBinPath = this._hasValidMiseBinPath;
+		service.hasVerifiedMiseVersion = this.hasVerifiedMiseVersion;
+		return service;
 	}
 
 	subscribeToReloadEvent(listener: () => void): vscode.Disposable {
@@ -223,7 +244,9 @@ export class MiseService {
 	private terminals: Map<string, vscode.Terminal | undefined> = new Map();
 
 	getCurrentWorkspaceFolderPath() {
-		return getCurrentWorkspaceFolderPath(this.context);
+		return (
+			this.configRootOverride ?? getCurrentWorkspaceFolderPath(this.context)
+		);
 	}
 
 	private dedupeCache = createCache({

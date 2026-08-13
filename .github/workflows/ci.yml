@@ -47,6 +47,22 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
+    name: e2e-tests (${{ matrix.group }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # groups balanced by wall time; a config label must appear in
+          # exactly one group (see .vscode-test.js for the labels)
+          - group: core
+            labels: default tool-versions bootstrap broken-config command-injection
+          - group: workspaces
+            labels: projects custom-extensions task-cache monorepo
+          # multi-root and go share their toolchain store, so the go
+          # downloads happen once when they run on the same runner
+          - group: go
+            labels: multi-root go
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -63,4 +79,4 @@ jobs:
 
       - run: aube ci --frozen-lockfile
       - run: node --run build
-      - run: xvfb-run -a node --run e2e-tests
+      - run: xvfb-run -a npx vscode-test --label ${{ matrix.labels }}

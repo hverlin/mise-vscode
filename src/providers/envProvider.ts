@@ -449,7 +449,10 @@ function updateEnvironment(
 
 	for (const [name] of removedEnvs) {
 		if (name.toUpperCase() !== "PATH") {
-			process.env[name] = undefined;
+			// assigning undefined would store the string "undefined", which
+			// tools then read as a value (a go spawned with GOBIN="undefined"
+			// refuses to install anything)
+			delete process.env[name];
 		}
 		context.environmentVariableCollection.delete(name);
 	}

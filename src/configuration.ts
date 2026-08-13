@@ -340,22 +340,86 @@ export type VSCodeSettingValue =
 	| Array<string | number | boolean>
 	| Record<string, string | number | boolean>;
 
+/**
+ * A setting the extension stops managing: the value it wrote earlier is
+ * removed instead of updated, so nothing is left pointing at a tool the
+ * extension no longer chooses.
+ */
+export const REMOVE_SETTING = null;
+
 export type VSCodeSetting = {
 	key: string;
-	value: VSCodeSettingValue;
+	value: VSCodeSettingValue | typeof REMOVE_SETTING;
 };
 
 const isObject = (value: unknown) =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
+const valueAtTarget = (
+	inspection: ReturnType<vscode.WorkspaceConfiguration["inspect"]>,
+	target: vscode.ConfigurationTarget,
+) => {
+	switch (target) {
+		case vscode.ConfigurationTarget.Global:
+			return inspection?.globalValue;
+		case vscode.ConfigurationTarget.WorkspaceFolder:
+			return inspection?.workspaceFolderValue;
+		default:
+			return inspection?.workspaceValue;
+	}
+};
+
 export async function updateVSCodeSettings(
 	newSettings: VSCodeSetting[],
 	target: vscode.ConfigurationTarget,
-): Promise<string[]> {
+	{
+		/** A value the extension is allowed to remove, defaults to none */
+		canRemove = (_value: unknown) => false,
+		resource,
+	}: {
+		canRemove?: (value: unknown) => boolean;
+		/** The folder the settings apply to, for folder-scoped targets */
+		resource?: vscode.Uri;
+	} = {},
+): Promise<{ updatedKeys: string[]; unsupportedKeys: string[] }> {
 	const updatedKeys: string[] = [];
-	const configuration = vscode.workspace.getConfiguration();
+	/** keys vscode refused to write per folder (the setting is window-scoped) */
+	const unsupportedKeys: string[] = [];
+	const configuration = vscode.workspace.getConfiguration(undefined, resource);
+
+	const update = async (key: string, value: unknown) => {
+		try {
+			await configuration.update(key, value, target);
+			updatedKeys.push(key);
+		} catch (error) {
+			if (target === vscode.ConfigurationTarget.WorkspaceFolder) {
+				logger.debug(`${key} cannot be written per folder: ${error}`);
+				unsupportedKeys.push(key);
+				return;
+			}
+			throw error;
+		}
+	};
 
 	for (const newSetting of newSettings) {
+		if (newSetting.value === REMOVE_SETTING) {
+			const previousValue = valueAtTarget(
+				configuration.inspect(newSetting.key),
+				target,
+			);
+			// what the user wrote by hand stays: only a leftover of a previous
+			// run is removed
+			if (previousValue === undefined || !canRemove(previousValue)) {
+				continue;
+			}
+
+			logger.info(
+				`Removing ${newSetting.key}: the extension does not set it anymore`,
+			);
+			await update(newSetting.key, undefined);
+			continue;
+		}
+
 		const currentValue = configuration.get(newSetting.key);
 
 		if (isDeepStrictEqual(currentValue, newSetting.value)) {
@@ -371,36 +435,64 @@ export async function updateVSCodeSettings(
 				continue;
 			}
 
-			updatedKeys.push(newSetting.key);
-			await configuration.update(newSetting.key, mergedValue, target);
+			await update(newSetting.key, mergedValue);
 		} else {
-			updatedKeys.push(newSetting.key);
-			await configuration.update(newSetting.key, newSetting.value, target);
+			await update(newSetting.key, newSetting.value);
 		}
 	}
-	return updatedKeys;
+	return { updatedKeys, unsupportedKeys };
 }
 
+const SELECTED_WORKSPACE_FOLDER_KEY = "selectedWorkspaceFolder";
+
+/**
+ * The workspace folder the extension works on. A multi-root workspace may hold
+ * several folders with the same name (`services/api` and `apps/api` are both
+ * called `api`), so the selection is stored as a path: stored by name, picking
+ * the second one kept resolving to the first.
+ */
 export const getCurrentWorkspaceFolder = (context: vscode.ExtensionContext) => {
 	const availableFolders = vscode.workspace.workspaceFolders;
-	if (!availableFolders) {
+	if (!availableFolders?.length) {
 		return;
 	}
 
-	const selectedWorkspaceFolder = context.workspaceState.get(
-		"selectedWorkspaceFolder",
+	const selectedWorkspaceFolder = context.workspaceState.get<string>(
+		SELECTED_WORKSPACE_FOLDER_KEY,
 	);
 	if (!selectedWorkspaceFolder) {
 		return availableFolders[0];
 	}
 
-	const foundFolder = availableFolders.find(
-		(folder) => folder.name === selectedWorkspaceFolder,
+	return (
+		availableFolders.find(
+			(folder) => folder.uri.fsPath === selectedWorkspaceFolder,
+		) ??
+		// selections made before the key held a path
+		availableFolders.find(
+			(folder) => folder.name === selectedWorkspaceFolder,
+		) ??
+		availableFolders[0]
 	);
-	if (foundFolder) {
-		return foundFolder;
-	}
-	return availableFolders[0];
+};
+
+export const setCurrentWorkspaceFolder = (
+	context: vscode.ExtensionContext,
+	folder: vscode.WorkspaceFolder,
+) => {
+	return context.workspaceState.update(
+		SELECTED_WORKSPACE_FOLDER_KEY,
+		folder.uri.fsPath,
+	);
+};
+
+export const clearCurrentWorkspaceFolder = (
+	context: vscode.ExtensionContext,
+) => {
+	return context.workspaceState.update(
+		SELECTED_WORKSPACE_FOLDER_KEY,
+		undefined,
+	);
 };
 
 export const getCurrentWorkspaceFolderPath = (

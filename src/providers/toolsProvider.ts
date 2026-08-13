@@ -681,12 +681,96 @@ export function registerToolsCommands(
 			const { allExtensions, forToolName } =
 				await buildConfigurableExtensionsLookup();
 
-			const tools = shouldIncludeGlobalTools()
-				? await miseService.getCurrentTools()
-				: await miseService.getCurrentTools({ local: true });
+			// each folder of a multi-root workspace gets the settings of its own
+			// mise config, written at folder scope. A single-folder window keeps
+			// the plain workspace-wide settings.
+			const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
+			const primaryFolderPath = miseService.getCurrentWorkspaceFolderPath();
+			const folders: Array<vscode.WorkspaceFolder | undefined> =
+				workspaceFolders.length > 1 ? [...workspaceFolders] : [undefined];
+
+			const miseConfig = await miseService.getMiseConfiguration();
+			const notificationContent: string[] = [];
+			const allTools: MiseTool[] = [];
+
+			for (const folder of folders) {
+				const folderService = folder
+					? miseService.forWorkspaceFolder(folder.uri.fsPath)
+					: miseService;
+
+				const tools = shouldIncludeGlobalTools()
+					? await folderService.getCurrentTools()
+					: await folderService.getCurrentTools({ local: true });
+				allTools.push(...tools);
+
+				const configurableTools = tools.filter((tool) => {
+					const configurableExtensions = forToolName(tool.name);
+					if (!configurableExtensions.length) {
+						return false;
+					}
+
+					return configurableExtensions.some((configurableExtension) => {
+						if (ignoreList.includes(configurableExtension.extensionId)) {
+							return false;
+						}
+
+						if (
+							!includeList.includes(configurableExtension.extensionId) &&
+							!includeList.includes("all")
+						) {
+							return false;
+						}
+
+						return vscode.extensions.getExtension(
+							configurableExtension.extensionId,
+						);
+					});
+				});
+
+				const configurableExtensionsWithTools = configurableTools
+					.filter((tool) => tool.installed)
+					.flatMap((tool) => {
+						return forToolName(tool.name).map((configurableExtension) => ({
+							tool,
+							configurableExtension,
+						}));
+					});
+
+				await Promise.allSettled(
+					configurableExtensionsWithTools.map(
+						async ({ tool, configurableExtension }) => {
+							try {
+								const { updatedKeys } = await configureExtension({
+									tool: tool,
+									miseConfig: miseConfig,
+									configurableExtension,
+									miseService: folderService,
+									useSymLinks: shouldUseSymLinks(),
+									useShims: shouldUseShims(),
+									workspaceFolder: folder,
+									isPrimaryFolder:
+										!folder || folder.uri.fsPath === primaryFolderPath,
+								});
+
+								if (updatedKeys.length === 0) {
+									return;
+								}
+
+								notificationContent.push(
+									`${folder ? `[${folder.name}] ` : ""}${configurableExtension.extensionId} (${updatedKeys.join(", ")})`,
+								);
+							} catch (error) {
+								logger.error(
+									`Failed to configure the extension ${configurableExtension.extensionId} for ${tool.name}: ${error}`,
+								);
+							}
+						},
+					),
+				);
+			}
 
 			const matchedCustomExtensions = new Set<ConfigurableExtension>();
-			for (const tool of tools) {
+			for (const tool of allTools) {
 				for (const ext of forToolName(tool.name)) {
 					if (ext.isCustom) {
 						matchedCustomExtensions.add(ext);
@@ -701,75 +785,6 @@ export function registerToolsCommands(
 					);
 				}
 			}
-
-			const configurableTools = tools.filter((tool) => {
-				const configurableExtensions = forToolName(tool.name);
-				if (!configurableExtensions.length) {
-					return false;
-				}
-
-				return configurableExtensions.some((configurableExtension) => {
-					if (ignoreList.includes(configurableExtension.extensionId)) {
-						return false;
-					}
-
-					if (
-						!includeList.includes(configurableExtension.extensionId) &&
-						!includeList.includes("all")
-					) {
-						return false;
-					}
-
-					return vscode.extensions.getExtension(
-						configurableExtension.extensionId,
-					);
-				});
-			});
-
-			if (!configurableTools.length) {
-				return;
-			}
-
-			const miseConfig = await miseService.getMiseConfiguration();
-
-			const notificationContent: string[] = [];
-			const configurableExtensionsWithTools = configurableTools
-				.filter((tool) => tool.installed)
-				.flatMap((tool) => {
-					return forToolName(tool.name).map((configurableExtension) => ({
-						tool,
-						configurableExtension,
-					}));
-				});
-
-			await Promise.allSettled(
-				configurableExtensionsWithTools.map(
-					async ({ tool, configurableExtension }) => {
-						try {
-							const { updatedKeys } = await configureExtension({
-								tool: tool,
-								miseConfig: miseConfig,
-								configurableExtension,
-								miseService,
-								useSymLinks: shouldUseSymLinks(),
-								useShims: shouldUseShims(),
-							});
-
-							if (updatedKeys.length === 0) {
-								return;
-							}
-
-							notificationContent.push(
-								`${configurableExtension.extensionId} (${updatedKeys.join(", ")})`,
-							);
-						} catch (error) {
-							logger.error(
-								`Failed to configure the extension ${configurableExtension.extensionId} for ${tool.name}: ${error}`,
-							);
-						}
-					},
-				),
-			);
 
 			if (notificationContent.length === 0) {
 				return;

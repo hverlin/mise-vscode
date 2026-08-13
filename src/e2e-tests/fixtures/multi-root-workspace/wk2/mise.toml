@@ -1,0 +1,14 @@
+[tools]
+jq = "1.8.1"
+# a different go than the one of the first folder, on purpose
+go = "1.25.0"
+# for the window-scoped settings suite: `shellformat.path` cannot hold a
+# folder value, and shfmt only lives in this folder, which is not the default
+shfmt = "3.13.1"
+
+[env]
+WHICH_FOLDER = "wk2"
+
+[tasks.wk2-task]
+description = "Task of the second workspace folder"
+run = "echo 'wk2'"
