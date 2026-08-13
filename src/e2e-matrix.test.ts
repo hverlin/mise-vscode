@@ -21,6 +21,6 @@ describe("ci e2e matrix", () => {
 			(match) => (match[1] as string).trim().split(/\s+/),
 		);
 
-		expect(ciLabels.toSorted()).toEqual(configLabels.toSorted());
+		expect([...ciLabels].sort()).toEqual([...configLabels].sort());
 	});
 });
