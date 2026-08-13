@@ -1,0 +1,8 @@
+# Stands in for the machine global config: the version pinned here must never
+# win over the one a workspace folder declares.
+[tools]
+jq = "1.6"
+
+[tasks.global-only-task]
+description = "Task defined in the global config"
+run = "echo 'global'"

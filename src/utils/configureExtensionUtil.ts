@@ -3,7 +3,11 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { ConfigurationTarget } from "vscode";
 import type { VSCodeSettingValue } from "../configuration";
-import { updateVSCodeSettings } from "../configuration";
+import {
+	getConfiguredSymLinksFolder,
+	REMOVE_SETTING,
+	updateVSCodeSettings,
+} from "../configuration";
 import type { MiseService } from "../miseService";
 import { isWindows } from "./fileUtils";
 import { logger } from "./logger";
@@ -130,6 +134,27 @@ export async function getConfiguredBinPath(
 		: pathToReturn;
 }
 
+/**
+ * Whether a setting value is a path the extension wrote itself: it points at a
+ * mise directory, or at the folder the tool symlinks are created in. Anything
+ * else was chosen by the user and is never touched.
+ */
+export function isMiseManagedPath(
+	value: unknown,
+	miseConfig: MiseConfig,
+): boolean {
+	if (typeof value !== "string" || value === "") {
+		return false;
+	}
+
+	const managedDirs = [
+		...Object.values(miseConfig.dirs),
+		getConfiguredSymLinksFolder(),
+	].filter((dir): dir is string => Boolean(dir));
+
+	return managedDirs.some((dir) => value.includes(dir));
+}
+
 export async function configureExtension({
 	tool,
 	miseConfig,
@@ -137,6 +162,8 @@ export async function configureExtension({
 	useShims = true,
 	useSymLinks = false,
 	miseService,
+	workspaceFolder,
+	isPrimaryFolder = true,
 }: {
 	tool: MiseTool;
 	miseConfig: MiseConfig;
@@ -144,6 +171,14 @@ export async function configureExtension({
 	configurableExtension: ConfigurableExtension;
 	useShims?: boolean;
 	useSymLinks?: boolean;
+	/**
+	 * Write the settings for this folder only (multi-root workspace). The
+	 * `miseService` has to be bound to the same folder, so the generated
+	 * values come from that folder's mise config.
+	 */
+	workspaceFolder?: vscode.WorkspaceFolder;
+	/** Whether this folder is the one picked with `Mise: select workspace folder` */
+	isPrimaryFolder?: boolean;
 }) {
 	const extension = vscode.extensions.getExtension(
 		configurableExtension.extensionId,
@@ -167,16 +202,55 @@ export async function configureExtension({
 		useSymLinks,
 	});
 
-	const updatedKeys = await updateVSCodeSettings(
-		Object.entries(extConfig)
-			.map(([key, value]) => (value !== undefined ? { key, value } : undefined))
-			.filter((x) => x !== undefined),
-		ConfigurationTarget.Workspace,
-	);
+	const settings = Object.entries(extConfig)
+		.map(([key, value]) => (value !== undefined ? { key, value } : undefined))
+		.filter((x) => x !== undefined);
+	const canRemove = (value: unknown) => isMiseManagedPath(value, miseConfig);
 
-	if (updatedKeys.length === 0) {
-		return { configurableExtension, updatedKeys: [] };
+	if (!workspaceFolder) {
+		const { updatedKeys } = await updateVSCodeSettings(
+			settings,
+			ConfigurationTarget.Workspace,
+			{ canRemove },
+		);
+		return { configurableExtension, updatedKeys };
 	}
 
-	return { configurableExtension, updatedKeys };
+	// multi-root workspace: the values computed for this folder apply to it
+	// alone, so another folder pinning a different version keeps its own
+	const { updatedKeys, unsupportedKeys } = await updateVSCodeSettings(
+		settings,
+		ConfigurationTarget.WorkspaceFolder,
+		{ canRemove, resource: workspaceFolder.uri },
+	);
+
+	// a setting the extension stops writing may also exist window-wide, left
+	// from before the settings were folder-scoped: clean that level too
+	const removals = settings.filter(
+		(setting) => setting.value === REMOVE_SETTING,
+	);
+	if (removals.length) {
+		const removed = await updateVSCodeSettings(
+			removals,
+			ConfigurationTarget.Workspace,
+			{ canRemove },
+		);
+		updatedKeys.push(...removed.updatedKeys);
+	}
+
+	// a window-scoped setting cannot hold a folder value: the selected folder
+	// decides it, written workspace-wide as before
+	if (isPrimaryFolder && unsupportedKeys.length) {
+		const windowSettings = settings.filter((setting) =>
+			unsupportedKeys.includes(setting.key),
+		);
+		const fallback = await updateVSCodeSettings(
+			windowSettings,
+			ConfigurationTarget.Workspace,
+			{ canRemove },
+		);
+		updatedKeys.push(...fallback.updatedKeys);
+	}
+
+	return { configurableExtension, updatedKeys: [...new Set(updatedKeys)] };
 }

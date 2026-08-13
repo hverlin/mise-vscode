@@ -3,6 +3,7 @@ import type { VSCodeSettingValue } from "../configuration";
 import {
 	getCustomBinaryExtensions,
 	getCustomFolderExtensions,
+	REMOVE_SETTING,
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
@@ -31,7 +32,7 @@ export type ConfigurableExtension = {
 		useSymLinks,
 		miseService,
 	}: GenerateConfigProps) => Promise<
-		Record<string, VSCodeSettingValue | undefined>
+		Record<string, VSCodeSettingValue | typeof REMOVE_SETTING | undefined>
 	>;
 };
 
@@ -163,10 +164,6 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			useShims,
 			useSymLinks,
 		}) => {
-			const goRoot = useSymLinks
-				? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
-				: tool.install_path;
-
 			const getConfiguredGoBin = (name: string, { optional = false } = {}) =>
 				getConfiguredBinPath(miseService, {
 					useShims,
@@ -188,6 +185,21 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 				// like `dlv`
 				getConfiguredGoBin("gopls"),
 			]);
+
+			// `go.goroot` names one install for the whole window, so it may only
+			// be set when the `go` binary is that same install. A shim resolves
+			// the version against the directory it runs in, so a directory
+			// pinning another go would get its own binary with a GOROOT of the
+			// other version, and every build there fails with
+			// `compile: version ... does not match go tool version ...` (#280).
+			// The go extension reads GOROOT off the binary when the setting is
+			// unset, which is what follows the shim.
+			const pinsGoRoot = !useShims && goBin !== undefined;
+			const goRoot = !pinsGoRoot
+				? REMOVE_SETTING
+				: useSymLinks
+					? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
+					: tool.install_path;
 
 			return {
 				"go.goroot": goRoot,

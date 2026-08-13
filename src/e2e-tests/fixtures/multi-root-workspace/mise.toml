@@ -1,0 +1,9 @@
+# Config of the directory holding the `.code-workspace` file. That directory is
+# not one of the workspace folders, but it is a parent of both of them, so mise
+# still loads it as part of the config chain.
+[tools]
+jq = "1.7.1"
+
+[tasks.root-only-task]
+description = "Task of the directory holding the code-workspace file"
+run = "echo 'root'"

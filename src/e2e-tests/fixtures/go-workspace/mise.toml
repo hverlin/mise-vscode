@@ -1,0 +1,5 @@
+[tools]
+# must win over the go of global-config.toml.
+# Same version as multi-root-workspace/wk2, the two fixtures share their
+# toolchain store.
+go = "1.25.0"

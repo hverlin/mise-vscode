@@ -1,0 +1,11 @@
+# A third workspace folder whose directory name collides with the first one:
+# vscode allows it, both folders are called `wk1`.
+[tools]
+jq = "1.7.0"
+
+[env]
+WHICH_FOLDER = "nested/wk1"
+
+[tasks.nested-wk1-task]
+description = "Task of the workspace folder whose name collides with wk1"
+run = "echo 'nested/wk1'"

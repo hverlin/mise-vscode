@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "wk1"
+		},
+		{
+			"path": "wk2"
+		},
+		{
+			"path": "nested/wk1"
+		}
+	],
+	"settings": {
+		"mise.configureExtensionsAutomatically": false
+	}
+}

@@ -29,6 +29,7 @@ import {
 import {
 	areSnippetsEnabled,
 	CONFIGURATION_FLAGS,
+	clearCurrentWorkspaceFolder,
 	enableAutoConfiguration,
 	getConfiguredBinPath,
 	getCurrentWorkspaceFolder,
@@ -36,6 +37,7 @@ import {
 	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
 	isTaskSymbolProviderEnabled,
+	setCurrentWorkspaceFolder,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
 	shouldShowNotificationIfMissingTools,
@@ -393,10 +395,7 @@ export class MiseExtension {
 						);
 
 						if (selectedFolder) {
-							context.workspaceState.update(
-								"selectedWorkspaceFolder",
-								selectedFolder.name,
-							);
+							await setCurrentWorkspaceFolder(context, selectedFolder);
 							vscode.commands.executeCommand(MISE_RELOAD);
 						}
 						return;
@@ -412,40 +411,26 @@ export class MiseExtension {
 							.join(" "),
 					});
 					if (selectedFolder) {
-						context.workspaceState.update(
-							"selectedWorkspaceFolder",
-							selectedFolder.name,
-						);
+						await setCurrentWorkspaceFolder(context, selectedFolder);
 						vscode.commands.executeCommand(MISE_RELOAD);
 					}
 				},
 			),
 		);
 
-		vscode.workspace.onDidChangeWorkspaceFolders(() => {
+		vscode.workspace.onDidChangeWorkspaceFolders(async () => {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders?.length) {
-				context.workspaceState.update("selectedWorkspaceFolder", undefined);
+				await clearCurrentWorkspaceFolder(context);
 				vscode.commands.executeCommand(MISE_RELOAD);
 				return;
 			}
 
-			const selectedWorkspaceFolderName = context.workspaceState.get(
-				"selectedWorkspaceFolder",
-			);
-
-			const selectedFolder = vscode.workspace.workspaceFolders?.find(
-				(folder) => folder.name === selectedWorkspaceFolderName,
-			);
-
-			if (!selectedWorkspaceFolderName || !selectedFolder) {
-				const firstFolder = workspaceFolders[0];
-				if (!selectedFolder && firstFolder) {
-					context.workspaceState.update(
-						"selectedWorkspaceFolder",
-						firstFolder.name,
-					);
-				}
+			// the folder that was selected may be gone: store whichever one is
+			// current now, which is the first folder when the selection is stale
+			const currentFolder = getCurrentWorkspaceFolder(context);
+			if (currentFolder) {
+				await setCurrentWorkspaceFolder(context, currentFolder);
 			}
 
 			vscode.commands.executeCommand(MISE_RELOAD);

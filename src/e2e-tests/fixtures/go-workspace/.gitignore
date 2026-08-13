@@ -1,0 +1,3 @@
+# Written at runtime by the go e2e suite
+.vscode/
+.gocache/

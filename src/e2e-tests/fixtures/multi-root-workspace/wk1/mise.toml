@@ -1,0 +1,15 @@
+[tools]
+jq = "1.8.0"
+# installed by the go suite: the toolchain the extension configures for this
+# folder has to be this one, not the one of the other folder
+go = "1.24.0"
+
+[env]
+WHICH_FOLDER = "wk1"
+# no other folder sets it: switching away has to remove it from the
+# extension host environment
+WK1_ONLY = "1"
+
+[tasks.wk1-task]
+description = "Task of the first workspace folder"
+run = "echo 'wk1'"
