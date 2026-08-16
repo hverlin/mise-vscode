@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.1](https://github.com/hverlin/mise-vscode/compare/v1.23.0...v1.23.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* configure extensions per workspace folder in multi-root workspaces ([#280](https://github.com/hverlin/mise-vscode/issues/280)) ([#281](https://github.com/hverlin/mise-vscode/issues/281)) ([52a2104](https://github.com/hverlin/mise-vscode/commit/52a2104afad40fd56a2ead9858581db03716c1d9))
+
 ## [1.23.0](https://github.com/hverlin/mise-vscode/compare/v1.22.0...v1.23.0) (2026-08-05)
 
 
