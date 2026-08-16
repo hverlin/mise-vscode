@@ -1,0 +1,3 @@
+# Stands in for the machine global config: the python of the workspace has to
+# be the one its folder declares, never one the machine running the suite has.
+[tools]

@@ -1,0 +1,9 @@
+# Written at runtime by the multi-root python e2e suite
+.mise-data/
+.mise-cache/
+# throwaway copy of multi-root-python.code-workspace the suite runs against
+*.generated.code-workspace
+# folder-scoped settings written by per-folder extension configuration
+.vscode/
+# venv mise creates in python-app
+.venv/
