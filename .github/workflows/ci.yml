@@ -48,6 +48,9 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     name: e2e-tests (${{ matrix.group }})
+    # the sdk-extensions and supported-extensions groups download SDKs and a
+    # dozen extensions; a hung run would otherwise hold a runner for 6 hours
+    timeout-minutes: 60
 
     strategy:
       fail-fast: false
@@ -63,6 +66,14 @@ jobs:
           # downloads happen once when they run on the same runner
           - group: go
             labels: multi-root go
+          # every prebuilt-binary tool of the supported-extensions docs table;
+          # its own group since the suite downloads over a dozen tools and
+          # marketplace extensions
+          - group: supported-extensions
+            labels: supported-extensions
+          # the docs table rows whose tool is a full SDK (java, dotnet, pkl)
+          - group: sdk-extensions
+            labels: sdk-extensions
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -79,4 +90,8 @@ jobs:
 
       - run: aube ci --frozen-lockfile
       - run: node --run build
+      # the pkl extension is not on the marketplace: its vsix comes from the
+      # apple/pkl-vscode releases and is installed from a local file
+      - if: contains(matrix.labels, 'sdk-extensions')
+        run: node --run fetch-pkl-vsix
       - run: xvfb-run -a npx vscode-test --label ${{ matrix.labels }}

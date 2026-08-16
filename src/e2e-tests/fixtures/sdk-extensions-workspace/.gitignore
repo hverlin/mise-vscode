@@ -1,0 +1,4 @@
+# Written at runtime by the sdk-extensions e2e suite
+.mise-data/
+.mise-cache/
+.vscode/

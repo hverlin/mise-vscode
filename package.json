@@ -1313,7 +1313,8 @@
     "lint-fix": "biome check --fix",
     "lint": "biome ci",
     "test": "bun test",
-    "e2e-tests": "vscode-test"
+    "e2e-tests": "vscode-test",
+    "fetch-pkl-vsix": "node scripts/fetch-pkl-vsix.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

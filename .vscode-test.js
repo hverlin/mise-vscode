@@ -17,6 +17,18 @@ fs.copyFileSync(
 	multiRootWorkspaceFile,
 );
 
+// The Pkl extension is not published on the marketplace: Apple ships it as a
+// `.vsix` on GitHub releases, fetched by `node --run fetch-pkl-vsix`. When it
+// has not been fetched, the sdk-extensions suite skips its pkl tests instead
+// of failing, so the other suites of the label still run.
+const pklVsixDir = path.join(__dirname, ".vscode-test", "vsix");
+const pklVsix = fs.existsSync(pklVsixDir)
+	? fs
+			.readdirSync(pklVsixDir)
+			.filter((file) => file.endsWith(".vsix"))
+			.map((file) => path.join(pklVsixDir, file))
+	: [];
+
 // MISE_CEILING_PATHS stops mise from traversing above the fixtures directory,
 // so the workspaces under test never inherit this repository's own mise config.
 // Ceiling paths are exclusive: configs at the workspace root are still loaded.
@@ -162,6 +174,104 @@ module.exports = defineConfig([
 		mocha: {
 			require: ["tsx/cjs"],
 			timeout: 120_000,
+		},
+	},
+	{
+		label: "supported-extensions",
+		files: "src/e2e-tests/supported-extensions/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "supported-extensions-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's real global config out of the tests, and keep the
+			// tools installed by the suite out of the machine's mise data dir.
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"supported-extensions-workspace",
+				"global-config.toml",
+			),
+			MISE_DATA_DIR: path.join(
+				fixturesPath,
+				"supported-extensions-workspace",
+				".mise-data",
+			),
+			MISE_CACHE_DIR: path.join(
+				fixturesPath,
+				"supported-extensions-workspace",
+				".mise-cache",
+			),
+		},
+		// One marketplace extension per prebuilt-binary row of the
+		// supported-extensions docs table. The NodeJS row targets the built-in
+		// ms-vscode.js-debug, which needs no install.
+		installExtensions: [
+			"ms-python.python",
+			"denoland.vscode-deno",
+			"oven.bun-vscode",
+			"timonwong.shellcheck",
+			"foxundermoon.shell-format",
+			"signageos.signageos-vscode-sops",
+			"exiasr.hadolint",
+			"bufbuild.vscode-buf",
+			"charliermarsh.ruff",
+			"astral-sh.ty",
+			"biomejs.biome",
+			"sumneko.lua",
+			"twxs.cmake",
+			"ziglang.vscode-zig",
+			"bazelbuild.vscode-bazel",
+		],
+		mocha: {
+			require: ["tsx/cjs"],
+			// downloads over a dozen tools on a cold cache
+			timeout: 600_000,
+		},
+	},
+	{
+		label: "sdk-extensions",
+		files: "src/e2e-tests/sdk-extensions/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "sdk-extensions-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's real global config out of the tests, and keep the
+			// SDKs installed by the suite out of the machine's mise data dir.
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"sdk-extensions-workspace",
+				"global-config.toml",
+			),
+			MISE_DATA_DIR: path.join(
+				fixturesPath,
+				"sdk-extensions-workspace",
+				".mise-data",
+			),
+			MISE_CACHE_DIR: path.join(
+				fixturesPath,
+				"sdk-extensions-workspace",
+				".mise-cache",
+			),
+			// tells the suite whether to assert the pkl rows or skip them
+			MISE_E2E_PKL_VSIX: pklVsix.length ? "1" : "",
+		},
+		// The java rows of the docs table: oracle.oracle-java plus the entries
+		// sharing its code path. salesforce.salesforcedx-vscode-apex shares it
+		// too but is left out, so its row stays unasserted. The pkl vsix is a
+		// local file, not a marketplace id.
+		installExtensions: [
+			"oracle.oracle-java",
+			"redhat.java",
+			"vscjava.vscode-gradle",
+			"SonarSource.sonarlint-vscode",
+			"ms-dotnettools.vscode-dotnet-runtime",
+			...pklVsix,
+		],
+		mocha: {
+			require: ["tsx/cjs"],
+			// installs a JDK and the dotnet SDK on a cold cache
+			timeout: 900_000,
 		},
 	},
 	{

@@ -1,0 +1,10 @@
+# The rows of the supported-extensions docs table whose tool is a full SDK
+# rather than a single prebuilt binary. They live in their own suite because
+# each install is hundreds of megabytes.
+#
+# `pkl` is declared by its short name while the extension entry lists
+# `aqua:apple/pkl`, so the suite also covers the registry name matching.
+[tools]
+java = "temurin-21.0.12+8.0.LTS"
+dotnet = "10.0.400"
+pkl = "0.32.1"

@@ -108,7 +108,8 @@ description = "Run tests"
 run = "node --run test"
 
 [tasks.e2e-tests]
-run = "node --run e2e-tests"
+# the pkl extension is not on the marketplace, so its vsix is fetched first
+run = ["node --run fetch-pkl-vsix", "node --run e2e-tests"]
 
 [tasks.e2e-test-action]
 tools = { act = "latest" }
