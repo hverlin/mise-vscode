@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "other-app"
+		},
+		{
+			"path": "python-app"
+		},
+		{
+			"path": "no-mise"
+		}
+	],
+	"settings": {
+		"mise.configureExtensionsAutomatically": false
+	}
+}

@@ -5,16 +5,28 @@ const fixturesPath = path.join(__dirname, "src/e2e-tests/fixtures/");
 
 // The multi-root suites write workspace-level settings, which land in the
 // .code-workspace file itself. Those writes are part of what is under test and
-// cannot always be cleaned reliably, so the suite runs against a throwaway
-// gitignored copy of the committed workspace file, refreshed on every run.
-const multiRootWorkspaceFile = path.join(
-	fixturesPath,
+// cannot always be cleaned reliably, so each suite runs against a throwaway
+// gitignored copy of its committed workspace file, refreshed on every run.
+const generatedWorkspaceFile = (fixture, name) => {
+	const generated = path.join(
+		fixturesPath,
+		fixture,
+		`${name}.generated.code-workspace`,
+	);
+	fs.copyFileSync(
+		path.join(fixturesPath, fixture, `${name}.code-workspace`),
+		generated,
+	);
+	return generated;
+};
+
+const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
-	"multi-root.generated.code-workspace",
+	"multi-root",
 );
-fs.copyFileSync(
-	path.join(fixturesPath, "multi-root-workspace", "multi-root.code-workspace"),
-	multiRootWorkspaceFile,
+const multiRootPythonWorkspaceFile = generatedWorkspaceFile(
+	"multi-root-python-workspace",
+	"multi-root-python",
 );
 
 // The Pkl extension is not published on the marketplace: Apple ships it as a
@@ -335,6 +347,42 @@ module.exports = defineConfig([
 			require: ["tsx/cjs"],
 			// the go suite installs two toolchains
 			timeout: 600_000,
+		},
+	},
+	{
+		label: "multi-root-python",
+		files: "src/e2e-tests/multi-root-python/*.e2e.ts",
+		// a multi-root workspace where a single folder is a python project
+		workspaceFolder: multiRootPythonWorkspaceFile,
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			// Keep the machine's real global config out of the tests, and keep the
+			// python installed by the suite out of the machine's mise data dir.
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				fixturesPath,
+				"multi-root-python-workspace",
+				"global-config.toml",
+			),
+			MISE_DATA_DIR: path.join(
+				fixturesPath,
+				"multi-root-python-workspace",
+				".mise-data",
+			),
+			MISE_CACHE_DIR: path.join(
+				fixturesPath,
+				"multi-root-python-workspace",
+				".mise-cache",
+			),
+		},
+		// ms-python.python is the extension under test: its interpreter path is
+		// relative to the folder it is written for
+		installExtensions: ["ms-python.python"],
+		mocha: {
+			require: ["tsx/cjs"],
+			// installs a python on a cold cache
+			timeout: 300_000,
 		},
 	},
 	{

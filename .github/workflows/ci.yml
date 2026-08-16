@@ -48,9 +48,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     name: e2e-tests (${{ matrix.group }})
-    # the sdk-extensions and supported-extensions groups download SDKs and a
-    # dozen extensions; a hung run would otherwise hold a runner for 6 hours
-    timeout-minutes: 60
+    timeout-minutes: 10
 
     strategy:
       fail-fast: false
@@ -61,7 +59,7 @@ jobs:
           - group: core
             labels: default tool-versions bootstrap broken-config command-injection
           - group: workspaces
-            labels: projects custom-extensions task-cache monorepo
+            labels: projects custom-extensions task-cache monorepo multi-root-python
           # multi-root and go share their toolchain store, so the go
           # downloads happen once when they run on the same runner
           - group: go

@@ -1,0 +1,8 @@
+# The only python project of the window. mise activates a venv for it, so the
+# interpreter path the extension writes is relative to this folder and belongs
+# to its settings alone (https://github.com/hverlin/mise-vscode/issues/152).
+[tools]
+python = "3.14.7"
+
+[env]
+_.python.venv = { path = ".venv", create = true }

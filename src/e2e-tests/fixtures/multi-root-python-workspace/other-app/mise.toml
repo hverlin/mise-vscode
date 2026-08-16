@@ -1,0 +1,10 @@
+# A mise project that is not a python project: it has no venv, so an
+# interpreter path written for another folder would point it at a directory
+# that does not exist. It is the first folder of the workspace, the one the
+# extension works on until another is selected.
+[env]
+WHICH_FOLDER = "other-app"
+
+[tasks.other-app-task]
+description = "Task of the folder without python"
+run = "echo 'other-app'"
