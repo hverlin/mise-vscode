@@ -104,6 +104,18 @@ const nodeSize = (node: Node, estimatedHeight: number = NODE_HEIGHT) => ({
 });
 
 /**
+ * react-flow hides a node until it knows its size, and it reads that size off
+ * the node object we hand it. Rebuilding the nodes (hover highlight, search,
+ * filters) hands it fresh objects whose `measured` is empty, so without a
+ * fallback size every card blinks until the resize observer catches up. The
+ * layout estimate is that fallback; `measured` still wins once it lands.
+ */
+const estimatedDimensions = (width: number, height: number) => ({
+	initialWidth: width,
+	initialHeight: height,
+});
+
+/**
  * Position nodes as a DAG (react-flow has no layout engine). Nodes without
  * any edge would all end up in one endless dagre rank, so they are packed
  * into a grid below the connected graph instead.
@@ -137,6 +149,7 @@ export function layoutGraph<NodeType extends Node>(
 		return {
 			...node,
 			...handlePositions(direction),
+			...estimatedDimensions(width, height),
 			position: { x: x - width / 2, y: y - height / 2 },
 		};
 	});
@@ -164,7 +177,12 @@ export function layoutGraph<NodeType extends Node>(
 		const position = { x: cursorX, y: cursorY };
 		cursorX += width + GRID_GAP_X;
 		rowHeight = Math.max(rowHeight, height);
-		return { ...node, ...handlePositions(direction), position };
+		return {
+			...node,
+			...handlePositions(direction),
+			...estimatedDimensions(width, height),
+			position,
+		};
 	});
 
 	return [...positionedConnected, ...positionedIsolated];
@@ -467,9 +485,14 @@ export function FlowGraph({
 	/** extra section appended to the bottom toolbar */
 	toolbarExtra?: React.ReactNode;
 }) {
-	const colorMode = document.body.classList.contains("vscode-light")
-		? "light"
-		: "dark";
+	// the light high contrast theme is `vscode-high-contrast vscode-high-contrast-light`,
+	// so it has no `vscode-light` class to match on
+	const themeClasses = document.body.classList;
+	const colorMode =
+		themeClasses.contains("vscode-light") ||
+		themeClasses.contains("vscode-high-contrast-light")
+			? "light"
+			: "dark";
 
 	const hover = useHoverHighlight(nodes, edges);
 

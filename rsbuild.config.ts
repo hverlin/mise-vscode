@@ -12,6 +12,11 @@ export default defineConfig({
 		cleanDistPath: false,
 		sourceMap: { js: "source-map" },
 		target: "node",
+		// rsbuild defaults the node target to ESM output and no minification.
+		// vscode loads the extension entry with require(), and the bundle ships
+		// in the vsix, so both defaults have to be turned back off.
+		module: false,
+		minify: true,
 		externals: { vscode: "commonjs vscode" },
 	},
 });
