@@ -1,0 +1,24 @@
+# Every tool of the supported-extensions docs table
+# (docs/src/content/docs/reference/Supported-extensions.md) that installs from
+# a prebuilt binary. The rows that need a multi-gigabyte SDK or a compile from
+# source (java, dart, flutter, swift, erlang, julia, php, dotnet, ginkgo) are
+# left out; go has its own e2e suite.
+[tools]
+node = "26.7.0"
+deno = "2.9.5"
+bun = "1.3.14"
+python = "3.14.7"
+zig = "0.16.0"
+zls = "0.16.0"
+shellcheck = "0.11.0"
+shfmt = "3.13.1"
+sops = "3.13.3"
+hadolint = "2.15.1"
+buf = "1.72.0"
+ruff = "0.16.2"
+ty = "0.0.71"
+biome = "2.5.8"
+lua-language-server = "3.19.0"
+cmake = "4.4.2"
+bazelisk = "1.29.0"
+buildifier = "8.5.1"
