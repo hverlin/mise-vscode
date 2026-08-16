@@ -65,12 +65,15 @@ describe("quoteShellArg", () => {
 		"~",
 	];
 
-	it.each(
-		injections,
-	)("keeps %p a single literal argument in sh", async (arg) => {
-		const output = await runInSh(`printf '%s' ${quoteShellArg(arg, "posix")}`);
-		expect(output).toBe(arg);
-	});
+	it.each(injections)(
+		"keeps %p a single literal argument in sh",
+		async (arg) => {
+			const output = await runInSh(
+				`printf '%s' ${quoteShellArg(arg, "posix")}`,
+			);
+			expect(output).toBe(arg);
+		},
+	);
 
 	it("quotes for powershell by doubling single quotes", () => {
 		expect(quoteShellArg("x'; rm -rf /", "powershell")).toBe("'x''; rm -rf /'");
