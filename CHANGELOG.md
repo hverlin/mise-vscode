@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/hverlin/mise-vscode/compare/v1.23.1...v1.24.0) (2026-08-20)
+
+
+### Features
+
+* Setting to hide/show custom extension warning ([#289](https://github.com/hverlin/mise-vscode/issues/289)) ([89c2054](https://github.com/hverlin/mise-vscode/commit/89c205418009ee591897bd91ba3f1849fc0c0b81))
+
 ## [1.23.1](https://github.com/hverlin/mise-vscode/compare/v1.23.0...v1.23.1) (2026-08-16)
 
 
