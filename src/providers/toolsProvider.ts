@@ -19,6 +19,7 @@ import {
 	getIncludeList,
 	isMiseExtensionEnabled,
 	shouldIncludeGlobalTools,
+	shouldShowCustomExtensionConfigWarnings,
 	shouldUseShims,
 	shouldUseSymLinks,
 } from "../configuration";
@@ -769,20 +770,22 @@ export function registerToolsCommands(
 				);
 			}
 
-			const matchedCustomExtensions = new Set<ConfigurableExtension>();
-			for (const tool of allTools) {
-				for (const ext of forToolName(tool.name)) {
-					if (ext.isCustom) {
-						matchedCustomExtensions.add(ext);
+			if (shouldShowCustomExtensionConfigWarnings()) {
+				const matchedCustomExtensions = new Set<ConfigurableExtension>();
+				for (const tool of allTools) {
+					for (const ext of forToolName(tool.name)) {
+						if (ext.isCustom) {
+							matchedCustomExtensions.add(ext);
+						}
 					}
 				}
-			}
 
-			for (const ext of allExtensions) {
-				if (ext.isCustom && !matchedCustomExtensions.has(ext)) {
-					logger.warn(
-						`Custom extension config for ${ext.extensionId}: no current tool matches toolSources [${ext.toolNames.join(", ")}]. toolSources are matched against the tool names from \`mise ls\` and their registry equivalents.`,
-					);
+				for (const ext of allExtensions) {
+					if (ext.isCustom && !matchedCustomExtensions.has(ext)) {
+						logger.warn(
+							`Custom extension config for ${ext.extensionId}: no current tool matches toolSources [${ext.toolNames.join(", ")}]. toolSources are matched against the tool names from \`mise ls\` and their registry equivalents.`,
+						);
+					}
 				}
 			}
 

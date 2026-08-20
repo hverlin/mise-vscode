@@ -40,6 +40,7 @@ export const CONFIGURATION_FLAGS = {
 	customFolderExtensions: "customFolderExtensions",
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
+	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
 } as const;
 
 const getExtensionConfig = () => {
@@ -299,6 +300,13 @@ export const isTaskSymbolProviderEnabled = () => {
 
 export const shouldResolveMonorepoProjectConfigs = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.resolveMonorepoProjectConfigs, true);
+};
+
+export const shouldShowCustomExtensionConfigWarnings = (): boolean => {
+	return getConfOrElse(
+		CONFIGURATION_FLAGS.showCustomExtensionConfigWarnings,
+		true,
+	);
 };
 
 type VSCodeSettingSubdirs = {

@@ -599,6 +599,13 @@
               }
             }
           }
+        },
+        "mise.showCustomExtensionConfigWarnings": {
+          "order": 21,
+          "type": "boolean",
+          "title": "Show custom extension config warnings",
+          "default": true,
+          "markdownDescription": "Show a warning when a custom extension config's `toolSources` do not match any current tools. Disable this if you keep custom extension configs across multiple projects, even if not all projects use those tools."
         }
       }
     },
