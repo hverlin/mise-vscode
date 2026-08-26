@@ -826,6 +826,18 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.showHiddenTasks",
+        "title": "Mise: Show Hidden Tasks",
+        "icon": "$(eye)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.hideHiddenTasks",
+        "title": "Mise: Hide Hidden Tasks",
+        "icon": "$(eye-closed)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.openToolDefinition",
         "title": "Mise: Open Tool Definition",
         "enablement": "!isWeb"
@@ -1101,6 +1113,16 @@
           "group": "navigation@3"
         },
         {
+          "command": "mise.showHiddenTasks",
+          "when": "view == miseTasksView && !mise.tasksShowHidden",
+          "group": "navigation@4"
+        },
+        {
+          "command": "mise.hideHiddenTasks",
+          "when": "view == miseTasksView && mise.tasksShowHidden",
+          "group": "navigation@4"
+        },
+        {
           "command": "mise.listAllTools",
           "when": "view == miseToolsView",
           "group": "navigation@1"
@@ -1148,7 +1170,7 @@
         {
           "command": "mise.reloadConfiguration",
           "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView || view == miseBootstrapView",
-          "group": "navigation@4"
+          "group": "navigation@5"
         }
       ],
       "view/item/context": [

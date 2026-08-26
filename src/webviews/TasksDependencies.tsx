@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
 	VscodeBadge,
 	VscodeButton,
-	VscodeCheckbox,
 	VscodeMultiSelect,
 	VscodeOption,
 	VscodeTabHeader,
@@ -109,14 +108,7 @@ const CARD_MODE_LABELS: Record<CardDisplayMode, string> = {
 	run: "Description + run",
 };
 
-/** Liam-style "show <mode>" dropdown; the popup opens above the toolbar */
-function ShowModeMenu({
-	mode,
-	onChange,
-}: {
-	mode: CardDisplayMode;
-	onChange: (mode: CardDisplayMode) => void;
-}) {
+function useDismissibleMenu() {
 	const [open, setOpen] = useState(false);
 
 	useEffect(() => {
@@ -137,6 +129,24 @@ function ShowModeMenu({
 		};
 	}, [open]);
 
+	const toggle = (event: React.MouseEvent) => {
+		event.stopPropagation();
+		setOpen((value) => !value);
+	};
+
+	return { open, toggle };
+}
+
+/** Liam-style "show <mode>" dropdown; the popup opens above the toolbar */
+function ShowModeMenu({
+	mode,
+	onChange,
+}: {
+	mode: CardDisplayMode;
+	onChange: (mode: CardDisplayMode) => void;
+}) {
+	const { open, toggle } = useDismissibleMenu();
+
 	return (
 		<div className="graph-show-menu">
 			<span className="graph-show-label">show</span>
@@ -145,10 +155,7 @@ function ShowModeMenu({
 				className="graph-show-button"
 				aria-haspopup="menu"
 				aria-expanded={open}
-				onClick={(e) => {
-					e.stopPropagation();
-					setOpen((value) => !value);
-				}}
+				onClick={toggle}
 			>
 				{CARD_MODE_LABELS[mode]}
 				<i className="codicon codicon-chevron-down" />
@@ -166,6 +173,53 @@ function ShowModeMenu({
 						>
 							<span>{CARD_MODE_LABELS[value]}</span>
 							{value === mode ? <i className="codicon codicon-check" /> : null}
+						</button>
+					))}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+type GraphOption = {
+	id: string;
+	label: string;
+	checked: boolean;
+	onChange: (checked: boolean) => void;
+};
+
+function GraphOptionsMenu({ options }: { options: GraphOption[] }) {
+	const { open, toggle } = useDismissibleMenu();
+
+	return (
+		<div className="graph-options-menu">
+			<button
+				type="button"
+				className="graph-options-button"
+				aria-label="View options"
+				aria-haspopup="menu"
+				aria-expanded={open}
+				onClick={toggle}
+			>
+				<span>View options</span>
+				<i className="codicon codicon-chevron-down" />
+			</button>
+			{open ? (
+				<div className="graph-options-popup" role="menu">
+					{options.map((option) => (
+						<button
+							key={option.id}
+							type="button"
+							role="menuitemcheckbox"
+							aria-checked={option.checked}
+							className="graph-show-item"
+							onClick={(event) => {
+								event.stopPropagation();
+								option.onChange(!option.checked);
+							}}
+						>
+							<span>{option.label}</span>
+							{option.checked ? <i className="codicon codicon-check" /> : null}
 						</button>
 					))}
 				</div>
@@ -623,6 +677,7 @@ const TaskDepsGraph = () => {
 	const [direction, setDirection] = useState<LayoutDirection>("TB");
 	const [onlyConnected, setOnlyConnected] = useState(false);
 	const [groupByProject, setGroupByProject] = useState(true);
+	const [showHidden, setShowHidden] = useState(true);
 	const [displayMode, setDisplayMode] =
 		useState<CardDisplayMode>("description");
 	const [searchTerm, setSearchTerm] = useState("");
@@ -640,8 +695,17 @@ const TaskDepsGraph = () => {
 			vscodeClient.request({ queryKey }) as Promise<TaskFlowGraphData>,
 	});
 
-	const tasks = graphQuery.data?.tasks ?? [];
-	const graphEdges = graphQuery.data?.edges ?? [];
+	const allTasks = graphQuery.data?.tasks ?? [];
+	const { tasks, graphEdges } = useMemo(() => {
+		const tasks = showHidden
+			? (graphQuery.data?.tasks ?? [])
+			: (graphQuery.data?.tasks ?? []).filter((task) => !task.hide);
+		const taskNames = new Set(tasks.map((task) => task.name));
+		const graphEdges = (graphQuery.data?.edges ?? []).filter(
+			(edge) => taskNames.has(edge.from) && taskNames.has(edge.to),
+		);
+		return { tasks, graphEdges };
+	}, [graphQuery.data, showHidden]);
 	// grouping only makes sense with several projects
 	const hasMultipleProjects = new Set(tasks.map((t) => t.projectKey)).size > 1;
 	const groupingEnabled = groupByProject && hasMultipleProjects;
@@ -738,6 +802,24 @@ const TaskDepsGraph = () => {
 			? tasks.find((t) => t.name === selectedTaskNames[0])
 			: undefined;
 
+	const handleShowHiddenChange = (checked: boolean) => {
+		setShowHidden(checked);
+		if (!checked) {
+			const hiddenNames = new Set(
+				allTasks.filter((task) => task.hide).map((task) => task.name),
+			);
+			setSelectedOptions((current) =>
+				current.filter((name) => !hiddenNames.has(name)),
+			);
+			setSelectedTaskNames((current) =>
+				current.filter((name) => !hiddenNames.has(name)),
+			);
+			if (contextMenu && hiddenNames.has(contextMenu.taskName)) {
+				setContextMenu(undefined);
+			}
+		}
+	};
+
 	const handleSelect = (
 		taskName: string | undefined,
 		event?: React.MouseEvent,
@@ -776,6 +858,31 @@ const TaskDepsGraph = () => {
 		}
 	};
 
+	const graphOptions: GraphOption[] = [
+		...(hasMultipleProjects
+			? [
+					{
+						id: "group-by-project",
+						label: "Group by project",
+						checked: groupByProject,
+						onChange: setGroupByProject,
+					},
+				]
+			: []),
+		{
+			id: "only-connected",
+			label: "Only tasks with dependencies",
+			checked: onlyConnected,
+			onChange: setOnlyConnected,
+		},
+		{
+			id: "show-hidden",
+			label: "Show hidden tasks",
+			checked: showHidden,
+			onChange: handleShowHiddenChange,
+		},
+	];
+
 	return (
 		<div className="graph-page">
 			<div className="graph-toolbar">
@@ -813,26 +920,7 @@ const TaskDepsGraph = () => {
 						))}
 					</VscodeMultiSelect>
 				</div>
-				{hasMultipleProjects ? (
-					<VscodeCheckbox
-						checked={groupByProject}
-						onChange={(e) => {
-							// @ts-expect-error
-							setGroupByProject(Boolean(e.target?.checked));
-						}}
-					>
-						Group by project
-					</VscodeCheckbox>
-				) : null}
-				<VscodeCheckbox
-					checked={onlyConnected}
-					onChange={(e) => {
-						// @ts-expect-error
-						setOnlyConnected(Boolean(e.target?.checked));
-					}}
-				>
-					Only tasks with dependencies
-				</VscodeCheckbox>
+				<GraphOptionsMenu options={graphOptions} />
 				<IconButton
 					iconName={expanded ? "screen-normal" : "screen-full"}
 					title="Toggle full screen"
@@ -868,6 +956,7 @@ const TaskDepsGraph = () => {
 							direction,
 							groupingEnabled,
 							onlyConnected,
+							showHidden,
 							expanded,
 							displayMode,
 							selectedOptions.join("|"),

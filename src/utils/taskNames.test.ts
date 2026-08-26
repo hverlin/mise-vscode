@@ -373,6 +373,16 @@ describe("dependsPatternMatchesTask", () => {
 		).toBe(true);
 	});
 
+	it("trims multiline depends entries before matching", () => {
+		expect(
+			dependsPatternMatchesTask(
+				"  :build\n  ",
+				"projects/frontend",
+				frontendBuild,
+			),
+		).toBe(true);
+	});
+
 	it("matches unqualified aliases", () => {
 		const format = createTask(
 			"//projects/backend:format",
@@ -710,6 +720,16 @@ describe("findTasksMatchingDependsPattern with ^ upstream references", () => {
 		const matches = findTasksMatchingDependsPattern(
 			tasks,
 			"^bu*",
+			"/repo/projects/frontend/mise.toml",
+			projects,
+		);
+		expect(matches.map((t) => t.name)).toEqual(["//projects/backend:build"]);
+	});
+
+	it("trims multiline upstream references", () => {
+		const matches = findTasksMatchingDependsPattern(
+			tasks,
+			"  ^build\n  ",
 			"/repo/projects/frontend/mise.toml",
 			projects,
 		);

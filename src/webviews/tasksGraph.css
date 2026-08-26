@@ -274,7 +274,8 @@ body.graph-view {
 	background: var(--vscode-editorWidget-border, #555);
 }
 
-.graph-show-menu {
+.graph-show-menu,
+.graph-options-menu {
 	position: relative;
 	display: flex;
 	align-items: center;
@@ -303,14 +304,15 @@ body.graph-view {
 	cursor: pointer;
 }
 
-.graph-show-button .codicon {
+.graph-show-button .codicon,
+.graph-options-button .codicon {
 	font-size: 12px;
 }
 
-.graph-show-popup {
+.graph-show-popup,
+.graph-options-popup {
 	position: absolute;
 	right: 0;
-	bottom: calc(100% + 10px);
 	z-index: 20;
 	min-width: 180px;
 	padding: 4px;
@@ -322,6 +324,36 @@ body.graph-view {
 		var(--vscode-editorWidget-background)
 	);
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.graph-show-popup {
+	bottom: calc(100% + 10px);
+}
+
+.graph-options-button {
+	display: inline-flex;
+	min-width: 130px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px;
+	padding: 3px 6px;
+	border: 1px solid var(--vscode-settings-dropdownBorder, #3c3c3c);
+	border-radius: 4px;
+	background: var(--vscode-settings-dropdownBackground, #313131);
+	color: var(--vscode-settings-dropdownForeground, var(--vscode-foreground));
+	font-size: 13px;
+	line-height: 18px;
+	cursor: pointer;
+}
+
+.graph-options-button:focus-visible {
+	border-color: var(--vscode-focusBorder);
+	outline: none;
+}
+
+.graph-options-popup {
+	top: calc(100% + 6px);
+	min-width: 240px;
 }
 
 .graph-show-item {
