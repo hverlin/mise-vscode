@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.25.0](https://github.com/hverlin/mise-vscode/compare/v1.24.0...v1.25.0) (2026-08-27)
+
+
+### Features
+
+* **tasks:** add support for toggling hidden tasks ([#293](https://github.com/hverlin/mise-vscode/issues/293)) ([1c1228d](https://github.com/hverlin/mise-vscode/commit/1c1228ddd402c89a5f5029b8908bdfa0c56f444e))
+
+
+### Bug Fixes
+
+* **tasks:** deps with leading whitespace were missing ([1c1228d](https://github.com/hverlin/mise-vscode/commit/1c1228ddd402c89a5f5029b8908bdfa0c56f444e))
+
 ## [1.24.0](https://github.com/hverlin/mise-vscode/compare/v1.23.1...v1.24.0) (2026-08-20)
 
 
