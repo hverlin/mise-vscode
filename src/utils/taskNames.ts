@@ -326,7 +326,7 @@ function findTasksMatchingDependsPatternForRoot(
 	ownerConfigRoot: string | null,
 	projects: MiseProject[],
 ): MiseTask[] {
-	const [taskPattern] = pattern.split(/\s+/);
+	const [taskPattern] = pattern.trim().split(/\s+/);
 	if (taskPattern?.startsWith("^")) {
 		return findUpstreamTasksMatchingPattern(
 			tasks,
@@ -477,7 +477,7 @@ export function dependsPatternMatchesTask(
 	target: MiseTask,
 ): boolean {
 	// depends entries may carry arguments: `depends = ["build --quick"]`
-	const [taskPattern] = pattern.split(/\s+/);
+	const [taskPattern] = pattern.trim().split(/\s+/);
 	if (!taskPattern) {
 		return false;
 	}

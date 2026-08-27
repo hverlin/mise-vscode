@@ -9,11 +9,13 @@ import {
 	MISE_EXPLAIN_TASK_CACHE,
 	MISE_GROUP_TASKS_BY_PROJECT,
 	MISE_GROUP_TASKS_BY_SOURCE,
+	MISE_HIDE_HIDDEN_TASKS,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
 	MISE_RUN_TASK,
 	MISE_RUN_TASK_WITHOUT_CACHE,
 	MISE_SEARCH_TASKS,
+	MISE_SHOW_HIDDEN_TASKS,
 	MISE_SHOW_TASK_CACHE_MENU,
 	MISE_WATCH_TASK,
 } from "../commands";
@@ -61,6 +63,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	private grouping: TaskTreeGrouping = "source";
 	private preferredGrouping: TaskTreeGrouping | undefined;
 	private hasMultipleProjects = false;
+	private showHiddenTasks = false;
 
 	constructor(private miseService: MiseService) {}
 
@@ -88,6 +91,23 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		this.hasMultipleProjects = new Set(tasks.map(getTaskProjectKey)).size > 1;
 		this.grouping = this.getEffectiveGrouping();
 		this.updateGroupingContext();
+	}
+
+	setShowHiddenTasks(showHiddenTasks: boolean): void {
+		if (this.showHiddenTasks === showHiddenTasks) {
+			return;
+		}
+		this.showHiddenTasks = showHiddenTasks;
+		this.updateHiddenTasksContext();
+		this.refresh();
+	}
+
+	private updateHiddenTasksContext() {
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.tasksShowHidden",
+			this.showHiddenTasks,
+		);
 	}
 
 	private updateGroupingContext() {
@@ -120,7 +140,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 			this.miseService.getCurrentWorkspaceFolderPath();
 
 		const [tasks, configFiles] = await Promise.all([
-			this.miseService.getTasks(),
+			this.miseService.getTasks({ includeHidden: this.showHiddenTasks }),
 			this.miseService.getMiseConfigFiles(),
 		]);
 
@@ -222,12 +242,12 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 	}
 
 	async getTasksNames(): Promise<string[]> {
-		const tasks = await this.miseService.getTasks();
+		const tasks = await this.getTasks();
 		return tasks.map((task) => task.name);
 	}
 
 	async getTasks(): Promise<MiseTask[]> {
-		return this.miseService.getTasks();
+		return this.miseService.getTasks({ includeHidden: this.showHiddenTasks });
 	}
 
 	async getParent(element: TreeNode): Promise<TreeNode | undefined> {
@@ -245,7 +265,7 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 
 	/** The tree item of a task, for `TreeView.reveal` (matched by id) */
 	async findTaskItem(taskName: string): Promise<TaskItem | undefined> {
-		const tasks = await this.miseService.getTasks();
+		const tasks = await this.getTasks();
 		const task = tasks.find((t) => t.name === taskName);
 		if (!task) {
 			return undefined;
@@ -673,8 +693,8 @@ export function registerTasksCommands(
 	tasksTreeView?: vscode.TreeView<TreeNode>,
 ) {
 	const miseService = taskProvider.getMiseService();
-	// Match the dependency graph's in-memory view controls: source grouping is
-	// restored whenever the extension is activated.
+	// Match the dependency graph's in-memory view controls: source grouping and
+	// hiding hidden tasks are restored whenever the extension is activated.
 	void vscode.commands.executeCommand(
 		"setContext",
 		"mise.tasksCanGroupByProject",
@@ -685,6 +705,11 @@ export function registerTasksCommands(
 		"mise.tasksGroupByProject",
 		false,
 	);
+	void vscode.commands.executeCommand(
+		"setContext",
+		"mise.tasksShowHidden",
+		false,
+	);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(MISE_GROUP_TASKS_BY_PROJECT, () => {
@@ -692,6 +717,12 @@ export function registerTasksCommands(
 		}),
 		vscode.commands.registerCommand(MISE_GROUP_TASKS_BY_SOURCE, () => {
 			taskProvider.setGrouping("source");
+		}),
+		vscode.commands.registerCommand(MISE_SHOW_HIDDEN_TASKS, () => {
+			taskProvider.setShowHiddenTasks(true);
+		}),
+		vscode.commands.registerCommand(MISE_HIDE_HIDDEN_TASKS, () => {
+			taskProvider.setShowHiddenTasks(false);
 		}),
 	);
 
