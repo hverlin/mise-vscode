@@ -1346,7 +1346,7 @@
     "fetch-pkl-vsix": "node scripts/fetch-pkl-vsix.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.8",
+    "@biomejs/biome": "2.5.10",
     "@rsbuild/core": "^2.1.13",
     "@rsbuild/plugin-react": "^2.1.0",
     "@rslib/core": "^0.23.2",
