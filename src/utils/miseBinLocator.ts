@@ -97,6 +97,8 @@ export async function resolveMisePath(
 		commonPaths.push(
 			path.join("/usr", "local", "bin", "mise"),
 			path.join("/opt", "homebrew", "bin", "mise"),
+			path.join("/home", "linuxbrew", ".linuxbrew", "bin", "mise"),
+			path.join(homedir, ".linuxbrew", "bin", "mise"),
 		);
 	}
 
@@ -127,8 +129,9 @@ export async function resolveMisePath(
 		}
 	}
 
+	logger.info(`PATH: ${process.env.PATH ?? "<unset>"}`);
 	throw new Error(
-		"Could not find mise binary in any standard location (PATH, ~/.local/bin, ~/bin, /usr/local/bin, /opt/homebrew/bin...)",
+		"Could not find mise binary in any standard location (PATH, ~/.local/bin, ~/bin, /usr/local/bin, /opt/homebrew/bin, /home/linuxbrew/.linuxbrew/bin...)",
 	);
 }
 
