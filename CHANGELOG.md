@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.1](https://github.com/hverlin/mise-vscode/compare/v1.25.0...v1.25.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* scan for linuxbrew folder to find mise ([e7b0ac7](https://github.com/hverlin/mise-vscode/commit/e7b0ac70898bc754283f2e7d0dc14dac056e6f3e))
+
 ## [1.25.0](https://github.com/hverlin/mise-vscode/compare/v1.24.0...v1.25.0) (2026-08-27)
 
 
