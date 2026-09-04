@@ -4,7 +4,7 @@ import {
 	getConfiguredBinPath,
 	shouldAutoDetectMiseBinPath,
 } from "../configuration";
-import { isPathInside } from "./fileUtils";
+import { isBareCommand, isPathInside, locateCommand } from "./fileUtils";
 import { logger } from "./logger";
 import { safeExec } from "./shell";
 
@@ -35,13 +35,26 @@ export async function resolveMisePath(
 
 	// gates every execution below: isValidBinary runs the candidate
 	const isUsableBinary = async (binPath: string) => {
-		if (
-			confirmWorkspaceBinary &&
-			workspaceRoots.some((root) => isPathInside(root, binPath))
-		) {
-			logger.info(`mise binary candidate is inside the workspace: ${binPath}`);
-			if (!(await confirmWorkspaceBinary(binPath))) {
-				throw new WorkspaceBinaryNotApprovedError(binPath);
+		if (confirmWorkspaceBinary) {
+			// The default value `mise` is a command name, not a file path. It is
+			// found through PATH, so the check has to look at the file PATH
+			// points to. Checking the name itself would resolve it against the
+			// working directory, which is the workspace when VS Code is started
+			// with `code .`: every project would then look like it ships its own
+			// mise binary (see #298).
+			const location = isBareCommand(binPath)
+				? locateCommand(binPath, { cwds: workspaceRoots })
+				: binPath;
+			if (
+				location &&
+				workspaceRoots.some((root) => isPathInside(root, location))
+			) {
+				logger.info(
+					`mise binary candidate is inside the workspace: ${location}`,
+				);
+				if (!(await confirmWorkspaceBinary(location))) {
+					throw new WorkspaceBinaryNotApprovedError(location);
+				}
 			}
 		}
 		return isValidBinary(binPath);

@@ -8,7 +8,9 @@ import {
 	expandPath,
 	getShebangFileExtension,
 	getSourceProximityRank,
+	isBareCommand,
 	isPathInside,
+	locateCommand,
 	resolveConfiguredBinPath,
 	setupTaskFile,
 } from "./fileUtils";
@@ -293,6 +295,120 @@ describe("isPathInside", () => {
 		expect(isPathInside(root, path.resolve("/repo/project-evil/mise"))).toBe(
 			false,
 		);
+	});
+});
+
+describe("isBareCommand", () => {
+	it("recognises a command name looked up in PATH", () => {
+		expect(isBareCommand("mise")).toBe(true);
+		expect(isBareCommand("mise.exe")).toBe(true);
+	});
+
+	it("rejects anything holding a path separator", () => {
+		expect(isBareCommand("./mise")).toBe(false);
+		expect(isBareCommand("bin/mise")).toBe(false);
+		expect(isBareCommand("/usr/local/bin/mise")).toBe(false);
+		expect(isBareCommand("bin\\mise.exe")).toBe(false);
+	});
+});
+
+describe("locateCommand", () => {
+	const workspace = path.resolve("/repo/project");
+	const existsIn = (...paths: string[]) => {
+		return (filePath: string) => paths.includes(filePath);
+	};
+	const pathEnv = ["/usr/local/bin", "/usr/bin"]
+		.map((directory) => path.resolve(directory))
+		.join(path.delimiter);
+
+	it("finds the command in the first PATH directory holding it", () => {
+		expect(
+			locateCommand("mise", {
+				cwds: [workspace],
+				pathEnv,
+				windows: false,
+				exists: existsIn(
+					path.resolve("/usr/bin/mise"),
+					path.resolve("/usr/local/bin/mise"),
+				),
+			}),
+		).toBe(path.resolve("/usr/local/bin/mise"));
+	});
+
+	// the default `mise.binPath` is a bare name: with `code .` the working
+	// directory is the workspace, but nothing runs from there on POSIX (#298)
+	it("ignores the working directory on POSIX", () => {
+		expect(
+			locateCommand("mise", {
+				cwds: [workspace],
+				pathEnv,
+				windows: false,
+				exists: existsIn(path.join(workspace, "mise")),
+			}),
+		).toBeUndefined();
+	});
+
+	it("returns undefined when no directory holds the command", () => {
+		expect(
+			locateCommand("mise", {
+				cwds: [workspace],
+				pathEnv,
+				windows: false,
+				exists: existsIn(),
+			}),
+		).toBeUndefined();
+	});
+
+	it("skips empty PATH entries", () => {
+		expect(
+			locateCommand("mise", {
+				pathEnv: `${path.delimiter}${pathEnv}${path.delimiter}`,
+				windows: false,
+				exists: existsIn(path.resolve("/usr/bin/mise")),
+			}),
+		).toBe(path.resolve("/usr/bin/mise"));
+	});
+
+	it("checks the working directories before PATH on Windows", () => {
+		expect(
+			locateCommand("mise", {
+				cwds: [workspace],
+				pathEnv,
+				windows: true,
+				exists: existsIn(
+					path.join(workspace, "mise.exe"),
+					path.resolve("/usr/local/bin/mise.exe"),
+				),
+			}),
+		).toBe(path.join(workspace, "mise.exe"));
+	});
+
+	it("tries the .com and .exe extensions on Windows", () => {
+		expect(
+			locateCommand("mise", {
+				pathEnv,
+				windows: true,
+				exists: existsIn(path.resolve("/usr/bin/mise.com")),
+			}),
+		).toBe(path.resolve("/usr/bin/mise.com"));
+		expect(
+			locateCommand("mise.exe", {
+				pathEnv,
+				windows: true,
+				exists: existsIn(path.resolve("/usr/bin/mise.exe")),
+			}),
+		).toBe(path.resolve("/usr/bin/mise.exe"));
+	});
+
+	it("does not start a file without extension on Windows", () => {
+		expect(
+			locateCommand("mise", {
+				cwds: [workspace],
+				pathEnv,
+				windows: true,
+				exists: existsIn(path.join(workspace, "mise")),
+			}),
+		).toBeUndefined();
 	});
 });
 

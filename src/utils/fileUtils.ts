@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createReadStream, existsSync } from "node:fs";
+import { createReadStream, existsSync, statSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -65,6 +65,69 @@ export function isPathInside(directory: string, filePath: string): boolean {
 		relative !== ".." &&
 		!path.isAbsolute(relative)
 	);
+}
+
+/** Whether the value is a command name looked up in `PATH` rather than a file path */
+export function isBareCommand(value: string): boolean {
+	return !value.includes("/") && !value.includes("\\");
+}
+
+const isFile = (filePath: string) => {
+	try {
+		return statSync(filePath).isFile();
+	} catch {
+		return false;
+	}
+};
+
+/**
+ * Find the file that runs when a command name like `mise` is spawned.
+ * Returns undefined when nothing is found.
+ *
+ * The lookup follows the rules of the system:
+ * - on POSIX: each `PATH` directory, in order
+ * - on Windows: the working directories (`cwds`) first, then each `PATH`
+ *   directory, trying `mise.com` and `mise.exe`
+ */
+export function locateCommand(
+	command: string,
+	options: {
+		/** Working directories the command may be spawned from */
+		cwds?: readonly string[];
+		pathEnv?: string;
+		windows?: boolean;
+		exists?: (filePath: string) => boolean;
+	} = {},
+): string | undefined {
+	const {
+		cwds = [],
+		pathEnv = process.env.PATH ?? "",
+		windows = isWindows,
+		exists = isFile,
+	} = options;
+
+	const directories = [
+		...(windows ? cwds : []),
+		...pathEnv.split(path.delimiter).filter(Boolean),
+	];
+	// a name with an extension is tried as is, then `.com` and `.exe` are added
+	const names = windows
+		? [
+				...(path.extname(command) ? [command] : []),
+				`${command}.com`,
+				`${command}.exe`,
+			]
+		: [command];
+
+	for (const directory of directories) {
+		for (const name of names) {
+			const candidate = path.join(directory, name);
+			if (exists(candidate)) {
+				return candidate;
+			}
+		}
+	}
+	return undefined;
 }
 
 const WORKSPACE_FOLDER_VARIABLE = /^\$\{workspaceFolder(?::([^}]+))?\}[/\\]?/;
