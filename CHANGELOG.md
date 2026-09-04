@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.2](https://github.com/hverlin/mise-vscode/compare/v1.25.1...v1.25.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* do not treat the default mise.binPath as a workspace binary ([a62c80a](https://github.com/hverlin/mise-vscode/commit/a62c80a312738758f5b463142b7d729d463be4ce)), closes [#298](https://github.com/hverlin/mise-vscode/issues/298)
+
 ## [1.25.1](https://github.com/hverlin/mise-vscode/compare/v1.25.0...v1.25.1) (2026-09-04)
 
 
