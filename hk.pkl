@@ -1,6 +1,6 @@
-amends "package://github.com/jdx/hk/releases/download/v1.18.1/hk@1.18.1#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v1.57.0/hk@1.57.0#/Config.pkl"
 
-min_hk_version = "1.18.1"
+min_hk_version = "1.57.0"
 
 local linters = new Mapping<String, Step> {
   ["tsc"] {

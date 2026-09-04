@@ -1,9 +1,8 @@
 [tools]
-pkl = "0.29.1"
 node = "24"
-hk = "1.18.1"
-aube = "1.39.0"
-bun = "1.3.14"
+hk = "1.57.0"
+aube = "2.2.9"
+bun = "1.4.0"
 
 [settings]
 lockfile = true
