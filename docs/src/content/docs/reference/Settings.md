@@ -177,7 +177,9 @@ When enabled, the extension runs `mise reshim` before configuring extensions so 
 - **Type:** `boolean`
 - **Default:** `false`
 
-Create symlinks in your `.vscode` folder that links to the `mise` bin.
+Create symlinks to the `mise` tools in your `.vscode` folder and point the extension settings at them.
+
+Each symlink targets the mise shim when `mise.configureExtensionsUseShims` is enabled, and the installed binary otherwise.
 
 This is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:
 - every user must have the extension installed

@@ -323,7 +323,7 @@
           "type": "boolean",
           "title": "Configure extensions to use symlinks",
           "default": false,
-          "markdownDescription": "Create symlinks in your `.vscode` folder that links to the `mise` bin.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control.\n\nThe folder where the symlinks are created can be changed with `mise.configureExtensionsSymLinksFolder`."
+          "markdownDescription": "Create symlinks to the `mise` tools in your `.vscode` folder and point the extension settings at them.\n\nEach symlink targets the mise shim when `mise.configureExtensionsUseShims` is enabled, and the installed binary otherwise.\n\nThis is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:\n- every user must have the extension installed\n- the directory `.vscode/mise-tools` must be excluded from version control.\n\nThe folder where the symlinks are created can be changed with `mise.configureExtensionsSymLinksFolder`."
         },
         "mise.configureExtensionsSymLinksFolder": {
           "order": 7.05,

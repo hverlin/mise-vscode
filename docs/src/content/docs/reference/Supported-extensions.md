@@ -15,7 +15,8 @@ List of extensions that can be automatically configured to use tools from
   You can [update this feature in the settings](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims).
 - If you want to share your `.vscode/settings.json` file with others, you can
   enable [`configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks). This will create a folder in your
-  `.vscode` directory with a symlink to the tools installed by `mise`.
+  `.vscode` directory with a symlink to the tools installed by `mise`. The symlinks target the shims, or the installed binaries when
+  [`configureExtensionsUseShims`](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims) is disabled.
 
 | Extension                                                                                                    | Settings                                                                                                       | Comment                                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
