@@ -575,8 +575,6 @@ export function registerToolsCommands(
 		vscode.commands.registerCommand(
 			MISE_CONFIGURE_SDK_PATH,
 			async (toolName: string | undefined) => {
-				await miseService.miseReshim();
-
 				let selectedToolName = toolName;
 
 				const { forToolName } = await buildConfigurableExtensionsLookup();
@@ -638,6 +636,10 @@ export function registerToolsCommands(
 				const miseConfig = await miseService.getMiseConfiguration();
 				const useSymLinks = shouldUseSymLinks();
 				const useShims = useMiseShims === "Yes";
+				if (useShims) {
+					// the settings point at the mise shims, so they must exist first
+					await miseService.miseReshim();
+				}
 				for (const configurableExtension of configurableExtensions) {
 					configureExtension({
 						tool: selectedTool,
@@ -674,7 +676,10 @@ export function registerToolsCommands(
 			},
 		),
 		vscode.commands.registerCommand(MISE_CONFIGURE_ALL_SDK_PATHS, async () => {
-			await miseService.miseReshim();
+			if (shouldUseShims()) {
+				// the settings point at the mise shims, so they must exist first
+				await miseService.miseReshim();
+			}
 
 			const ignoreList = getIgnoreList();
 			const includeList = getIncludeList();

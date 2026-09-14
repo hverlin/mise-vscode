@@ -70,6 +70,8 @@ Automatically configure extensions for the current workspace. ([list of supporte
 
 This will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured.
 
+When `mise.configureExtensionsUseShims` is enabled, this also runs `mise reshim` on startup.
+
 ---
 
 ##### `mise.configureExtensionsAutomaticallyIgnoreList`
@@ -166,6 +168,8 @@ List of extensions that should be configured automatically. If both include and 
 - **Default:** `true`
 
 Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually.
+
+When enabled, the extension runs `mise reshim` before configuring extensions so that the shims exist. This rewrites the shims in the mise shims directory.
 
 ---
 

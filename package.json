@@ -215,7 +215,7 @@
           "order": 4,
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).\n\nThis will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured."
+          "markdownDescription": "Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).\n\nThis will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured.\n\nWhen `mise.configureExtensionsUseShims` is enabled, this also runs `mise reshim` on startup."
         },
         "mise.configureExtensionsAutomaticallyIgnoreList": {
           "order": 5,
@@ -316,7 +316,7 @@
           "type": "boolean",
           "title": "Configure extensions to use shims",
           "default": true,
-          "markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually."
+          "markdownDescription": "Use shims when configuring extensions. When shims are not used, note that you will have to configure environment variables manually.\n\nWhen enabled, the extension runs `mise reshim` before configuring extensions so that the shims exist. This rewrites the shims in the mise shims directory."
         },
         "mise.configureExtensionsUseSymLinks": {
           "order": 7,
