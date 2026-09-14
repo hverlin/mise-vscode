@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.3](https://github.com/hverlin/mise-vscode/compare/v1.25.2...v1.25.3) (2026-09-14)
+
+
+### Bug Fixes
+
+* only run mise reshim if configureExtensionsUseShims is enabled ([9f6ff8c](https://github.com/hverlin/mise-vscode/commit/9f6ff8ccdd4277b95b22706ca36c7f30e5ddebc9))
+
 ## [1.25.2](https://github.com/hverlin/mise-vscode/compare/v1.25.1...v1.25.2) (2026-09-04)
 
 
