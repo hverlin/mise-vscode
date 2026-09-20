@@ -1380,7 +1380,7 @@
     "cheerio": "^1.2.0",
     "micromatch": "^4.0.8",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "react-dom": "19.3.0",
     "react-error-boundary": "^6.1.2",
     "toml-v1": "^1.0.0",
     "zustand": "^5.0.15"
