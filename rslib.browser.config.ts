@@ -12,9 +12,9 @@ export default defineConfig({
 			},
 			plugins: [pluginNodePolyfill()],
 			format: "cjs",
-			autoExternal: false,
 			output: {
 				target: "web",
+				autoExternal: false,
 				externals: {
 					vscode: "commonjs vscode",
 				},
