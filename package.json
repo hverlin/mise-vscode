@@ -1349,7 +1349,7 @@
     "@biomejs/biome": "2.5.15",
     "@rsbuild/core": "^2.2.12",
     "@rsbuild/plugin-react": "^2.1.1",
-    "@rslib/core": "^0.23.2",
+    "@rslib/core": "^1.0.3",
     "@types/bun": "^1.4.2",
     "@types/micromatch": "^4.0.10",
     "@types/mocha": "^10.0.10",
