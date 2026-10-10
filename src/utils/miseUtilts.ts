@@ -326,12 +326,6 @@ export function renderDepsArray(deps?: depsArray) {
 		.join(", ");
 }
 
-export const isMiseTomlFile = (filename: string) => {
-	return (
-		/mise\.[^.]*\.?toml$/.test(filename) || filename.endsWith("config.toml")
-	);
-};
-
 /** `mise.toml`, `.mise.local.toml`, `config.dev.toml`, ... */
 const MISE_CONFIG_NAME = /^\.?mise(\.[^.]+)*\.toml$/;
 const MISE_CONFIG_DIR_NAME = /^config(\.[^.]+)*\.toml$/;
@@ -342,9 +336,8 @@ const pathSegments = (filePath: string) =>
 /**
  * Whether a path is one of the config files mise loads (see {@link misePatterns}).
  *
- * Stricter than {@link isMiseTomlFile}, which counts any `config.toml`: here it
- * only counts inside a `mise` directory, so a `.cargo/config.toml` is not taken
- * for a mise config.
+ * A `config.toml` only counts inside a `mise` directory, so a
+ * `.cargo/config.toml` is not taken for a mise config.
  */
 export function isMiseConfigPath(filePath: string): boolean {
 	const segments = pathSegments(filePath);

@@ -7,7 +7,7 @@ import {
 	findTaskDefinition,
 	getCachedTomlParser,
 } from "../utils/miseFileParser";
-import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
+import { isDependsKeyword } from "../utils/miseUtilts";
 import {
 	findTasksMatchingDependsPattern,
 	resolveTaskReference,
@@ -93,7 +93,8 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 		}
 
 		if (
-			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
+			(keyPath.length === 1 &&
+				!(await isMiseConfigFile(this.miseService, documentPath))) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")
 		) {
 			const taskNameRange = document.getWordRangeAtPosition(

@@ -6,6 +6,13 @@ mock.module("vscode", () => {
 			public line: number,
 			public character: number,
 		) {}
+
+		translate(lineDelta = 0, characterDelta = 0) {
+			return new Position(
+				this.line + lineDelta,
+				this.character + characterDelta,
+			);
+		}
 	}
 
 	class Range {
@@ -35,8 +42,36 @@ mock.module("vscode", () => {
 		}
 	}
 
-	return {
-		workspace: {},
+	class CodeLens {
+		constructor(
+			public range: Range,
+			public command?: {
+				title: string;
+				command: string;
+				arguments?: unknown[];
+			},
+		) {}
+	}
+
+	class EventEmitter<T> {
+		private listeners: ((value: T) => void)[] = [];
+		event = (listener: (value: T) => void) => {
+			this.listeners.push(listener);
+			return { dispose: () => {} };
+		};
+		fire(value: T) {
+			for (const listener of this.listeners) {
+				listener(value);
+			}
+		}
+	}
+
+	const api = {
+		workspace: {
+			getConfiguration: () => ({ get: () => undefined }),
+			onDidChangeTextDocument: () => ({ dispose: () => {} }),
+			onDidCloseTextDocument: () => ({ dispose: () => {} }),
+		},
 		window: {
 			showErrorMessage: () => {},
 			showInformationMessage: () => {},
@@ -44,7 +79,9 @@ mock.module("vscode", () => {
 			showTextDocument: () => {},
 			createOutputChannel: () => {},
 		},
+		CodeLens,
 		ConfigurationTarget: {},
+		EventEmitter,
 		MarkdownString,
 		Position,
 		Range: Range,
@@ -57,4 +94,7 @@ mock.module("vscode", () => {
 			}),
 		},
 	};
+
+	// `import vscode from "vscode"` reads the default export
+	return { ...api, default: api };
 });
