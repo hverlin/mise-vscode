@@ -1,6 +1,6 @@
-amends "package://github.com/jdx/hk/releases/download/v1.57.0/hk@1.57.0#/Config.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
 
-min_hk_version = "1.57.0"
+min_hk_version = "2.5.0"
 
 local linters = new Mapping<String, Step> {
   ["tsc"] {
@@ -14,19 +14,11 @@ local linters = new Mapping<String, Step> {
   }
 }
 
+// Defines the check, fix, and pre-commit hooks.
+steps = linters
+
 hooks {
-  ["pre-commit"] {
-    fix = true
-    steps = linters
-  }
   ["pre-push"] {
     steps = linters
   }
-  ["fix"] {
-    steps = linters
-  }
-  ["check"] {
-    steps = linters
-  }
 }
-

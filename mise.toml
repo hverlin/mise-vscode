@@ -1,8 +1,8 @@
 [tools]
 node = "24"
-hk = "1.57.0"
-aube = "2.2.9"
-bun = "1.4.0"
+hk = "2.5.0"
+aube = "2.7.0"
+bun = "1.4.2"
 
 [settings]
 lockfile = true
