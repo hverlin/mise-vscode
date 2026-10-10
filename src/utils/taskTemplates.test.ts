@@ -5,6 +5,7 @@ import {
 	findTaskTemplateUsagesInDocument,
 	formatTaskTemplateDetail,
 	formatTaskTemplateMarkdown,
+	isMiseConfigFile,
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "./taskTemplates";
@@ -233,5 +234,36 @@ describe("formatTaskTemplateMarkdown", () => {
 		expect(
 			withoutDescription && formatTaskTemplateDetail(withoutDescription),
 		).toBe("first");
+	});
+});
+
+describe("isMiseConfigFile", () => {
+	const listing = (paths: string[]) => ({
+		getMiseConfigFiles: async () => paths.map((path) => ({ path })),
+	});
+	const failing = {
+		getMiseConfigFiles: async (): Promise<{ path: string }[]> => {
+			throw new Error("error parsing config file");
+		},
+	};
+
+	it("trusts the config files mise lists over the file name", async () => {
+		const confD = "/home/me/.config/mise/conf.d/tools.toml";
+		expect(await isMiseConfigFile(listing([confD]), confD)).toBe(true);
+		expect(
+			await isMiseConfigFile(listing([]), "/home/me/project/mise.toml"),
+		).toBe(false);
+	});
+
+	it("falls back to the file name when mise cannot list them", async () => {
+		expect(
+			await isMiseConfigFile(
+				failing,
+				"/home/me/.config/mise/conf.d/tools.toml",
+			),
+		).toBe(true);
+		expect(await isMiseConfigFile(failing, "/home/me/project/tasks.toml")).toBe(
+			false,
+		);
 	});
 });

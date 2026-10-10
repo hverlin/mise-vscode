@@ -9,6 +9,7 @@
 import * as vscode from "vscode";
 import { expandPath } from "./fileUtils";
 import { getCachedTomlParser } from "./miseFileParser";
+import { isMiseConfigPath } from "./miseUtilts";
 
 export const TASK_TEMPLATES_SECTION = "task_templates";
 export const EXTENDS_KEY = "extends";
@@ -210,15 +211,22 @@ type ConfigFileLister = {
  * Whether mise loads the document as one of its config files. Task templates
  * can be declared in a config file that defines no task at all, which the
  * "is this a task source" check of the task features would turn down.
+ *
+ * When mise cannot list its config files (a config that does not parse, with
+ * no previous output to serve), the file name decides instead.
  */
 export async function isMiseConfigFile(
 	miseService: ConfigFileLister,
 	documentPath: string,
 ): Promise<boolean> {
 	const expanded = expandPath(documentPath);
-	return (await miseService.getMiseConfigFiles()).some(
-		(file) => expandPath(file.path) === expanded,
-	);
+	try {
+		return (await miseService.getMiseConfigFiles()).some(
+			(file) => expandPath(file.path) === expanded,
+		);
+	} catch {
+		return isMiseConfigPath(expanded);
+	}
 }
 
 async function openConfigDocument(
