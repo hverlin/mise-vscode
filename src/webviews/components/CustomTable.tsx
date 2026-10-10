@@ -1,13 +1,22 @@
-import { rankItem } from "@tanstack/match-sorter-utils";
+import { type RankingInfo, rankItem } from "@tanstack/match-sorter-utils";
 import {
 	type ColumnDef,
+	columnFilteringFeature,
+	createFilteredRowModel,
+	createSortedRowModel,
 	type FilterFn,
 	flexRender,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getSortedRowModel,
+	globalFilteringFeature,
+	metaHelper,
+	type RowData,
+	rowSortingFeature,
 	type SortingState,
-	useReactTable,
+	sortFn_alphanumeric,
+	sortFn_datetime,
+	sortFn_text,
+	type TableFeatures,
+	tableFeatures,
+	useTable,
 } from "@tanstack/react-table";
 
 import {
@@ -21,16 +30,50 @@ import {
 import { type CSSProperties, type ReactElement, useState } from "react";
 import { DebouncedInput } from "./DebouncedInput";
 
-type VSCodeTableProps<T> = {
+type FuzzyFilterMeta = {
+	itemRank?: RankingInfo;
+};
+
+const fuzzyFilter: FilterFn<
+	TableFeatures & { filterMeta: FuzzyFilterMeta },
+	RowData
+> = (row, columnId, value, addMeta) => {
+	const itemRank = rankItem(row.getValue(columnId), value);
+	addMeta?.({ itemRank });
+	return itemRank.passed;
+};
+
+const features = tableFeatures({
+	columnFilteringFeature,
+	globalFilteringFeature,
+	rowSortingFeature,
+	filteredRowModel: createFilteredRowModel(),
+	sortedRowModel: createSortedRowModel(),
+	filterFns: { fuzzy: fuzzyFilter },
+	filterMeta: metaHelper<FuzzyFilterMeta>(),
+	// the functions the "auto" sort picks from, which only resolves registered ones
+	sortFns: {
+		alphanumeric: sortFn_alphanumeric,
+		datetime: sortFn_datetime,
+		text: sortFn_text,
+	},
+});
+
+export type CustomTableColumn<T extends RowData> = ColumnDef<
+	typeof features,
+	T
+>;
+
+type VSCodeTableProps<T extends RowData> = {
 	data: T[];
-	columns: ColumnDef<T>[];
+	columns: CustomTableColumn<T>[];
 	isLoading?: boolean;
 	filterRowElement?: ReactElement | string;
 	/** rows for which this returns true get the selected-row background */
 	isRowSelected?: (rowData: T) => boolean;
 };
 
-export default function CustomTable<T>({
+export default function CustomTable<T extends RowData>({
 	data,
 	columns,
 	isLoading = false,
@@ -41,22 +84,14 @@ export default function CustomTable<T>({
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState<string | number>("");
 
-	const fuzzyFilter: FilterFn<T> = (row, columnId, value, addMeta) => {
-		const itemRank = rankItem(row.getValue(columnId), value);
-		addMeta({ itemRank });
-		return itemRank.passed;
-	};
-
-	const table = useReactTable({
+	const table = useTable({
+		features,
 		data,
 		columns,
 		state: { sorting, globalFilter },
 		onGlobalFilterChange: setGlobalFilter,
-		getFilteredRowModel: getFilteredRowModel(),
 		onSortingChange: setSorting,
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		globalFilterFn: fuzzyFilter,
+		globalFilterFn: "fuzzy",
 	});
 
 	if (isLoading) {
@@ -139,7 +174,7 @@ export default function CustomTable<T>({
 									: ""
 							}`}
 						>
-							{row.getVisibleCells().map((cell) => (
+							{row.getAllCells().map((cell) => (
 								<VscodeTableCell key={cell.id} style={{ whiteSpace: "wrap" }}>
 									{flexRender(cell.column.columnDef.cell, cell.getContext())}
 								</VscodeTableCell>
