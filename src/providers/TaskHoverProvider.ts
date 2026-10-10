@@ -3,7 +3,7 @@ import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { getCachedTomlParser } from "../utils/miseFileParser";
-import { isDependsKeyword, isMiseTomlFile } from "../utils/miseUtilts";
+import { isDependsKeyword } from "../utils/miseUtilts";
 import {
 	findTaskCacheDeclarations,
 	formatBytes,
@@ -300,7 +300,8 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		}
 
 		if (
-			(keyPath.length === 1 && !isMiseTomlFile(document.fileName)) ||
+			(keyPath.length === 1 &&
+				!(await isMiseConfigFile(this.miseService, documentPath))) ||
 			(keyPath.length === 2 && keyPath[0] === "tasks")
 		) {
 			const taskNameRange = document.getWordRangeAtPosition(

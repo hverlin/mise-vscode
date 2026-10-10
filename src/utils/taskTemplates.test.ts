@@ -5,6 +5,7 @@ import {
 	findTaskTemplateUsagesInDocument,
 	formatTaskTemplateDetail,
 	formatTaskTemplateMarkdown,
+	isMiseConfigFile,
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "./taskTemplates";
@@ -233,5 +234,41 @@ describe("formatTaskTemplateMarkdown", () => {
 		expect(
 			withoutDescription && formatTaskTemplateDetail(withoutDescription),
 		).toBe("first");
+	});
+});
+
+describe("isMiseConfigFile", () => {
+	const listing = (paths: string[]) => ({
+		getMiseConfigFiles: async () => paths.map((path) => ({ path })),
+	});
+	const failing = {
+		getMiseConfigFiles: async (): Promise<{ path: string }[]> => {
+			throw new Error("error parsing config file");
+		},
+	};
+
+	it("recognizes config file names without asking mise", async () => {
+		// `mise config ls` does not list the config files of monorepo subprojects
+		for (const path of [
+			"/home/me/project/projects/frontend/mise.toml",
+			"/home/me/.config/mise/conf.d/tools.toml",
+			"/home/me/project/.config/mise/config.local.toml",
+		]) {
+			expect(await isMiseConfigFile(failing, path)).toBe(true);
+		}
+	});
+
+	it("asks mise about other file names", async () => {
+		const custom = "/home/me/dotfiles/mise-global.toml";
+		expect(await isMiseConfigFile(listing([custom]), custom)).toBe(true);
+		expect(
+			await isMiseConfigFile(listing([custom]), "/home/me/project/tasks.toml"),
+		).toBe(false);
+	});
+
+	it("is not a config file when mise cannot answer", async () => {
+		expect(await isMiseConfigFile(failing, "/home/me/project/tasks.toml")).toBe(
+			false,
+		);
 	});
 });

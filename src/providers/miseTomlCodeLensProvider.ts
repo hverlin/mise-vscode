@@ -25,7 +25,6 @@ import {
 import { expandPath } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
 import { getCachedTomlParser } from "../utils/miseFileParser";
-import { isMiseTomlFile } from "../utils/miseUtilts";
 import {
 	findCacheEnabledTasks,
 	formatBytes,
@@ -33,6 +32,7 @@ import {
 	totalCacheSize,
 } from "../utils/taskCache";
 import { getLocalTaskName, qualifyTaskName } from "../utils/taskNames";
+import { isMiseConfigFile } from "../utils/taskTemplates";
 
 function createRunTaskCodeLens(
 	taskName: string,
@@ -254,7 +254,8 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				continue;
 			}
 			const trimmedLine = lineContent.trim();
-			if (!trimmedLine) continue;
+			// a comment is never a task, even when it looks like one
+			if (!trimmedLine || trimmedLine.startsWith("#")) continue;
 
 			if (/\[.*]/.test(trimmedLine)) {
 				inTasksSection = false;
@@ -297,7 +298,8 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				continue;
 			}
 			const trimmedLine = lineContent.trim();
-			if (!trimmedLine) continue;
+			// a comment is never a task, even when it looks like one
+			if (!trimmedLine || trimmedLine.startsWith("#")) continue;
 
 			if (trimmedLine.trim().startsWith("[settings]")) {
 				const range = new vscode.Range(
@@ -549,11 +551,15 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		if (files.length === 0) {
 			throw new Error("mise returned no config file");
 		}
-		if (!files.includes(expandPath(document.uri.fsPath))) {
+		const documentPath = expandPath(document.uri.fsPath);
+		if (!files.includes(documentPath)) {
 			return [];
 		}
 
-		const codeLenses = isMiseTomlFile(document.fileName)
+		// a task file (`task_config.includes`) is a task source that mise does
+		// not list as a config file. The file name cannot tell them apart:
+		// `conf.d/*.toml` or `config.local.toml` are config files too
+		const codeLenses = (await isMiseConfigFile(this.miseService, documentPath))
 			? await this.handleMiseTomlFile(document)
 			: this.handleTaskFile(document);
 

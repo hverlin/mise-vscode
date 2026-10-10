@@ -318,6 +318,8 @@ describe("isMiseConfigPath", () => {
 			"/home/me/project/.mise/config.toml",
 			"/home/me/project/.config/mise/config.toml",
 			"/home/me/project/.config/mise/config.dev.local.toml",
+			"/home/me/.config/mise/conf.d/tools.toml",
+			"/home/me/project/.mise/conf.d/node.toml",
 			"C:\\Users\\me\\project\\mise.toml",
 		]) {
 			expect(isMiseConfigPath(path)).toBe(true);
@@ -333,6 +335,9 @@ describe("isMiseConfigPath", () => {
 			"/home/me/project/config.toml",
 			"/home/me/project/mise.json",
 			"/home/me/project/my-mise.toml",
+			// a conf.d directory only counts inside a mise directory
+			"/etc/nginx/conf.d/site.toml",
+			"/home/me/.config/mise/conf.d/notes.txt",
 		]) {
 			expect(isMiseConfigPath(path)).toBe(false);
 		}

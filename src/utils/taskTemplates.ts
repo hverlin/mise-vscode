@@ -9,6 +9,7 @@
 import * as vscode from "vscode";
 import { expandPath } from "./fileUtils";
 import { getCachedTomlParser } from "./miseFileParser";
+import { isMiseConfigPath } from "./miseUtilts";
 
 export const TASK_TEMPLATES_SECTION = "task_templates";
 export const EXTENDS_KEY = "extends";
@@ -207,18 +208,32 @@ type ConfigFileLister = {
 };
 
 /**
- * Whether mise loads the document as one of its config files. Task templates
- * can be declared in a config file that defines no task at all, which the
- * "is this a task source" check of the task features would turn down.
+ * Whether the document is a mise config file, as opposed to a toml file of
+ * `task_config.includes` that only declares tasks. Task templates can be
+ * declared in a config file that defines no task at all, which the "is this a
+ * task source" check of the task features would turn down.
+ *
+ * The file name decides first: `mise config ls` does not list the config
+ * files of monorepo subprojects. mise is only asked about other names, such as
+ * a global config set with `MISE_GLOBAL_CONFIG_FILE`.
  */
 export async function isMiseConfigFile(
 	miseService: ConfigFileLister,
 	documentPath: string,
 ): Promise<boolean> {
 	const expanded = expandPath(documentPath);
-	return (await miseService.getMiseConfigFiles()).some(
-		(file) => expandPath(file.path) === expanded,
-	);
+	if (isMiseConfigPath(expanded)) {
+		return true;
+	}
+
+	try {
+		return (await miseService.getMiseConfigFiles()).some(
+			(file) => expandPath(file.path) === expanded,
+		);
+	} catch {
+		// a config that does not parse, with no previous output to serve
+		return false;
+	}
 }
 
 async function openConfigDocument(
