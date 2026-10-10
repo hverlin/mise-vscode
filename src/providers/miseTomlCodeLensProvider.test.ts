@@ -75,6 +75,25 @@ describe("MiseTomlCodeLensProvider", () => {
 		expect(lenses.every((lens) => lens.line === 5)).toBe(true);
 	});
 
+	it("treats the mise.toml of a monorepo subproject as a config file", async () => {
+		// mise lists it as a task source, but not in `mise config ls`
+		const path = "/project/projects/frontend/mise.toml";
+		const provider = createProvider({
+			configFiles: ["/project/mise.toml"],
+			taskSources: [path],
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(path, '[tasks.build]\nrun = "echo build"\n'),
+		);
+
+		expect(lenses).toEqual([
+			{ line: 0, title: "$(play) Run", arguments: ["build"] },
+			{ line: 0, title: "$(eye-watch) Watch", arguments: ["build"] },
+		]);
+	});
+
 	it("does not add task lenses to comments in a task file", async () => {
 		const provider = createProvider({
 			configFiles: ["/project/mise.toml"],

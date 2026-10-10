@@ -247,21 +247,26 @@ describe("isMiseConfigFile", () => {
 		},
 	};
 
-	it("trusts the config files mise lists over the file name", async () => {
-		const confD = "/home/me/.config/mise/conf.d/tools.toml";
-		expect(await isMiseConfigFile(listing([confD]), confD)).toBe(true);
+	it("recognizes config file names without asking mise", async () => {
+		// `mise config ls` does not list the config files of monorepo subprojects
+		for (const path of [
+			"/home/me/project/projects/frontend/mise.toml",
+			"/home/me/.config/mise/conf.d/tools.toml",
+			"/home/me/project/.config/mise/config.local.toml",
+		]) {
+			expect(await isMiseConfigFile(failing, path)).toBe(true);
+		}
+	});
+
+	it("asks mise about other file names", async () => {
+		const custom = "/home/me/dotfiles/mise-global.toml";
+		expect(await isMiseConfigFile(listing([custom]), custom)).toBe(true);
 		expect(
-			await isMiseConfigFile(listing([]), "/home/me/project/mise.toml"),
+			await isMiseConfigFile(listing([custom]), "/home/me/project/tasks.toml"),
 		).toBe(false);
 	});
 
-	it("falls back to the file name when mise cannot list them", async () => {
-		expect(
-			await isMiseConfigFile(
-				failing,
-				"/home/me/.config/mise/conf.d/tools.toml",
-			),
-		).toBe(true);
+	it("is not a config file when mise cannot answer", async () => {
 		expect(await isMiseConfigFile(failing, "/home/me/project/tasks.toml")).toBe(
 			false,
 		);
