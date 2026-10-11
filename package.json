@@ -798,6 +798,12 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.forceRunTask",
+        "title": "Mise: Force run task",
+        "icon": "$(run-all)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.explainTaskCache",
         "title": "Mise: Explain task cache key",
         "icon": "$(list-tree)",
@@ -1227,6 +1233,11 @@
         {
           "when": "view == miseTasksView && viewItem == miseTask",
           "command": "mise.runTaskWithoutCache",
+          "group": "3_cache"
+        },
+        {
+          "when": "view == miseTasksView && viewItem == miseTask",
+          "command": "mise.forceRunTask",
           "group": "3_cache"
         },
         {

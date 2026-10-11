@@ -29,6 +29,8 @@ type MiseTask = {
 	tools?: Record<string, string>;
 	run?: MiseRunEntry[];
 	file?: string;
+	/** usage spec (https://usage.jdx.dev) of the arguments, empty without any */
+	usage?: string;
 };
 
 /**

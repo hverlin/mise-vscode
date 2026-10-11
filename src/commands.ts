@@ -54,6 +54,7 @@ export const MISE_USE_TOOL = "mise.useTool";
 export const MISE_USE_TOOL_TOP_MENU = "mise.useToolTopMenu";
 export const MISE_WATCH_TASK = "mise.watchTask";
 export const MISE_RUN_TASK_WITHOUT_CACHE = "mise.runTaskWithoutCache";
+export const MISE_FORCE_RUN_TASK = "mise.forceRunTask";
 export const MISE_EXPLAIN_TASK_CACHE = "mise.explainTaskCache";
 export const MISE_CLEAR_TASK_CACHE = "mise.clearTaskCache";
 export const MISE_SHOW_TASK_CACHE_MENU = "mise.showTaskCacheMenu";

@@ -7,6 +7,7 @@ import {
 	MISE_CREATE_TOML_TASK,
 	MISE_CREATE_TOML_TASK_TOP_MENU,
 	MISE_EXPLAIN_TASK_CACHE,
+	MISE_FORCE_RUN_TASK,
 	MISE_GROUP_TASKS_BY_PROJECT,
 	MISE_GROUP_TASKS_BY_SOURCE,
 	MISE_HIDE_HIDDEN_TASKS,
@@ -812,6 +813,28 @@ export function registerTasksCommands(
 			},
 		),
 		vscode.commands.registerCommand(
+			MISE_FORCE_RUN_TASK,
+			async (taskName: undefined | string | MiseTask | TaskItem) => {
+				const name = await resolveTaskName(
+					taskProvider,
+					taskName,
+					"Select a task to force run",
+				);
+				if (!name) {
+					return;
+				}
+
+				// runs the task and its dependencies even when their sources are up
+				// to date, and stores a new cache entry instead of restoring one
+				await vscode.workspace.saveAll(false);
+				await taskProvider
+					.runTask(name, { runFlags: ["--force"] })
+					.catch((error) => {
+						logger.error(`Failed to force run task '${name}':`, error);
+					});
+			},
+		),
+		vscode.commands.registerCommand(
 			MISE_EXPLAIN_TASK_CACHE,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {
 				const name = await resolveTaskName(
@@ -823,8 +846,9 @@ export function registerTasksCommands(
 					return;
 				}
 
-				// --dry-run keeps the task itself (and its command inputs) from running
-				await miseService.runTask(name, {
+				// --dry-run keeps the task itself (and its command inputs) from running.
+				// The arguments of the task are asked for: they are part of the key
+				await taskProvider.runTask(name, {
 					runFlags: ["--dry-run", "--task-cache-explain"],
 				});
 			},
@@ -885,6 +909,11 @@ export function registerTasksCommands(
 						label: "$(debug-restart) Run without cache",
 						description: "mise run --task-cache off",
 						command: MISE_RUN_TASK_WITHOUT_CACHE,
+					},
+					{
+						label: "$(run-all) Force run",
+						description: "mise run --force",
+						command: MISE_FORCE_RUN_TASK,
 					},
 				];
 				if (entries.length > 0) {

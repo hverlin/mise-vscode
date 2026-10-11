@@ -136,7 +136,7 @@ suite("Task Cache Test Suite", function () {
 
 		assert.deepEqual(
 			cacheLenses.map((lens) => lens.command?.arguments?.[0]),
-			["build", "probe"],
+			["build", "probe", "greet"],
 			"only the tasks declaring cache.enabled should get a cache lens",
 		);
 		assert.match(
@@ -207,6 +207,32 @@ suite("Task Cache Test Suite", function () {
 		);
 	});
 
+	// mise hashes the arguments of the run into the cache key
+	test("never predicts for a task taking arguments", async () => {
+		// without arguments, the run the hover would compute the key of
+		await runMise(["run", "--force", "greet"]);
+		assert.equal(
+			await countCacheEntries("greet"),
+			1,
+			"mise should have stored one cache entry for greet",
+		);
+
+		const hoverText = await waitFor(
+			() => getHoverText("[tasks.greet]"),
+			(text) => text.includes("Cache: 1 entry"),
+			"Expected the greet cache summary in the hover",
+		);
+
+		assert.ok(
+			hoverText.includes("Next run: depends on the task arguments"),
+			`Expected no prediction for a task taking arguments, got: ${hoverText}`,
+		);
+		assert.ok(
+			hoverText.includes("Latest entry:"),
+			`Expected the latest cache entry instead, got: ${hoverText}`,
+		);
+	});
+
 	test("does not report a cache for tasks without one", async () => {
 		const hoverText = await getHoverText("[tasks.plain]");
 
@@ -233,6 +259,64 @@ suite("Task Cache Test Suite", function () {
 			/run --task-cache off ["']?plain/,
 			`Unexpected command: ${sentCommands[0]}`,
 		);
+	});
+
+	test("force runs a task from the cache code lens", async () => {
+		const sentCommands = captureTerminalCommand();
+		const showQuickPick = sandbox
+			.stub(vscode.window, "showQuickPick")
+			.callsFake(async (items) =>
+				(await items).find((item) =>
+					(item as vscode.QuickPickItem).label.includes("Force run"),
+				),
+			);
+
+		// the command the cache lens runs
+		await vscode.commands.executeCommand("mise.showTaskCacheMenu", "build");
+
+		assert.ok(showQuickPick.calledOnce, "the cache menu should be shown");
+		assert.equal(sentCommands.length, 1);
+		assert.match(
+			sentCommands[0] ?? "",
+			/run --force ["']?build/,
+			`Unexpected command: ${sentCommands[0]}`,
+		);
+	});
+
+	test("asks for the arguments of a task from the cache code lens", async () => {
+		const actions = [
+			{ label: "Force run", flags: "--force" },
+			{ label: "Run without cache", flags: "--task-cache off" },
+			{ label: "Explain cache key", flags: "--dry-run --task-cache-explain" },
+		];
+		for (const { label, flags } of actions) {
+			const sentCommands = captureTerminalCommand();
+			sandbox.stub(vscode.window, "showInputBox").resolves("alice");
+			// the stub answers both the string and the item overloads
+			(
+				sandbox.stub(vscode.window, "showQuickPick") as sinon.SinonStub
+			).callsFake(async (items) => {
+				const choices = (await items) as Array<string | vscode.QuickPickItem>;
+				// "Enable --loud?" is answered with Yes
+				return choices.includes("Yes")
+					? "Yes"
+					: choices.find(
+							(choice) =>
+								typeof choice !== "string" && choice.label.includes(label),
+						);
+			});
+
+			await vscode.commands.executeCommand("mise.showTaskCacheMenu", "greet");
+
+			assert.equal(sentCommands.length, 1, `${label} should run the task`);
+			// mise flags before the task name, the task arguments after it
+			assert.match(
+				sentCommands[0] ?? "",
+				new RegExp(`run ${flags} ["']?greet["']? ["']?alice["']? ["']?--loud`),
+				`Unexpected command for ${label}: ${sentCommands[0]}`,
+			);
+			sandbox.restore();
+		}
 	});
 
 	test("explains the cache key without running the task", async () => {

@@ -141,7 +141,8 @@ Tasks that opt into the experimental
 [task output cache](https://mise.jdx.dev/tasks/task-configuration.html#cache)
 (`cache = { enabled = true }`) get a `Cache` code lens next to their `Run`
 action, showing the size of the stored entries. Clicking it offers to explain
-the cache key, run the task without its cache, or clear its entries.
+the cache key, run the task without its cache, force run it, or clear its
+entries.
 
 The task hover also reports the state of the cache: how many entries are stored,
 whether the next run hits or misses the cache, and when the cache was last used.
@@ -150,7 +151,8 @@ The hit or miss is resolved by asking mise for the cache key the task would use
 right now. Computing that key runs the `command_inputs` of the task, so tasks
 declaring any are never predicted — for those, the hover reports the latest
 stored entry instead, and `Mise: Explain task cache key` gives the full answer
-on demand.
+on demand. Tasks that take arguments are not predicted either, since their cache
+key depends on the arguments of each run.
 
 The same actions are available from the command palette and from the task
 context menu in the activity bar:
@@ -158,6 +160,9 @@ context menu in the activity bar:
 - `Mise: Explain task cache key` (`mise run --dry-run --task-cache-explain`) —
   shows what feeds the cache key without running the task
 - `Mise: Run task without its output cache` (`mise run --task-cache off`)
+- `Mise: Force run task` (`mise run --force`): runs the task and its
+  dependencies even when their sources are up to date, and stores a new cache
+  entry instead of restoring one
 - `Mise: Clear task output cache` (`mise cache clear --task`) — only offers the
   tasks that have stored entries
 
