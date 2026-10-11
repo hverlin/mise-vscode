@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.26.0](https://github.com/hverlin/mise-vscode/compare/v1.25.3...v1.26.0) (2026-10-11)
+
+
+### Features
+
+* force run a task from its cache code lens ([#326](https://github.com/hverlin/mise-vscode/issues/326)) ([9e5754a](https://github.com/hverlin/mise-vscode/commit/9e5754a69d4bda90b754459a942af2c261186cb3))
+* respect mise paranoid mode when trusting config files ([#325](https://github.com/hverlin/mise-vscode/issues/325)) ([a37920c](https://github.com/hverlin/mise-vscode/commit/a37920c466384a37dd83e12b39724c6dc5ea2b3a))
+
+
+### Bug Fixes
+
+* do not show task code lenses on comments and config files ([#312](https://github.com/hverlin/mise-vscode/issues/312)) ([42abcf4](https://github.com/hverlin/mise-vscode/commit/42abcf4effa20b97c0512434f3a0fa1ee19b3aff))
+* support workspaces opened through a symlink ([#321](https://github.com/hverlin/mise-vscode/issues/321)) ([0d63b9c](https://github.com/hverlin/mise-vscode/commit/0d63b9c564c8c64fcd4a6642aec1e3817aef7908))
+
 ## [1.25.3](https://github.com/hverlin/mise-vscode/compare/v1.25.2...v1.25.3) (2026-09-14)
 
 
