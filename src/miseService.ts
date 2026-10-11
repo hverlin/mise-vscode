@@ -51,6 +51,11 @@ import {
 	safeExec,
 } from "./utils/shell";
 import {
+	getSymlinkedPathMappings,
+	type PathMapping,
+	toOpenedPaths,
+} from "./utils/symlinkedPaths";
+import {
 	type MiseTaskInfo,
 	parseTaskInfo,
 	parseTaskInfoJson,
@@ -247,6 +252,28 @@ export class MiseService {
 		return (
 			this.configRootOverride ?? getCurrentWorkspaceFolderPath(this.context)
 		);
+	}
+
+	private pathMappings: { key: string; mappings: PathMapping[] } | undefined;
+
+	/**
+	 * mise reports the real path of a file, and vscode the path the workspace
+	 * was opened with: a project opened through a symlink would never compare
+	 * equal with what mise says, nor open as the same document.
+	 */
+	private toOpenedPaths(output: string) {
+		const folders = [
+			...(vscode.workspace.workspaceFolders ?? [])
+				.filter((folder) => folder.uri.scheme === "file")
+				.map((folder) => folder.uri.fsPath),
+			this.getCurrentWorkspaceFolderPath(),
+		].filter((folder): folder is string => Boolean(folder));
+
+		const key = folders.join("\0");
+		if (this.pathMappings?.key !== key) {
+			this.pathMappings = { key, mappings: getSymlinkedPathMappings(folders) };
+		}
+		return toOpenedPaths(output, this.pathMappings.mappings);
 	}
 
 	private dedupeCache = createCache({
@@ -669,9 +696,12 @@ export class MiseService {
 		const miseArgs = this.buildMiseArgs(args, { setMiseEnv });
 		logger.debug(`> ${miseBinaryPath} ${miseArgs.join(" ")}`);
 
-		const { code, stdout, stderr } = await safeExec(miseBinaryPath, miseArgs, {
+		const result = await safeExec(miseBinaryPath, miseArgs, {
 			cwd: this.getCurrentWorkspaceFolderPath(),
 		});
+		const { code } = result;
+		const stdout = this.toOpenedPaths(result.stdout);
+		const stderr = this.toOpenedPaths(result.stderr);
 
 		const key = miseArgs.join(" ");
 		if (code !== 0) {
@@ -714,7 +744,10 @@ export class MiseService {
 			this.buildMiseArgs(args, { setMiseEnv }),
 			{ cwd: this.getCurrentWorkspaceFolderPath() },
 		);
-		return { stdout, stderr };
+		return {
+			stdout: this.toOpenedPaths(stdout),
+			stderr: this.toOpenedPaths(stderr),
+		};
 	}
 
 	async runMiseToolActionInConsole(

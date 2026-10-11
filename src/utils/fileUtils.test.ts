@@ -5,6 +5,7 @@ import path from "node:path";
 import {
 	collapseHomePath,
 	compareSourcePaths,
+	displayPathRelativeTo,
 	expandPath,
 	getShebangFileExtension,
 	getSourceProximityRank,
@@ -438,5 +439,35 @@ describe("collapseHomePath", () => {
 
 	it("is not fooled by a sibling sharing the home directory prefix", () => {
 		expect(collapseHomePath(`${homedir()}-backup/app.conf`)).toBeUndefined();
+	});
+});
+
+describe("displayPathRelativeTo", () => {
+	it("shows a path inside the root folder relative to it", () => {
+		expect(
+			displayPathRelativeTo("/work/project/mise.toml", "/work/project"),
+		).toBe("mise.toml");
+	});
+
+	it("collapses a path inside the home directory", () => {
+		expect(
+			displayPathRelativeTo(
+				path.join(homedir(), ".config", "mise", "config.toml"),
+				"/work/project",
+			),
+		).toBe(path.join("~", ".config", "mise", "config.toml"));
+	});
+
+	it("only strips the root folder at the start of the path", () => {
+		// on macOS, /tmp is a symlink to /private/tmp, and mise reports the latter
+		expect(
+			displayPathRelativeTo("/private/tmp/project/mise.toml", "/tmp/project"),
+		).toBe("/private/tmp/project/mise.toml");
+	});
+
+	it("is not fooled by a sibling sharing the root folder prefix", () => {
+		expect(
+			displayPathRelativeTo("/work/project-2/mise.toml", "/work/project"),
+		).toBe("/work/project-2/mise.toml");
 	});
 });

@@ -1,0 +1,5 @@
+[env]
+SYMLINKED_FIXTURE = "yes"
+
+[tasks.build]
+run = "echo build"
