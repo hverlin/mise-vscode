@@ -110,4 +110,20 @@ describe("toOpenedPaths", () => {
 	it("returns the output as is without mappings", () => {
 		expect(toOpenedPaths("/private/tmp/a", [])).toBe("/private/tmp/a");
 	});
+
+	it("rewrites the paths mise writes with ~", () => {
+		const homeMappings = getSymlinkedPathMappings(
+			["/home/me/link/project"],
+			(filePath) =>
+				filePath.replace(/^\/home\/me\/link(?=\/|$)/, "/home/me/real"),
+		);
+
+		expect(
+			toOpenedPaths(
+				"Config files in ~/real/project/mise.toml are not trusted.",
+				homeMappings,
+				"/home/me",
+			),
+		).toBe("Config files in ~/link/project/mise.toml are not trusted.");
+	});
 });

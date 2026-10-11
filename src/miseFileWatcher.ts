@@ -45,10 +45,13 @@ export class MiseFileWatcher {
 			return;
 		}
 
+		// mise refuses an untrusted config, and one that does not parse: the
+		// standard config names are watched anyway, so that the change fixing it
+		// is picked up
 		const [configFiles, tasksSources, envs] = await Promise.all([
-			this.miseService.getMiseConfigFiles(),
-			this.miseService.getAllCachedTasksSources(),
-			this.miseService.getEnvWithInfoIncludingMonorepo(),
+			this.miseService.getMiseConfigFiles().catch(() => []),
+			this.miseService.getAllCachedTasksSources().catch(() => []),
+			this.miseService.getEnvWithInfoIncludingMonorepo().catch(() => []),
 		]);
 
 		const envSources = envs

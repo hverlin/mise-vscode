@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+	findUntrustedConfigs,
 	getWebsiteForTool,
 	isFileTaskPath,
 	isMiseConfigParseError,
@@ -211,6 +212,14 @@ describe("isMiseConfigParseError", () => {
 				failed("Config files in /repo are not trusted. Trust them with"),
 			),
 		).toBe(false);
+		// captured from mise 2026.10.3, which reports it as a parse error
+		expect(
+			isMiseConfigParseError(
+				failed(
+					"mise ERROR error parsing config file: /repo/mise.toml\nmise ERROR Config files in /repo/mise.toml are not trusted.\nTrust them with `mise trust`. See https://mise.jdx.dev/cli/trust.html for more information.",
+				),
+			),
+		).toBe(false);
 		expect(isMiseConfigParseError(failed("No such file or directory"))).toBe(
 			false,
 		);
@@ -226,6 +235,17 @@ describe("parseMiseError", () => {
 	// captured from mise 2026.8.2
 	const failed = (stderr: string) =>
 		new Error(`Command failed: mise tasks ls --json\n${stderr}`);
+
+	it("recognises a config file that is not trusted, not one that does not parse", () => {
+		// captured from mise 2026.10.3, which prefixes it with a parse error
+		expect(
+			parseMiseError(
+				failed(
+					"mise ERROR error parsing config file: ~/project/mise.toml\nmise ERROR Config files in ~/project/mise.toml are not trusted.\nTrust them with `mise trust`. See https://mise.jdx.dev/cli/trust.html for more information.",
+				),
+			),
+		).toEqual({ kind: "untrusted", file: "~/project/mise.toml" });
+	});
 
 	it("reads the position and reason out of a located parse error", () => {
 		const parsed = parseMiseError(
@@ -369,5 +389,36 @@ describe("isFileTaskPath", () => {
 		]) {
 			expect(isFileTaskPath(path)).toBe(false);
 		}
+	});
+});
+
+describe("findUntrustedConfigs", () => {
+	// captured from mise 2026.10.7
+	it("reads the file that made the command fail", () => {
+		expect(
+			findUntrustedConfigs(
+				"mise ERROR error parsing config file: ~/project/mise.toml\nmise ERROR Config files in ~/project/mise.toml are not trusted.\nTrust them with `mise trust`.",
+			),
+		).toEqual({ refused: "~/project/mise.toml", skipped: [] });
+	});
+
+	it("reads the monorepo subprojects mise skipped with a warning", () => {
+		expect(
+			findUntrustedConfigs(
+				"mise WARN  Failed to parse config file ~/project/projects/fe/mise.toml in monorepo directory projects/fe: Config files in ~/project/projects/fe/mise.toml are not trusted. Trust them with `mise trust`.",
+			),
+		).toEqual({
+			refused: undefined,
+			skipped: ["~/project/projects/fe/mise.toml"],
+		});
+	});
+
+	it("does not take a warning for the failure of a command", () => {
+		const error = new Error(
+			"Command failed: mise tasks ls --json --all\nmise WARN  Failed to parse config file ~/project/projects/fe/mise.toml in monorepo directory projects/fe: Config files in ~/project/projects/fe/mise.toml are not trusted.\nmise ERROR TOML parse error at line 2, column 5",
+		);
+
+		expect(parseMiseError(error).kind).not.toBe("untrusted");
+		expect(isMiseConfigParseError(error)).toBe(true);
 	});
 });

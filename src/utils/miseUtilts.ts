@@ -391,8 +391,44 @@ export function isFileTaskPath(filePath: string): boolean {
  * output at all. That is transient and says nothing about the machine, so the
  * views keep their previous state instead of emptying on each keystroke.
  */
+const UNTRUSTED_CONFIG = /Config files in (.+?) are not trusted/;
+const WARNING_LINE = /^\s*mise\s+WARN\b/;
+
+/**
+ * The config files mise did not read because they are not trusted, as paths
+ * it reported (possibly starting with ~).
+ *
+ * - `refused`: the file that made the command fail.
+ * - `skipped`: files mise only warned about, such as the config of an
+ *   untrusted monorepo subproject, while the command itself succeeded.
+ */
+export function findUntrustedConfigs(output: string): {
+	refused?: string;
+	skipped: string[];
+} {
+	let refused: string | undefined;
+	const skipped: string[] = [];
+	for (const line of output.split("\n")) {
+		const file = line.match(UNTRUSTED_CONFIG)?.[1];
+		if (!file) {
+			continue;
+		}
+		if (WARNING_LINE.test(line)) {
+			skipped.push(file);
+		} else {
+			refused ??= file;
+		}
+	}
+	return { refused, skipped };
+}
+
 export function isMiseConfigParseError(error: unknown): boolean {
 	const message = error instanceof Error ? error.message : String(error);
+	// mise reports an untrusted config as "error parsing config file" too. It has
+	// to reach the trust prompt: in paranoid mode, every edit untrusts the file
+	if (findUntrustedConfigs(message).refused) {
+		return false;
+	}
 	return (
 		/TOML parse error/i.test(message) ||
 		/invalid TOML in config file/i.test(message) ||
@@ -406,7 +442,7 @@ export const UNPARSED_CONFIG_DESCRIPTION = "does not parse";
 export const UNPARSED_CONFIG_TOOLTIP =
 	"This config file does not parse, so what is listed here is the last state it was readable in.";
 
-export type MiseErrorKind = "parse" | "settings" | "unknown";
+export type MiseErrorKind = "parse" | "settings" | "untrusted" | "unknown";
 
 export type ParsedMiseError = {
 	kind: MiseErrorKind;
@@ -429,6 +465,13 @@ export type ParsedMiseError = {
  */
 export function parseMiseError(error: unknown): ParsedMiseError {
 	const message = error instanceof Error ? error.message : String(error);
+
+	// `Config files in <path> are not trusted.`, which mise prefixes with
+	// "error parsing config file" although the file may be perfectly valid
+	const { refused } = findUntrustedConfigs(message);
+	if (refused) {
+		return { kind: "untrusted", file: refused };
+	}
 
 	// `× Invalid TOML in config file: <path>` followed by `╭─[<path>:<line>:<col>]`
 	// and `╰── <reason>`. The path is wrapped across lines in the box drawing, so

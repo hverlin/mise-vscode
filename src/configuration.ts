@@ -33,6 +33,7 @@ export const CONFIGURATION_FLAGS = {
 	enableSnippets: "enableSnippets",
 	resolveMonorepoProjectConfigs: "resolveMonorepoProjectConfigs",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
+	trustOwnEditsInParanoidMode: "trustOwnEditsInParanoidMode",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
 	showNotificationIfMissingTools: "showNotificationIfMissingTools",
 	autoDetectMiseBinPath: "autoDetectMiseBinPath",
@@ -269,6 +270,10 @@ export const shouldAutomaticallyTrustMiseConfigFiles = () => {
 		CONFIGURATION_FLAGS.automaticallyTrustMiseConfigFiles,
 		true,
 	);
+};
+
+export const shouldTrustOwnEditsInParanoidMode = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.trustOwnEditsInParanoidMode, false);
 };
 
 export const shouldShowNotificationIfMissingTools = () => {

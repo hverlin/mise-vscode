@@ -1,4 +1,5 @@
 import { realpathSync } from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { isWindows } from "./fileUtils";
 
@@ -62,15 +63,29 @@ const jsonEscaped = (value: string) => JSON.stringify(value).slice(1, -1);
  * Rewrites the real paths of {@link getSymlinkedPathMappings} in mise output
  * to the paths vscode opened, in plain text and in JSON alike.
  */
-export function toOpenedPaths(output: string, mappings: PathMapping[]): string {
+export function toOpenedPaths(
+	output: string,
+	mappings: PathMapping[],
+	homedir = os.homedir(),
+): string {
 	if (!output || mappings.length === 0) {
 		return output;
 	}
+
+	// mise writes the paths under the home directory with ~ in its messages
+	const withTilde = (value: string) =>
+		value.startsWith(`${homedir}${path.sep}`)
+			? `~${value.slice(homedir.length)}`
+			: undefined;
 
 	const replacements = new Map<string, string>();
 	for (const { realPath, openedPath } of mappings) {
 		replacements.set(realPath, openedPath);
 		replacements.set(jsonEscaped(realPath), jsonEscaped(openedPath));
+		const realWithTilde = withTilde(realPath);
+		if (realWithTilde) {
+			replacements.set(realWithTilde, withTilde(openedPath) ?? openedPath);
+		}
 	}
 
 	// a whole path, not the start of a longer name: `/private/tmp/project` is

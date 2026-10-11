@@ -42,6 +42,14 @@ fs.symlinkSync(
 	symlinkedWorkspace,
 );
 
+// The paranoid-trust suite needs a trust store where nothing in its fixture is
+// trusted yet, so it gets a fresh one on every run.
+const paranoidMiseStateDir = path.join(
+	os.tmpdir(),
+	"mise-vscode-e2e-paranoid-state",
+);
+fs.rmSync(paranoidMiseStateDir, { recursive: true, force: true });
+
 const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
 	"multi-root",
@@ -161,6 +169,27 @@ module.exports = defineConfig([
 			MISE_CEILING_PATHS: fixturesPath,
 			MISE_LOCKED: "0",
 			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
+		label: "paranoid-trust",
+		files: "src/e2e-tests/paranoid-trust/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "paranoid-trust-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_PARANOID: "1",
+			MISE_STATE_DIR: paranoidMiseStateDir,
+			// trusted paths are trusted whatever the content, and mise-action trusts
+			// the whole checkout in CI
+			MISE_TRUSTED_CONFIG_PATHS: "",
+			// a global config of the machine, e.g. with `safe = true`, would change
+			// what mise trusts
+			MISE_GLOBAL_CONFIG_FILE: path.join(paranoidMiseStateDir, "config.toml"),
 		},
 		mocha: {
 			require: ["tsx/cjs"],

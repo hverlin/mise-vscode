@@ -5,8 +5,13 @@
 // read "Error loading tasks. Open logs" whatever went wrong. mise usually says
 // more than that, and what to do about it depends on what it said.
 
+import * as path from "node:path";
 import * as vscode from "vscode";
-import { MISE_DOCTOR, MISE_OPEN_LOGS } from "../commands";
+import {
+	MISE_DOCTOR,
+	MISE_OPEN_LOGS,
+	MISE_REVIEW_UNTRUSTED_CONFIG,
+} from "../commands";
 import { expandPath } from "../utils/fileUtils";
 import { parseMiseError } from "../utils/miseUtilts";
 
@@ -38,6 +43,28 @@ export function buildMiseErrorItems(
 ): MiseErrorItem[] {
 	const parsed = parseMiseError(error);
 	const full = error instanceof Error ? error.message : String(error);
+
+	// nothing is wrong with the file: mise waits for the user to trust it
+	if (parsed.kind === "untrusted") {
+		const item = new MiseErrorItem(
+			`${parsed.file ? path.basename(parsed.file) : "Config file"} not trusted`,
+			vscode.TreeItemCollapsibleState.None,
+		);
+		item.description = "File not loaded";
+		item.iconPath = new vscode.ThemeIcon(
+			"shield",
+			new vscode.ThemeColor("list.warningForeground"),
+		);
+		item.tooltip = full;
+		item.command = {
+			command: MISE_REVIEW_UNTRUSTED_CONFIG,
+			title: "Review the untrusted config file",
+		};
+		return [
+			item,
+			actionItem("Review it", "shield", MISE_REVIEW_UNTRUSTED_CONFIG),
+		];
+	}
 
 	const item = new MiseErrorItem(
 		`Could not load ${subject}`,

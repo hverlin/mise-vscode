@@ -1,5 +1,12 @@
 import { existsSync } from "node:fs";
-import { readlink, realpath, rm, symlink } from "node:fs/promises";
+import {
+	readdir,
+	readFile,
+	readlink,
+	realpath,
+	rm,
+	symlink,
+} from "node:fs/promises";
 import * as os from "node:os";
 import path from "node:path";
 import { createCache } from "async-cache-dedupe";
@@ -15,13 +22,22 @@ import {
 	getMiseEnv,
 	isBinPathSetByWorkspace,
 	isMiseExtensionEnabled,
+	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldCheckForNewMiseVersion,
 	shouldKeepReplacedVersionOnUpgrade,
 	shouldResolveMonorepoProjectConfigs,
 	shouldSkipWorkspaceBinaryApproval,
+	shouldTrustOwnEditsInParanoidMode,
 	updateBinPath,
 } from "./configuration";
-import { expandPath, hashFile, isWindows, mkdirp } from "./utils/fileUtils";
+import {
+	displayPathRelativeTo,
+	expandPath,
+	hashFile,
+	isPathInside,
+	isWindows,
+	mkdirp,
+} from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import { logger } from "./utils/logger";
 import {
@@ -30,6 +46,7 @@ import {
 } from "./utils/miseBinLocator";
 import { expandConfig } from "./utils/miseDoctorParser";
 import {
+	findUntrustedConfigs,
 	flattenJsonSchema,
 	idiomaticFiles,
 	idiomaticFileToTool,
@@ -68,6 +85,11 @@ const XDG_STATE_HOME =
 const STATE_DIR =
 	process.env.MISE_STATE_DIR ?? path.join(XDG_STATE_HOME, "mise");
 const TRACKED_CONFIG_DIR = path.join(STATE_DIR, "tracked-configs");
+/** where mise records the configs the user told it to ignore */
+const IGNORED_CONFIG_DIR = path.join(STATE_DIR, "ignored-configs");
+
+/** How long a file announced as an own edit waits for the write, in ms */
+const OWN_EDIT_TTL_MS = 10_000;
 
 /** globalState key holding the workspace mise binaries the user approved */
 export const APPROVED_WORKSPACE_BINARIES_KEY = "mise.approvedWorkspaceBinaries";
@@ -588,6 +610,15 @@ export class MiseService {
 	private readonly manualSaves = new Set<string>();
 
 	/**
+	 * Config files about to be written by the user, trusted until then, with the
+	 * time after which the write is no longer expected
+	 */
+	private readonly ownEdits = new Map<string, number>();
+
+	/** Trust renewals of {@link ownEdits} in progress, by file */
+	private readonly ownEditTrusts = new Map<string, Promise<void>>();
+
+	/**
 	 * Config files that did not parse the last time they were saved. mise does
 	 * not always name the file in its error, so this is recorded where the file
 	 * is parsed rather than read out of the message.
@@ -670,6 +701,151 @@ export class MiseService {
 		this.forgetRetainedState(uri);
 	}
 
+	/**
+	 * In paranoid mode, mise binds the trust of a config file to its content, so
+	 * every write untrusts it. With `mise.trustOwnEditsInParanoidMode`, a file
+	 * the user writes in vscode (a save, or an extension action such as
+	 * formatting) is trusted again once written.
+	 *
+	 * Only a file trusted just before the write is: one changed outside vscode
+	 * may hold changes the user has not reviewed, and saving over it does not
+	 * approve them. Called before the write.
+	 */
+	async expectOwnEdit(filePath: string): Promise<void> {
+		if (!(await this.shouldTrustOwnEdits())) {
+			return;
+		}
+
+		const key = expandPath(filePath);
+		const trust = await this.getConfigTrust(path.dirname(key));
+		if (trust.get(key)) {
+			this.ownEdits.set(key, Date.now() + OWN_EDIT_TTL_MS);
+		}
+	}
+
+	/** Same as {@link expectOwnEdit}, for the config files of a directory */
+	private async expectOwnEditsIn(directory: string): Promise<string[]> {
+		if (!(await this.shouldTrustOwnEdits())) {
+			return [];
+		}
+
+		const expected: string[] = [];
+		for (const [file, trusted] of await this.getConfigTrust(directory)) {
+			if (trusted && path.dirname(file) === expandPath(directory)) {
+				this.ownEdits.set(file, Date.now() + OWN_EDIT_TTL_MS);
+				expected.push(file);
+			}
+		}
+		return expected;
+	}
+
+	private async shouldTrustOwnEdits() {
+		return (
+			shouldAutomaticallyTrustMiseConfigFiles() &&
+			shouldTrustOwnEditsInParanoidMode() &&
+			vscode.workspace.isTrusted &&
+			// outside paranoid mode, `mise trust <file>` trusts its whole directory
+			(await this.isParanoidMode())
+		);
+	}
+
+	private pendingOwnEdits(): string[] {
+		const now = Date.now();
+		for (const [file, expiresAt] of this.ownEdits) {
+			if (expiresAt < now) {
+				this.ownEdits.delete(file);
+			}
+		}
+		return [...this.ownEdits.keys(), ...this.ownEditTrusts.keys()];
+	}
+
+	/**
+	 * Trusts again a file announced by {@link expectOwnEdit}, now written. The
+	 * save handler, the file watcher and the views all wait for the same
+	 * renewal, whichever of them reads the file first.
+	 */
+	trustOwnEdit(filePath: string): Promise<void> {
+		const key = expandPath(filePath);
+		const pending = this.ownEditTrusts.get(key);
+		if (pending) {
+			return pending;
+		}
+
+		const expiresAt = this.ownEdits.get(key);
+		this.ownEdits.delete(key);
+		if (expiresAt === undefined || expiresAt < Date.now()) {
+			return Promise.resolve();
+		}
+
+		const renewal = this.miseTrustFile(key).finally(() => {
+			this.ownEditTrusts.delete(key);
+		});
+		this.ownEditTrusts.set(key, renewal);
+		return renewal;
+	}
+
+	/**
+	 * `mise -C <directory> trust --show`: whether each config file mise reads
+	 * there is trusted. In paranoid mode it lists files, ancestors included.
+	 */
+	private async getConfigTrust(
+		directory: string,
+	): Promise<Map<string, boolean>> {
+		const trust = new Map<string, boolean>();
+		try {
+			const { stdout } = await this.execMiseCommand(
+				["-C", directory, "trust", "--show"],
+				{ setMiseEnv: false },
+			);
+			for (const line of stdout.split("\n")) {
+				const match = line.trim().match(/^(.+): (trusted|untrusted)$/);
+				if (match?.[1]) {
+					trust.set(expandPath(match[1]), match[2] === "trusted");
+				}
+			}
+		} catch (error) {
+			logger.info(
+				"Could not read the trust of the config files:",
+				error as Error,
+			);
+		}
+		return trust;
+	}
+
+	/**
+	 * The config files the user told mise to ignore, with `mise trust --ignore`
+	 * or by answering no to its trust prompt. mise skips them without an error.
+	 */
+	async getIgnoredConfigFiles(): Promise<Set<string>> {
+		const entries: string[] = await readdir(IGNORED_CONFIG_DIR).catch(() => []);
+		const files = new Set<string>();
+		for (const entry of entries) {
+			const entryPath = path.join(IGNORED_CONFIG_DIR, entry);
+			// a symlink to the config, or a file holding its path on Windows
+			const target = await readlink(entryPath)
+				.catch(() => readFile(entryPath, "utf8"))
+				.then((value) => value.trim())
+				.catch(() => "");
+			if (target) {
+				files.add(expandPath(this.toOpenedPaths(target)));
+			}
+		}
+		return files;
+	}
+
+	/** Whether a config of the workspace folder, or of a parent, is ignored */
+	private async isWorkspaceConfigIgnored(): Promise<boolean> {
+		const folder = this.getCurrentWorkspaceFolderPath();
+		if (!folder) {
+			return false;
+		}
+		const workspace = expandPath(folder);
+		return [...(await this.getIgnoredConfigFiles())].some((file) => {
+			const directory = path.dirname(file);
+			return directory === workspace || isPathInside(directory, workspace);
+		});
+	}
+
 	/** Whether this change comes from a save the user asked for */
 	consumeManualSave(uri: vscode.Uri): boolean {
 		return this.manualSaves.delete(expandPath(uri.fsPath));
@@ -708,6 +884,7 @@ export class MiseService {
 			const error = new Error(
 				`Command failed: mise ${miseArgs.join(" ")}\n${stderr}`.trim(),
 			);
+			this.noteUntrustedConfigs(error.message);
 
 			const previous = this.lastGoodOutput.get(key);
 			if (retainOnParseError && previous && isMiseConfigParseError(error)) {
@@ -726,6 +903,8 @@ export class MiseService {
 			// the config parses again, so what the views show is current
 			this.setServingRetainedState(false);
 		}
+		// e.g. the untrusted monorepo subprojects, skipped with a warning
+		this.noteUntrustedConfigs(stderr);
 		return { stdout, stderr };
 	}
 
@@ -830,34 +1009,260 @@ export class MiseService {
 		);
 	}
 
-	private async handleUntrustedFile(error: Error): Promise<void> {
-		const trustAction = "Trust";
-		logger.info("Untrusted file error:", error);
-		const selection = await vscode.window.showErrorMessage(
-			"Do you trust the Mise configuration file in the current project?",
-			{ modal: true },
-			trustAction,
-		);
+	/** The config files mise refused to read because they are not trusted */
+	private _untrustedConfigFiles: string[] = [];
 
-		if (selection !== trustAction) {
-			throw new Error("User declined to trust file");
+	private readonly untrustedConfigEmitter = new vscode.EventEmitter<void>();
+
+	get untrustedConfigFiles(): readonly string[] {
+		return this._untrustedConfigFiles;
+	}
+
+	/** Fired when the list of untrusted config files changes */
+	subscribeToUntrustedConfigChange(listener: () => void): vscode.Disposable {
+		return this.untrustedConfigEmitter.event(listener);
+	}
+
+	private setUntrustedConfigFiles(files: string[]) {
+		if (files.join("\n") === this._untrustedConfigFiles.join("\n")) {
+			return;
+		}
+		this._untrustedConfigFiles = files;
+		this.untrustedConfigEmitter.fire();
+	}
+
+	/** On each reload: what mise refuses is learned again */
+	resetUntrustedConfigFiles() {
+		this.setUntrustedConfigFiles([]);
+	}
+
+	/**
+	 * mise refuses to read an untrusted config file, so every view fails at once
+	 * when it loads. Each refusal is noted as it happens, without a notification:
+	 * the status bar and a code lens show the files are not trusted, and the
+	 * views go on without them.
+	 */
+	private noteUntrustedConfigs(output: string) {
+		const { refused, skipped } = findUntrustedConfigs(output);
+		// a file just written by the user is about to be trusted again
+		const pending = new Set(this.pendingOwnEdits());
+		const files = [refused, ...skipped]
+			.filter((file): file is string => Boolean(file))
+			.map((file) => expandPath(file))
+			.filter((file) => !pending.has(file));
+		if (!files.length) {
+			return;
 		}
 
-		try {
-			await this.cache.execCmd({ args: ["trust"] });
-		} catch (trustError) {
-			logger.error("Error trusting mise configuration:", trustError as Error);
-			throw new Error(
-				`Failed to trust the Mise configuration. "${error}". Please try again or trust it manually.`,
+		logger.info("Untrusted config files:", files.join(", "));
+		this.setUntrustedConfigFiles([
+			...new Set([...this._untrustedConfigFiles, ...files]),
+		]);
+		this.findOtherUntrustedConfigs();
+	}
+
+	private findingOtherUntrustedConfigs: Promise<void> | undefined;
+
+	/**
+	 * In paranoid mode, each config file is trusted on its own and mise names
+	 * one at a time, parents first: the others are listed at once, so that a
+	 * single action trusts them all.
+	 */
+	private findOtherUntrustedConfigs() {
+		this.findingOtherUntrustedConfigs ??= (async () => {
+			const folder = this.getCurrentWorkspaceFolderPath();
+			if (!folder || !(await this.isParanoidMode())) {
+				return;
+			}
+			const ignored = await this.getIgnoredConfigFiles();
+			const untrusted = [...(await this.getConfigTrust(folder))]
+				.filter(([file, trusted]) => !trusted && !ignored.has(file))
+				.map(([file]) => file);
+			if (untrusted.length) {
+				this.setUntrustedConfigFiles([
+					...new Set([...this._untrustedConfigFiles, ...untrusted]),
+				]);
+			}
+		})().finally(() => {
+			this.findingOtherUntrustedConfigs = undefined;
+		});
+	}
+
+	/**
+	 * A file the user just wrote may be the one mise refused: it is trusted
+	 * again if they opted in (see {@link expectOwnEdit}).
+	 *
+	 * @returns whether the caller should read the config again
+	 */
+	private async handleUntrustedFile(): Promise<boolean> {
+		const pending = this.pendingOwnEdits();
+		if (!pending.length) {
+			return false;
+		}
+
+		await Promise.all(pending.map((filePath) => this.trustOwnEdit(filePath)));
+		return true;
+	}
+
+	private describeConfigFile(filePath: string) {
+		return displayPathRelativeTo(
+			filePath,
+			this.getCurrentWorkspaceFolderPath(),
+		);
+	}
+
+	/** Trust the config files mise refuses, or read them first */
+	async reviewUntrustedConfig() {
+		const files = [...this._untrustedConfigFiles];
+		if (!files.length) {
+			void vscode.window.showInformationMessage(
+				"No mise config file is waiting to be trusted.",
 			);
+			return;
+		}
+
+		const names = files.map((file) => this.describeConfigFile(file));
+		const isSingle = files.length === 1;
+		const trustAction = isSingle ? "Trust" : "Trust All";
+		const openAction = isSingle ? "Open File" : "Open Files";
+		const selection = await vscode.window.showInformationMessage(
+			isSingle
+				? `mise does not load ${names[0]} until you trust it.`
+				: "mise does not load these files until you trust them.",
+			{
+				modal: true,
+				detail: [
+					...(isSingle ? [] : [...names, ""]),
+					"Trusting a file lets mise run what it defines: tasks, hooks and environment templates.",
+				].join("\n"),
+			},
+			trustAction,
+			openAction,
+		);
+
+		if (selection === trustAction) {
+			await this.trustUntrustedConfigs();
+		} else if (selection === openAction) {
+			for (const file of files) {
+				await vscode.window.showTextDocument(vscode.Uri.file(file), {
+					preview: false,
+				});
+			}
 		}
 	}
 
+	/** A config file the user told mise to ignore: trust it after all */
+	async reviewIgnoredConfig(filePath: string) {
+		const trustAction = "Trust";
+		const selection = await vscode.window.showInformationMessage(
+			`mise ignores ${this.describeConfigFile(filePath)}, as you asked.`,
+			{
+				modal: true,
+				detail:
+					"Trusting it lets mise load it, and run what it defines: tasks, hooks and environment templates.",
+			},
+			trustAction,
+		);
+		if (selection !== trustAction) {
+			return;
+		}
+		try {
+			await this.execMiseCommand(["trust", filePath], { setMiseEnv: false });
+		} catch (error) {
+			logger.error(`Could not trust ${filePath}:`, error as Error);
+			return;
+		}
+		await vscode.commands.executeCommand(MISE_RELOAD);
+	}
+
+	private async trustUntrustedConfigs() {
+		const trusted: string[] = [];
+		for (const file of this._untrustedConfigFiles) {
+			try {
+				await this.execMiseCommand(["trust", file], { setMiseEnv: false });
+				trusted.push(file);
+			} catch (error) {
+				logger.error(`Could not trust ${file}:`, error as Error);
+			}
+		}
+		this.setUntrustedConfigFiles(
+			this._untrustedConfigFiles.filter((file) => !trusted.includes(file)),
+		);
+		await vscode.commands.executeCommand(MISE_RELOAD);
+	}
+
+	/**
+	 * In an untrusted VS Code workspace, the config files are not trusted yet:
+	 * outside paranoid mode, {@link miseTrust} trusts them once the workspace is.
+	 */
+	async waitsForWorkspaceTrust(): Promise<boolean> {
+		return (
+			!vscode.workspace.isTrusted &&
+			shouldAutomaticallyTrustMiseConfigFiles() &&
+			!(await this.isParanoid())
+		);
+	}
+
+	/**
+	 * `mise trust` without asking, for `mise.automaticallyTrustMiseConfigFiles`.
+	 *
+	 * Skipped in paranoid mode, where trust is bound to the content of a file:
+	 * every change has to be approved again, from the status bar or the code
+	 * lens shown once mise refuses the edited file.
+	 */
 	async miseTrust() {
 		if (!this.getMiseBinaryPath()) {
 			return;
 		}
+
+		if (await this.isParanoid()) {
+			logger.info(
+				"mise runs in paranoid mode: config files are not trusted automatically",
+			);
+			return;
+		}
+
+		// `mise trust` would also remove a config from the ignore list
+		if (await this.isWorkspaceConfigIgnored()) {
+			logger.info(
+				"A config file of the workspace is ignored by mise: not trusting it automatically",
+			);
+			return;
+		}
+
 		await this.cache.execCmd({ args: ["trust"], setMiseEnv: false });
+	}
+
+	/**
+	 * `mise trust <file>`: that file only, not every config file of the folder.
+	 * Not cached, since each save changes the content that gets trusted.
+	 */
+	async miseTrustFile(filePath: string) {
+		if (!this.getMiseBinaryPath()) {
+			return;
+		}
+
+		try {
+			await this.execMiseCommand(["trust", filePath], { setMiseEnv: false });
+		} catch (error) {
+			logger.info(`Could not trust ${filePath}:`, error as Error);
+		}
+	}
+
+	/** Whether mise says it runs in paranoid mode, for what the editor shows */
+	async isParanoidMode(): Promise<boolean> {
+		const value = await this.getSetting("paranoid").catch(() => undefined);
+		return value?.trim() === "true";
+	}
+
+	/** Assumed when the setting cannot be read: trusting is the unsafe side */
+	private async isParanoid(): Promise<boolean> {
+		try {
+			return (await this.getSetting("paranoid"))?.trim() !== "false";
+		} catch (error) {
+			logger.info("Could not read the paranoid setting:", error as Error);
+			return true;
+		}
 	}
 
 	private async buildTasksLsArgs({ includeHidden = false } = {}) {
@@ -892,8 +1297,10 @@ export class MiseService {
 			return JSON.parse(stdout);
 		} catch (error: unknown) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getTasks();
+				if (await this.handleUntrustedFile()) {
+					return this.getTasks();
+				}
+				return [];
 			}
 
 			logger.info("Error fetching mise tasks:", error as Error);
@@ -982,6 +1389,15 @@ export class MiseService {
 	 */
 	async getTaskCacheKey(taskName: string): Promise<string | undefined> {
 		if (!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_TASK_CACHE))) {
+			return undefined;
+		}
+
+		// outside paranoid mode, `mise run` trusts the config it runs: a hover
+		// must not trust a config the user has not, or has chosen to ignore
+		if (
+			this._untrustedConfigFiles.length ||
+			(await this.isWorkspaceConfigIgnored())
+		) {
 			return undefined;
 		}
 
@@ -1109,8 +1525,10 @@ export class MiseService {
 			});
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getCurrentTools();
+				if (await this.handleUntrustedFile()) {
+					return this.getCurrentTools();
+				}
+				return [];
 			}
 
 			return [];
@@ -1142,8 +1560,10 @@ export class MiseService {
 			});
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getAllTools();
+				if (await this.handleUntrustedFile()) {
+					return this.getAllTools();
+				}
+				return [];
 			}
 
 			logger.info("Error fetching mise tools:", error as Error);
@@ -1239,8 +1659,10 @@ export class MiseService {
 			}));
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getEnvs();
+				if (await this.handleUntrustedFile()) {
+					return this.getEnvs();
+				}
+				return [];
 			}
 
 			logger.info("Error fetching mise environments:", error as Error);
@@ -1364,7 +1786,14 @@ export class MiseService {
 	}
 
 	async miseFmt() {
-		await this.execMiseCommand(["fmt"], { setMiseEnv: false });
+		// `mise fmt` rewrites the config files without trusting them again
+		const folder = this.getCurrentWorkspaceFolderPath();
+		const ownEdits = folder ? await this.expectOwnEditsIn(folder) : [];
+		try {
+			await this.execMiseCommand(["fmt"], { setMiseEnv: false });
+		} finally {
+			await Promise.all(ownEdits.map((file) => this.trustOwnEdit(file)));
+		}
 	}
 
 	/**
@@ -1525,6 +1954,13 @@ export class MiseService {
 		);
 		if (stderr) {
 			logger.debug("mise doctor --json", stderr);
+		}
+
+		// mise answers nothing when it cannot read the config, e.g. an untrusted
+		// one: the views already report that, it is not an error of its own
+		if (!stdout.trim()) {
+			logger.info("mise doctor --json returned nothing", stderr);
+			return {} as MiseConfig;
 		}
 
 		try {
@@ -2130,14 +2566,20 @@ export class MiseService {
 			return;
 		}
 
-		await this.runMiseToolActionInConsole([
-			"config",
-			"set",
-			`settings.${setting}`,
-			value,
-			"--file",
-			filePath,
-		]);
+		// `mise config set` rewrites the file without trusting it again
+		await this.expectOwnEdit(filePath);
+		try {
+			await this.runMiseToolActionInConsole([
+				"config",
+				"set",
+				`settings.${setting}`,
+				value,
+				"--file",
+				filePath,
+			]);
+		} finally {
+			await this.trustOwnEdit(filePath);
+		}
 	}
 
 	async createMiseToolSymlink(
@@ -2234,8 +2676,10 @@ export class MiseService {
 			return JSON.parse(stdout) as MiseBootstrapStatus;
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getBootstrapStatus();
+				if (await this.handleUntrustedFile()) {
+					return this.getBootstrapStatus();
+				}
+				return undefined;
 			}
 
 			throw error;
@@ -2277,8 +2721,10 @@ export class MiseService {
 			return JSON.parse(stdout) as MiseBootstrapPlan;
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
-				await this.handleUntrustedFile(error);
-				return this.getBootstrapPlan();
+				if (await this.handleUntrustedFile()) {
+					return this.getBootstrapPlan();
+				}
+				return undefined;
 			}
 
 			throw error;

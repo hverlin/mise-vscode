@@ -17,6 +17,7 @@ import {
 	MISE_OPEN_MENU,
 	MISE_RELOAD,
 	MISE_RELOAD_FROM_USER,
+	MISE_REVIEW_UNTRUSTED_CONFIG,
 	MISE_REVIEW_WORKSPACE_BINARY,
 	MISE_REVOKE_WORKSPACE_BINARIES,
 	MISE_SELECT_WORKSPACE_FOLDER,
@@ -24,6 +25,7 @@ import {
 	MISE_SHOW_PROJECTS,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TRACKED_CONFIG,
+	MISE_TOGGLE_TRUST_OWN_EDITS,
 	MISE_VISUALIZE_TASKS_DEPS,
 } from "./commands";
 import {
@@ -41,6 +43,7 @@ import {
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
 	shouldShowNotificationIfMissingTools,
+	shouldTrustOwnEditsInParanoidMode,
 } from "./configuration";
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
@@ -93,9 +96,15 @@ import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
 import { logger } from "./utils/logger";
 import { escapeMarkdown, markdownCodeSpan } from "./utils/markdown";
-import { allowedFileTaskDirs, isToolVersionsFile } from "./utils/miseUtilts";
+import {
+	allowedFileTaskDirs,
+	isToolVersionsFile,
+	parseMiseError,
+} from "./utils/miseUtilts";
 import { checkTomlExtensions } from "./utils/tomlExtensionCheck";
 import WebViewPanel from "./webviewPanel";
+
+const MANAGE_WORKSPACE_TRUST = "workbench.trust.manage";
 
 export class MiseExtension {
 	private miseService!: MiseService;
@@ -115,6 +124,9 @@ export class MiseExtension {
 
 	private miseFileWatcher: MiseFileWatcher | undefined;
 
+	/** The config files are trusted along with the workspace, see setUntrustedConfigState */
+	private configsWaitForWorkspaceTrust = false;
+
 	async activate(context: vscode.ExtensionContext) {
 		this.context = context;
 		this.miseService = new MiseService(context);
@@ -130,6 +142,8 @@ export class MiseExtension {
 		);
 
 		await this.resetState();
+		this.configsWaitForWorkspaceTrust =
+			await this.miseService.waitsForWorkspaceTrust();
 
 		if (
 			isMiseExtensionEnabled() &&
@@ -144,6 +158,8 @@ export class MiseExtension {
 			this.miseService,
 			async (uri) => {
 				logger.info(`Mise configuration file changed: ${uri}`);
+				// before the reload, which reads the file with mise
+				await this.miseService.trustOwnEdit(uri.fsPath);
 				await vscode.commands.executeCommand(MISE_RELOAD);
 			},
 		);
@@ -197,6 +213,28 @@ export class MiseExtension {
 					await this.miseService.reviewWorkspaceBinary();
 					await vscode.commands.executeCommand(MISE_RELOAD);
 				},
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				MISE_REVIEW_UNTRUSTED_CONFIG,
+				// with a file: one the user told mise to ignore, see the code lens
+				(filePath?: string) =>
+					typeof filePath === "string"
+						? this.miseService.reviewIgnoredConfig(filePath)
+						: this.miseService.reviewUntrustedConfig(),
+			),
+		);
+
+		context.subscriptions.push(
+			vscode.commands.registerCommand(MISE_TOGGLE_TRUST_OWN_EDITS, () =>
+				vscode.workspace.getConfiguration("mise").update(
+					CONFIGURATION_FLAGS.trustOwnEditsInParanoidMode,
+					!shouldTrustOwnEditsInParanoidMode(),
+					// a project cannot turn it on, see the scope of the setting
+					vscode.ConfigurationTarget.Global,
+				),
 			),
 		);
 
@@ -308,6 +346,8 @@ export class MiseExtension {
 
 				this.miseFileWatcher?.initialize();
 
+				this.configsWaitForWorkspaceTrust =
+					await this.miseService.waitsForWorkspaceTrust();
 				if (
 					shouldAutomaticallyTrustMiseConfigFiles() &&
 					vscode.workspace.isTrusted
@@ -337,10 +377,12 @@ export class MiseExtension {
 
 				this.updateStatusBar({ state: "ready" });
 			} catch (error) {
-				this.updateStatusBar({
-					state: "error",
-					errorMsg: (error as Error).message,
-				});
+				// an untrusted config has a state of its own, see untrustedConfigFile
+				this.updateStatusBar(
+					parseMiseError(error).kind === "untrusted"
+						? { state: "ready" }
+						: { state: "error", errorMsg: (error as Error).message },
+				);
 			}
 
 			void this.checkForInvalidMiseConfigFiles();
@@ -390,12 +432,25 @@ export class MiseExtension {
 		);
 
 		context.subscriptions.push(
+			this.miseService.subscribeToUntrustedConfigChange(() => {
+				this.updateStatusBar({});
+			}),
+			// the reload trusts the config files, now that the workspace is
+			vscode.workspace.onDidGrantWorkspaceTrust(() => {
+				vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+			}),
+		);
+
+		context.subscriptions.push(
 			vscode.workspace.onWillSaveTextDocument((e) => {
 				if (
 					e.reason === vscode.TextDocumentSaveReason.Manual &&
-					e.document.fileName.endsWith(".toml")
+					(e.document.fileName.endsWith(".toml") ||
+						isToolVersionsFile(e.document.fileName))
 				) {
 					this.miseService.notifyManualSave(e.document.uri);
+					// whether the file is trusted is read before it is written
+					e.waitUntil(this.miseService.expectOwnEdit(e.document.uri.fsPath));
 				}
 			}),
 		);
@@ -660,8 +715,10 @@ export class MiseExtension {
 					addToolInfoToEditor(editor.document, this.miseService, context);
 				}
 			}),
-			vscode.workspace.onDidSaveTextDocument((document) => {
+			vscode.workspace.onDidSaveTextDocument(async (document) => {
 				if (isToolsDocument(document)) {
+					// before the reload, which reads the file with mise
+					await this.miseService.trustOwnEdit(document.uri.fsPath);
 					vscode.commands.executeCommand(MISE_RELOAD);
 				}
 			}),
@@ -887,6 +944,8 @@ export class MiseExtension {
 			this.miseService.invalidateCache(),
 			this.miseService.initializeMisePath(),
 		]);
+		// what mise refuses is learned again by the reload
+		this.miseService.resetUntrustedConfigFiles();
 	}
 
 	private updateStatusBar({
@@ -905,6 +964,11 @@ export class MiseExtension {
 
 		if (state === "unapproved") {
 			this.setUnapprovedBinaryState();
+			return;
+		}
+
+		if (this.miseService.untrustedConfigFiles.length) {
+			this.setUntrustedConfigState(this.miseService.untrustedConfigFiles);
 			return;
 		}
 
@@ -1018,10 +1082,58 @@ export class MiseExtension {
 		| undefined;
 
 	/**
-	 * A config file does not parse, so the views are showing the state from
-	 * before it broke rather than what mise reports now. Saying so beats both
-	 * emptying the views and letting the stale state pass for current.
+	 * mise refuses to load config files that are not trusted. In an untrusted
+	 * workspace, outside paranoid mode, they are trusted along with the
+	 * workspace, so the status bar only says so instead of turning into a
+	 * warning.
 	 */
+	private setUntrustedConfigState(files: readonly string[]) {
+		const waitsForWorkspaceTrust = this.configsWaitForWorkspaceTrust;
+		this.statusBarItem.text = "$(shield) Mise (not trusted)";
+		this.statusBarItem.color = waitsForWorkspaceTrust
+			? undefined
+			: new vscode.ThemeColor("statusBarItem.warningForeground");
+		this.statusBarItem.backgroundColor = waitsForWorkspaceTrust
+			? undefined
+			: new vscode.ThemeColor("statusBarItem.warningBackground");
+		this.statusBarItem.command = waitsForWorkspaceTrust
+			? MANAGE_WORKSPACE_TRUST
+			: MISE_REVIEW_UNTRUSTED_CONFIG;
+
+		const names = files.map((file) =>
+			markdownCodeSpan(
+				displayPathRelativeTo(
+					file,
+					this.miseService.getCurrentWorkspaceFolderPath(),
+				),
+			),
+		);
+		const tooltip = new MarkdownString("", true);
+		tooltip.isTrusted = true;
+		tooltip.appendMarkdown(
+			[
+				names.length === 1
+					? `**mise does not load ${names[0]}**, which is not trusted.`
+					: `**mise does not load these files**, which are not trusted:\n\n${names.map((name) => `- ${name}`).join("\n")}`,
+				waitsForWorkspaceTrust
+					? `The extension trusts ${names.length === 1 ? "it" : "them"} once you trust this workspace.`
+					: "",
+				[
+					waitsForWorkspaceTrust
+						? `[$(workspace-trusted) Manage Workspace Trust](command:${MANAGE_WORKSPACE_TRUST})`
+						: "",
+					`[$(shield) Review](command:${MISE_REVIEW_UNTRUSTED_CONFIG})`,
+				]
+					.filter(Boolean)
+					.join(" · "),
+			]
+				.filter(Boolean)
+				.join("\n\n"),
+		);
+		this.statusBarItem.tooltip = tooltip;
+		this.statusBarItem.show();
+	}
+
 	private setRetainedStateIndicator() {
 		this.statusBarItem.text = "$(warning) Mise";
 		this.statusBarItem.color = new vscode.ThemeColor(
@@ -1039,6 +1151,7 @@ export class MiseExtension {
 	setErrorState(errorMsg: string) {
 		this.statusBarItem.text = "$(error) Mise";
 		this.statusBarItem.color = new vscode.ThemeColor("errorForeground");
+		this.statusBarItem.backgroundColor = undefined;
 		this.statusBarItem.tooltip = errorMsg;
 	}
 
@@ -1054,7 +1167,11 @@ export class MiseExtension {
 			await this.miseService.getMiseConfigFiles();
 			resetStatusBar();
 		} catch (error) {
-			if (!(error instanceof Error)) {
+			// nothing is wrong with an untrusted config: it has a state of its own
+			if (
+				!(error instanceof Error) ||
+				parseMiseError(error).kind === "untrusted"
+			) {
 				resetStatusBar();
 				return;
 			}

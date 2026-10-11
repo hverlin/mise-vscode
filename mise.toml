@@ -70,6 +70,10 @@ target=""
 if [ -n "${usage_project:-}" ]; then
   target=$(node scripts/copy-test-projects.mjs --print-paths "$usage_project")
 fi
+# the e2e suite runs this project with mise in paranoid mode
+case "$target" in
+  */paranoid-trust-workspace) export MISE_PARANOID=1 ;;
+esac
 $CODE_CMD --inspect-extensions=5858 --extensionDevelopmentPath={{cwd}} ${target:+"$target"}
 '''
 
