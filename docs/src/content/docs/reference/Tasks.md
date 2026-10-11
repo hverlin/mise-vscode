@@ -151,7 +151,8 @@ The hit or miss is resolved by asking mise for the cache key the task would use
 right now. Computing that key runs the `command_inputs` of the task, so tasks
 declaring any are never predicted — for those, the hover reports the latest
 stored entry instead, and `Mise: Explain task cache key` gives the full answer
-on demand.
+on demand. Tasks that take arguments are not predicted either, since their cache
+key depends on the arguments of each run.
 
 The same actions are available from the command palette and from the task
 context menu in the activity bar:

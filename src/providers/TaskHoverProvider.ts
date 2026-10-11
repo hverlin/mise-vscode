@@ -38,6 +38,8 @@ import { getTaskNameValueContext } from "../utils/tomlParsing";
 type TaskCacheState = {
 	entries: MiseTaskCacheEntry[];
 	nextRunKey?: string;
+	/** the key depends on the arguments of the run, unknown until it starts */
+	takesArguments?: boolean;
 };
 
 function createMarkdownString(
@@ -73,7 +75,7 @@ function createMarkdownString(
 /** Task output cache state, only shown for tasks that have cached results */
 function appendCacheSection(
 	markdownString: vscode.MarkdownString,
-	{ entries, nextRunKey }: TaskCacheState,
+	{ entries, nextRunKey, takesArguments }: TaskCacheState,
 ) {
 	if (entries.length === 0) {
 		return;
@@ -90,6 +92,8 @@ function appendCacheSection(
 		);
 	} else if (nextRunKey) {
 		lines.push("Next run: cache miss · the task will execute");
+	} else if (takesArguments) {
+		lines.push("Next run: depends on the task arguments");
 	}
 
 	// `current` marks the entry of the last key mise recorded for the task, not
@@ -153,11 +157,16 @@ export class TaskHoverProvider implements vscode.HoverProvider {
 		// entries go stale whenever the task runs, watch them from now on
 		this.miseService.ensureTaskCacheWatcher();
 
+		// mise hashes the arguments as typed (even a default value typed out
+		// gives another key), so no run without them predicts the next one
+		const takesArguments = Boolean(task.usage?.trim());
 		return {
 			entries,
-			nextRunKey: (await this.canComputeCacheKey(task, document))
-				? await this.miseService.getTaskCacheKey(task.name)
-				: undefined,
+			takesArguments,
+			nextRunKey:
+				!takesArguments && (await this.canComputeCacheKey(task, document))
+					? await this.miseService.getTaskCacheKey(task.name)
+					: undefined,
 		};
 	}
 

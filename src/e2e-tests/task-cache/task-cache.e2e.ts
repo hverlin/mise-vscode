@@ -207,6 +207,32 @@ suite("Task Cache Test Suite", function () {
 		);
 	});
 
+	// mise hashes the arguments of the run into the cache key
+	test("never predicts for a task taking arguments", async () => {
+		// without arguments, the run the hover would compute the key of
+		await runMise(["run", "--force", "greet"]);
+		assert.equal(
+			await countCacheEntries("greet"),
+			1,
+			"mise should have stored one cache entry for greet",
+		);
+
+		const hoverText = await waitFor(
+			() => getHoverText("[tasks.greet]"),
+			(text) => text.includes("Cache: 1 entry"),
+			"Expected the greet cache summary in the hover",
+		);
+
+		assert.ok(
+			hoverText.includes("Next run: depends on the task arguments"),
+			`Expected no prediction for a task taking arguments, got: ${hoverText}`,
+		);
+		assert.ok(
+			hoverText.includes("Latest entry:"),
+			`Expected the latest cache entry instead, got: ${hoverText}`,
+		);
+	});
+
 	test("does not report a cache for tasks without one", async () => {
 		const hoverText = await getHoverText("[tasks.plain]");
 

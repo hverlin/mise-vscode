@@ -19,7 +19,7 @@ cache = { enabled = true, command_inputs = ["echo v1"] }
 [tasks.greet]
 description = "cached task taking arguments"
 usage = '''
-arg "<name>"
+arg "[name]" default="world"
 flag "--loud"
 '''
 run = "mkdir -p dist-greet && echo \"hello ${usage_name}\" > dist-greet/output.txt"
