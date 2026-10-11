@@ -30,6 +30,18 @@ const projectsMiseStateDir = path.join(
 );
 fs.rmSync(projectsMiseStateDir, { recursive: true, force: true });
 
+// The symlinked-workspace suite opens its fixture through a symlink, like a
+// project under /tmp on macOS (a symlink to /private/tmp).
+const symlinkedWorkspace = path.join(
+	os.tmpdir(),
+	"mise-vscode-e2e-symlinked-workspace",
+);
+fs.rmSync(symlinkedWorkspace, { recursive: true, force: true });
+fs.symlinkSync(
+	path.join(fixturesPath, "symlinked-workspace"),
+	symlinkedWorkspace,
+);
+
 const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
 	"multi-root",
@@ -131,6 +143,20 @@ module.exports = defineConfig([
 		label: "command-injection",
 		files: "src/e2e-tests/command-injection/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "command-injection-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
+		label: "symlinked-workspace",
+		files: "src/e2e-tests/symlinked-workspace/*.e2e.ts",
+		workspaceFolder: symlinkedWorkspace,
 		env: {
 			MISE_CEILING_PATHS: fixturesPath,
 			MISE_LOCKED: "0",

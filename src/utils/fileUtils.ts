@@ -292,11 +292,19 @@ export function displayPathRelativeTo(
 	filePath: string,
 	rootFolder: string | undefined,
 ) {
-	const homedir = isWindows ? os.homedir().toLowerCase() : os.homedir();
-	const rootPath = rootFolder ? `${rootFolder}${path.sep}` : "";
-	const pathShown = expandPath(filePath)
-		.replace(isWindows ? rootPath.toLowerCase() : rootPath, "")
-		.replace(homedir, "~");
+	const compare = (value: string) => (isWindows ? value.toLowerCase() : value);
+	const pathShown = expandPath(filePath);
+
+	// prefixes only: `/tmp/project` also appears in `/private/tmp/project`
+	const rootPath = rootFolder ? compare(`${rootFolder}${path.sep}`) : "";
+	if (rootPath && pathShown.startsWith(rootPath)) {
+		return pathShown.slice(rootPath.length);
+	}
+
+	const homePath = compare(`${os.homedir()}${path.sep}`);
+	if (pathShown.startsWith(homePath)) {
+		return `~${path.sep}${pathShown.slice(homePath.length)}`;
+	}
 	return pathShown;
 }
 
