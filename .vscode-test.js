@@ -1,5 +1,6 @@
 const { defineConfig } = require("@vscode/test-cli");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const fixturesPath = path.join(__dirname, "src/e2e-tests/fixtures/");
 
@@ -19,6 +20,15 @@ const generatedWorkspaceFile = (fixture, name) => {
 	);
 	return generated;
 };
+
+// mise writes into its state dir as the projects suite runs: a fresh one on
+// every run keeps the fixture clean, and the machine's own tracked configs out
+// of the projects view.
+const projectsMiseStateDir = path.join(
+	os.tmpdir(),
+	"mise-vscode-e2e-projects-state",
+);
+fs.rmSync(projectsMiseStateDir, { recursive: true, force: true });
 
 const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
@@ -141,7 +151,7 @@ module.exports = defineConfig([
 			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
 			// Keep the machine's own tracked configs and global config out of the
 			// projects view so results match between dev machines and CI.
-			MISE_STATE_DIR: path.join(fixturesPath, "projects-workspace", ".state"),
+			MISE_STATE_DIR: projectsMiseStateDir,
 			MISE_GLOBAL_CONFIG_FILE: path.join(
 				fixturesPath,
 				"projects-workspace",
