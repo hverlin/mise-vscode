@@ -16,6 +16,17 @@ sources = ["src/input.txt"]
 outputs = ["dist-probe"]
 cache = { enabled = true, command_inputs = ["echo v1"] }
 
+[tasks.greet]
+description = "cached task taking arguments"
+usage = '''
+arg "<name>"
+flag "--loud"
+'''
+run = "mkdir -p dist-greet && echo \"hello ${usage_name}\" > dist-greet/output.txt"
+sources = ["src/input.txt"]
+outputs = ["dist-greet"]
+cache = { enabled = true }
+
 [tasks.plain]
 description = "task without an output cache"
 run = "echo plain"

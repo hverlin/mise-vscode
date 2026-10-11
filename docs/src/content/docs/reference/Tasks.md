@@ -159,8 +159,9 @@ context menu in the activity bar:
 - `Mise: Explain task cache key` (`mise run --dry-run --task-cache-explain`) —
   shows what feeds the cache key without running the task
 - `Mise: Run task without its output cache` (`mise run --task-cache off`)
-- `Mise: Force run task` (`mise run --force`): runs the task even when its
-  sources are up to date, and stores a new cache entry instead of restoring one
+- `Mise: Force run task` (`mise run --force`): runs the task and its
+  dependencies even when their sources are up to date, and stores a new cache
+  entry instead of restoring one
 - `Mise: Clear task output cache` (`mise cache clear --task`) — only offers the
   tasks that have stored entries
 

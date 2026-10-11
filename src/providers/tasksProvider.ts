@@ -824,8 +824,8 @@ export function registerTasksCommands(
 					return;
 				}
 
-				// runs even when the sources are up to date, and stores a new cache
-				// entry instead of restoring one
+				// runs the task and its dependencies even when their sources are up
+				// to date, and stores a new cache entry instead of restoring one
 				await vscode.workspace.saveAll(false);
 				await taskProvider
 					.runTask(name, { runFlags: ["--force"] })
@@ -846,8 +846,9 @@ export function registerTasksCommands(
 					return;
 				}
 
-				// --dry-run keeps the task itself (and its command inputs) from running
-				await miseService.runTask(name, {
+				// --dry-run keeps the task itself (and its command inputs) from running.
+				// The arguments of the task are asked for: they are part of the key
+				await taskProvider.runTask(name, {
 					runFlags: ["--dry-run", "--task-cache-explain"],
 				});
 			},
