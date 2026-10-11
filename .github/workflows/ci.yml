@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# the e2e tests hand the token to mise and to marketplace extensions
+permissions:
+  contents: read
+
 env:
   MISE_LOCKED: "1"
 
@@ -93,3 +97,7 @@ jobs:
       - if: contains(matrix.labels, 'sdk-extensions')
         run: node --run fetch-pkl-vsix
       - run: xvfb-run -a npx vscode-test --label ${{ matrix.labels }}
+        env:
+          # the suites install tools with mise, which queries the GitHub API:
+          # unauthenticated, a runner shares a limit of 60 requests an hour
+          GITHUB_TOKEN: ${{ github.token }}
