@@ -235,6 +235,28 @@ suite("Task Cache Test Suite", function () {
 		);
 	});
 
+	test("force runs a task from the cache code lens", async () => {
+		const sentCommands = captureTerminalCommand();
+		const showQuickPick = sandbox
+			.stub(vscode.window, "showQuickPick")
+			.callsFake(async (items) =>
+				(await items).find((item) =>
+					(item as vscode.QuickPickItem).label.includes("Force run"),
+				),
+			);
+
+		// the command the cache lens runs
+		await vscode.commands.executeCommand("mise.showTaskCacheMenu", "build");
+
+		assert.ok(showQuickPick.calledOnce, "the cache menu should be shown");
+		assert.equal(sentCommands.length, 1);
+		assert.match(
+			sentCommands[0] ?? "",
+			/run --force ["']?build/,
+			`Unexpected command: ${sentCommands[0]}`,
+		);
+	});
+
 	test("explains the cache key without running the task", async () => {
 		const sentCommands = captureTerminalCommand();
 
