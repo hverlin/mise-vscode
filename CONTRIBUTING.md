@@ -20,6 +20,12 @@ On code change:
 - the extension code (in the `dist` folder) will be updated automatically.
 - refresh the VS Code window to see the changes (`Developer: Reload Window`).
 
+To try the extension on one of the e2e test projects, pass its name (with completion):
+```shell
+mise run dev monorepo
+```
+The project is copied to `/tmp/mise-vs-code-tests` first (set `MISE_VSCODE_TEST_PROJECTS` to change it), then opened. Opened in place, a test project would also pick up the `mise.toml` of this repository, since mise reads the config files of every parent directory. To copy every test project at once, run `mise run test-projects`.
+
 ## Debugging
 - With VSCode, use the `Run Extension` launch configuration
 - With IntelliJ IDEA, use the `Debug extension` run configuration
