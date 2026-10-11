@@ -69,5 +69,8 @@ export const MISE_DISPLAY_PATH = "mise.displayPath";
 export const MISE_DOCTOR = "mise.doctor";
 export const MISE_ENABLE_AUTO_CONFIGURATION = "mise.enableAutoConfiguration";
 export const MISE_REVIEW_WORKSPACE_BINARY = "mise.reviewWorkspaceBinary";
+export const MISE_REVIEW_UNTRUSTED_CONFIG = "mise.reviewUntrustedConfig";
+export const MISE_TOGGLE_TRUST_OWN_EDITS =
+	"mise.toggleTrustOwnEditsInParanoidMode";
 export const MISE_REVOKE_WORKSPACE_BINARIES =
 	"mise.revokeWorkspaceBinaryApprovals";

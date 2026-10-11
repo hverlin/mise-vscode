@@ -15,9 +15,15 @@ function createDocument(fsPath: string, text: string): vscode.TextDocument {
 function createProvider({
 	configFiles,
 	taskSources = [],
+	paranoid = false,
+	untrustedConfigFiles = [],
+	ignoredConfigFiles = [],
 }: {
 	configFiles: string[];
 	taskSources?: string[];
+	paranoid?: boolean;
+	untrustedConfigFiles?: string[];
+	ignoredConfigFiles?: string[];
 }) {
 	const miseService = {
 		getCurrentConfigFiles: async () => [...configFiles, ...taskSources],
@@ -25,9 +31,13 @@ function createProvider({
 			configFiles.map((path) => ({ path, tools: [] })),
 		getAllCachedTasks: async () => [],
 		hasMissingTools: async () => false,
+		isParanoidMode: async () => paranoid,
+		untrustedConfigFiles,
+		getIgnoredConfigFiles: async () => new Set(ignoredConfigFiles),
 		subscribeToTaskCacheEvent: () => {},
 		subscribeToReloadEvent: () => {},
 		subscribeToRetainedStateDropped: () => {},
+		subscribeToUntrustedConfigChange: () => {},
 	} as unknown as MiseService;
 
 	return new MiseTomlCodeLensProvider(miseService);
@@ -139,6 +149,65 @@ build = "echo build"
 		expect(lenses).toEqual([
 			{ line: 2, title: "$(play) Run", arguments: ["build"] },
 			{ line: 2, title: "$(eye-watch) Watch", arguments: ["build"] },
+		]);
+	});
+
+	it("only offers to review a config file mise refuses", async () => {
+		const path = "/project/mise.toml";
+		const provider = createProvider({
+			configFiles: [path],
+			untrustedConfigFiles: [path],
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(path, '[tasks.build]\nrun = "echo build"\n'),
+		);
+
+		expect(lenses).toEqual([
+			{
+				line: 0,
+				title: "$(shield) Not trusted. File not loaded",
+				arguments: undefined,
+			},
+		]);
+	});
+
+	it("shows paranoid mode on top of a config file", async () => {
+		const path = "/project/mise.toml";
+		const provider = createProvider({ configFiles: [path], paranoid: true });
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(path, '[tasks.build]\nrun = "echo build"\n'),
+		);
+
+		expect(lenses.map(({ line, title }) => ({ line, title }))).toEqual([
+			{ line: 0, title: "$(shield) Paranoid mode" },
+			{ line: 0, title: "Trust my own edits: off" },
+			{ line: 0, title: "$(play) Run" },
+			{ line: 0, title: "$(eye-watch) Watch" },
+		]);
+	});
+
+	it("offers to trust a config file the user told mise to ignore", async () => {
+		const path = "/project/mise.toml";
+		const provider = createProvider({
+			configFiles: [path],
+			ignoredConfigFiles: [path],
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(path, '[tasks.build]\nrun = "echo build"\n'),
+		);
+
+		expect(lenses).toEqual([
+			{
+				line: 0,
+				title: "$(eye-closed) Ignored by mise. File not loaded",
+				arguments: [path],
+			},
 		]);
 	});
 });

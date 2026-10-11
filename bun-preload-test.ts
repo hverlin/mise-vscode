@@ -71,6 +71,7 @@ mock.module("vscode", () => {
 			getConfiguration: () => ({ get: () => undefined }),
 			onDidChangeTextDocument: () => ({ dispose: () => {} }),
 			onDidCloseTextDocument: () => ({ dispose: () => {} }),
+			onDidChangeConfiguration: () => ({ dispose: () => {} }),
 		},
 		window: {
 			showErrorMessage: () => {},

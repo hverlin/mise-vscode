@@ -339,7 +339,21 @@ They are also hidden by `editor.snippetSuggestions` set to `none` and by `editor
 - **Type:** `boolean`
 - **Default:** `true`
 
-Automatically trust mise config files when opening them in a trusted worskspace.
+Automatically trust mise config files when opening them in a trusted workspace.
+
+In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `mise.trustOwnEditsInParanoidMode`.
+
+---
+
+##### `mise.trustOwnEditsInParanoidMode`
+- **Type:** `boolean`
+- **Default:** `false`
+
+In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), trust a config file again when you save it in VS Code.
+
+When enabled, a config file trusted before the save is trusted again, as well as the files the extension writes (e.g. when formatting). A file changed outside VS Code (e.g. by `git pull`) still has to be trusted by you, even if you save it afterwards. Note that saves made by other extensions count as your own.
+
+Requires `mise.automaticallyTrustMiseConfigFiles`. This setting is machine-scoped, so a project cannot enable it for you.
 
 ---
 
@@ -403,6 +417,14 @@ Optional:
 - `vscodeSetting.subdirs`: Subdirectories to append to the path written to VSCode setting
 - `sourceSubdirs`: Additional subdirs to find the tool source folder
 - `supportsSymlinks`: Whether extension supports symlinks (default: true)
+
+---
+
+##### `mise.showCustomExtensionConfigWarnings`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a warning when a custom extension config's `toolSources` do not match any current tools. Disable this if you keep custom extension configs across multiple projects, even if not all projects use those tools.
 
 ---
 

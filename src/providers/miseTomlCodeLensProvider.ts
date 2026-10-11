@@ -2,17 +2,22 @@ import * as vscode from "vscode";
 import {
 	MISE_INSTALL_ALL,
 	MISE_LIST_ALL_TOOLS,
+	MISE_REVIEW_UNTRUSTED_CONFIG,
 	MISE_RUN_TASK,
 	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_SETTINGS,
 	MISE_SHOW_TASK_CACHE_MENU,
+	MISE_TOGGLE_TRUST_OWN_EDITS,
 	MISE_USE_TOOL,
 	MISE_WATCH_TASK,
 } from "../commands";
 import {
+	CONFIGURATION_FLAGS,
 	isBootstrapCodeLensEnabled,
 	isCodeLensEnabled,
 	isMiseExtensionEnabled,
+	shouldAutomaticallyTrustMiseConfigFiles,
+	shouldTrustOwnEditsInParanoidMode,
 } from "../configuration";
 import type { MiseService } from "../miseService";
 import { groupBootstrapEntriesByDeclaringTable } from "../utils/bootstrapDocument";
@@ -201,6 +206,16 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		};
 		miseService.subscribeToTaskCacheEvent(refresh);
 		miseService.subscribeToReloadEvent(refresh);
+		miseService.subscribeToUntrustedConfigChange(refresh);
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (
+				event.affectsConfiguration(
+					`mise.${CONFIGURATION_FLAGS.trustOwnEditsInParanoidMode}`,
+				)
+			) {
+				refresh();
+			}
+		});
 
 		// nothing is kept from before a save the user asked for: a config broken
 		// by hand shows as broken instead of hiding behind the previous lenses
@@ -520,6 +535,12 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			return [];
 		}
 
+		// mise reads nothing else from a file it does not load
+		const notLoadedLens = await this.notLoadedConfigLens(document);
+		if (notLoadedLens) {
+			return [notLoadedLens];
+		}
+
 		try {
 			const codeLenses = await this.resolveCodeLenses(document);
 			this.lastGoodLenses.set(document.uri.toString(), codeLenses);
@@ -534,6 +555,73 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			);
 			return previous;
 		}
+	}
+
+	/**
+	 * On top of a config file mise does not read: one that is not trusted, or
+	 * that the user told it to ignore
+	 */
+	private async notLoadedConfigLens(
+		document: vscode.TextDocument,
+	): Promise<vscode.CodeLens | undefined> {
+		const documentPath = expandPath(document.uri.fsPath);
+		const top = new vscode.Position(0, 0);
+
+		if (this.miseService.untrustedConfigFiles.includes(documentPath)) {
+			return new vscode.CodeLens(new vscode.Range(top, top), {
+				title: "$(shield) Not trusted. File not loaded",
+				tooltip: "Trust this file, or read it first",
+				command: MISE_REVIEW_UNTRUSTED_CONFIG,
+			});
+		}
+
+		if ((await this.miseService.getIgnoredConfigFiles()).has(documentPath)) {
+			return new vscode.CodeLens(new vscode.Range(top, top), {
+				title: "$(eye-closed) Ignored by mise. File not loaded",
+				tooltip: "mise ignores this file, as you asked. Click to trust it",
+				command: MISE_REVIEW_UNTRUSTED_CONFIG,
+				arguments: [documentPath],
+			});
+		}
+		return undefined;
+	}
+
+	/**
+	 * In paranoid mode, every change to a config file has to be approved again.
+	 * Whether the user's own edits are approved without asking is one click away.
+	 */
+	private async paranoidModeLenses(): Promise<vscode.CodeLens[]> {
+		if (!(await this.miseService.isParanoidMode())) {
+			return [];
+		}
+
+		const top = new vscode.Position(0, 0);
+		const range = new vscode.Range(top, top);
+		const lenses = [
+			new vscode.CodeLens(range, {
+				title: "$(shield) Paranoid mode",
+				tooltip: "mise asks to trust this file again after every change",
+				command: "workbench.action.openSettings",
+				arguments: [`mise.${CONFIGURATION_FLAGS.trustOwnEditsInParanoidMode}`],
+			}),
+		];
+
+		// without automatic trust, the own edits are not trusted either
+		if (shouldAutomaticallyTrustMiseConfigFiles()) {
+			const trustOwnEdits = shouldTrustOwnEditsInParanoidMode();
+			lenses.push(
+				new vscode.CodeLens(range, {
+					// a state, not an action: next to "Paranoid mode", a bare
+					// "Trust my own edits" reads as if it were on
+					title: `Trust my own edits: ${trustOwnEdits ? "on" : "off"}`,
+					tooltip: trustOwnEdits
+						? "On: a file you save in VS Code is trusted again. Click to be asked instead"
+						: "Off: you are asked after every edit, yours included. Click to trust the files you save in VS Code",
+					command: MISE_TOGGLE_TRUST_OWN_EDITS,
+				}),
+			);
+		}
+		return lenses;
 	}
 
 	private async resolveCodeLenses(
@@ -560,7 +648,10 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 		// not list as a config file. The file name cannot tell them apart:
 		// `conf.d/*.toml` or `config.local.toml` are config files too
 		const codeLenses = (await isMiseConfigFile(this.miseService, documentPath))
-			? await this.handleMiseTomlFile(document)
+			? [
+					...(await this.paranoidModeLenses()),
+					...(await this.handleMiseTomlFile(document)),
+				]
 			: this.handleTaskFile(document);
 
 		return this.addBootstrapLenses(
