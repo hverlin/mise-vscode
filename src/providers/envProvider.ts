@@ -479,10 +479,14 @@ function updateTerminalsEnvs(variablesToRemove: [string, string][]) {
 	}
 }
 
+// forced reloads, such as a workspace folder switch, run concurrently
+let envUpdateGeneration = 0;
+
 export async function updateEnv(
 	context: vscode.ExtensionContext,
 	miseService: MiseService,
 ) {
+	const generation = ++envUpdateGeneration;
 	if (!isMiseExtensionEnabled() || !shouldUpdateEnv()) {
 		if (previousEnvs.size > 0) {
 			const variablesToRemove = [...previousEnvs.entries()];
@@ -495,7 +499,13 @@ export async function updateEnv(
 		return;
 	}
 
-	const miseEnvs = await miseService.getEnvs();
+	// read fresh: a `mise env` started before a folder switch still lands in the
+	// command cache once it completes, after the switch cleared it
+	const miseEnvs = await miseService.getEnvs({ useCache: false });
+	// an update started since then read a more recent state: it applies its own
+	if (generation !== envUpdateGeneration) {
+		return;
+	}
 	if (!miseEnvs || miseEnvs.length === 0) {
 		logger.info(
 			"No envs returned from miseService.getEnvs(). Skipping updating env.",

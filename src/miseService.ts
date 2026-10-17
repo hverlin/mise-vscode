@@ -46,12 +46,16 @@ import {
 } from "./utils/miseBinLocator";
 import { expandConfig } from "./utils/miseDoctorParser";
 import {
+	compareVersions,
 	findUntrustedConfigs,
 	flattenJsonSchema,
 	idiomaticFiles,
 	idiomaticFileToTool,
+	isMiseAutoUpdateOn,
 	isMiseConfigParseError,
+	isNewerMiseVersion,
 	isToolVersionsFile,
+	parseMiseVersion,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
@@ -124,23 +128,6 @@ const MIN_MISE_VERSION_FOR_BOOTSTRAP_PLAN = [2026, 8, 2] as const;
 const MIN_MISE_VERSION_FOR_UPGRADE_NO_PRUNE = [2026, 8, 1] as const;
 // `mise cache task` and `mise cache clear --task` were added in 2026.8.1
 const MIN_MISE_VERSION_FOR_TASK_CACHE = [2026, 8, 1] as const;
-
-function compareVersions(
-	a: readonly [number, number, number],
-	b: readonly [number, number, number],
-) {
-	for (let i = 0; i < a.length; i++) {
-		// @ts-expect-error
-		if (a[i] > b[i]) {
-			return 1;
-		}
-		// @ts-expect-error
-		if (a[i] < b[i]) {
-			return -1;
-		}
-	}
-	return 0;
-}
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -1643,13 +1630,18 @@ export class MiseService {
 		]);
 	}
 
-	async getEnvs(): Promise<MiseEnv[]> {
+	async getEnvs({
+		useCache = true,
+	}: {
+		useCache?: boolean;
+	} = {}): Promise<MiseEnv[]> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
 		try {
-			const { stdout } = await this.cache.execCmd({
+			const cacheInstance = useCache ? this.cache : this.dedupeCache;
+			const { stdout } = await cacheInstance.execCmd({
 				args: ["env", "--json"],
 				retainOnParseError: true,
 			});
@@ -1660,7 +1652,7 @@ export class MiseService {
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
 				if (await this.handleUntrustedFile()) {
-					return this.getEnvs();
+					return this.getEnvs({ useCache });
 				}
 				return [];
 			}
@@ -1943,7 +1935,7 @@ export class MiseService {
 			raw: version,
 			latest: version.latest,
 			current: current,
-			newVersionAvailable: !!version.latest && version.latest !== current,
+			newVersionAvailable: isNewerMiseVersion(version.latest, current),
 		};
 	}
 
@@ -2049,16 +2041,7 @@ export class MiseService {
 	}
 
 	async getParsedMiseVersion() {
-		const version = await this.getVersion();
-		const match = /(\d+)\.(\d+)\.(\d+)/.exec(version);
-		if (!match) {
-			return undefined;
-		}
-
-		const [, year, minor, patch] = match.map((n) =>
-			n ? Number.parseInt(n, 10) : 0,
-		);
-		return [year, minor, patch] as [number, number, number];
+		return parseMiseVersion(await this.getVersion());
 	}
 
 	// Checks whether the mise binary can self-update.
@@ -2122,6 +2105,22 @@ export class MiseService {
 		}
 	}
 
+	/** The user asked mise not to tell about new releases */
+	private async isMiseUpdateWarningDisabled(): Promise<boolean> {
+		const value = await this.getSetting("disable_update_warning").catch(
+			() => undefined,
+		);
+		return value?.trim() === "true";
+	}
+
+	/** mise updates itself before the next eligible command run in a terminal */
+	private async isMiseAutoUpdateEnabled(): Promise<boolean> {
+		const value = await this.getSetting("self_update.auto").catch(
+			() => undefined,
+		);
+		return isMiseAutoUpdateOn(value);
+	}
+
 	async hasValidMiseVersion(minVersion?: readonly [number, number, number]) {
 		if (!this.getMiseBinaryPath()) {
 			return false;
@@ -2154,7 +2153,19 @@ export class MiseService {
 				return;
 			}
 
+			if (await this.isMiseUpdateWarningDisabled()) {
+				logger.debug(
+					"Not notifying of new mise version: disable_update_warning",
+				);
+				return;
+			}
+
 			const canSelfUpdate = await this.canSelfUpdate();
+
+			if (canSelfUpdate && (await this.isMiseAutoUpdateEnabled())) {
+				logger.debug("Not notifying of new mise version: self_update.auto");
+				return;
+			}
 
 			const suggestion = await vscode.window.showInformationMessage(
 				`New Mise version available ${miseVersion.latest}. (Current: ${miseVersion.current})`,

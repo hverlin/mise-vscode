@@ -213,7 +213,7 @@ When disabled (recommended), only tools from the local project configuration (`m
 - **Type:** `boolean`
 - **Default:** `true`
 
-Check if a new mise version is available on startup.
+Check if a new mise version is available on startup. Skipped when mise updates itself ([`self_update.auto`](https://mise.jdx.dev/configuration/settings.html#self_update.auto)) or when [`disable_update_warning`](https://mise.jdx.dev/configuration/settings.html#disable_update_warning) is set.
 
 ---
 
