@@ -61,7 +61,7 @@ jobs:
           # groups balanced by wall time; a config label must appear in
           # exactly one group (see .vscode-test.js for the labels)
           - group: core
-            labels: default tool-versions bootstrap broken-config command-injection symlinked-workspace paranoid-trust
+            labels: default tool-versions bootstrap broken-config command-injection symlinked-workspace paranoid-trust env-on-activation
           - group: workspaces
             labels: projects custom-extensions task-cache monorepo multi-root-python
           # multi-root and go share their toolchain store, so the go

@@ -176,6 +176,20 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "env-on-activation",
+		files: "src/e2e-tests/env-on-activation/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "env-on-activation-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "paranoid-trust",
 		files: "src/e2e-tests/paranoid-trust/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "paranoid-trust-workspace"),

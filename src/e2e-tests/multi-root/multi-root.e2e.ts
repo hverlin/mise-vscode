@@ -1,7 +1,7 @@
 import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { MISE_SELECT_WORKSPACE_FOLDER } from "../../commands";
+import { MISE_RELOAD, MISE_SELECT_WORKSPACE_FOLDER } from "../../commands";
 import { MiseService } from "../../miseService";
 
 /**
@@ -236,6 +236,14 @@ suite("Multi-root Workspace Test Suite", function () {
 		// "undefined" behind, which tools spawned by other extensions then
 		// read as a value
 		await waitForEnv("WK1_ONLY", undefined);
+	});
+
+	test("applies the env of the selected folder before a reload resolves", async () => {
+		await selectFolder("wk2");
+		await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+
+		assert.equal(process.env.WHICH_FOLDER, "wk2");
+		assert.equal(process.env.WK1_ONLY, undefined);
 	});
 
 	test("switches to a folder whose name collides with another one", async () => {
