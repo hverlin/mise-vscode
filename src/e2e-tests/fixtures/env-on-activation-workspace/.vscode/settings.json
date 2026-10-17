@@ -1,0 +1,4 @@
+{
+	// configuring SDK extensions would keep the reload busy past the env
+	"mise.configureExtensionsAutomatically": false
+}

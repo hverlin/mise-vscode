@@ -362,11 +362,13 @@ export class MiseExtension {
 
 				this.checkForMissingMiseTools();
 
-				updateEnv(context, this.miseService).catch((error) => {
-					logger.warn(
-						`Unable to set environment variables from mise: ${error}`,
-					);
-				});
+				const envUpdate = updateEnv(context, this.miseService).catch(
+					(error) => {
+						logger.warn(
+							`Unable to set environment variables from mise: ${error}`,
+						);
+					},
+				);
 
 				if (
 					shouldConfigureExtensionsAutomatically() &&
@@ -374,6 +376,10 @@ export class MiseExtension {
 				) {
 					await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
 				}
+
+				// activation awaits this reload: extensions activated after this one
+				// (onStartupFinished) spawn their processes with the env it applied
+				await envUpdate;
 
 				this.updateStatusBar({ state: "ready" });
 			} catch (error) {

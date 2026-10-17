@@ -1,0 +1,5 @@
+# `mise env` takes a second here, longer than what the extension still does
+# once it has started applying the env: activation resolving before the env is
+# applied cannot go unnoticed
+[env]
+SLOW_ENV = "{{ exec(command='sleep 1 && echo applied') }}"
