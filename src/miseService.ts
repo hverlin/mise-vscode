@@ -1630,13 +1630,18 @@ export class MiseService {
 		]);
 	}
 
-	async getEnvs(): Promise<MiseEnv[]> {
+	async getEnvs({
+		useCache = true,
+	}: {
+		useCache?: boolean;
+	} = {}): Promise<MiseEnv[]> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
 		try {
-			const { stdout } = await this.cache.execCmd({
+			const cacheInstance = useCache ? this.cache : this.dedupeCache;
+			const { stdout } = await cacheInstance.execCmd({
 				args: ["env", "--json"],
 				retainOnParseError: true,
 			});
@@ -1647,7 +1652,7 @@ export class MiseService {
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
 				if (await this.handleUntrustedFile()) {
-					return this.getEnvs();
+					return this.getEnvs({ useCache });
 				}
 				return [];
 			}
