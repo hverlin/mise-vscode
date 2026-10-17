@@ -531,3 +531,60 @@ export function parseMiseError(error: unknown): ParsedMiseError {
 
 	return { kind: "unknown" };
 }
+
+export type MiseVersionTuple = readonly [number, number, number];
+
+export function compareVersions(a: MiseVersionTuple, b: MiseVersionTuple) {
+	for (let i = 0; i < a.length; i++) {
+		// @ts-expect-error
+		if (a[i] > b[i]) {
+			return 1;
+		}
+		// @ts-expect-error
+		if (a[i] < b[i]) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/** `2026.10.12`, `v2026.10.12` or `2026.10.12 macos-arm64 (2026-10-16)` */
+export function parseMiseVersion(
+	version: string | null | undefined,
+): [number, number, number] | undefined {
+	const match = /(\d+)\.(\d+)\.(\d+)/.exec(version ?? "");
+	if (!match) {
+		return undefined;
+	}
+
+	const [, year, minor, patch] = match.map((n) =>
+		n ? Number.parseInt(n, 10) : 0,
+	);
+	return [year, minor, patch] as [number, number, number];
+}
+
+/**
+ * mise reports as `latest` the newest release past its minimum release age
+ * (`self_update.minimum_release_age`, 24h by default), which can be older than
+ * the installed one: only a newer release is an update.
+ */
+export function isNewerMiseVersion(
+	latest: string | null | undefined,
+	current: string,
+): boolean {
+	const latestVersion = parseMiseVersion(latest);
+	const currentVersion = parseMiseVersion(current);
+	if (!latestVersion || !currentVersion) {
+		return false;
+	}
+	return compareVersions(latestVersion, currentVersion) > 0;
+}
+
+/**
+ * Whether `self_update.auto`, as printed by `mise settings get`, is on: `false`
+ * when off, `true` or a check interval such as `1d` otherwise.
+ */
+export function isMiseAutoUpdateOn(value: string | undefined): boolean {
+	const normalized = value?.trim().toLowerCase() ?? "";
+	return !["", "false", "no", "n", "off", "0"].includes(normalized);
+}

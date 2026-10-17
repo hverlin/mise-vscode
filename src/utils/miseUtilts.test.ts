@@ -3,9 +3,12 @@ import {
 	findUntrustedConfigs,
 	getWebsiteForTool,
 	isFileTaskPath,
+	isMiseAutoUpdateOn,
 	isMiseConfigParseError,
 	isMiseConfigPath,
+	isNewerMiseVersion,
 	parseMiseError,
+	parseMiseVersion,
 	renderDepsArray,
 	toWebUrl,
 } from "./miseUtilts";
@@ -420,5 +423,63 @@ describe("findUntrustedConfigs", () => {
 
 		expect(parseMiseError(error).kind).not.toBe("untrusted");
 		expect(isMiseConfigParseError(error)).toBe(true);
+	});
+});
+
+describe("parseMiseVersion", () => {
+	it("reads the version printed by `mise version`", () => {
+		expect(parseMiseVersion("2026.10.12 macos-arm64 (2026-10-16)")).toEqual([
+			2026, 10, 12,
+		]);
+	});
+
+	it("reads a release tag", () => {
+		expect(parseMiseVersion("v2026.9.3")).toEqual([2026, 9, 3]);
+	});
+
+	it("returns undefined for no version", () => {
+		expect(parseMiseVersion(null)).toBeUndefined();
+		expect(parseMiseVersion("")).toBeUndefined();
+	});
+});
+
+describe("isNewerMiseVersion", () => {
+	it("is true for a newer release", () => {
+		expect(isNewerMiseVersion("2026.10.12", "2026.10.11")).toBe(true);
+		expect(isNewerMiseVersion("2026.11.0", "2026.10.12")).toBe(true);
+		expect(isNewerMiseVersion("2027.1.0", "2026.12.40")).toBe(true);
+	});
+
+	it("compares numerically, not as strings", () => {
+		expect(isNewerMiseVersion("2026.10.0", "2026.9.18")).toBe(true);
+		expect(isNewerMiseVersion("2026.9.18", "2026.10.0")).toBe(false);
+	});
+
+	// mise reports the newest release past its minimum release age as latest
+	it("is false when latest is older than the installed version", () => {
+		expect(isNewerMiseVersion("2026.10.11", "2026.10.12")).toBe(false);
+	});
+
+	it("is false for the installed version", () => {
+		expect(isNewerMiseVersion("2026.10.12", "2026.10.12")).toBe(false);
+	});
+
+	it("is false when a version cannot be read", () => {
+		expect(isNewerMiseVersion(null, "2026.10.12")).toBe(false);
+		expect(isNewerMiseVersion("2026.10.12", "")).toBe(false);
+	});
+});
+
+describe("isMiseAutoUpdateOn", () => {
+	it("is on for true or a check interval", () => {
+		expect(isMiseAutoUpdateOn("true\n")).toBe(true);
+		expect(isMiseAutoUpdateOn("1d")).toBe(true);
+	});
+
+	it("is off for false or no value", () => {
+		expect(isMiseAutoUpdateOn("false\n")).toBe(false);
+		expect(isMiseAutoUpdateOn("off")).toBe(false);
+		expect(isMiseAutoUpdateOn("")).toBe(false);
+		expect(isMiseAutoUpdateOn(undefined)).toBe(false);
 	});
 });

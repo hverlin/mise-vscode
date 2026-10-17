@@ -344,7 +344,7 @@
           "type": "boolean",
           "title": "Check for new mise version",
           "default": true,
-          "markdownDescription": "Check if a new mise version is available on startup."
+          "markdownDescription": "Check if a new mise version is available on startup. Skipped when mise updates itself ([`self_update.auto`](https://mise.jdx.dev/configuration/settings.html#self_update.auto)) or when [`disable_update_warning`](https://mise.jdx.dev/configuration/settings.html#disable_update_warning) is set."
         },
         "mise.keepReplacedVersionOnUpgrade": {
           "order": 8.1,
