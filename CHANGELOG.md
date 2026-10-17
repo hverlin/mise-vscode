@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.26.1](https://github.com/hverlin/mise-vscode/compare/v1.26.0...v1.26.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* apply the mise env before activation resolves ([#331](https://github.com/hverlin/mise-vscode/issues/331)) ([07a0abc](https://github.com/hverlin/mise-vscode/commit/07a0abcbce98865ad796101312cdf1cf99749c93))
+* only notify of a newer mise version ([#329](https://github.com/hverlin/mise-vscode/issues/329)) ([1b574d7](https://github.com/hverlin/mise-vscode/commit/1b574d7d48a21349fd408d62fb4c18a88edd4235))
+
 ## [1.26.0](https://github.com/hverlin/mise-vscode/compare/v1.25.3...v1.26.0) (2026-10-11)
 
 
