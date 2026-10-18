@@ -1,0 +1,5 @@
+# a lockfile in format 0, written before lockfile_version
+
+[[tools."aqua:jqlang/jq"]]
+version = "1.7.1"
+backend = "aqua:jqlang/jq"

@@ -46,6 +46,7 @@ import {
 	getMissingTools,
 	isLazyToolDeclaration,
 } from "./utils/lazyTools";
+import type { LockfileChange } from "./utils/lockfile";
 import { logger } from "./utils/logger";
 import {
 	resolveMisePath,
@@ -149,6 +150,10 @@ const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
 /** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
 const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
+/** `mise lock --dry-run --json`, `--bump`, `--upgrade`, and format 3 */
+const MIN_MISE_VERSION_FOR_LOCKFILE_LENSES = [2026, 9, 16] as const;
+/** a lockfile check that failed is not run again before this */
+const LOCKFILE_CHECK_RETRY_MS = 60_000;
 /** how long a hover uses the outdated tools listed for the editor */
 const STALE_OUTDATED_TOOLS_MS = 60_000;
 
@@ -401,6 +406,7 @@ export class MiseService {
 		]);
 		this.configToolsCache.clear();
 		this.recentOutdatedTools = undefined;
+		this.lockfileCheckFailures.clear();
 		this.eventEmitter.fire();
 	}
 
@@ -1549,6 +1555,12 @@ export class MiseService {
 		}
 	}
 
+	/** the lockfile checks that failed, by command */
+	private readonly lockfileCheckFailures = new Map<
+		string,
+		{ at: number; error: unknown }
+	>();
+
 	/** the last `mise outdated`, which a hover uses instead of running it */
 	private recentOutdatedTools?: { tools: MiseToolUpdate[]; at: number };
 
@@ -2463,6 +2475,78 @@ export class MiseService {
 		} catch (error) {
 			logger.debug("Could not read the registry descriptions", error);
 			return new Map();
+		}
+	}
+
+	async supportsLockfileLenses(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_LOCKFILE_LENSES);
+	}
+
+	/**
+	 * What `mise lock` would change in the lockfiles of a config root, the
+	 * local one included: the tools added to or removed from the config, and
+	 * the requests changed since. With `bump`, what `mise lock --bump` would
+	 * change: the newer versions the requests allow, which mise looks up
+	 * online. Nothing is written. Empty when lockfiles are off.
+	 */
+	async getLockfileChanges(
+		configRoot: string,
+		{ bump = false } = {},
+	): Promise<LockfileChange[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const args = [
+			"-C",
+			configRoot,
+			"lock",
+			"--dry-run",
+			"--json",
+			...(bump ? ["--bump"] : []),
+		];
+		const key = args.join(" ");
+		const failure = this.lockfileCheckFailures.get(key);
+		if (failure && Date.now() - failure.at < LOCKFILE_CHECK_RETRY_MS) {
+			throw failure.error;
+		}
+
+		try {
+			// a bump looks up the remote versions: kept for a minute
+			const { stdout } = await (bump ? this.slowCache : this.cache).execCmd({
+				args,
+				retainOnParseError: true,
+			});
+			return JSON.parse(stdout) as LockfileChange[];
+		} catch (error) {
+			// e.g. offline, or a private repository: not looked up again on every
+			// refresh of the lenses. A config being typed parses again soon.
+			if (!isMiseConfigParseError(error)) {
+				this.lockfileCheckFailures.set(key, { at: Date.now(), error });
+			}
+			throw error;
+		}
+	}
+
+	/**
+	 * The `lockfile` setting of a config root: `true` creates its lockfile,
+	 * `false` turns lockfiles off, unset (undefined) only updates an existing
+	 * one
+	 */
+	async getLockfileSetting(configRoot: string): Promise<boolean | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined;
+		}
+
+		try {
+			const { stdout } = await this.cache.execCmd({
+				args: ["-C", configRoot, "settings", "get", "lockfile"],
+				retainOnParseError: true,
+			});
+			return stdout.trim() === "true";
+		} catch {
+			// mise fails to get a setting that is not set
+			return undefined;
 		}
 	}
 

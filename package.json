@@ -842,6 +842,12 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.runLock",
+        "title": "Mise: Run mise lock",
+        "icon": "$(lock)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.createFileTask",
         "title": "Mise: Create File Task",
         "icon": "$(new-file)",
@@ -1090,6 +1096,10 @@
         },
         {
           "command": "mise.showTaskCacheMenu",
+          "when": "false"
+        },
+        {
+          "command": "mise.runLock",
           "when": "false"
         },
         {

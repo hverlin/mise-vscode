@@ -76,7 +76,8 @@ const pklVsix = fs.existsSync(pklVsixDir)
 // so the workspaces under test never inherit this repository's own mise config.
 // Ceiling paths are exclusive: configs at the workspace root are still loaded.
 // MISE_LOCKED=0 overrides the CI-wide locked mode: the fixtures have no
-// lockfile, and locked mode would refuse to resolve their tools.
+// lockfile, or one that is incomplete on purpose (lockfile-workspace), and
+// locked mode would refuse to resolve their tools.
 // A test that leaves a fixture edited in its editor gets it saved to disk by
 // the next test running a task (running a task saves all files), and every
 // later run then fails on the edited fixture. Fail the run that changed a
@@ -548,6 +549,20 @@ module.exports = defineConfig([
 		label: "task-diagnostics",
 		files: "src/e2e-tests/task-diagnostics/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "task-diagnostics-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
+		label: "lockfile",
+		files: "src/e2e-tests/lockfile/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "lockfile-workspace"),
 		env: {
 			MISE_CEILING_PATHS: fixturesPath,
 			MISE_LOCKED: "0",
