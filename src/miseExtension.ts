@@ -53,6 +53,10 @@ import {
 	MiseBootstrapProvider,
 	registerBootstrapCommands,
 } from "./providers/bootstrapProvider";
+import {
+	ConfigKeyDiagnostics,
+	ConfigKeyQuickFixProvider,
+} from "./providers/configKeyDiagnostics";
 import { ConfigRootsCompletionProvider } from "./providers/configRootsCompletionProvider";
 import {
 	MiseEnvsProvider,
@@ -312,6 +316,18 @@ export class MiseExtension {
 			this.miseService,
 		);
 		context.subscriptions.push(taskValidationDiagnostics);
+		const configKeyDiagnostics = new ConfigKeyDiagnostics(this.miseService);
+		context.subscriptions.push(
+			configKeyDiagnostics,
+			vscode.languages.registerCodeActionsProvider(
+				{ language: "toml" },
+				new ConfigKeyQuickFixProvider(),
+				{
+					providedCodeActionKinds:
+						ConfigKeyQuickFixProvider.providedCodeActionKinds,
+				},
+			),
+		);
 
 		vscode.window.registerTreeDataProvider(
 			"miseBootstrapView",
@@ -402,6 +418,7 @@ export class MiseExtension {
 				// once the configs are trusted, and also when the reload stopped early
 				// (extension disabled, binary not approved) to clear them
 				taskValidationDiagnostics.scheduleRefresh();
+				configKeyDiagnostics.scheduleRefresh();
 			}
 
 			void this.checkForInvalidMiseConfigFiles();

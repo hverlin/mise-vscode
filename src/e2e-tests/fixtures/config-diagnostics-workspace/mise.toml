@@ -1,0 +1,9 @@
+# keys the config diagnostics e2e suite reports
+env_path = ["bin"]
+
+[settings]
+experimantal = true
+
+[tasks.build]
+run = "echo build"
+depnds = []

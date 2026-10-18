@@ -275,6 +275,14 @@ Show the problems of the task definitions found by [`mise tasks validate`](https
 
 ---
 
+##### `mise.enableConfigDiagnostics`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated in the Problems panel, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). Requires mise `2026.10.14` or later.
+
+---
+
 ##### `mise.resolveMonorepoProjectConfigs`
 - **Type:** `boolean`
 - **Default:** `true`

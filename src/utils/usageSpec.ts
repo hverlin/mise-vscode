@@ -324,6 +324,110 @@ List the available keys with \`mise secrets ls\`.`,
 			"Give the task exclusive terminal access while other non-interactive tasks keep running in parallel",
 		insertText: "interactive=true",
 	},
+	{
+		name: "vars",
+		detail:
+			"Values for {{ vars.NAME }} in this task, over the top-level [vars]",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: vscode snippet placeholder
+		insertText: 'vars={${1:name} = "${2:value}"}',
+		documentation: `Values available as \`{{ vars.NAME }}\` when mise renders this task. They override the top-level \`[vars]\` and the vars of a task template. They are not exported as environment variables, use \`env\` for that.
+
+See [vars](https://mise.jdx.dev/tasks/task-configuration.html#task-vars).`,
+	},
+	{
+		name: "cache",
+		detail: "Cache the outputs and logs of a successful run (experimental)",
+		insertText: "cache={ enabled = true }",
+		documentation: `Store the outputs and logs of a successful run, and restore them when the same inputs come back: \`{ enabled?, audit?, env?, command_inputs? }\`.
+
+See [task caching](https://mise.jdx.dev/tasks/caching.html).`,
+	},
+	{
+		name: "output",
+		detail: "Output style of the task (prefix, interleave, keep-order, ...)",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: vscode snippet placeholder
+		insertText: 'output="${1|prefix,interleave,keep-order,replacing,timed|}"',
+	},
+	{
+		name: "raw_args",
+		detail:
+			"Pass every argument, --help included, to the command without parsing it",
+		insertText: "raw_args=true",
+	},
+	{
+		name: "deny_all",
+		detail:
+			"Sandbox: block filesystem, network and inherited env; allow_* adds exceptions",
+		insertText: "deny_all=true",
+		documentation: `Block filesystem reads and writes, network access, and inherited environment variables. \`allow_*\` entries add exceptions.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "deny_read",
+		detail: "Sandbox: block filesystem reads",
+		insertText: "deny_read=true",
+		documentation: `Block filesystem reads, except the system and mise paths the task needs to run.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "deny_write",
+		detail: "Sandbox: block filesystem writes",
+		insertText: "deny_write=true",
+		documentation: `Block filesystem writes, except implicitly writable paths such as the temporary directory.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "deny_net",
+		detail: "Sandbox: block network access",
+		insertText: "deny_net=true",
+		documentation: `Block network access.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "deny_env",
+		detail: "Sandbox: drop inherited environment variables",
+		insertText: "deny_env=true",
+		documentation: `Drop inherited environment variables except \`PATH\`, \`HOME\`, \`USER\`, \`SHELL\`, \`TERM\`, \`COLORTERM\` and \`LANG\`.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "allow_read",
+		detail: "Sandbox: allow reads from these paths only",
+		insertText: 'allow_read=["$1"]',
+		documentation: `Allow reads from these paths and block other reads. Relative paths resolve from the working directory of the task.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "allow_write",
+		detail: "Sandbox: allow writes to these paths only",
+		insertText: 'allow_write=["$1"]',
+		documentation: `Allow writes to these paths, which also become readable, and block other writes. Relative paths resolve from the working directory of the task.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "allow_env",
+		detail: "Sandbox: keep these inherited variables only (* wildcards)",
+		insertText: 'allow_env=["$1"]',
+		documentation: `Keep these inherited variables, with \`*\` wildcards such as \`MYAPP_*\`, and drop the others.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
+	{
+		name: "pass_through_env",
+		detail:
+			"Sandbox: keep these variables out of the cache key when env is denied (experimental)",
+		insertText: 'pass_through_env=["$1"]',
+		documentation: `Keep these inherited variables, with \`*\` wildcards, when environment inheritance is denied, without adding their values to the task cache key.
+
+See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
+	},
 ];
 
 export type UsageCursorContext =

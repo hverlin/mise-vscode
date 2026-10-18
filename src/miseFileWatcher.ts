@@ -47,7 +47,9 @@ function getWorkspaceMiseRcFiles(folder: string): string[] {
  * them while an include is broken. Only the folders mise reads configs from
  * are listed, not the whole tree.
  */
-async function findStandardConfigFiles(folder: string): Promise<string[]> {
+export async function findStandardConfigFiles(
+	folder: string,
+): Promise<string[]> {
 	const dirs = [
 		"",
 		".config",
