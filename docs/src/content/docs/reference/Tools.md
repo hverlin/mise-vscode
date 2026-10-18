@@ -31,6 +31,9 @@ ones from the last time the file parsed. See [While a config file is being edite
 Tools declared with `lazy = true` are installed by mise the first time one of
 their commands runs. Until then, they are not reported as missing: the explorer
 and the editor show them as `installs on first use` instead of not installed.
+The extensions configured with the path of a tool (see
+[supported extensions](/mise-vscode/reference/supported-extensions/)) only pick
+it up once it is installed.
 
 ```toml
 [tools]

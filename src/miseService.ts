@@ -41,7 +41,11 @@ import {
 	mkdirp,
 } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
-import { isLazyToolDeclaration } from "./utils/lazyTools";
+import {
+	findToolDeclaration,
+	getMissingTools,
+	isLazyToolDeclaration,
+} from "./utils/lazyTools";
 import { logger } from "./utils/logger";
 import {
 	resolveMisePath,
@@ -386,6 +390,7 @@ export class MiseService {
 			this.taskCacheCache.clear(),
 			this.bootstrapCache.clear(),
 		]);
+		this.configToolsCache.clear();
 		this.eventEmitter.fire();
 	}
 
@@ -1534,30 +1539,42 @@ export class MiseService {
 		}
 	}
 
-	/** `[tools]` tables of the config files, re-read when a file changes */
+	/**
+	 * `[tools]` tables of the config files, re-read when a file changes. `null`
+	 * for a file that does not parse.
+	 */
 	private readonly configToolsCache = new Map<
 		string,
-		{ mtimeMs: number; tools?: Record<string, unknown> }
+		{ stamp: string; tools: Promise<Record<string, unknown> | null> }
 	>();
 
 	private async readConfigTools(
 		configPath: string,
-	): Promise<Record<string, unknown> | undefined> {
+	): Promise<Record<string, unknown> | null> {
+		let stamp: string;
 		try {
-			const { mtimeMs } = await stat(configPath);
-			const cached = this.configToolsCache.get(configPath);
-			if (cached?.mtimeMs === mtimeMs) {
-				return cached.tools;
-			}
-			const { tools } = parse(await readFile(configPath, "utf8")) as {
-				tools?: Record<string, unknown>;
-			};
-			this.configToolsCache.set(configPath, { mtimeMs, tools });
-			return tools;
-		} catch (error) {
-			logger.debug(`Could not read the tools of ${configPath}: ${error}`);
-			return undefined;
+			const { mtimeMs, size } = await stat(configPath);
+			stamp = `${mtimeMs}:${size}`;
+		} catch {
+			return null;
 		}
+
+		const cached = this.configToolsCache.get(configPath);
+		if (cached?.stamp === stamp) {
+			return cached.tools;
+		}
+		// the tools of one file are looked up together, read it once for all
+		const tools = readFile(configPath, "utf8")
+			.then(
+				(source) =>
+					(parse(source) as { tools?: Record<string, unknown> }).tools ?? {},
+			)
+			.catch((error) => {
+				logger.debug(`Could not read the tools of ${configPath}: ${error}`);
+				return null;
+			});
+		this.configToolsCache.set(configPath, { stamp, tools });
+		return tools;
 	}
 
 	/**
@@ -1572,12 +1589,18 @@ export class MiseService {
 				if (tool.installed || !configPath?.endsWith(".toml")) {
 					return tool;
 				}
-				const declaration = (await this.readConfigTools(configPath))?.[
-					tool.name
-				];
-				return isLazyToolDeclaration(declaration, tool.requested_version)
-					? { ...tool, lazy: true }
-					: tool;
+
+				const configTools = await this.readConfigTools(configPath);
+				const lazy = configTools
+					? isLazyToolDeclaration(
+							findToolDeclaration(configTools, tool.name),
+							tool.requested_version,
+						)
+					: // the parser does not read every file mise does (TOML 1.1), mise
+						// knows whether the tool is lazy, not which of its versions
+						(await this.miseToolInfo(tool.name).catch(() => undefined))
+							?.tool_options.lazy === true;
+				return lazy ? { ...tool, lazy } : tool;
 			}),
 		);
 	}
@@ -2437,7 +2460,7 @@ export class MiseService {
 		}
 
 		const tools = await this.getCurrentTools();
-		return tools.some((tool) => !tool.installed);
+		return getMissingTools(tools).length > 0;
 	}
 
 	async miseSetEnv({

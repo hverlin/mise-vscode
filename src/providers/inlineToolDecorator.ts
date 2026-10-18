@@ -104,10 +104,15 @@ export async function showToolVersionInline(
 
 				let resolvedVersion: string | undefined;
 				let resolvedInstalled: boolean;
-				// a lazy tool is not installed until one of its commands runs
-				const notInstalledLabel = toolFromList?.lazy
-					? "Installs on first use"
-					: "Not installed";
+				// a lazy tool is not installed until one of its commands runs, unless
+				// another of its versions is missing too
+				const notInstalled = tools.filter(
+					(t) => t.name === cleanedToolName && !t.installed,
+				);
+				const notInstalledLabel =
+					notInstalled.length && notInstalled.every((t) => t.lazy)
+						? "Installs on first use"
+						: "Not installed";
 
 				if (toolFromList) {
 					resolvedVersion = toolFromList.version;

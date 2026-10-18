@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "toml-v1";
-import { getMissingTools, isLazyToolDeclaration } from "./lazyTools";
+import {
+	findToolDeclaration,
+	getMissingTools,
+	isLazyToolDeclaration,
+	normalizeToolKey,
+} from "./lazyTools";
 
 // the `[tools]` declarations mise accepts for `lazy`
 const { tools } = parse(`
@@ -24,6 +29,12 @@ describe("isLazyToolDeclaration", () => {
 	it("is only true for the lazy versions of a list", () => {
 		expect(isLazyToolDeclaration(tools.fd, "10.2.0")).toBe(true);
 		expect(isLazyToolDeclaration(tools.fd, "9.0.0")).toBe(false);
+	});
+
+	it("matches a templated lazy version, which mise reports rendered", () => {
+		const fd = [{ version: "{{ env.FD_VERSION }}", lazy: true }, "8.0.0"];
+		expect(isLazyToolDeclaration(fd, "7.0.1")).toBe(true);
+		expect(isLazyToolDeclaration(fd, "8.0.0")).toBe(false);
 	});
 
 	it("is false for the other declarations", () => {
@@ -53,5 +64,39 @@ describe("getMissingTools", () => {
 				tool({ name: "ripgrep", installed: false, lazy: true }),
 			]),
 		).toEqual([missing]);
+	});
+});
+
+describe("findToolDeclaration", () => {
+	const configTools = {
+		nodejs: { version: "24", lazy: true },
+		"core:python": "3.13",
+		"github:BurntSushi/ripgrep[bin=rg]": { version: "14", lazy: true },
+		go: "1.24",
+	};
+
+	it("finds the key as written", () => {
+		expect(findToolDeclaration(configTools, "go")).toBe("1.24");
+	});
+
+	it("finds the keys mise reports under another name", () => {
+		expect(findToolDeclaration(configTools, "node")).toEqual({
+			version: "24",
+			lazy: true,
+		});
+		expect(findToolDeclaration(configTools, "python")).toBe("3.13");
+		expect(
+			findToolDeclaration(configTools, "github:BurntSushi/ripgrep"),
+		).toEqual({ version: "14", lazy: true });
+		expect(findToolDeclaration(configTools, "deno")).toBeUndefined();
+	});
+});
+
+describe("normalizeToolKey", () => {
+	it("keeps the names mise does not rewrite", () => {
+		expect(normalizeToolKey("npm:nodejs-tool")).toBe("npm:nodejs-tool");
+		expect(normalizeToolKey("aqua:BurntSushi/ripgrep")).toBe(
+			"aqua:BurntSushi/ripgrep",
+		);
 	});
 });
