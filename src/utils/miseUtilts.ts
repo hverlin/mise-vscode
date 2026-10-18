@@ -392,11 +392,15 @@ export function isFileTaskPath(filePath: string): boolean {
  * views keep their previous state instead of emptying on each keystroke.
  */
 const UNTRUSTED_CONFIG = /Config files in (.+?) are not trusted/;
+/** in paranoid mode, the files of `env._.file`, `env._.source` and `env_file` */
+const UNTRUSTED_ENV_FILE =
+	/The environment file or script (.+?) is not trusted/;
 const WARNING_LINE = /^\s*mise\s+WARN\b/;
 
 /**
  * The config files mise did not read because they are not trusted, as paths
- * it reported (possibly starting with ~).
+ * it reported (possibly starting with ~). In paranoid mode, env files too:
+ * they have trust of their own (mise 2026.10.14+).
  *
  * - `refused`: the file that made the command fail.
  * - `skipped`: files mise only warned about, such as the config of an
@@ -409,7 +413,8 @@ export function findUntrustedConfigs(output: string): {
 	let refused: string | undefined;
 	const skipped: string[] = [];
 	for (const line of output.split("\n")) {
-		const file = line.match(UNTRUSTED_CONFIG)?.[1];
+		const file =
+			line.match(UNTRUSTED_CONFIG)?.[1] ?? line.match(UNTRUSTED_ENV_FILE)?.[1];
 		if (!file) {
 			continue;
 		}
@@ -420,6 +425,43 @@ export function findUntrustedConfigs(output: string): {
 		}
 	}
 	return { refused, skipped };
+}
+
+/** The env file that made a command fail because it is not trusted */
+export function findUntrustedEnvFile(output: string): string | undefined {
+	return output.match(UNTRUSTED_ENV_FILE)?.[1];
+}
+
+/** the categories of paranoid mode (mise 2026.10.14+) */
+export const PARANOID_CATEGORIES = [
+	"config",
+	"env_files",
+	"plugins",
+	"provenance",
+] as const;
+export type ParanoidCategory = (typeof PARANOID_CATEGORIES)[number];
+
+/**
+ * The categories `mise settings get paranoid` turns on: `true` for all of
+ * them, `false` for none, or a list such as `["config", "env_files"]`.
+ * Anything else counts as all of them, the safe side.
+ */
+export function parseParanoidSetting(value: string): Set<ParanoidCategory> {
+	const setting = value.trim();
+	if (setting === "false") {
+		return new Set();
+	}
+	try {
+		const categories: unknown = JSON.parse(setting);
+		if (Array.isArray(categories)) {
+			return new Set(
+				PARANOID_CATEGORIES.filter((category) => categories.includes(category)),
+			);
+		}
+	} catch {
+		// not a list
+	}
+	return new Set(PARANOID_CATEGORIES);
 }
 
 export function isMiseConfigParseError(error: unknown): boolean {

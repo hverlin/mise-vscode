@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	findUntrustedConfigs,
+	findUntrustedEnvFile,
 	getMiseErrorReason,
 	getWebsiteForTool,
 	isFileTaskPath,
@@ -10,6 +11,7 @@ import {
 	isNewerMiseVersion,
 	parseMiseError,
 	parseMiseVersion,
+	parseParanoidSetting,
 	renderDepsArray,
 	toWebUrl,
 } from "./miseUtilts";
@@ -417,6 +419,31 @@ describe("findUntrustedConfigs", () => {
 		});
 	});
 
+	// captured from mise 2026.10.14, in paranoid mode
+	const untrustedEnvFile =
+		"Command failed: mise env --json\nmise ERROR The environment file or script ~/project/.env is not trusted, and paranoid mode ties trust to a file's contents.\nReview it, then trust it with `mise trust` or `mise trust ~/project/.env`. See https://mise.jdx.dev/paranoid.html#environment-files for more information.\nmise ERROR Version: 2026.10.14 macos-arm64 (2026-10-18)";
+
+	it("reads an env file that is not trusted", () => {
+		expect(findUntrustedConfigs(untrustedEnvFile)).toEqual({
+			refused: "~/project/.env",
+			skipped: [],
+		});
+		expect(findUntrustedEnvFile(untrustedEnvFile)).toBe("~/project/.env");
+		expect(parseMiseError(new Error(untrustedEnvFile))).toEqual({
+			kind: "untrusted",
+			file: "~/project/.env",
+		});
+		expect(isMiseConfigParseError(new Error(untrustedEnvFile))).toBe(false);
+	});
+
+	it("tells an untrusted env file from an untrusted config file", () => {
+		expect(
+			findUntrustedEnvFile(
+				"mise ERROR Config files in ~/project/mise.toml are not trusted.",
+			),
+		).toBeUndefined();
+	});
+
 	it("does not take a warning for the failure of a command", () => {
 		const error = new Error(
 			"Command failed: mise tasks ls --json --all\nmise WARN  Failed to parse config file ~/project/projects/fe/mise.toml in monorepo directory projects/fe: Config files in ~/project/projects/fe/mise.toml are not trusted.\nmise ERROR TOML parse error at line 2, column 5",
@@ -501,5 +528,27 @@ describe("getMiseErrorReason", () => {
 
 	it("is undefined without a mise error", () => {
 		expect(getMiseErrorReason("spawn mise ENOENT")).toBeUndefined();
+	});
+});
+
+describe("parseParanoidSetting", () => {
+	it("reads true, false and a list of categories", () => {
+		expect([...parseParanoidSetting("true\n")]).toEqual([
+			"config",
+			"env_files",
+			"plugins",
+			"provenance",
+		]);
+		expect([...parseParanoidSetting("false")]).toEqual([]);
+		expect([...parseParanoidSetting('["config"]')]).toEqual(["config"]);
+		expect([...parseParanoidSetting('["env_files", "plugins"]')]).toEqual([
+			"env_files",
+			"plugins",
+		]);
+	});
+
+	it("turns every category on for a value it does not know", () => {
+		expect(parseParanoidSetting("").size).toBe(4);
+		expect(parseParanoidSetting("on").size).toBe(4);
 	});
 });

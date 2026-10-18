@@ -462,13 +462,22 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			vscode.workspace.onWillSaveTextDocument((e) => {
+				if (e.reason !== vscode.TextDocumentSaveReason.Manual) {
+					return;
+				}
 				if (
-					e.reason === vscode.TextDocumentSaveReason.Manual &&
-					(e.document.fileName.endsWith(".toml") ||
-						isToolVersionsFile(e.document.fileName))
+					e.document.fileName.endsWith(".toml") ||
+					isToolVersionsFile(e.document.fileName)
 				) {
 					this.miseService.notifyManualSave(e.document.uri);
-					// whether the file is trusted is read before it is written
+				}
+				// a `.env` loaded with `env._.file` has trust of its own in paranoid
+				// mode. Whether the file is trusted is read before it is written
+				if (
+					e.document.fileName.endsWith(".toml") ||
+					isToolVersionsFile(e.document.fileName) ||
+					this.miseService.isEnvFile(e.document.uri.fsPath)
+				) {
 					e.waitUntil(this.miseService.expectOwnEdit(e.document.uri.fsPath));
 				}
 			}),

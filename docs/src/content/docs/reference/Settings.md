@@ -357,7 +357,7 @@ They are also hidden by `editor.snippetSuggestions` set to `none` and by `editor
 
 Automatically trust mise config files when opening them in a trusted workspace.
 
-In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `mise.trustOwnEditsInParanoidMode`.
+In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), with its `config` or `env_files` category, config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `mise.trustOwnEditsInParanoidMode`.
 
 ---
 
@@ -365,9 +365,9 @@ In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), config files are no
 - **Type:** `boolean`
 - **Default:** `false`
 
-In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), trust a config file again when you save it in VS Code.
+In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), trust a config file again when you save it in VS Code. With its `env_files` category, the same goes for the env files mise loads (`env._.file`, `env._.source` and the `env_file` setting).
 
-When enabled, a config file trusted before the save is trusted again, as well as the files the extension writes (e.g. when formatting). A file changed outside VS Code (e.g. by `git pull`) still has to be trusted by you, even if you save it afterwards. Note that saves made by other extensions count as your own.
+When enabled, a file trusted before the save is trusted again, as well as the files the extension writes (e.g. when formatting). A file changed outside VS Code (e.g. by `git pull`) still has to be trusted by you, even if you save it afterwards. Note that saves made by other extensions count as your own.
 
 Requires `mise.automaticallyTrustMiseConfigFiles`. This setting is machine-scoped, so a project cannot enable it for you.
 

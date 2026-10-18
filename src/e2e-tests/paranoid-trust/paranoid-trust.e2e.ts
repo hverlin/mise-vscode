@@ -62,6 +62,30 @@ suite("Paranoid Trust Test Suite", function () {
 
 	const isTrusted = () => isFileTrusted(configPath);
 
+	/** mise lists only config files in `trust --show`: it reads the env instead */
+	const isEnvTrusted = async () => {
+		try {
+			await mise("env", "--json");
+			return true;
+		} catch {
+			return false;
+		}
+	};
+
+	/** a `.env` that mise.toml loads with `_.file`, both trusted */
+	const setUpEnvFile = async (envFile: string) => {
+		await writeFile(envFile, "ENV_FILE_VAR=one\n");
+		await writeFile(configPath, `${originalConfig}_.file = ".env"\n`);
+		await mise("trust", configPath);
+		await mise("trust", envFile);
+		// the extension knows the env file once it has read the env
+		await vscode.commands.executeCommand("mise.refreshEntry", { force: true });
+		await waitFor(
+			() => process.env.ENV_FILE_VAR === "one",
+			"the extension should load the env file",
+		);
+	};
+
 	const sleep = (ms: number) =>
 		new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -464,5 +488,84 @@ suite("Paranoid Trust Test Suite", function () {
 		await assertStaysUntrusted(
 			"the extension trusted a change made outside vscode",
 		);
+	});
+
+	test("reviews and trusts an env file that is not trusted", async () => {
+		const envFile = path.join(workspaceRoot, ".env");
+		await writeFile(envFile, "ENV_FILE_VAR=one\n");
+		try {
+			await writeFile(configPath, `${originalConfig}_.file = ".env"\n`);
+			await mise("trust", configPath);
+			assert.equal(await isEnvTrusted(), false, "the env file needs trust");
+			(
+				vscode.window.showInformationMessage as unknown as sinon.SinonStub
+			).callsFake(async (message: string, ...items: unknown[]) => {
+				shownMessages.push({ level: "showInformationMessage", message });
+				const options = items[0];
+				return typeof options === "object" && options && "modal" in options
+					? items[1]
+					: undefined;
+			});
+
+			await waitFor(async () => {
+				await vscode.commands.executeCommand("mise.reviewUntrustedConfig");
+				return isEnvTrusted();
+			}, "the env file should be trusted from the review");
+			assert.ok(
+				shownMessages.some(({ message }) =>
+					message.includes(".env until you trust it"),
+				),
+				`review of the env file expected, got ${JSON.stringify(shownMessages)}`,
+			);
+		} finally {
+			await rm(envFile, { force: true });
+			await writeFile(configPath, originalConfig);
+		}
+	});
+
+	test("trusts an env file saved in vscode with trustOwnEditsInParanoidMode", async () => {
+		const envFile = path.join(workspaceRoot, ".env");
+		try {
+			await setTrustOwnEdits(true);
+			await setUpEnvFile(envFile);
+
+			await editAndSaveInEditor("ENV_FILE_EDIT=two\n", envFile);
+
+			await waitFor(
+				async () =>
+					(await isEnvTrusted()) && process.env.ENV_FILE_EDIT === "two",
+				"the saved env file should be trusted again, and loaded",
+			);
+			await sleep(2_000);
+			assert.equal(await isEnvTrusted(), true);
+		} finally {
+			await rm(envFile, { force: true });
+			await writeFile(configPath, originalConfig);
+		}
+	});
+
+	test("does not trust an env file changed outside vscode with trustOwnEditsInParanoidMode", async () => {
+		const envFile = path.join(workspaceRoot, ".env");
+		try {
+			await setTrustOwnEdits(true);
+			await setUpEnvFile(envFile);
+
+			// e.g. a `git pull` the user has not reviewed
+			await writeFile(envFile, "ENV_FILE_VAR=pulled\n");
+			await editAndSaveInEditor("ENV_FILE_EDIT=after-pull\n", envFile);
+
+			const deadline = Date.now() + 5_000;
+			while (Date.now() < deadline) {
+				assert.equal(
+					await isEnvTrusted(),
+					false,
+					"saving approved a change made outside vscode",
+				);
+				await sleep(250);
+			}
+		} finally {
+			await rm(envFile, { force: true });
+			await writeFile(configPath, originalConfig);
+		}
 	});
 });
