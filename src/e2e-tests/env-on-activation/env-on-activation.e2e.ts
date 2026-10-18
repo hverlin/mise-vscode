@@ -33,12 +33,13 @@ suite("Env on Activation Test Suite", function () {
 	test("reloads when a file merged with include changes", async () => {
 		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		assert.ok(workspaceRoot, "Workspace root should be available");
-		const sharedPath = path.join(workspaceRoot, "shared.toml");
+		const sharedPath = path.join(workspaceRoot, "shared", "env.toml");
 		const original = await readFile(sharedPath, "utf8");
 		assert.equal(process.env.SHARED_ENV, "from the included file");
 
 		try {
-			// mise lists none of its files: only the include of mise.toml names it
+			// mise lists none of its files: only the include of mise.toml names it,
+			// and it is out of the reach of the standard config patterns
 			await writeFile(sharedPath, '[env]\nSHARED_ENV = "edited"\n');
 			const deadline = Date.now() + RELOAD_DEADLINE_MS;
 			while (process.env.SHARED_ENV !== "edited" && Date.now() < deadline) {

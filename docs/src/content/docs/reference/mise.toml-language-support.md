@@ -145,14 +145,15 @@ The following languages are supported: Python, Node.js, Deno, Bun, Deno, Ruby, B
 
 The extension reloads when a file mise reads changes: the config files, the
 files they merge with
-[`include = [...]`](https://mise.jdx.dev/configuration.html#include), the task files,
-the env files and the idiomatic version files (`.nvmrc`, ...). The
-`.miserc.toml` and `.miserc.local.toml` files of the workspace, and the
-`miserc.toml` of the global mise config directory, reload it too, since they
-pick the environments mise loads.
+[`include = [...]`](https://mise.jdx.dev/configuration.html#include), the task
+files, the env files and the idiomatic version files (`.nvmrc`, ...). So do the
+miserc files, which pick the environments mise loads: `.miserc.toml`,
+`.miserc.local.toml` and `.config/miserc.toml` from the workspace up to the home
+directory, and the global (`miserc.toml`, `miserc.local.toml`) and system ones.
 
-Included files are found by reading the `include` of each config file, and only
-the local ones are watched: `git::` and `oci::` includes are fetched by mise.
+Included files are found by reading the `include` of each config file. Only the
+local ones are watched, `git::` and `oci::` includes are fetched by mise, and
+paths using a template other than `{{ config_root }}` are not resolved.
 
 ### While a config file is being edited
 

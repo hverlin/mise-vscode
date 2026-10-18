@@ -5,8 +5,12 @@ import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
-import { collectLocalIncludes } from "./utils/configIncludes";
-import { expandPath } from "./utils/fileUtils";
+import {
+	collectLocalIncludes,
+	getMiseRcPaths,
+	readIncludeEntries,
+} from "./utils/configIncludes";
+import { expandPath, isWindows } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
@@ -14,27 +18,44 @@ import {
 	misePatterns,
 } from "./utils/miseUtilts";
 
-const MISE_RC_FILES = [".miserc.toml", ".miserc.local.toml"];
-
-/** The machine-wide miserc files, in the global mise config directory */
-function getGlobalMiseRcFiles(): string[] {
-	const configDir =
-		process.env.MISE_CONFIG_DIR ??
-		path.join(
-			process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config"),
-			"mise",
-		);
-	return ["miserc.toml", "miserc.local.toml"].map((file) =>
-		expandPath(path.join(configDir, file)),
-	);
+/** The miserc files of a workspace folder, see {@link getMiseRcPaths} */
+function getWorkspaceMiseRcFiles(folder: string): string[] {
+	const home = os.homedir();
+	return getMiseRcPaths({
+		cwd: folder,
+		home,
+		// mise reads an empty variable as unset
+		configDir:
+			process.env.MISE_CONFIG_DIR ||
+			path.join(
+				process.env.XDG_CONFIG_HOME || path.join(home, ".config"),
+				"mise",
+			),
+		systemConfigDir:
+			process.env.MISE_SYSTEM_CONFIG_DIR ||
+			(isWindows ? undefined : "/etc/mise"),
+		ceilingPaths: (process.env.MISE_CEILING_PATHS ?? "")
+			.split(path.delimiter)
+			.filter(Boolean),
+	});
 }
 
-/** A config file, parsed, or undefined when it cannot be read or parsed */
+/**
+ * A config file, parsed, or undefined when it cannot be read. The parser does
+ * not read every file mise does (TOML 1.1): their `include` is read as text.
+ */
 async function readConfigFile(filePath: string): Promise<unknown> {
+	let source: string;
 	try {
-		return parse(await readFile(filePath, "utf8"));
+		source = await readFile(filePath, "utf8");
 	} catch {
 		return undefined;
+	}
+	try {
+		return parse(source);
+	} catch (error) {
+		logger.debug(`Reading the include of ${filePath} as text: ${error}`);
+		return { include: readIncludeEntries(source) };
 	}
 }
 
@@ -84,8 +105,27 @@ export class MiseFileWatcher {
 		const envSources = envs
 			.map((env) => env.source ?? "")
 			.filter((source) => source !== "");
+		// the files mise lists are not enough: when an include is broken, mise
+		// fails before listing any, and it does not list monorepo projects
+		const standardConfigs = (
+			await Promise.all(
+				rootFolders.map((rootFolder) =>
+					vscode.workspace.findFiles(
+						new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
+					),
+				),
+			)
+		)
+			.flat()
+			.map((uri) => uri.fsPath);
 		const includedFiles = await collectLocalIncludes(
-			configFiles.map((c) => c.path),
+			[
+				...configFiles.map((c) => c.path),
+				...[...tasksSources, ...envSources].filter((source) =>
+					source.endsWith(".toml"),
+				),
+				...standardConfigs,
+			],
 			readConfigFile,
 		);
 
@@ -94,7 +134,9 @@ export class MiseFileWatcher {
 			...new Set([
 				...configFiles.map((c) => c.path),
 				...includedFiles,
-				...getGlobalMiseRcFiles(),
+				...rootFolders.flatMap((rootFolder) =>
+					getWorkspaceMiseRcFiles(rootFolder.uri.fsPath),
+				),
 				...tasksSources,
 				...envSources,
 				...rootFolders.flatMap((rf) =>
@@ -116,10 +158,9 @@ export class MiseFileWatcher {
 		const patterns: vscode.RelativePattern[] = [];
 
 		for (const rootFolder of rootFolders) {
-			// `.miserc.toml` picks the environments mise loads (`env = [...]`)
 			const miseStandardConfigsPattern = new vscode.RelativePattern(
 				rootFolder,
-				`{${[...misePatterns, ...MISE_RC_FILES]}}`,
+				`{${misePatterns}}`,
 			);
 			patterns.push(miseStandardConfigsPattern);
 
@@ -202,5 +243,7 @@ export class MiseFileWatcher {
 		for (const watcher of this.fileWatchers) {
 			watcher.dispose();
 		}
+		// a later initialization subscribes the watchers it creates, only
+		this.fileWatchers.length = 0;
 	}
 }
