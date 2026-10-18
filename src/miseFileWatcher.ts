@@ -1,8 +1,11 @@
+import { readFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
+import { collectLocalIncludes } from "./utils/configIncludes";
 import { expandPath } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
@@ -10,6 +13,30 @@ import {
 	idiomaticFiles,
 	misePatterns,
 } from "./utils/miseUtilts";
+
+const MISE_RC_FILES = [".miserc.toml", ".miserc.local.toml"];
+
+/** The machine-wide miserc files, in the global mise config directory */
+function getGlobalMiseRcFiles(): string[] {
+	const configDir =
+		process.env.MISE_CONFIG_DIR ??
+		path.join(
+			process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config"),
+			"mise",
+		);
+	return ["miserc.toml", "miserc.local.toml"].map((file) =>
+		expandPath(path.join(configDir, file)),
+	);
+}
+
+/** A config file, parsed, or undefined when it cannot be read or parsed */
+async function readConfigFile(filePath: string): Promise<unknown> {
+	try {
+		return parse(await readFile(filePath, "utf8"));
+	} catch {
+		return undefined;
+	}
+}
 
 export class MiseFileWatcher {
 	private readonly fileWatchers: vscode.FileSystemWatcher[];
@@ -57,11 +84,17 @@ export class MiseFileWatcher {
 		const envSources = envs
 			.map((env) => env.source ?? "")
 			.filter((source) => source !== "");
+		const includedFiles = await collectLocalIncludes(
+			configFiles.map((c) => c.path),
+			readConfigFile,
+		);
 
 		const idiomaticFilesValues = [...idiomaticFiles.values()];
 		const filesToWatch = [
 			...new Set([
 				...configFiles.map((c) => c.path),
+				...includedFiles,
+				...getGlobalMiseRcFiles(),
 				...tasksSources,
 				...envSources,
 				...rootFolders.flatMap((rf) =>
@@ -83,9 +116,10 @@ export class MiseFileWatcher {
 		const patterns: vscode.RelativePattern[] = [];
 
 		for (const rootFolder of rootFolders) {
+			// `.miserc.toml` picks the environments mise loads (`env = [...]`)
 			const miseStandardConfigsPattern = new vscode.RelativePattern(
 				rootFolder,
-				`{${misePatterns}}`,
+				`{${[...misePatterns, ...MISE_RC_FILES]}}`,
 			);
 			patterns.push(miseStandardConfigsPattern);
 

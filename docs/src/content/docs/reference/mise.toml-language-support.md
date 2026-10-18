@@ -141,6 +141,19 @@ The following languages are supported: Python, Node.js, Deno, Bun, Deno, Ruby, B
 
 ![screenshot showing syntax highlighting support when shebang is used](./syntax-highlighting-shebang.png)
 
+### When a config file changes
+
+The extension reloads when a file mise reads changes: the config files, the
+files they merge with
+[`include = [...]`](https://mise.jdx.dev/configuration.html#include), the task files,
+the env files and the idiomatic version files (`.nvmrc`, ...). The
+`.miserc.toml` and `.miserc.local.toml` files of the workspace, and the
+`miserc.toml` of the global mise config directory, reload it too, since they
+pick the environments mise loads.
+
+Included files are found by reading the `include` of each config file, and only
+the local ones are watched: `git::` and `oci::` includes are fetched by mise.
+
 ### While a config file is being edited
 
 With auto save enabled, a config file is written while you are still typing it.
