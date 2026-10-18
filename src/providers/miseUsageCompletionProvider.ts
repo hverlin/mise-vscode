@@ -11,11 +11,11 @@ import {
 	getUsageHoverInfo,
 	getUsageVariableNames,
 	isInsideQuotedString,
+	MISE_COMMENT_RE,
 	type UsageCompletionItem,
 } from "../utils/usageSpec";
 
 const USAGE_COMMENT_RE = /^\s*#USAGE(?:\s(.*))?$/;
-const MISE_COMMENT_RE = /^\s*#MISE\s/;
 
 /**
  * The usage/config blocks are string (TOML) scopes where VS Code only shows
@@ -201,6 +201,12 @@ function buildCompletionItems(items: UsageCompletionItem[]) {
 		completion.insertText = new vscode.SnippetString(item.insertText);
 		if (item.documentation) {
 			completion.documentation = new vscode.MarkdownString(item.documentation);
+		}
+		if (item.triggerSuggest) {
+			completion.command = {
+				command: "editor.action.triggerSuggest",
+				title: "Suggest values",
+			};
 		}
 		return completion;
 	});

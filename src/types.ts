@@ -27,6 +27,11 @@ type MiseTask = {
 	quiet?: boolean;
 	silent?: boolean;
 	tools?: Record<string, string>;
+	/** [experimental] daemons to start before the task, `true` for all of them */
+	daemons?: string[] | boolean | null;
+	/** [experimental] secret keys the task receives while it runs */
+	secrets?: string[];
+	timeout?: string | null;
 	run?: MiseRunEntry[];
 	file?: string;
 	/** usage spec (https://usage.jdx.dev) of the arguments, empty without any */
@@ -47,6 +52,23 @@ type MiseRunEntry =
 			args?: string[];
 			env?: Record<string, string>;
 	  };
+
+/**
+ * The monorepo projects affected by the git changes and the tasks that would
+ * run in them, as reported by `mise run --affected --affected-json <tasks>`.
+ */
+type MiseAffectedSelection = {
+	/** git revisions the changes are counted between */
+	base: string;
+	head: string;
+	projects: Array<{
+		id: string;
+		/** config root of the project, relative to the monorepo root */
+		root: string;
+		reasons: Array<{ type: string; path?: string }>;
+	}>;
+	tasks: Array<{ name: string; projects: string[] }>;
+};
 
 /**
  * One stored artifact of a task output cache entry, as reported by

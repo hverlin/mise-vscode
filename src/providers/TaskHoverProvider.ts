@@ -11,7 +11,10 @@ import {
 	formatDuration,
 	formatLastAccessed,
 } from "../utils/taskCache";
-import { formatRunEntries } from "../utils/taskDisplay";
+import {
+	formatRunEntries,
+	formatTaskRunRequirements,
+} from "../utils/taskDisplay";
 import {
 	findTasksMatchingDependsPattern,
 	getTaskDefinitionNameCandidates,
@@ -67,6 +70,10 @@ function createMarkdownString(
 		markdownString.appendMarkdown(
 			`\n\nExtends template \`${extendsTemplate}\``,
 		);
+	}
+	const requirements = formatTaskRunRequirements(task);
+	if (requirements.length) {
+		markdownString.appendMarkdown(`\n\n${requirements.join("<br />")}`);
 	}
 	appendCacheSection(markdownString, cacheState);
 	return markdownString;

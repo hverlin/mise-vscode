@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	fileTaskConfigItems,
 	getEnclosingTaskUsageLines,
 	getFileTaskConfigHoverInfo,
 	getUsageCompletionItems,
@@ -7,6 +8,7 @@ import {
 	getUsageHoverInfo,
 	getUsageVariableNames,
 	isInsideUsageString,
+	MISE_COMMENT_RE,
 	type UsageCursorContext,
 } from "./usageSpec";
 
@@ -257,6 +259,45 @@ describe("usage hover info", () => {
 		expect(getFileTaskConfigHoverInfo("description")).toContain("Description");
 		expect(getFileTaskConfigHoverInfo("depends")).toContain("before");
 		expect(getFileTaskConfigHoverInfo("not_a_key")).toBeUndefined();
+	});
+
+	test("documents the task configuration keys added in mise 2026.9 and 10", () => {
+		expect(getFileTaskConfigHoverInfo("skip_if")).toContain("exits 0");
+		expect(getFileTaskConfigHoverInfo("secrets")).toContain("mise secrets ls");
+		expect(getFileTaskConfigHoverInfo("daemons")).toContain("[daemons]");
+		expect(getFileTaskConfigHoverInfo("extends")).toContain("template");
+		expect(getFileTaskConfigHoverInfo("timeout")).toContain("duration");
+		expect(getFileTaskConfigHoverInfo("interactive")).toContain("terminal");
+	});
+
+	test("documents the table form of confirm with its answer labels", () => {
+		const confirm = getFileTaskConfigHoverInfo("confirm");
+		expect(confirm).toContain('yes="Ship it"');
+		expect(confirm).toContain('no="Abort"');
+	});
+});
+
+describe("fileTaskConfigItems", () => {
+	test("reopens the suggestions after extends, to complete the template", () => {
+		const extendsItem = fileTaskConfigItems.find(
+			(item) => item.name === "extends",
+		);
+		expect(extendsItem?.insertText).toBe('extends="$1"');
+		expect(extendsItem?.triggerSuggest).toBe(true);
+	});
+
+	test("declares each key once", () => {
+		const names = fileTaskConfigItems.map((item) => item.name);
+		expect(new Set(names).size).toBe(names.length);
+	});
+});
+
+describe("MISE_COMMENT_RE", () => {
+	test("matches #MISE configuration lines only", () => {
+		expect(MISE_COMMENT_RE.test('#MISE extends="')).toBe(true);
+		expect(MISE_COMMENT_RE.test('  #MISE description="x"')).toBe(true);
+		expect(MISE_COMMENT_RE.test('#USAGE arg "<x>"')).toBe(false);
+		expect(MISE_COMMENT_RE.test('extends="')).toBe(false);
 	});
 });
 

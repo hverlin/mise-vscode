@@ -11,11 +11,13 @@ import {
 	isPositionInTasksContext,
 	parseExtendsValuePrefix,
 } from "../utils/tomlParsing";
+import { MISE_COMMENT_RE } from "../utils/usageSpec";
 
 /**
  * Completes the task template names of `extends = "<name>"`
  * (https://mise.jdx.dev/tasks/templates.html) with the templates declared in
- * the config file being edited and in its parent config files.
+ * the config file being edited and in its parent config files. File tasks
+ * name their template in a `#MISE extends="<name>"` header line.
  */
 export class TaskTemplateCompletionProvider
 	implements vscode.CompletionItemProvider
@@ -26,7 +28,7 @@ export class TaskTemplateCompletionProvider
 		document: vscode.TextDocument,
 		position: vscode.Position,
 	): Promise<vscode.CompletionItem[]> {
-		if (!isMiseExtensionEnabled() || !document.fileName.endsWith(".toml")) {
+		if (!isMiseExtensionEnabled()) {
 			return [];
 		}
 
@@ -34,7 +36,17 @@ export class TaskTemplateCompletionProvider
 			.lineAt(position.line)
 			.text.slice(0, position.character);
 		const extendsContext = parseExtendsValuePrefix(linePrefix);
-		if (!extendsContext || !isPositionInTasksContext(document, position)) {
+		if (!extendsContext) {
+			return [];
+		}
+
+		const isFileTask = document.languageId === "shellscript";
+		if (
+			isFileTask
+				? !MISE_COMMENT_RE.test(linePrefix)
+				: !document.fileName.endsWith(".toml") ||
+					!isPositionInTasksContext(document, position)
+		) {
 			return [];
 		}
 
