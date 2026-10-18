@@ -1,4 +1,6 @@
 import * as assert from "node:assert";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
@@ -104,25 +106,21 @@ suite("Tools TOML Syntax Test Suite", function () {
 	});
 
 	test("completes tool names in a [tools.<name>] section header", async () => {
-		const editor = await vscode.window.showTextDocument(document);
-		const endOfDocument = document.lineAt(document.lineCount - 1).range.end;
-		await editor.edit((edit) => {
-			edit.insert(endOfDocument, "\n[tools.");
-		});
+		// a copy with the header being typed: an edit left in the fixture would
+		// be saved to disk by the next test running a task (it saves all files)
+		const scratchDir = await mkdtemp(path.join(tmpdir(), "mise-vscode-e2e-"));
+		const scratchPath = path.join(scratchDir, "tools-syntax.toml");
+		await writeFile(scratchPath, `${document.getText()}\n[tools.`);
+		const scratch = await vscode.workspace.openTextDocument(scratchPath);
 
 		try {
-			let headerLine = -1;
-			for (let i = 0; i < document.lineCount; i++) {
-				if (document.lineAt(i).text === "[tools.") {
-					headerLine = i;
-				}
-			}
-			assert.notEqual(headerLine, -1, "Inserted header line should be found");
+			const headerLine = scratch.lineCount - 1;
+			assert.equal(scratch.lineAt(headerLine).text, "[tools.");
 
 			const completions =
 				await vscode.commands.executeCommand<vscode.CompletionList>(
 					"vscode.executeCompletionItemProvider",
-					document.uri,
+					scratch.uri,
 					new vscode.Position(headerLine, "[tools.".length),
 					".",
 				);
@@ -139,7 +137,7 @@ suite("Tools TOML Syntax Test Suite", function () {
 				"Expected backend completions (e.g. npm:) in the header",
 			);
 		} finally {
-			await vscode.commands.executeCommand("undo");
+			await rm(scratchDir, { recursive: true, force: true });
 		}
 	});
 

@@ -1,4 +1,5 @@
 const { defineConfig } = require("@vscode/test-cli");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -76,6 +77,32 @@ const pklVsix = fs.existsSync(pklVsixDir)
 // Ceiling paths are exclusive: configs at the workspace root are still loaded.
 // MISE_LOCKED=0 overrides the CI-wide locked mode: the fixtures have no
 // lockfile, and locked mode would refuse to resolve their tools.
+// A test that leaves a fixture edited in its editor gets it saved to disk by
+// the next test running a task (running a task saves all files), and every
+// later run then fails on the edited fixture. Fail the run that changed a
+// committed fixture, as long as git can tell, and only in the vscode-test CLI
+// (editors may load this file too).
+const fixturesDiff = () =>
+	execFileSync("git", ["diff", "--", fixturesPath], {
+		cwd: __dirname,
+		encoding: "utf8",
+	});
+if (process.argv.some((arg) => /vscode-test|test-cli/.test(arg))) {
+	try {
+		const fixturesDiffBefore = fixturesDiff();
+		process.on("exit", () => {
+			if (fixturesDiff() !== fixturesDiffBefore) {
+				console.error(
+					"\nA committed e2e fixture changed during the run, see `git diff -- src/e2e-tests/fixtures`. Restore it before the next run.",
+				);
+				process.exitCode = 1;
+			}
+		});
+	} catch {
+		// not a git checkout
+	}
+}
+
 module.exports = defineConfig([
 	{
 		label: "default",
