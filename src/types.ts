@@ -207,6 +207,11 @@ type MiseTool = {
 	installed: boolean;
 	active: boolean;
 	install_path: string;
+	/**
+	 * declared with `lazy = true`: mise installs it on first use. Only resolved
+	 * for the tools that are not installed.
+	 */
+	lazy?: boolean;
 };
 
 type MiseToolUpdate = {

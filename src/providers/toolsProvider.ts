@@ -219,14 +219,16 @@ class ToolItem extends vscode.TreeItem {
 			[tool.name, tool.version].filter(Boolean).join(" "),
 			vscode.TreeItemCollapsibleState.None,
 		);
-		this.description = tool.requested_version;
+		this.description = tool.lazy
+			? `${tool.requested_version} · installs on first use`
+			: tool.requested_version;
 		this.tool = tool;
 		this.tooltip = `Tool: ${tool.name}
 Version: ${tool.version}
 Requested Version: ${tool.requested_version}
 Source: ${tool.source?.path || "Unknown"}
 Activated: ${tool.active}
-Installed: ${tool.installed}
+Installed: ${tool.installed}${tool.lazy ? " (lazy, installs on first use)" : ""}
 Install Path: ${tool.install_path}`;
 
 		this.iconPath = this.getToolIcon(tool);
@@ -246,6 +248,9 @@ Install Path: ${tool.install_path}`;
 	}
 
 	private getToolIcon(tool: MiseTool): vscode.ThemeIcon {
+		if (tool.lazy) {
+			return new vscode.ThemeIcon("cloud-download");
+		}
 		if (!tool.installed) {
 			return new vscode.ThemeIcon("alert");
 		}
