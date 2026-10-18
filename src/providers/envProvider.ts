@@ -226,7 +226,7 @@ class EnvItem extends vscode.TreeItem {
 		const label = env.value
 			? isVisible
 				? `${env.name}=${env.value}`
-				: `${env.name}=●●●●●●●●`
+				: `${env.name}=••••••••`
 			: env.name;
 		super(label, vscode.TreeItemCollapsibleState.None);
 		this.tooltip = [
