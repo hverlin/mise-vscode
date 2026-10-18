@@ -144,4 +144,29 @@ suite("Config Diagnostics Test Suite", function () {
 			[0, "experimantal".length],
 		);
 	});
+
+	test("checks a config file of a subfolder once it is open", async () => {
+		const subfolderUri = vscode.Uri.joinPath(
+			configUri,
+			"..",
+			"backend",
+			"mise.toml",
+		);
+		const deprecations = () =>
+			vscode.languages
+				.getDiagnostics(subfolderUri)
+				.filter((diagnostic) => diagnostic.code === "deprecated-key")
+				.map((diagnostic) => diagnostic.message);
+		// mise does not load it from the workspace root
+		assert.deepEqual(deprecations(), []);
+
+		await vscode.workspace.openTextDocument(subfolderUri);
+		const deadline = Date.now() + DIAGNOSTICS_DEADLINE_MS;
+		while (!deprecations().length && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+		}
+		assert.deepEqual(deprecations(), [
+			"`env_file` is deprecated: use env._.file instead. This will be removed in mise 2027.4.0.",
+		]);
+	});
 });

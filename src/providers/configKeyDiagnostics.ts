@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import * as vscode from "vscode";
 import {
 	areConfigDiagnosticsEnabled,
@@ -12,6 +13,7 @@ import {
 } from "../utils/configExplain";
 import { expandPath } from "../utils/fileUtils";
 import { logger } from "../utils/logger";
+import { isMiseConfigPath } from "../utils/miseUtilts";
 
 /** Config files change in storms, explain them once they settle */
 const REFRESH_DELAY_MS = 500;
@@ -25,6 +27,22 @@ export const DEPRECATED_KEY = "deprecated-key";
  * catalog they use, the schema `mise config explain` uses too.
  */
 const SCHEMA_DIAGNOSTIC_SOURCE = /tombi|even better toml|taplo/i;
+
+/** a mise config file of the disk, open in the editor */
+const isOpenMiseConfig = (document: vscode.TextDocument) =>
+	document.uri.scheme === "file" && isMiseConfigPath(document.fileName);
+
+/**
+ * `mise.toml`, `.mise.toml`, their local variant, a `config.toml` or a
+ * `conf.d` fragment: never a task include file, unlike `mise.tasks.toml`
+ */
+function isBaseConfigName(filePath: string): boolean {
+	return (
+		/^\.?mise(\.local)?\.toml$|^config(\.local)?\.toml$/.test(
+			path.basename(filePath),
+		) || path.basename(path.dirname(filePath)) === "conf.d"
+	);
+}
 
 const rangeOf = (problem: ConfigKeyProblem) =>
 	new vscode.Range(problem.line, problem.start, problem.line, problem.end);
@@ -63,6 +81,26 @@ export class ConfigKeyDiagnostics implements vscode.Disposable {
 	private generation = 0;
 	/** what mise reported the last time, by file */
 	private problems = new Map<string, ConfigKeyProblem[]>();
+
+	/** a config file the listed and standard ones leave out, e.g. in a subfolder */
+	private readonly documentListeners = [
+		vscode.workspace.onDidOpenTextDocument((document) => {
+			if (isOpenMiseConfig(document)) {
+				this.scheduleRefresh();
+			}
+		}),
+		// the file watcher does not watch every config file of a subfolder
+		vscode.workspace.onDidSaveTextDocument((document) => {
+			if (isOpenMiseConfig(document)) {
+				this.scheduleRefresh();
+			}
+		}),
+		vscode.workspace.onDidCloseTextDocument((document) => {
+			if (isOpenMiseConfig(document)) {
+				this.scheduleRefresh();
+			}
+		}),
+	];
 
 	/** a TOML extension starts or stops reporting a key */
 	private readonly diagnosticsListener =
@@ -111,31 +149,50 @@ export class ConfigKeyDiagnostics implements vscode.Disposable {
 			return;
 		}
 
-		// the config files only: a task include file is not one, and every key
-		// of it would read as unknown. mise refuses to load a config with an
-		// unknown task key, and then lists none: the standard config files of
-		// the workspace are explained anyway, mise reads them as plain TOML.
+		// mise refuses to load a config with an unknown task key, and then lists
+		// none: the standard config files of the workspace and of its monorepo
+		// projects are explained anyway, and the config files open in the
+		// editor, e.g. in a subfolder. mise reads them as plain TOML.
 		const folders = (vscode.workspace.workspaceFolders ?? []).filter(
 			(folder) => folder.uri.scheme === "file",
 		);
-		const [listed, standard, taskSources] = await Promise.all([
+		const [listed, projectRoots, taskSources] = await Promise.all([
 			this.miseService
 				.getMiseConfigFiles()
 				.then((files) => files.map((file) => expandPath(file.path)))
 				.catch(() => [] as string[]),
-			Promise.all(
-				folders.map((folder) => findStandardConfigFiles(folder.uri.fsPath)),
-			).then((files) => files.flat().map((file) => expandPath(file))),
+			this.miseService.getMonorepoConfigRootPaths().catch(() => []),
 			this.miseService
 				.getAllCachedTasksSources()
 				.then((sources) => new Set(sources.map((file) => expandPath(file))))
 				.catch(() => new Set<string>()),
 		]);
-		// e.g. `task_config.includes = ["mise.tasks.toml"]`
+		const standard = (
+			await Promise.all(
+				[...folders.map((folder) => folder.uri.fsPath), ...projectRoots].map(
+					(root) => findStandardConfigFiles(root),
+				),
+			)
+		)
+			.flat()
+			.map((file) => expandPath(file));
+		const open = vscode.workspace.textDocuments
+			.filter((document) => isOpenMiseConfig(document))
+			.map((document) => expandPath(document.uri.fsPath));
+
+		const listedSet = new Set(listed);
 		const configFiles = [
 			...new Set([
 				...listed,
-				...standard.filter((file) => !taskSources.has(file)),
+				// a task include file is not a config: every key of it would read as
+				// unknown, e.g. `task_config.includes = ["mise.tasks.toml"]`. The
+				// mise.toml of a monorepo project is a task source too.
+				...[...standard, ...open].filter(
+					(file) =>
+						listedSet.has(file) ||
+						!taskSources.has(file) ||
+						isBaseConfigName(file),
+				),
 			]),
 		].filter((filePath) => filePath.endsWith(".toml"));
 
@@ -209,6 +266,9 @@ export class ConfigKeyDiagnostics implements vscode.Disposable {
 
 	dispose() {
 		clearTimeout(this.timer);
+		for (const listener of this.documentListeners) {
+			listener.dispose();
+		}
 		this.diagnosticsListener.dispose();
 		this.collection.dispose();
 	}

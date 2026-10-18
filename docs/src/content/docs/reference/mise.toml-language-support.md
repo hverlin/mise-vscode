@@ -161,7 +161,10 @@ experimantal = true # mise does not read `settings.experimantal`. Did you mean `
 This comes from
 [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html) (mise
 2026.10.14+), which also reads a config file mise refuses to load, e.g. one with
-an unknown task key. Turn it off with `mise.enableConfigDiagnostics`.
+an unknown task key. The config files mise loads are checked, the ones of the
+[monorepo](https://mise.jdx.dev/tasks/monorepo.html) projects, and any mise
+config file open in the editor, e.g. in a subfolder. Turn it off with
+`mise.enableConfigDiagnostics`.
 
 Tombi and Even Better TOML check the same schema, and report some of these keys
 themselves: a key one of them already reports only gets the quick fix.

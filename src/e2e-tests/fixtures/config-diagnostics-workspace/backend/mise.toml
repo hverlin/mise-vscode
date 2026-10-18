@@ -1,0 +1,2 @@
+# a config mise does not load from the workspace root, checked once open
+env_file = ".env"
