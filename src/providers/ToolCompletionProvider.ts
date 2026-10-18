@@ -11,8 +11,31 @@ import {
 export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 	private miseService: MiseService;
 
+	/** the registry tool of each tool item, whose description it shows */
+	private readonly registryTools = new WeakMap<vscode.CompletionItem, string>();
+
 	constructor(miseService: MiseService) {
 		this.miseService = miseService;
+	}
+
+	/**
+	 * The description of the registry tool, for the item the user looks at:
+	 * reading every description (`mise registry --json`) would slow down the
+	 * list the first time it opens
+	 */
+	async resolveCompletionItem(
+		item: vscode.CompletionItem,
+	): Promise<vscode.CompletionItem> {
+		const tool = this.registryTools.get(item);
+		if (tool && item.documentation === undefined) {
+			const description = (
+				await this.miseService.miseRegistryDescriptions()
+			).get(tool);
+			if (description) {
+				item.documentation = description;
+			}
+		}
+		return item;
 	}
 
 	async provideCompletionItems(
@@ -27,6 +50,8 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 			this.miseService.miseRegistry(),
 			this.miseService.miseBackends(),
 		]);
+		// read now, the details of the first item are asked right away
+		void this.miseService.miseRegistryDescriptions();
 
 		const linePrefix = document
 			.lineAt(position)
@@ -41,27 +66,35 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 			if (backendPrefixMatch) {
 				const [, backendPrefix = "", partial = ""] = backendPrefixMatch;
 				const typedToken = backendPrefix + partial;
-				return tools
-					.filter((tool) => tool.full?.startsWith(backendPrefix))
-					.map((tool) => {
-						const completionItem = new vscode.CompletionItem(
-							{ label: tool.full as string, description: tool.short },
-							vscode.CompletionItemKind.Module,
-						);
-						completionItem.insertText = `${tool.full} `;
-						completionItem.filterText = tool.full;
-						// `:` is not a word character, so replace the whole token
-						// explicitly instead of relying on the word range
-						completionItem.range = new vscode.Range(
-							position.translate(0, -typedToken.length),
-							position,
-						);
-						completionItem.command = {
-							command: "editor.action.triggerSuggest",
-							title: "Re-trigger completions",
-						};
-						return completionItem;
-					});
+				return (
+					tools
+						.filter((tool) => tool.full?.startsWith(backendPrefix))
+						// several registry tools share a backend, e.g. `core:dotnet`
+						.filter(
+							(tool, index, all) =>
+								all.findIndex((other) => other.full === tool.full) === index,
+						)
+						.map((tool) => {
+							const completionItem = new vscode.CompletionItem(
+								{ label: tool.full as string, description: tool.short },
+								vscode.CompletionItemKind.Module,
+							);
+							this.registryTools.set(completionItem, tool.short);
+							completionItem.insertText = `${tool.full} `;
+							completionItem.filterText = tool.full;
+							// `:` is not a word character, so replace the whole token
+							// explicitly instead of relying on the word range
+							completionItem.range = new vscode.Range(
+								position.translate(0, -typedToken.length),
+								position,
+							);
+							completionItem.command = {
+								command: "editor.action.triggerSuggest",
+								title: "Re-trigger completions",
+							};
+							return completionItem;
+						})
+				);
 			}
 
 			// First token: tool name completions (`nodejs `, `shellcheck `, ...)
@@ -73,6 +106,7 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 							{ label: tool.short as string, description: tool.full },
 							vscode.CompletionItemKind.Module,
 						);
+						this.registryTools.set(completionItem, tool.short as string);
 						completionItem.insertText = `${tool.short} `;
 						completionItem.command = {
 							command: "editor.action.triggerSuggest",
@@ -126,6 +160,7 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 						},
 						vscode.CompletionItemKind.Module,
 					);
+					this.registryTools.set(completionItem, tool.short as string);
 					completionItem.insertText = tool.short;
 					return completionItem;
 				});
@@ -195,6 +230,7 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 						},
 						vscode.CompletionItemKind.Module,
 					);
+					this.registryTools.set(completionItem, tool.short as string);
 					completionItem.insertText = `${tool.short} = `;
 					completionItem.command = {
 						command: "editor.action.triggerSuggest",
