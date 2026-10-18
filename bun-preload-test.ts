@@ -72,6 +72,7 @@ mock.module("vscode", () => {
 			onDidChangeTextDocument: () => ({ dispose: () => {} }),
 			onDidCloseTextDocument: () => ({ dispose: () => {} }),
 			onDidChangeConfiguration: () => ({ dispose: () => {} }),
+			getWorkspaceFolder: () => undefined,
 		},
 		window: {
 			showErrorMessage: () => {},

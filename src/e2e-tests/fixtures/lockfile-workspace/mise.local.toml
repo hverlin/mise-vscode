@@ -1,0 +1,3 @@
+# no mise.local.lock yet
+[tools]
+"aqua:sharkdp/fd" = "10.2.0"

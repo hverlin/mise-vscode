@@ -12,7 +12,7 @@ const CONFIG_ROOT_TEMPLATE = /\{\{\s*config_root\s*\}\}/g;
  * `{{ config_root }}` of a config: its project, also for `conf.d` fragments
  * and `.config/mise.toml`
  */
-function getConfigRoot(configPath: string): string {
+export function getConfigRoot(configPath: string): string {
 	const dir = path.dirname(configPath);
 	const root = getProjectRootFromConfigPath(
 		path.basename(dir) === "conf.d" ? dir : configPath,

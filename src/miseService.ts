@@ -46,6 +46,7 @@ import {
 	getMissingTools,
 	isLazyToolDeclaration,
 } from "./utils/lazyTools";
+import type { LockfileChange } from "./utils/lockfile";
 import { logger } from "./utils/logger";
 import {
 	resolveMisePath,
@@ -149,6 +150,8 @@ const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
 /** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
 const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
+/** `mise lock --dry-run --json`, `--bump`, `--upgrade`, and format 3 */
+const MIN_MISE_VERSION_FOR_LOCKFILE_LENSES = [2026, 9, 16] as const;
 /** how long a hover uses the outdated tools listed for the editor */
 const STALE_OUTDATED_TOOLS_MS = 60_000;
 
@@ -2463,6 +2466,61 @@ export class MiseService {
 		} catch (error) {
 			logger.debug("Could not read the registry descriptions", error);
 			return new Map();
+		}
+	}
+
+	async supportsLockfileLenses(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_LOCKFILE_LENSES);
+	}
+
+	/**
+	 * What `mise lock` would change in the lockfiles of a config root, the
+	 * local one included: the tools added to or removed from the config, and
+	 * the requests changed since. With `bump`, what `mise lock --bump` would
+	 * change: the newer versions the requests allow, which mise looks up
+	 * online. Nothing is written. Empty when lockfiles are off.
+	 */
+	async getLockfileChanges(
+		configRoot: string,
+		{ bump = false } = {},
+	): Promise<LockfileChange[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		const args = [
+			"-C",
+			configRoot,
+			"lock",
+			"--dry-run",
+			"--json",
+			...(bump ? ["--bump"] : []),
+		];
+		// a bump looks up the remote versions: kept for a minute
+		const { stdout } = await (bump ? this.slowCache : this.cache).execCmd({
+			args,
+		});
+		return JSON.parse(stdout) as LockfileChange[];
+	}
+
+	/**
+	 * The `lockfile` setting of a config root: `true` creates its lockfile,
+	 * `false` turns lockfiles off, unset (undefined) only updates an existing
+	 * one
+	 */
+	async getLockfileSetting(configRoot: string): Promise<boolean | undefined> {
+		if (!this.getMiseBinaryPath()) {
+			return undefined;
+		}
+
+		try {
+			const { stdout } = await this.cache.execCmd({
+				args: ["-C", configRoot, "settings", "get", "lockfile"],
+			});
+			return stdout.trim() === "true";
+		} catch {
+			// mise fails to get a setting that is not set
+			return undefined;
 		}
 	}
 

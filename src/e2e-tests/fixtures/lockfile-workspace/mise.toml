@@ -1,0 +1,7 @@
+# tools for the lockfile e2e suite: yq is not in mise.lock yet
+[settings]
+lockfile = true
+
+[tools]
+"aqua:jqlang/jq" = "1.7.1"
+"aqua:mikefarah/yq" = "4.52.4"

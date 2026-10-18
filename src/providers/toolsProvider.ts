@@ -11,6 +11,7 @@ import {
 	MISE_OPEN_TOOL_REPOSITORY,
 	MISE_RELOAD,
 	MISE_REMOVE_TOOL,
+	MISE_RUN_LOCK,
 	MISE_USE_TOOL,
 	MISE_USE_TOOL_TOP_MENU,
 } from "../commands";
@@ -31,6 +32,7 @@ import {
 	expandPath,
 	isWindows,
 } from "../utils/fileUtils";
+import { LOCK_FLAGS, type LockFlag } from "../utils/lockfile";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import {
@@ -416,6 +418,23 @@ export function registerToolsCommands(
 			await miseService.runMiseToolActionInConsole(["install"], "Install Tool");
 			await vscode.commands.executeCommand(MISE_RELOAD);
 		}),
+		vscode.commands.registerCommand(
+			MISE_RUN_LOCK,
+			async (lock: { configRoot?: unknown; flags?: unknown } | undefined) => {
+				const configRoot =
+					typeof lock?.configRoot === "string" ? lock.configRoot : undefined;
+				// the command can be run from anywhere, e.g. a link in a hover
+				const flags = Array.isArray(lock?.flags)
+					? lock.flags.filter((flag): flag is LockFlag =>
+							LOCK_FLAGS.includes(flag),
+						)
+					: [];
+				await miseService.runMiseToolActionInConsole(
+					[...(configRoot ? ["-C", configRoot] : []), "lock", ...flags],
+					`Lock ${flags.join(" ")}`.trim(),
+				);
+			},
+		),
 		vscode.commands.registerCommand(MISE_USE_TOOL_TOP_MENU, async () => {
 			await vscode.commands.executeCommand(MISE_USE_TOOL);
 		}),

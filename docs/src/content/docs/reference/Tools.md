@@ -56,6 +56,35 @@ it up once it is installed.
 ripgrep = { version = "14", lazy = true }
 ```
 
+## Lockfile
+
+[`mise.lock`](https://mise.jdx.dev/dev-tools/mise-lock.html) records the
+versions that the tools of `mise.toml` resolved to. Code lenses on top of
+`mise.lock` (and `mise.local.lock`) show:
+
+- whether it has every tool of the config: `In sync`, or
+  `2 tools out of sync · Update`, which runs `mise lock`. The tooltip lists the
+  changes.
+- `Bump 3 tools` when the requests allow newer versions (e.g. `node = "24"`):
+  runs `mise lock --bump`, which updates the lockfile without installing
+  anything. Finding them looks up the versions online.
+- `Upgrade format v0 → v3` for a lockfile written in an older format: runs
+  `mise lock --upgrade`. Everyone who reads the lockfile, CI included, then
+  needs mise 2026.9.16 or newer.
+
+Next to `[tools]` in `mise.toml`:
+
+- `mise.lock out of date` when the lockfile does not match the tools of the
+  file, e.g. after adding one by hand.
+- `Create mise.lock` when there is no lockfile yet and
+  [`lockfile = true`](https://mise.jdx.dev/configuration/settings.html#lockfile).
+  With the setting unset, mise does not create lockfiles, and the extension does
+  not suggest it either.
+
+Nothing is shown with `lockfile = false`. Requires mise 2026.9.16+. The
+lockfiles of an environment (`mise.test.lock`) and the global one are not
+covered.
+
 ## Tools list
 
 Use the list `List all tools` button to list all installed tools.

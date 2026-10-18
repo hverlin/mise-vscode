@@ -124,6 +124,8 @@ This extension adds the following code lens features:
 
 - Each task has a `run` and `watch` code lens that will run the task
 - A `add tool` code lens that to automatically add a tool to a `mise.toml` file
+- Lockfile code lenses on `mise.lock` and next to `[tools]`, see
+  [Lockfile](/mise-vscode/reference/tools/#lockfile)
 
 ### Code navigation
 

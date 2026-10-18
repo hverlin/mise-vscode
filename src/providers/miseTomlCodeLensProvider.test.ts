@@ -1,6 +1,10 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
+import type { LockfileChange } from "../utils/lockfile";
 import { MiseTomlCodeLensProvider } from "./miseTomlCodeLensProvider";
 
 function createDocument(fsPath: string, text: string): vscode.TextDocument {
@@ -18,12 +22,19 @@ function createProvider({
 	paranoid = false,
 	untrustedConfigFiles = [],
 	ignoredConfigFiles = [],
+	lockfile,
 }: {
 	configFiles: string[];
 	taskSources?: string[];
 	paranoid?: boolean;
 	untrustedConfigFiles?: string[];
 	ignoredConfigFiles?: string[];
+	/** what mise reports on the lockfiles; mise is too old without it */
+	lockfile?: {
+		setting?: boolean;
+		changes?: LockfileChange[];
+		bumps?: () => Promise<LockfileChange[]>;
+	};
 }) {
 	const miseService = {
 		getCurrentConfigFiles: async () => [...configFiles, ...taskSources],
@@ -38,6 +49,10 @@ function createProvider({
 		subscribeToReloadEvent: () => {},
 		subscribeToRetainedStateDropped: () => {},
 		subscribeToUntrustedConfigChange: () => {},
+		supportsLockfileLenses: async () => lockfile !== undefined,
+		getLockfileSetting: async () => lockfile?.setting,
+		getLockfileChanges: async (_root: string, { bump = false } = {}) =>
+			bump ? (lockfile?.bumps?.() ?? []) : (lockfile?.changes ?? []),
 	} as unknown as MiseService;
 
 	return new MiseTomlCodeLensProvider(miseService);
@@ -209,5 +224,220 @@ build = "echo build"
 				arguments: [path],
 			},
 		]);
+	});
+});
+
+describe("lockfile lenses", () => {
+	let project: string;
+	let lockfile: string;
+	const workspace = vscode.workspace as unknown as Record<string, unknown>;
+	const originalGetWorkspaceFolder = workspace.getWorkspaceFolder;
+
+	beforeAll(async () => {
+		project = await mkdtemp(path.join(tmpdir(), "mise-vscode-lock-"));
+		lockfile = path.join(project, "mise.lock");
+	});
+	afterAll(async () => {
+		await rm(project, { recursive: true, force: true });
+	});
+	afterEach(async () => {
+		workspace.getWorkspaceFolder = originalGetWorkspaceFolder;
+		await rm(lockfile, { force: true });
+	});
+
+	const inWorkspace = () => {
+		workspace.getWorkspaceFolder = () => ({ uri: vscode.Uri.file(project) });
+	};
+	const change = (
+		name: string,
+		oldVersions: string[],
+		newVersions: string[],
+		file = lockfile,
+	): LockfileChange => ({
+		name,
+		backend: `aqua:${name}`,
+		lockfile: file,
+		old_versions: oldVersions,
+		new_versions: newVersions,
+	});
+
+	it("reports a lockfile out of sync, its bumps and an old format", async () => {
+		inWorkspace();
+		const provider = createProvider({
+			configFiles: [path.join(project, "mise.toml")],
+			lockfile: {
+				changes: [
+					change("node", ["24.21.0"], ["22.22.0"]),
+					change("yq", [], ["4.52.4"], path.join(project, "mise.local.lock")),
+				],
+				bumps: async () => [
+					change("jq", ["1.7.1"], ["1.8.0"]),
+					// added by any `mise lock`, not by the bump
+					change("node", [], ["22.22.0"]),
+					change("bun", ["1.4.2"], ["1.4.2"]),
+				],
+			},
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(lockfile, '[[tools.node]]\nversion = "24.21.0"\n'),
+		);
+		expect(lenses).toEqual([
+			{
+				line: 0,
+				title: "$(warning) 1 tool out of sync · Update",
+				arguments: [{ configRoot: project, flags: [] }],
+			},
+			{
+				line: 0,
+				title: "$(arrow-up) Bump 1 tool",
+				arguments: [{ configRoot: project, flags: ["--bump"] }],
+			},
+			{
+				line: 0,
+				title: "$(versions) Upgrade format v0 → v3",
+				arguments: [{ configRoot: project, flags: ["--upgrade"] }],
+			},
+		]);
+	});
+
+	it("says a lockfile in the latest format has every tool", async () => {
+		inWorkspace();
+		const provider = createProvider({
+			configFiles: [path.join(project, "mise.toml")],
+			lockfile: { changes: [] },
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(lockfile, "lockfile_version = 3\n"),
+		);
+		expect(lenses.map((lens) => lens.title)).toEqual(["$(check) In sync"]);
+	});
+
+	it("updates mise.local.lock with --local", async () => {
+		inWorkspace();
+		const localLockfile = path.join(project, "mise.local.lock");
+		const provider = createProvider({
+			configFiles: [path.join(project, "mise.local.toml")],
+			lockfile: {
+				changes: [change("yq", [], ["4.52.4"], localLockfile)],
+			},
+		});
+
+		const lenses = await getLenses(
+			provider,
+			createDocument(localLockfile, "lockfile_version = 3\n"),
+		);
+		expect(lenses).toEqual([
+			{
+				line: 0,
+				title: "$(warning) 1 tool out of sync · Update",
+				arguments: [{ configRoot: project, flags: ["--local"] }],
+			},
+		]);
+	});
+
+	it("shows nothing when lockfiles are off, outside the workspace, or on an old mise", async () => {
+		const document = createDocument(lockfile, "[[tools.node]]\n");
+
+		inWorkspace();
+		const off = createProvider({
+			configFiles: [],
+			lockfile: { setting: false, changes: [] },
+		});
+		expect(await getLenses(off, document)).toEqual([]);
+
+		const old = createProvider({ configFiles: [] });
+		expect(await getLenses(old, document)).toEqual([]);
+
+		workspace.getWorkspaceFolder = originalGetWorkspaceFolder;
+		const outside = createProvider({ configFiles: [], lockfile: {} });
+		expect(await getLenses(outside, document)).toEqual([]);
+	});
+
+	it("adds the bump lens once the newer versions are looked up", async () => {
+		inWorkspace();
+		let finishBump: (changes: LockfileChange[]) => void = () => {};
+		const bump = new Promise<LockfileChange[]>((resolve) => {
+			finishBump = resolve;
+		});
+		const provider = createProvider({
+			configFiles: [],
+			lockfile: { changes: [], bumps: () => bump },
+		});
+		let refreshed = false;
+		provider.onDidChangeCodeLenses(() => {
+			refreshed = true;
+		});
+		const document = createDocument(lockfile, "lockfile_version = 3\n");
+
+		const lenses = await getLenses(provider, document);
+		expect(lenses.map((lens) => lens.title)).toEqual(["$(check) In sync"]);
+
+		finishBump([change("jq", ["1.7.1"], ["1.8.0"])]);
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(refreshed).toBe(true);
+		expect(
+			(await getLenses(provider, document)).map((lens) => lens.title),
+		).toEqual(["$(check) In sync", "$(arrow-up) Bump 1 tool"]);
+	}, 10_000);
+
+	describe("next to the tools of a config file", () => {
+		const configText = '[tools]\nnode = "24"\n';
+
+		it("offers to create the lockfile when mise is set to", async () => {
+			inWorkspace();
+			const config = path.join(project, "mise.toml");
+			const changes = [change("node", [], ["24.21.0"])];
+
+			const create = createProvider({
+				configFiles: [config],
+				lockfile: { setting: true, changes },
+			});
+			const lenses = await getLenses(
+				create,
+				createDocument(config, configText),
+			);
+			expect(lenses.at(-1)).toEqual({
+				line: 0,
+				title: "$(lock) Create mise.lock",
+				arguments: [{ configRoot: project, flags: [] }],
+			});
+
+			// unset: mise does not create lockfiles
+			const unset = createProvider({
+				configFiles: [config],
+				lockfile: { changes },
+			});
+			expect(
+				(await getLenses(unset, createDocument(config, configText))).map(
+					(lens) => lens.title,
+				),
+			).toEqual(["$(add) Add tool", "$(list-unordered) List tools"]);
+		});
+
+		it("reports a lockfile without its tools", async () => {
+			inWorkspace();
+			await writeFile(lockfile, "lockfile_version = 3\n");
+			const config = path.join(project, "mise.toml");
+			const provider = createProvider({
+				configFiles: [config],
+				lockfile: {
+					changes: [change("node", ["22.22.0"], ["24.21.0"])],
+				},
+			});
+
+			const lenses = await getLenses(
+				provider,
+				createDocument(config, configText),
+			);
+			expect(lenses.at(-1)).toEqual({
+				line: 0,
+				title: "$(warning) mise.lock out of date",
+				arguments: [{ configRoot: project, flags: [] }],
+			});
+		});
 	});
 });

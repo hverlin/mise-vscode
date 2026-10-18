@@ -12,6 +12,7 @@ export const MISE_GROUP_TASKS_BY_SOURCE = "mise.groupTasksBySource";
 export const MISE_SHOW_HIDDEN_TASKS = "mise.showHiddenTasks";
 export const MISE_HIDE_HIDDEN_TASKS = "mise.hideHiddenTasks";
 export const MISE_INSTALL_ALL = "mise.installAll";
+export const MISE_RUN_LOCK = "mise.runLock";
 export const MISE_INSTALL_TOOL = "mise.installTool";
 export const MISE_LIST_ALL_TOOLS = "mise.listAllTools";
 export const MISE_SHOW_SETTINGS = "mise.showSettings";
