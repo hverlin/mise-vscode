@@ -44,6 +44,7 @@ import {
 } from "../utils/supportedExtensions";
 import { expandToolNames } from "../utils/toolNameMatching";
 import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
+import { CUSTOM_TOOL, pickToolToUse } from "./toolPicker";
 
 type TreeItem = ToolsSourceItem | ToolItem | MiseErrorItem;
 
@@ -434,31 +435,13 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const registry = await miseService.miseRegistry();
-				const selection = await vscode.window.showQuickPick(
-					[
-						{ label: "custom", description: "Enter a custom tool name" },
-						...registry.map(
-							(tool) =>
-								({
-									label: `${tool.short}`,
-									description: tool.full,
-								}) as vscode.QuickPickItem,
-						),
-					],
-					{
-						placeHolder: "Search for a tool to install (e.g. node)",
-						canPickMany: false,
-						matchOnDescription: true,
-					},
-				);
-
+				const selection = await pickToolToUse(miseService);
 				if (!selection) {
 					return;
 				}
 
 				let selectedToolName: string | undefined;
-				if (selection.label === "custom") {
+				if (selection === CUSTOM_TOOL) {
 					selectedToolName = await vscode.window.showInputBox({
 						placeHolder: "Enter the tool name to use (e.g. node@latest)",
 						validateInput: (input) => {
@@ -472,7 +455,7 @@ export function registerToolsCommands(
 						},
 					});
 				} else {
-					selectedToolName = selection.label;
+					selectedToolName = selection;
 					const availableVersions =
 						await miseService.listRemoteVersions(selectedToolName);
 					const selectedVersion = await vscode.window.showQuickPick(

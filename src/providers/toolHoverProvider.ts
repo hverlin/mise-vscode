@@ -2,8 +2,41 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
-import { getCleanedToolName, getWebsiteForTool } from "../utils/miseUtilts";
+import { logger } from "../utils/logger";
+import {
+	getCleanedToolName,
+	getWebsiteForTool,
+	toWebUrl,
+} from "../utils/miseUtilts";
 import { getToolIndexForDocument } from "../utils/toolIndex";
+
+/**
+ * How long the hover waits for `mise outdated`, which may query the network,
+ * before showing without the latest version
+ */
+const OUTDATED_TIMEOUT_MS = 1000;
+
+/** The available update of a tool, or undefined when it takes too long */
+async function findToolUpdate(
+	miseService: MiseService,
+	toolName: string,
+): Promise<MiseToolUpdate | undefined> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		const outdatedTools = await Promise.race([
+			miseService.getOutdatedTools(),
+			new Promise<[]>((resolve) => {
+				timer = setTimeout(() => resolve([]), OUTDATED_TIMEOUT_MS);
+			}),
+		]);
+		return outdatedTools.find((t) => t.name === toolName);
+	} catch (error) {
+		logger.debug("Could not check the tool for updates", error);
+		return undefined;
+	} finally {
+		clearTimeout(timer);
+	}
+}
 
 export const createToolHoverProvider = (
 	documentSelector: DocumentSelector,
@@ -30,13 +63,21 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const toolInfo = await miseService.miseToolInfo(tool.toolName);
+			const [toolInfo, update] = await Promise.all([
+				miseService.miseToolInfo(tool.toolName),
+				findToolUpdate(miseService, toolName),
+			]);
 			if (!toolInfo) {
 				return;
 			}
 
 			const markdownString = new vscode.MarkdownString("");
 			const toolWebsite = await getWebsiteForTool(toolInfo);
+			// the project, when the registry knows it, besides its source
+			const projectWebsite = toWebUrl(toolInfo.url ?? undefined);
+			const projectWebsiteLabel = projectWebsite
+				?.replace(/^https?:\/\//, "")
+				.replace(/\/$/, "");
 
 			const displayRequestedVersion =
 				tool.requestedVersion || (toolInfo.requested_versions ?? []).join(", ");
@@ -50,7 +91,21 @@ export const createToolHoverProvider = (
 							: `${toolInfo.backend}.`,
 					],
 					["Description", toolInfo.description],
+					[
+						"Website",
+						projectWebsite && projectWebsite !== toolWebsite
+							? `[${projectWebsiteLabel}](${projectWebsite})`
+							: undefined,
+					],
 					["Active version", (toolInfo.active_versions ?? []).join(", ")],
+					[
+						"Latest version",
+						update?.latest
+							? update.release_url
+								? `${update.latest} ([release notes](${update.release_url}))`
+								: update.latest
+							: undefined,
+					],
 					[
 						"Installed Versions",
 						(toolInfo.installed_versions ?? []).join(", "),

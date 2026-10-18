@@ -63,6 +63,7 @@ import {
 	isNewerMiseVersion,
 	isToolVersionsFile,
 	parseMiseVersion,
+	toWebUrl,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
@@ -89,6 +90,10 @@ import {
 	parseTaskInfoJson,
 } from "./utils/taskInfoParser";
 import { getConfigRootPaths } from "./utils/taskNames";
+import {
+	parseToolSearchResults,
+	type ToolSearchResult,
+} from "./utils/toolSearch";
 
 // https://github.com/jdx/mise/blob/main/src/env.rs
 const XDG_STATE_HOME =
@@ -142,6 +147,8 @@ const MIN_MISE_VERSION_FOR_AFFECTED_TASKS = [2026, 10, 6] as const;
 const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 // `mise doctor project` and `[doctor.checks]` were added in 2026.9.6
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
+/** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
+const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -1672,6 +1679,7 @@ export class MiseService {
 				current: string;
 				latest: string | null;
 				bump: string | null;
+				release_url?: string;
 				source: { type: string; path: string };
 			};
 
@@ -1682,6 +1690,7 @@ export class MiseService {
 				source: foundTool.source,
 				latest: foundTool.latest,
 				bump: foundTool.bump,
+				release_url: toWebUrl(foundTool.release_url),
 			};
 		});
 	}
@@ -2404,6 +2413,37 @@ export class MiseService {
 						self.findIndex((e) => e.short === entry.short) === index,
 				)
 		);
+	}
+
+	async supportsPackageRegistrySearch(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_PACKAGE_SEARCH);
+	}
+
+	/**
+	 * The tools matching `query` (`mise search`). With a package registry
+	 * prefix such as `npm:`, the packages of that registry.
+	 */
+	async searchTools(query: string): Promise<ToolSearchResult[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		try {
+			const { stdout } = await this.longTTLCache.execCmd({
+				args: ["search", query, "--no-header"],
+				setMiseEnv: false,
+			});
+			return parseToolSearchResults(stdout);
+		} catch (error) {
+			// exits 1 when nothing matches
+			if (
+				error instanceof Error &&
+				error.message.includes("not found in registry")
+			) {
+				return [];
+			}
+			throw error;
+		}
 	}
 
 	async miseBackends() {
