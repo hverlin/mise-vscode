@@ -1,8 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
+	findRegistryMatches,
 	getPackageRegistryQuery,
+	getTypedTool,
 	hasToolVersion,
 	parseToolSearchResults,
+	withoutVersion,
 } from "./toolSearch";
 
 describe("getPackageRegistryQuery", () => {
@@ -70,5 +73,55 @@ describe("hasToolVersion", () => {
 		expect(hasToolVersion("node@")).toBe(false);
 		expect(hasToolVersion("npm:@prettier/plugin-xml")).toBe(false);
 		expect(hasToolVersion("")).toBe(false);
+	});
+});
+
+describe("withoutVersion", () => {
+	it("leaves out the version, not an npm scope", () => {
+		expect(withoutVersion("npm:prettier@3")).toBe("npm:prettier");
+		expect(withoutVersion("npm:@scope/pkg@1.2.0")).toBe("npm:@scope/pkg");
+		expect(withoutVersion("npm:@scope/pkg")).toBe("npm:@scope/pkg");
+		expect(withoutVersion("node")).toBe("node");
+	});
+});
+
+describe("getTypedTool", () => {
+	it("is a backend:name, or a tool with its version", () => {
+		expect(getTypedTool("github:cli/cli")).toBe("github:cli/cli");
+		expect(getTypedTool(" npm:pr ")).toBe("npm:pr");
+		expect(getTypedTool("npm:@scope/pkg")).toBe("npm:@scope/pkg");
+		expect(getTypedTool("node@20")).toBe("node@20");
+	});
+
+	it("leaves the registry names and a backend alone to the list", () => {
+		expect(getTypedTool("node")).toBeUndefined();
+		expect(getTypedTool("npm:")).toBeUndefined();
+		expect(getTypedTool("")).toBeUndefined();
+		expect(getTypedTool("two words")).toBeUndefined();
+	});
+});
+
+describe("findRegistryMatches", () => {
+	const registry = [
+		{ short: "node", backends: ["core:node"] },
+		{ short: "prettier", backends: ["npm:prettier"] },
+		{ short: "jq", backends: ["aqua:jqlang/jq", "github:jqlang/jq"] },
+	];
+
+	it("finds the registry tools with a backend holding what was typed", () => {
+		expect(findRegistryMatches(registry, "npm:pr")).toEqual([
+			{ short: "prettier", backend: "npm:prettier" },
+		]);
+		expect(findRegistryMatches(registry, "GitHub:jqlang")).toEqual([
+			{ short: "jq", backend: "github:jqlang/jq" },
+		]);
+		expect(findRegistryMatches(registry, "npm:prettier@3")).toEqual([
+			{ short: "prettier", backend: "npm:prettier" },
+		]);
+	});
+
+	it("is empty without a backend", () => {
+		expect(findRegistryMatches(registry, "node@20")).toEqual([]);
+		expect(findRegistryMatches(registry, "cargo:ripgrep")).toEqual([]);
 	});
 });

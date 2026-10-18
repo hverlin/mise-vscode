@@ -45,3 +45,35 @@ export function parseToolSearchResults(stdout: string): ToolSearchResult[] {
 export function hasToolVersion(tool: string): boolean {
 	return /[^:@]@[^@]+$/.test(tool.trim());
 }
+
+/** `npm:prettier` for `npm:prettier@3` */
+export function withoutVersion(tool: string): string {
+	return tool.trim().replace(/([^:@])@[^@]*$/, "$1");
+}
+
+/**
+ * The tool typed in the picker, when it is not the name of a registry tool:
+ * a `backend:name`, or a tool with its version such as `node@20`
+ */
+export function getTypedTool(value: string): string | undefined {
+	const tool = value.trim();
+	return /^[^\s:@]+:\S+$/.test(tool) || hasToolVersion(tool) ? tool : undefined;
+}
+
+/**
+ * The registry tools a `backend:name` typed may be: one of their backends
+ * contains it, e.g. `prettier` (`npm:prettier`) for `npm:pr`
+ */
+export function findRegistryMatches(
+	registry: { short: string; backends: string[] }[],
+	typedTool: string,
+): { short: string; backend: string }[] {
+	const tool = withoutVersion(typedTool).toLowerCase();
+	if (!tool.includes(":")) {
+		return [];
+	}
+	return registry.flatMap((entry) => {
+		const backend = entry.backends.find((b) => b.toLowerCase().includes(tool));
+		return backend ? [{ short: entry.short, backend }] : [];
+	});
+}

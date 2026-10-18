@@ -45,7 +45,7 @@ import {
 import { expandToolNames } from "../utils/toolNameMatching";
 import { hasToolVersion } from "../utils/toolSearch";
 import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
-import { CUSTOM_TOOL, pickToolToUse } from "./toolPicker";
+import { pickToolToUse } from "./toolPicker";
 
 type TreeItem = ToolsSourceItem | ToolItem | MiseErrorItem;
 
@@ -441,25 +441,9 @@ export function registerToolsCommands(
 					return;
 				}
 
-				let selectedToolName: string | undefined;
-				if (selection === CUSTOM_TOOL) {
-					selectedToolName = await vscode.window.showInputBox({
-						placeHolder: "Enter the tool name to use (e.g. node@latest)",
-						validateInput: (input) => {
-							if (!input) {
-								return "Tool name is required";
-							}
-							if (!hasToolVersion(input)) {
-								return "Tool name must include a version (e.g. node@latest or node@20)";
-							}
-							return null;
-						},
-					});
-				} else if (hasToolVersion(selection)) {
-					// typed with its version, e.g. `npm:prettier@3`
-					selectedToolName = selection;
-				} else {
-					selectedToolName = selection;
+				let selectedToolName = selection;
+				// a tool typed with its version, e.g. `npm:prettier@3`, is used as is
+				if (!hasToolVersion(selection)) {
 					const availableVersions =
 						await miseService.listRemoteVersions(selectedToolName);
 					const selectedVersion = await vscode.window.showQuickPick(
@@ -473,10 +457,6 @@ export function registerToolsCommands(
 						return;
 					}
 					selectedToolName = `${selectedToolName}@${selectedVersion}`;
-				}
-
-				if (!selectedToolName) {
-					return;
 				}
 
 				const normalizedPath = isWindows
