@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import * as sinon from "sinon";
 import * as vscode from "vscode";
 import { MiseService } from "../../miseService";
+import { isMiseAtLeast } from "../test-utils";
 
 const execFileAsync = promisify(execFile);
 
@@ -63,13 +64,8 @@ suite("Paranoid Trust Test Suite", function () {
 	const isTrusted = () => isFileTrusted(configPath);
 
 	/** env files have trust of their own in paranoid mode from mise 2026.10.14 */
-	const supportsEnvFileTrust = async () => {
-		const { stdout } = await mise("--version");
-		const [year = 0, month = 0, patch = 0] = (
-			stdout.match(/(\d+)\.(\d+)\.(\d+)/)?.slice(1) ?? []
-		).map(Number);
-		return year * 1e6 + month * 1e3 + patch >= 2026 * 1e6 + 10 * 1e3 + 14;
-	};
+	const supportsEnvFileTrust = () =>
+		isMiseAtLeast(miseBinaryPath, [2026, 10, 14]);
 
 	/** mise lists only config files in `trust --show`: it reads the env instead */
 	const isEnvTrusted = async () => {

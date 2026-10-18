@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { MiseService } from "../../miseService";
+import { isMiseAtLeast } from "../test-utils";
 
 const execFileAsync = promisify(execFile);
 
@@ -26,7 +27,7 @@ suite("Paranoid Categories Test Suite", function () {
 	const mise = (...args: string[]) =>
 		execFileAsync(miseBinaryPath, args, { cwd: workspaceRoot });
 
-	suiteSetup(async () => {
+	suiteSetup(async function () {
 		workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
 		assert.ok(workspaceRoot, "Workspace root should be available");
 
@@ -34,6 +35,11 @@ suite("Paranoid Categories Test Suite", function () {
 		await miseService.initializeMisePath();
 		miseBinaryPath = miseService.getMiseBinaryPath() ?? "";
 		assert.ok(miseBinaryPath, "mise binary should be resolved");
+
+		// categories come with mise 2026.10.14
+		if (!(await isMiseAtLeast(miseBinaryPath, [2026, 10, 14]))) {
+			this.skip();
+		}
 
 		const { stdout } = await mise("settings", "get", "paranoid");
 		assert.equal(

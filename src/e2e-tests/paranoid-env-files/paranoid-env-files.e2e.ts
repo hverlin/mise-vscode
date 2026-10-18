@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import * as sinon from "sinon";
 import * as vscode from "vscode";
 import { MiseService } from "../../miseService";
+import { isMiseAtLeast } from "../test-utils";
 
 const execFileAsync = promisify(execFile);
 
@@ -67,7 +68,7 @@ suite("Paranoid Env Files Test Suite", function () {
 				vscode.ConfigurationTarget.Global,
 			);
 
-	suiteSetup(async () => {
+	suiteSetup(async function () {
 		workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
 		assert.ok(workspaceRoot, "Workspace root should be available");
 		envFile = path.join(workspaceRoot, ".env");
@@ -77,6 +78,12 @@ suite("Paranoid Env Files Test Suite", function () {
 		await miseService.initializeMisePath();
 		miseBinaryPath = miseService.getMiseBinaryPath() ?? "";
 		assert.ok(miseBinaryPath, "mise binary should be resolved");
+
+		// categories, and env files with trust of their own, come with mise
+		// 2026.10.14
+		if (!(await isMiseAtLeast(miseBinaryPath, [2026, 10, 14]))) {
+			this.skip();
+		}
 
 		const { stdout } = await mise("settings", "get", "paranoid");
 		assert.equal(
