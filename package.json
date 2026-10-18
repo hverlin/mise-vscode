@@ -463,7 +463,7 @@
           "type": "boolean",
           "title": "Automatically trust mise config files",
           "default": true,
-          "markdownDescription": "Automatically trust mise config files when opening them in a trusted workspace.\n\nIn mise [paranoid mode](https://mise.jdx.dev/paranoid.html), with its `config` or `env_files` category, config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `#mise.trustOwnEditsInParanoidMode#`."
+          "markdownDescription": "Automatically trust mise config files when opening them in a trusted workspace.\n\nIn mise [paranoid mode](https://mise.jdx.dev/paranoid.html), with its `config` category, config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `#mise.trustOwnEditsInParanoidMode#`."
         },
         "mise.trustOwnEditsInParanoidMode": {
           "order": 15,

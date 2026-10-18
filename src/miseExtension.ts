@@ -481,6 +481,22 @@ export class MiseExtension {
 					e.waitUntil(this.miseService.expectOwnEdit(e.document.uri.fsPath));
 				}
 			}),
+			// whether mise trusts an env file is checked when its edit starts:
+			// asking mise when it is saved can take longer than VS Code waits
+			vscode.workspace.onDidChangeTextDocument((e) => {
+				if (!this.miseService.isEnvFile(e.document.uri.fsPath)) {
+					return;
+				}
+				if (e.document.isDirty) {
+					this.miseService.checkEnvFileTrust(e.document.uri.fsPath);
+				} else {
+					// saved, or reverted
+					this.miseService.endEnvFileEdit(e.document.uri.fsPath);
+				}
+			}),
+			vscode.workspace.onDidCloseTextDocument((document) => {
+				this.miseService.endEnvFileEdit(document.uri.fsPath);
+			}),
 		);
 
 		context.subscriptions.push(
@@ -748,7 +764,11 @@ export class MiseExtension {
 				}
 			}),
 			vscode.workspace.onDidSaveTextDocument(async (document) => {
-				if (isToolsDocument(document)) {
+				// the file watcher only watches the env files mise loaded last time
+				if (
+					isToolsDocument(document) ||
+					this.miseService.isEnvFile(document.uri.fsPath)
+				) {
 					// before the reload, which reads the file with mise
 					await this.miseService.trustOwnEdit(document.uri.fsPath);
 					vscode.commands.executeCommand(MISE_RELOAD);

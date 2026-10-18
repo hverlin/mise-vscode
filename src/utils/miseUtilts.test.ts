@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	findUntrustedConfigs,
-	findUntrustedEnvFile,
+	findUntrustedEnvFiles,
 	getMiseErrorReason,
 	getWebsiteForTool,
 	isFileTaskPath,
@@ -428,7 +428,7 @@ describe("findUntrustedConfigs", () => {
 			refused: "~/project/.env",
 			skipped: [],
 		});
-		expect(findUntrustedEnvFile(untrustedEnvFile)).toBe("~/project/.env");
+		expect(findUntrustedEnvFiles(untrustedEnvFile)).toEqual(["~/project/.env"]);
 		expect(parseMiseError(new Error(untrustedEnvFile))).toEqual({
 			kind: "untrusted",
 			file: "~/project/.env",
@@ -438,10 +438,10 @@ describe("findUntrustedConfigs", () => {
 
 	it("tells an untrusted env file from an untrusted config file", () => {
 		expect(
-			findUntrustedEnvFile(
+			findUntrustedEnvFiles(
 				"mise ERROR Config files in ~/project/mise.toml are not trusted.",
 			),
-		).toBeUndefined();
+		).toEqual([]);
 	});
 
 	it("does not take a warning for the failure of a command", () => {
@@ -550,5 +550,7 @@ describe("parseParanoidSetting", () => {
 	it("turns every category on for a value it does not know", () => {
 		expect(parseParanoidSetting("").size).toBe(4);
 		expect(parseParanoidSetting("on").size).toBe(4);
+		// a category of a later mise version
+		expect(parseParanoidSetting('["plugins", "network"]').size).toBe(4);
 	});
 });

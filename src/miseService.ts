@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import {
 	readdir,
@@ -56,7 +57,7 @@ import { expandConfig } from "./utils/miseDoctorParser";
 import {
 	compareVersions,
 	findUntrustedConfigs,
-	findUntrustedEnvFile,
+	findUntrustedEnvFiles,
 	flattenJsonSchema,
 	idiomaticFiles,
 	idiomaticFileToTool,
@@ -111,6 +112,17 @@ const IGNORED_CONFIG_DIR = path.join(STATE_DIR, "ignored-configs");
 
 /** How long a file announced as an own edit waits for the write, in ms */
 const OWN_EDIT_TTL_MS = 10_000;
+
+/** sha256 of a file, undefined when it cannot be read */
+async function digestFile(filePath: string): Promise<string | undefined> {
+	try {
+		return createHash("sha256")
+			.update(await readFile(filePath))
+			.digest("hex");
+	} catch {
+		return undefined;
+	}
+}
 
 /** globalState key holding the workspace mise binaries the user approved */
 export const APPROVED_WORKSPACE_BINARIES_KEY = "mise.approvedWorkspaceBinaries";
@@ -652,6 +664,76 @@ export class MiseService {
 	}
 
 	/**
+	 * The digest of the content of each env file mise accepted, read around a
+	 * successful `mise env` (see {@link checkEnvFileTrust}). Before a save, the
+	 * file is compared with it instead of asking mise again, which can take
+	 * longer than VS Code waits before writing.
+	 */
+	private readonly trustedEnvFileDigests = new Map<string, string>();
+
+	/** The checks of {@link checkEnvFileTrust}, once per edit of a file */
+	private readonly envFileTrustChecks = new Map<string, Promise<void>>();
+
+	/**
+	 * When the user starts editing an env file: whether mise accepts the file
+	 * as it is on disk, for {@link expectOwnEdit}. In paranoid mode, mise only
+	 * loads an env file it trusts.
+	 */
+	checkEnvFileTrust(filePath: string): void {
+		const key = expandPath(filePath);
+		if (
+			!this.isEnvFile(key) ||
+			this.envFileTrustChecks.has(key) ||
+			this.trustedEnvFileDigests.has(key)
+		) {
+			return;
+		}
+
+		const check = async () => {
+			if (!(await this.shouldTrustOwnEdits("env_files"))) {
+				return;
+			}
+			const before = await digestFile(key);
+			const trusted = await this.isEnvFileTrusted(key);
+			// the file could have changed while mise read it
+			const after = await digestFile(key);
+			if (trusted && before && before === after) {
+				this.trustedEnvFileDigests.set(key, before);
+			}
+		};
+		this.envFileTrustChecks.set(
+			key,
+			check().catch((error) => {
+				logger.info(`Could not check the trust of ${key}:`, error as Error);
+			}),
+		);
+	}
+
+	/** An env file saved or reverted: its next edit checks its trust again */
+	endEnvFileEdit(filePath: string) {
+		this.envFileTrustChecks.delete(expandPath(filePath));
+	}
+
+	/**
+	 * Whether the file on disk is the one the user saved in VS Code: an env
+	 * file is trusted again only then, not after a write from outside that
+	 * happened around the save
+	 */
+	private async isSavedInEditor(filePath: string): Promise<boolean> {
+		const document = vscode.workspace.textDocuments.find(
+			(candidate) => expandPath(candidate.uri.fsPath) === filePath,
+		);
+		if (!document || document.isDirty) {
+			return false;
+		}
+		try {
+			return (await readFile(filePath, "utf8")) === document.getText();
+		} catch {
+			return false;
+		}
+	}
+
+	/**
 	 * Config files that did not parse the last time they were saved. mise does
 	 * not always name the file in its error, so this is recorded where the file
 	 * is parsed rather than read out of the message.
@@ -747,13 +829,20 @@ export class MiseService {
 	async expectOwnEdit(filePath: string): Promise<void> {
 		const key = expandPath(filePath);
 		if (this.isEnvFile(key)) {
+			this.endEnvFileEdit(key);
+			// the write changes the content
+			const digest = this.trustedEnvFileDigests.get(key);
+			this.trustedEnvFileDigests.delete(key);
 			if (
+				digest &&
 				(await this.shouldTrustOwnEdits("env_files")) &&
-				(await this.isEnvFileTrusted(key))
+				digest === (await digestFile(key))
 			) {
 				this.ownEdits.set(key, Date.now() + OWN_EDIT_TTL_MS);
+				return;
 			}
-			return;
+			// a config file whose name mise does not use by default, e.g. the one of
+			// MISE_GLOBAL_CONFIG_FILE, is also reported as a source of the env
 		}
 
 		if (!(await this.shouldTrustOwnEdits("config"))) {
@@ -769,8 +858,7 @@ export class MiseService {
 	/**
 	 * Whether mise loads this env file now, so trusts it. mise lists only config
 	 * files in `mise trust --show`: the env is read instead, which fails on the
-	 * first env file that is not trusted. Not cached, the file is about to be
-	 * written.
+	 * first env file that is not trusted. Not cached.
 	 */
 	private async isEnvFileTrusted(filePath: string): Promise<boolean> {
 		try {
@@ -843,7 +931,14 @@ export class MiseService {
 			return Promise.resolve();
 		}
 
-		const renewal = this.miseTrustFile(key).finally(() => {
+		const renew = async () => {
+			if (this.isEnvFile(key) && !(await this.isSavedInEditor(key))) {
+				logger.info(`Not trusting ${key}: it changed outside VS Code`);
+				return;
+			}
+			await this.miseTrustFile(key);
+		};
+		const renewal = renew().finally(() => {
 			this.ownEditTrusts.delete(key);
 		});
 		this.ownEditTrusts.set(key, renewal);
@@ -1109,8 +1204,7 @@ export class MiseService {
 	 * views go on without them.
 	 */
 	private noteUntrustedConfigs(output: string) {
-		const envFile = findUntrustedEnvFile(output);
-		if (envFile) {
+		for (const envFile of findUntrustedEnvFiles(output)) {
 			this.envFiles.add(expandPath(envFile));
 		}
 		const { refused, skipped } = findUntrustedConfigs(output);
@@ -1210,7 +1304,7 @@ export class MiseService {
 						: []),
 					...(files.some((file) => this.isEnvFile(file))
 						? [
-								"Trusting an env file lets mise load its variables, or run it for a script. In paranoid mode, an edit untrusts it again.",
+								"Trusting an env file lets mise load its variables, or run it when it is a script. In paranoid mode, an edit untrusts it again.",
 							]
 						: []),
 				].join("\n"),
@@ -1220,7 +1314,8 @@ export class MiseService {
 		);
 
 		if (selection === trustAction) {
-			await this.trustUntrustedConfigs();
+			// the files shown: others may have been refused while it was open
+			await this.trustUntrustedConfigs(files);
 		} else if (selection === openAction) {
 			for (const file of files) {
 				await vscode.window.showTextDocument(vscode.Uri.file(file), {
@@ -1254,9 +1349,9 @@ export class MiseService {
 		await vscode.commands.executeCommand(MISE_RELOAD);
 	}
 
-	private async trustUntrustedConfigs() {
+	private async trustUntrustedConfigs(files: string[]) {
 		const trusted: string[] = [];
-		for (const file of this._untrustedConfigFiles) {
+		for (const file of files) {
 			try {
 				await this.execMiseCommand(["trust", file], { setMiseEnv: false });
 				trusted.push(file);
@@ -1278,7 +1373,7 @@ export class MiseService {
 		return (
 			!vscode.workspace.isTrusted &&
 			shouldAutomaticallyTrustMiseConfigFiles() &&
-			!(await this.isParanoid())
+			(await this.trustsConfigsAutomatically())
 		);
 	}
 
@@ -1294,7 +1389,7 @@ export class MiseService {
 			return;
 		}
 
-		if (await this.isParanoid()) {
+		if (!(await this.trustsConfigsAutomatically())) {
 			logger.info(
 				"mise runs in paranoid mode: config files are not trusted automatically",
 			);
@@ -1309,7 +1404,20 @@ export class MiseService {
 			return;
 		}
 
-		await this.cache.execCmd({ args: ["trust"], setMiseEnv: false });
+		// with no path, `mise trust` also trusts the env files the config loads,
+		// which paranoid mode has the user approve. With a directory, it only
+		// trusts the config files.
+		const folder = this.getCurrentWorkspaceFolderPath();
+		const envFilesNeedTrust = (await this.getParanoidCategories())?.has(
+			"env_files",
+		);
+		if (envFilesNeedTrust && !folder) {
+			return;
+		}
+		await this.cache.execCmd({
+			args: ["trust", ...(envFilesNeedTrust && folder ? [folder] : [])],
+			setMiseEnv: false,
+		});
 	}
 
 	/**
@@ -1350,16 +1458,13 @@ export class MiseService {
 	}
 
 	/**
-	 * Whether trusting without asking would approve what paranoid mode makes
-	 * the user approve: `mise trust` with no path trusts the config files, and
-	 * the env files they load. Assumed when the setting cannot be read:
-	 * trusting is the unsafe side.
+	 * Whether config files may be trusted without asking: not when paranoid
+	 * mode binds their trust to their content (`config`), nor when mise cannot
+	 * tell, trusting being the unsafe side
 	 */
-	private async isParanoid(): Promise<boolean> {
+	private async trustsConfigsAutomatically(): Promise<boolean> {
 		const categories = await this.getParanoidCategories();
-		return (
-			!categories || categories.has("config") || categories.has("env_files")
-		);
+		return categories !== undefined && !categories.has("config");
 	}
 
 	private async buildTasksLsArgs({ includeHidden = false } = {}) {

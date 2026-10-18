@@ -56,6 +56,12 @@ const paranoidCategoriesStateDir = path.join(
 	"mise-vscode-e2e-paranoid-categories-state",
 );
 fs.rmSync(paranoidCategoriesStateDir, { recursive: true, force: true });
+// and for the one with only env files bound to their content
+const paranoidEnvFilesStateDir = path.join(
+	os.tmpdir(),
+	"mise-vscode-e2e-paranoid-env-files-state",
+);
+fs.rmSync(paranoidEnvFilesStateDir, { recursive: true, force: true });
 
 const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
@@ -257,6 +263,27 @@ module.exports = defineConfig([
 			MISE_TRUSTED_CONFIG_PATHS: "",
 			MISE_GLOBAL_CONFIG_FILE: path.join(
 				paranoidCategoriesStateDir,
+				"config.toml",
+			),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
+		label: "paranoid-env-files",
+		files: "src/e2e-tests/paranoid-env-files/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "paranoid-env-files-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			// the mode mise suggests to approve dotenv files only (2026.10.14+)
+			MISE_PARANOID: "env_files",
+			MISE_STATE_DIR: paranoidEnvFilesStateDir,
+			MISE_TRUSTED_CONFIG_PATHS: "",
+			MISE_GLOBAL_CONFIG_FILE: path.join(
+				paranoidEnvFilesStateDir,
 				"config.toml",
 			),
 		},

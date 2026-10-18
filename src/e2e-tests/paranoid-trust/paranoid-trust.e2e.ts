@@ -62,6 +62,15 @@ suite("Paranoid Trust Test Suite", function () {
 
 	const isTrusted = () => isFileTrusted(configPath);
 
+	/** env files have trust of their own in paranoid mode from mise 2026.10.14 */
+	const supportsEnvFileTrust = async () => {
+		const { stdout } = await mise("--version");
+		const [year = 0, month = 0, patch = 0] = (
+			stdout.match(/(\d+)\.(\d+)\.(\d+)/)?.slice(1) ?? []
+		).map(Number);
+		return year * 1e6 + month * 1e3 + patch >= 2026 * 1e6 + 10 * 1e3 + 14;
+	};
+
 	/** mise lists only config files in `trust --show`: it reads the env instead */
 	const isEnvTrusted = async () => {
 		try {
@@ -127,8 +136,15 @@ suite("Paranoid Trust Test Suite", function () {
 			({ title }) => title === NOT_TRUSTED_LENS,
 		);
 
-	/** an edit typed and saved in vscode */
-	const editAndSaveInEditor = async (line: string, filePath = configPath) => {
+	/**
+	 * An edit typed and saved in vscode. For an env file, typing gives the
+	 * extension the time to check its trust, which starts with the edit.
+	 */
+	const editAndSaveInEditor = async (
+		line: string,
+		filePath = configPath,
+		{ typingMs = 0 } = {},
+	) => {
 		const document = await vscode.workspace.openTextDocument(filePath);
 		await waitFor(
 			async () => document.getText() === (await readFile(filePath, "utf8")),
@@ -142,6 +158,7 @@ suite("Paranoid Trust Test Suite", function () {
 			line,
 		);
 		assert.ok(await vscode.workspace.applyEdit(edit), "the edit is applied");
+		await sleep(typingMs);
 		// an api save is reported as a manual save, like ctrl+s
 		assert.ok(await document.save(), "the document is saved");
 	};
@@ -490,21 +507,30 @@ suite("Paranoid Trust Test Suite", function () {
 		);
 	});
 
-	test("reviews and trusts an env file that is not trusted", async () => {
+	test("reviews and trusts an env file that is not trusted", async function () {
+		if (!(await supportsEnvFileTrust())) {
+			this.skip();
+		}
 		const envFile = path.join(workspaceRoot, ".env");
 		await writeFile(envFile, "ENV_FILE_VAR=one\n");
 		try {
 			await writeFile(configPath, `${originalConfig}_.file = ".env"\n`);
 			await mise("trust", configPath);
 			assert.equal(await isEnvTrusted(), false, "the env file needs trust");
+			const reviewed: string[] = [];
 			(
 				vscode.window.showInformationMessage as unknown as sinon.SinonStub
 			).callsFake(async (message: string, ...items: unknown[]) => {
 				shownMessages.push({ level: "showInformationMessage", message });
 				const options = items[0];
-				return typeof options === "object" && options && "modal" in options
-					? items[1]
-					: undefined;
+				if (typeof options === "object" && options && "modal" in options) {
+					// mise.toml may still be listed with it, before it is trusted
+					reviewed.push(
+						`${message}\n${(options as { detail?: string }).detail}`,
+					);
+					return items[1];
+				}
+				return undefined;
 			});
 
 			await waitFor(async () => {
@@ -512,10 +538,8 @@ suite("Paranoid Trust Test Suite", function () {
 				return isEnvTrusted();
 			}, "the env file should be trusted from the review");
 			assert.ok(
-				shownMessages.some(({ message }) =>
-					message.includes(".env until you trust it"),
-				),
-				`review of the env file expected, got ${JSON.stringify(shownMessages)}`,
+				reviewed.some((review) => review.includes(".env")),
+				`review of the env file expected, got ${JSON.stringify(reviewed)}`,
 			);
 		} finally {
 			await rm(envFile, { force: true });
@@ -523,13 +547,18 @@ suite("Paranoid Trust Test Suite", function () {
 		}
 	});
 
-	test("trusts an env file saved in vscode with trustOwnEditsInParanoidMode", async () => {
+	test("trusts an env file saved in vscode with trustOwnEditsInParanoidMode", async function () {
+		if (!(await supportsEnvFileTrust())) {
+			this.skip();
+		}
 		const envFile = path.join(workspaceRoot, ".env");
 		try {
 			await setTrustOwnEdits(true);
 			await setUpEnvFile(envFile);
 
-			await editAndSaveInEditor("ENV_FILE_EDIT=two\n", envFile);
+			await editAndSaveInEditor("ENV_FILE_EDIT=two\n", envFile, {
+				typingMs: 1_500,
+			});
 
 			await waitFor(
 				async () =>
@@ -544,7 +573,10 @@ suite("Paranoid Trust Test Suite", function () {
 		}
 	});
 
-	test("does not trust an env file changed outside vscode with trustOwnEditsInParanoidMode", async () => {
+	test("does not trust an env file changed outside vscode with trustOwnEditsInParanoidMode", async function () {
+		if (!(await supportsEnvFileTrust())) {
+			this.skip();
+		}
 		const envFile = path.join(workspaceRoot, ".env");
 		try {
 			await setTrustOwnEdits(true);
@@ -552,7 +584,9 @@ suite("Paranoid Trust Test Suite", function () {
 
 			// e.g. a `git pull` the user has not reviewed
 			await writeFile(envFile, "ENV_FILE_VAR=pulled\n");
-			await editAndSaveInEditor("ENV_FILE_EDIT=after-pull\n", envFile);
+			await editAndSaveInEditor("ENV_FILE_EDIT=after-pull\n", envFile, {
+				typingMs: 1_500,
+			});
 
 			const deadline = Date.now() + 5_000;
 			while (Date.now() < deadline) {

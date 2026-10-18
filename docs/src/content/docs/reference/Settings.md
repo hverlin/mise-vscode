@@ -357,7 +357,7 @@ They are also hidden by `editor.snippetSuggestions` set to `none` and by `editor
 
 Automatically trust mise config files when opening them in a trusted workspace.
 
-In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), with its `config` or `env_files` category, config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `mise.trustOwnEditsInParanoidMode`.
+In mise [paranoid mode](https://mise.jdx.dev/paranoid.html), with its `config` category, config files are not trusted automatically, since mise requires every change to be trusted again. The status bar and a code lens let you trust them. See `mise.trustOwnEditsInParanoidMode`.
 
 ---
 

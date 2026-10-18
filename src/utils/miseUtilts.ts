@@ -427,9 +427,12 @@ export function findUntrustedConfigs(output: string): {
 	return { refused, skipped };
 }
 
-/** The env file that made a command fail because it is not trusted */
-export function findUntrustedEnvFile(output: string): string | undefined {
-	return output.match(UNTRUSTED_ENV_FILE)?.[1];
+/** The env files mise refused because they are not trusted */
+export function findUntrustedEnvFiles(output: string): string[] {
+	return output
+		.split("\n")
+		.map((line) => line.match(UNTRUSTED_ENV_FILE)?.[1])
+		.filter((file): file is string => Boolean(file));
 }
 
 /** the categories of paranoid mode (mise 2026.10.14+) */
@@ -444,7 +447,8 @@ export type ParanoidCategory = (typeof PARANOID_CATEGORIES)[number];
 /**
  * The categories `mise settings get paranoid` turns on: `true` for all of
  * them, `false` for none, or a list such as `["config", "env_files"]`.
- * Anything else counts as all of them, the safe side.
+ * Anything else counts as all of them, the safe side, a list with a category
+ * of a later mise version included.
  */
 export function parseParanoidSetting(value: string): Set<ParanoidCategory> {
 	const setting = value.trim();
@@ -453,10 +457,13 @@ export function parseParanoidSetting(value: string): Set<ParanoidCategory> {
 	}
 	try {
 		const categories: unknown = JSON.parse(setting);
-		if (Array.isArray(categories)) {
-			return new Set(
-				PARANOID_CATEGORIES.filter((category) => categories.includes(category)),
-			);
+		if (
+			Array.isArray(categories) &&
+			categories.every((category) =>
+				(PARANOID_CATEGORIES as readonly unknown[]).includes(category),
+			)
+		) {
+			return new Set(categories as ParanoidCategory[]);
 		}
 	} catch {
 		// not a list
