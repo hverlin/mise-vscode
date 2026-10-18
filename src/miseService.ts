@@ -166,6 +166,9 @@ const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 // `mise doctor project` and `[doctor.checks]` were added in 2026.9.6
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
 const MIN_MISE_VERSION_FOR_CONFIG_EXPLAIN = [2026, 10, 14] as const;
+const MIN_MISE_VERSION_FOR_REGISTRY_JSON = [2025, 12, 7] as const;
+/** the registry changes with mise only: its descriptions are kept this long */
+const REGISTRY_DESCRIPTIONS_TTL_MS = 10 * 60_000;
 /** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
 const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
 /** `mise lock --dry-run --json`, `--bump`, `--upgrade`, and format 3 */
@@ -1747,6 +1750,12 @@ export class MiseService {
 		{ at: number; error: unknown }
 	>();
 
+	/** the descriptions of `mise registry --json`, see miseRegistryDescriptions */
+	private registryDescriptions?: {
+		at: number;
+		descriptions: Promise<Map<string, string>>;
+	};
+
 	/** the last `mise outdated`, which a hover uses instead of running it */
 	private recentOutdatedTools?: { tools: MiseToolUpdate[]; at: number };
 
@@ -2673,9 +2682,23 @@ export class MiseService {
 			return new Map();
 		}
 
+		// kept, a failure included: completions ask for it item by item
+		const cached = this.registryDescriptions;
+		if (cached && Date.now() - cached.at < REGISTRY_DESCRIPTIONS_TTL_MS) {
+			return cached.descriptions;
+		}
+		const descriptions = this.readRegistryDescriptions();
+		this.registryDescriptions = { at: Date.now(), descriptions };
+		return descriptions;
+	}
+
+	private async readRegistryDescriptions(): Promise<Map<string, string>> {
+		if (!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_REGISTRY_JSON))) {
+			return new Map();
+		}
+
 		try {
-			const { stdout } = await this.longTTLCache.execCmd({
-				args: ["registry", "--json"],
+			const { stdout } = await this.execMiseCommand(["registry", "--json"], {
 				setMiseEnv: false,
 			});
 			const entries = JSON.parse(stdout) as {

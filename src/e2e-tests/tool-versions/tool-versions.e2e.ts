@@ -134,7 +134,7 @@ suite("Tool Versions File Test Suite", function () {
 	});
 
 	test("describes the registry tools in the completions", async () => {
-		// a copy: the fixture is left as it is
+		// a file of its own: the fixture is left as it is
 		const scratchDir = await mkdtemp(path.join(tmpdir(), "mise-vscode-e2e-"));
 		const scratchPath = path.join(scratchDir, ".tool-versions");
 		await writeFile(scratchPath, "core:");
@@ -146,7 +146,7 @@ suite("Tool Versions File Test Suite", function () {
 					scratch.uri,
 					new vscode.Position(0, "core:".length),
 					undefined,
-					// resolve them all, as the details of the item the user looks at
+					// resolve every item, as VS Code does for the one the user looks at
 					200,
 				);
 
