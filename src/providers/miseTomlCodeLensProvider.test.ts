@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import os, { tmpdir } from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
@@ -341,20 +341,49 @@ describe("lockfile lenses", () => {
 
 	it("shows nothing when lockfiles are off, outside the workspace, or on an old mise", async () => {
 		const document = createDocument(lockfile, "[[tools.node]]\n");
+		const configFiles = [path.join(project, "mise.toml")];
 
 		inWorkspace();
 		const off = createProvider({
-			configFiles: [],
+			configFiles,
 			lockfile: { setting: false, changes: [] },
 		});
 		expect(await getLenses(off, document)).toEqual([]);
 
-		const old = createProvider({ configFiles: [] });
+		const old = createProvider({ configFiles });
 		expect(await getLenses(old, document)).toEqual([]);
 
 		workspace.getWorkspaceFolder = originalGetWorkspaceFolder;
-		const outside = createProvider({ configFiles: [], lockfile: {} });
+		const outside = createProvider({ configFiles, lockfile: {} });
 		expect(await getLenses(outside, document)).toEqual([]);
+	});
+
+	it("shows nothing on a lockfile no config file loaded writes to", async () => {
+		inWorkspace();
+		// mise reports on the lockfile of the config root, not on this one
+		const stray = createProvider({
+			configFiles: [path.join(project, "mise.toml")],
+			lockfile: { changes: [] },
+		});
+		expect(
+			await getLenses(
+				stray,
+				createDocument(path.join(project, "sub", "mise.lock"), ""),
+			),
+		).toEqual([]);
+
+		// `mise lock --global` updates the lockfile of the global config
+		const globalConfig = path.join(os.homedir(), ".config", "mise");
+		const global = createProvider({
+			configFiles: [path.join(globalConfig, "config.toml")],
+			lockfile: { changes: [] },
+		});
+		expect(
+			await getLenses(
+				global,
+				createDocument(path.join(globalConfig, "mise.lock"), ""),
+			),
+		).toEqual([]);
 	});
 
 	it("adds the bump lens once the newer versions are looked up", async () => {
@@ -364,7 +393,7 @@ describe("lockfile lenses", () => {
 			finishBump = resolve;
 		});
 		const provider = createProvider({
-			configFiles: [],
+			configFiles: [path.join(project, "mise.toml")],
 			lockfile: { changes: [], bumps: () => bump },
 		});
 		let refreshed = false;
@@ -438,6 +467,36 @@ describe("lockfile lenses", () => {
 				title: "$(warning) mise.lock out of date",
 				arguments: [{ configRoot: project, flags: [] }],
 			});
+		});
+
+		it("leaves out the changes of the lockfile of an environment", async () => {
+			inWorkspace();
+			await writeFile(lockfile, "lockfile_version = 3\n");
+			const config = path.join(project, "mise.toml");
+			// MISE_ENV=test, and mise.test.toml also has node
+			const provider = createProvider({
+				configFiles: [config, path.join(project, "mise.test.toml")],
+				lockfile: {
+					setting: true,
+					changes: [
+						change(
+							"node",
+							[],
+							["24.21.0"],
+							path.join(project, "mise.test.lock"),
+						),
+					],
+				},
+			});
+
+			const lenses = await getLenses(
+				provider,
+				createDocument(config, configText),
+			);
+			expect(lenses.map((lens) => lens.title)).toEqual([
+				"$(add) Add tool",
+				"$(list-unordered) List tools",
+			]);
 		});
 	});
 });

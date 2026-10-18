@@ -1,4 +1,5 @@
 import * as assert from "node:assert";
+import { existsSync } from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
@@ -18,6 +19,11 @@ suite("Lockfile Test Suite", function () {
 	suiteSetup(async () => {
 		workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
 		assert.ok(workspaceRoot, "Workspace root should be available");
+		// git ignores it, so the check of the fixtures would not tell
+		assert.ok(
+			!existsSync(path.join(workspaceRoot, "mise.local.lock")),
+			"Remove mise.local.lock from the lockfile-workspace fixture, the suite expects none",
+		);
 		await vscode.extensions.getExtension("hverlin.mise-vscode")?.activate();
 	});
 

@@ -3,9 +3,9 @@ import path from "node:path";
 import {
 	countTools,
 	formatLockfileChange,
-	getChangesOfConfig,
+	getBumps,
 	getChangesOfLockfile,
-	getConfigLockfileKind,
+	getExpectedLockfile,
 	getLockfileFormat,
 	getLockfileKind,
 	type LockfileChange,
@@ -46,36 +46,44 @@ describe("getLockfileKind", () => {
 	});
 });
 
-describe("getConfigLockfileKind", () => {
-	it("tells the local config files from the others", () => {
-		for (const config of [
-			"mise.toml",
-			".mise.toml",
-			path.join(".config", "mise", "config.toml"),
-			path.join("mise", "conf.d", "tools.toml"),
-		]) {
-			expect(getConfigLockfileKind(path.join(project, config))).toEqual({
-				local: false,
-			});
-		}
-		for (const config of [
-			"mise.local.toml",
-			".mise.local.toml",
-			path.join(".config", "mise", "config.local.toml"),
-		]) {
-			expect(getConfigLockfileKind(path.join(project, config))).toEqual({
-				local: true,
-			});
+describe("getExpectedLockfile", () => {
+	it("is mise.lock next to the config, mise.local.lock for a local one", () => {
+		const cases: [string, string][] = [
+			["mise.toml", "mise.lock"],
+			[".mise.toml", "mise.lock"],
+			["mise.local.toml", "mise.local.lock"],
+			[".mise.local.toml", "mise.local.lock"],
+			[path.join(".config", "mise.toml"), path.join(".config", "mise.lock")],
+			[
+				path.join(".config", "mise", "config.toml"),
+				path.join(".config", "mise", "mise.lock"),
+			],
+			[
+				path.join(".config", "mise", "config.local.toml"),
+				path.join(".config", "mise", "mise.local.lock"),
+			],
+			// the fragments share the lockfile of their parent directory
+			[
+				path.join(".config", "mise", "conf.d", "tools.toml"),
+				path.join(".config", "mise", "mise.lock"),
+			],
+		];
+		for (const [configFile, lockfileFile] of cases) {
+			expect(getExpectedLockfile(path.join(project, configFile))).toBe(
+				path.join(project, lockfileFile),
+			);
 		}
 	});
 
-	it("leaves out the config files of an environment", () => {
-		expect(
-			getConfigLockfileKind(path.join(project, "mise.test.toml")),
-		).toBeUndefined();
-		expect(
-			getConfigLockfileKind(path.join(project, "mise.test.local.toml")),
-		).toBeUndefined();
+	it("is undefined for the config of an environment and other files", () => {
+		for (const file of [
+			"mise.test.toml",
+			"mise.test.local.toml",
+			".tool-versions",
+			"tasks.toml",
+		]) {
+			expect(getExpectedLockfile(path.join(project, file))).toBeUndefined();
+		}
 	});
 });
 
@@ -105,29 +113,22 @@ describe("getChangesOfLockfile", () => {
 	});
 });
 
-describe("getChangesOfConfig", () => {
-	const changes = [
-		change("node", ["24.21.0"], ["22.22.0"]),
-		change("aqua:jqlang/jq", [], ["1.7.1"]),
-		change("yq", [], ["4.52.4"], localLockfile),
-	];
-
-	it("finds the lockfile of the tools of a config and their changes", () => {
-		expect(getChangesOfConfig(changes, ["node", "python"], false)).toEqual({
-			lockfile,
-			changes: changes.slice(0, 1),
-		});
-		expect(getChangesOfConfig(changes, ["yq"], true)).toEqual({
-			lockfile: localLockfile,
-			changes: changes.slice(2, 3),
-		});
-	});
-
-	it("is undefined when the lockfile has every tool of the config", () => {
-		expect(getChangesOfConfig(changes, ["python"], false)).toBeUndefined();
-		// yq is in mise.local.toml, not in mise.toml
-		expect(getChangesOfConfig(changes, ["yq"], false)).toBeUndefined();
-		expect(getChangesOfConfig([], ["node"], false)).toBeUndefined();
+describe("getBumps", () => {
+	it("keeps the newer versions of the tools locked already", () => {
+		const changes = [
+			change("node", ["24.21.0"], ["22.22.0"]),
+			change("yq", [], ["4.52.4"]),
+		];
+		const bumps = [
+			change("jq", ["1.7.1"], ["1.8.0"]),
+			// the changes of any `mise lock`, repeated by the bump
+			change("node", ["24.21.0"], ["22.22.0"]),
+			change("yq", [], ["4.52.4"]),
+			change("fd", ["10.2.0"], []),
+			// nothing newer
+			change("bun", ["1.4.2"], ["1.4.2"]),
+		];
+		expect(getBumps(bumps, changes)).toEqual(bumps.slice(0, 1));
 	});
 });
 

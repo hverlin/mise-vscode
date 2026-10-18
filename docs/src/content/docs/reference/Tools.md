@@ -64,7 +64,8 @@ versions that the tools of `mise.toml` resolved to. Code lenses on top of
 
 - whether it has every tool of the config: `In sync`, or
   `2 tools out of sync · Update`, which runs `mise lock`. The tooltip lists the
-  changes.
+  changes. `mise lock` also updates `mise.local.lock`, for the tools of
+  `mise.local.toml`.
 - `Bump 3 tools` when the requests allow newer versions (e.g. `node = "24"`):
   runs `mise lock --bump`, which updates the lockfile without installing
   anything. Finding them looks up the versions online.
@@ -72,18 +73,18 @@ versions that the tools of `mise.toml` resolved to. Code lenses on top of
   `mise lock --upgrade`. Everyone who reads the lockfile, CI included, then
   needs mise 2026.9.16 or newer.
 
-Next to `[tools]` in `mise.toml`:
+Next to `[tools]` in a config file (`mise.toml`, `mise.local.toml`, ...):
 
-- `mise.lock out of date` when the lockfile does not match the tools of the
-  file, e.g. after adding one by hand.
+- `mise.lock out of date` when its lockfile does not match the config, e.g.
+  after adding a tool by hand.
 - `Create mise.lock` when there is no lockfile yet and
   [`lockfile = true`](https://mise.jdx.dev/configuration/settings.html#lockfile).
-  With the setting unset, mise does not create lockfiles, and the extension does
-  not suggest it either.
+  With the setting unset, mise does not create lockfiles automatically, and the
+  extension does not suggest it either.
 
 Nothing is shown with `lockfile = false`. Requires mise 2026.9.16+. The
-lockfiles of an environment (`mise.test.lock`) and the global one are not
-covered.
+lockfiles of an environment (`mise.test.lock`), of a monorepo subproject and
+the global one are not covered.
 
 ## Tools list
 

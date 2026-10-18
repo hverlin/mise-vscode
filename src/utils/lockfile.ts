@@ -36,22 +36,22 @@ export function getLockfileKind(
 }
 
 /**
- * The lockfile of the tools of a config file, by its name: `mise.local.toml`
- * writes to `mise.local.lock`. Undefined for the config of an environment,
- * such as `mise.test.toml`.
+ * The lockfile the tools of a config file go to: `mise.lock` next to it, or
+ * `mise.local.lock` for a local config. The fragments of a `conf.d` directory
+ * share the one of its parent directory. Undefined for the config of an
+ * environment, such as `mise.test.toml`, and for other files.
  */
-export function getConfigLockfileKind(
-	configPath: string,
-): { local: boolean } | undefined {
+export function getExpectedLockfile(configPath: string): string | undefined {
 	const name = path.basename(configPath);
-	if (/^\.?mise\.local\.toml$|^config\.local\.toml$/.test(name)) {
-		return { local: true };
+	const dir = path.dirname(configPath);
+	if (path.basename(dir) === "conf.d" && name.endsWith(".toml")) {
+		return path.join(path.dirname(dir), "mise.lock");
 	}
-	if (
-		/^\.?mise\.toml$|^config\.toml$/.test(name) ||
-		path.basename(path.dirname(configPath)) === "conf.d"
-	) {
-		return { local: false };
+	if (/^\.?mise\.local\.toml$|^config\.local\.toml$/.test(name)) {
+		return path.join(dir, "mise.local.lock");
+	}
+	if (/^\.?mise\.toml$|^config\.toml$/.test(name)) {
+		return path.join(dir, "mise.lock");
 	}
 	return undefined;
 }
@@ -72,27 +72,22 @@ export function getChangesOfLockfile(
 }
 
 /**
- * The changes to the tools a config file declares, and the lockfile they go
- * to. Undefined when the lockfile has all of them.
+ * What `mise lock --bump` changes on top of `mise lock`: the newer versions of
+ * the tools locked already. The bump repeats the other changes, the tools
+ * added to or removed from the config.
  */
-export function getChangesOfConfig(
+export function getBumps(
+	bumpChanges: LockfileChange[],
 	changes: LockfileChange[],
-	toolNames: string[],
-	local: boolean,
-): { lockfile: string; changes: LockfileChange[] } | undefined {
-	const configChanges = changes.filter(
+): LockfileChange[] {
+	const changed = new Set(changes.map((change) => change.name));
+	return bumpChanges.filter(
 		(change) =>
-			toolNames.includes(change.name) &&
-			(getLockfileKind(change.lockfile)?.local ?? false) === local,
+			change.old_versions.length > 0 &&
+			change.new_versions.length > 0 &&
+			change.old_versions.join() !== change.new_versions.join() &&
+			!changed.has(change.name),
 	);
-	const lockfile = configChanges[0]?.lockfile;
-	if (!lockfile) {
-		return undefined;
-	}
-	return {
-		lockfile,
-		changes: getChangesOfLockfile(configChanges, lockfile),
-	};
 }
 
 /** `node 24.21.0 → 22.22.0`, `yq (new) 4.52.4`, `jq (removed)` */

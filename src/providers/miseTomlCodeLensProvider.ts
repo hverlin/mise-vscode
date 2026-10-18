@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
 import {
@@ -35,9 +36,9 @@ import { expandPath } from "../utils/fileUtils";
 import {
 	countTools,
 	formatLockfileChange,
-	getChangesOfConfig,
+	getBumps,
 	getChangesOfLockfile,
-	getConfigLockfileKind,
+	getExpectedLockfile,
 	getLockfileFormat,
 	getLockfileKind,
 	LATEST_LOCKFILE_FORMAT,
@@ -222,10 +223,15 @@ function createLockCodeLens(
 }
 
 /**
- * Finding the newer versions a lockfile can be bumped to looks them up online:
- * the lenses do not wait longer for it, the bump lens comes when it is done
+ * Finding the newer versions a lockfile can be bumped to looks them up online.
+ * The other lenses wait this long for them, enough for a cached result: the
+ * bump lens otherwise comes once they are found.
  */
-const BUMP_TIMEOUT_MS = 2000;
+const BUMP_WAIT_MS = 200;
+
+/** `mise lock` updates the local lockfile too */
+const ALSO_LOCAL =
+	"It also updates mise.local.lock, for the tools of mise.local.toml.";
 
 export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
@@ -682,20 +688,22 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	}
 
 	/**
-	 * The config root of a lockfile or config file of the workspace, when mise
-	 * can report on its lockfile. The global config has its own lockfile, that
-	 * `mise lock --global` updates.
+	 * The config root of a config file of the workspace, when mise can report
+	 * on its lockfile. The global config, whose root is the home directory, has
+	 * its own lockfile, that `mise lock --global` updates.
 	 */
 	private async lockfileConfigRoot(
 		document: vscode.TextDocument,
+		configPath: string,
 	): Promise<string | undefined> {
+		const configRoot = getConfigRoot(configPath);
 		if (
 			!vscode.workspace.getWorkspaceFolder(document.uri) ||
+			configRoot === expandPath(os.homedir()) ||
 			!(await this.miseService.supportsLockfileLenses())
 		) {
 			return undefined;
 		}
-		const configRoot = getConfigRoot(expandPath(document.uri.fsPath));
 		// lockfile = false: lockfiles are off
 		if ((await this.miseService.getLockfileSetting(configRoot)) === false) {
 			return undefined;
@@ -705,27 +713,37 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 
 	/**
 	 * On top of `mise.lock`: whether it has every tool of the config, the newer
-	 * versions it can be bumped to, and whether its format is the latest one
+	 * versions it can be bumped to, and whether its format is the latest one.
+	 * Only for the lockfile of a config file mise loads: mise does not report
+	 * on the others, such as the one of a directory without config.
 	 */
 	private async lockfileLenses(
 		document: vscode.TextDocument,
 	): Promise<vscode.CodeLens[]> {
 		const kind = getLockfileKind(document.fileName);
-		const configRoot = await this.lockfileConfigRoot(document);
+		const lockfilePath = expandPath(document.uri.fsPath);
+		const configPath = (await this.miseService.getCurrentConfigFiles()).find(
+			(config) => {
+				const expected = getExpectedLockfile(config);
+				return expected && expandPath(expected) === lockfilePath;
+			},
+		);
+		const configRoot =
+			configPath && (await this.lockfileConfigRoot(document, configPath));
 		if (!kind || !configRoot) {
 			return [];
 		}
 
-		const lockfilePath = expandPath(document.uri.fsPath);
 		const name = path.basename(lockfilePath);
 		const top = new vscode.Range(
 			new vscode.Position(0, 0),
 			new vscode.Position(0, 0),
 		);
 		const localFlags: LockFlag[] = kind.local ? ["--local"] : [];
+		const alsoLocal = kind.local ? "" : `\n${ALSO_LOCAL}`;
 		const lenses: vscode.CodeLens[] = [];
 
-		const [changes, bumps] = await Promise.all([
+		const [changes, bumpChanges] = await Promise.all([
 			this.miseService
 				.getLockfileChanges(configRoot)
 				.then((all) => getChangesOfLockfile(all, lockfilePath))
@@ -745,20 +763,21 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 							describeLockfileChanges(
 								`The config changed since ${name} was written. mise lock updates it:`,
 								changes,
-							),
+							) + alsoLocal,
 							configRoot,
 							localFlags,
 						)
 					: createLockCodeLens(
 							top,
 							"$(check) In sync",
-							`${name} has every tool of the config. Click to refresh their checksums and URLs with mise lock`,
+							`${name} has every tool of the config. Click to refresh their checksums and URLs with mise lock.${alsoLocal}`,
 							configRoot,
 							localFlags,
 						),
 			);
 		}
 
+		const bumps = bumpChanges && getBumps(bumpChanges, changes ?? []);
 		if (bumps?.length) {
 			lenses.push(
 				createLockCodeLens(
@@ -767,7 +786,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 					describeLockfileChanges(
 						"mise lock --bump moves to the newest versions the config allows, without installing them:",
 						bumps,
-					),
+					) + alsoLocal,
 					configRoot,
 					[...localFlags, "--bump"],
 				),
@@ -780,7 +799,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				createLockCodeLens(
 					top,
 					`$(versions) Upgrade format v${format} → v${LATEST_LOCKFILE_FORMAT}`,
-					`mise lock --upgrade rewrites ${name} in format ${LATEST_LOCKFILE_FORMAT}. Everyone who reads it, CI included, then needs mise 2026.9.16 or newer.`,
+					`mise lock --upgrade rewrites ${name} in format ${LATEST_LOCKFILE_FORMAT}. Everyone who reads it, CI included, then needs mise 2026.9.16 or newer.${alsoLocal}`,
 					configRoot,
 					[...localFlags, "--upgrade"],
 				),
@@ -791,7 +810,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	}
 
 	/**
-	 * The locked versions `mise lock --bump` would move. Undefined when they
+	 * The changes of `mise lock --bump` to a lockfile. Undefined when they
 	 * cannot be looked up, or not yet: the lenses are refreshed once they are.
 	 */
 	private async lockfileBumps(
@@ -800,21 +819,15 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 	): Promise<LockfileChange[] | undefined> {
 		const bumps = this.miseService
 			.getLockfileChanges(configRoot, { bump: true })
-			.then((all) =>
-				getChangesOfLockfile(all, lockfilePath).filter(
-					(change) =>
-						change.old_versions.length > 0 &&
-						change.old_versions.join() !== change.new_versions.join(),
-				),
-			);
+			.then((all) => getChangesOfLockfile(all, lockfilePath));
 
 		let timer: ReturnType<typeof setTimeout> | undefined;
-		const timedOut = new Promise<"timed out">((resolve) => {
-			timer = setTimeout(() => resolve("timed out"), BUMP_TIMEOUT_MS);
+		const waited = new Promise<"waited">((resolve) => {
+			timer = setTimeout(() => resolve("waited"), BUMP_WAIT_MS);
 		});
 		try {
-			const result = await Promise.race([bumps, timedOut]);
-			if (result === "timed out") {
+			const result = await Promise.race([bumps, waited]);
+			if (result === "waited") {
 				// kept by mise service, the next lenses have them
 				bumps.then(
 					() => this.refresh(),
@@ -833,47 +846,54 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 
 	/**
 	 * Next to the tools of a config file: its lockfile is missing, when mise
-	 * is set to create one, or it is missing some of them
+	 * is set to create one, or it does not match the config
 	 */
 	private async configLockfileLens(
 		document: vscode.TextDocument,
 		range: vscode.Range,
 	): Promise<vscode.CodeLens | undefined> {
-		const kind = getConfigLockfileKind(document.fileName);
-		const tools = (
-			getCachedTomlParser(document)?.parsed as { tools?: object } | undefined
-		)?.tools;
-		if (!kind || !tools || !Object.keys(tools).length) {
+		const configPath = expandPath(document.uri.fsPath);
+		const lockfile = getExpectedLockfile(configPath);
+		const configRoot =
+			lockfile && (await this.lockfileConfigRoot(document, configPath));
+		if (!lockfile || !configRoot) {
 			return undefined;
 		}
-		const configRoot = await this.lockfileConfigRoot(document);
-		if (!configRoot) {
+
+		const exists = existsSync(lockfile);
+		// lockfile unset: mise does not create one, nor does this suggest it.
+		// MISE_LOCKFILE=1 reads as true but works the same way.
+		if (
+			!exists &&
+			((await this.miseService.getLockfileSetting(configRoot)) !== true ||
+				process.env.MISE_LOCKFILE)
+		) {
 			return undefined;
 		}
 
 		const changes = await this.miseService
 			.getLockfileChanges(configRoot)
+			.then((all) => getChangesOfLockfile(all, lockfile))
 			.catch((error) => {
 				logger.debug(`Could not check the lockfile: ${error}`);
 				return undefined;
 			});
-		const config =
-			changes && getChangesOfConfig(changes, Object.keys(tools), kind.local);
-		if (!config) {
+		if (!changes?.length) {
 			return undefined;
 		}
 
-		const name = path.basename(config.lockfile);
-		const flags: LockFlag[] = kind.local ? ["--local"] : [];
-		if (!existsSync(expandPath(config.lockfile))) {
-			// lockfile unset: mise does not create one, nor does this suggest it
-			if (!(await this.miseService.getLockfileSetting(configRoot))) {
-				return undefined;
-			}
+		const name = path.basename(lockfile);
+		const local = getLockfileKind(lockfile)?.local ?? false;
+		const flags: LockFlag[] = local ? ["--local"] : [];
+		if (!exists) {
 			return createLockCodeLens(
 				range,
 				`$(lock) Create ${name}`,
-				`mise lock writes the versions of these tools to ${name}, without installing them. Commit it so that every machine installs the same versions.`,
+				`mise lock writes the versions of these tools to ${name}, without installing them. ${
+					local
+						? "Keep it out of git, like mise.local.toml."
+						: "Commit it so that every machine installs the same versions."
+				}`,
 				configRoot,
 				flags,
 			);
@@ -882,9 +902,9 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 			range,
 			`$(warning) ${name} out of date`,
 			describeLockfileChanges(
-				`${name} does not match these tools. mise lock updates it:`,
-				config.changes,
-			),
+				`${name} does not match the config. mise lock updates it:`,
+				changes,
+			) + (local ? "" : `\n${ALSO_LOCAL}`),
 			configRoot,
 			flags,
 		);
