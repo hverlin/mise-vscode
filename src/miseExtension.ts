@@ -20,6 +20,7 @@ import {
 	MISE_REVIEW_UNTRUSTED_CONFIG,
 	MISE_REVIEW_WORKSPACE_BINARY,
 	MISE_REVOKE_WORKSPACE_BINARIES,
+	MISE_RUN_PROJECT_CHECKS,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_PROJECTS,
@@ -74,6 +75,7 @@ import {
 	UsageHoverProvider,
 	usageTriggerCharacters,
 } from "./providers/miseUsageCompletionProvider";
+import { runProjectChecks } from "./providers/projectChecks";
 import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
 import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
@@ -84,6 +86,7 @@ import {
 	MiseTasksProvider,
 	registerTasksCommands,
 } from "./providers/tasksProvider";
+import { TaskValidationDiagnostics } from "./providers/taskValidationDiagnostics";
 import { createToolHoverProvider } from "./providers/toolHoverProvider";
 import { createToolLinkProvider } from "./providers/toolLinkProvider";
 import {
@@ -304,6 +307,11 @@ export class MiseExtension {
 		registerEnvsCommands(context, envsProvider, this.miseService);
 		registerBootstrapCommands(context, this.miseService);
 
+		const taskValidationDiagnostics = new TaskValidationDiagnostics(
+			this.miseService,
+		);
+		context.subscriptions.push(taskValidationDiagnostics);
+
 		vscode.window.registerTreeDataProvider(
 			"miseBootstrapView",
 			bootstrapProvider,
@@ -389,6 +397,10 @@ export class MiseExtension {
 						? { state: "ready" }
 						: { state: "error", errorMsg: (error as Error).message },
 				);
+			} finally {
+				// once the configs are trusted, and also when the reload stopped early
+				// (extension disabled, binary not approved) to clear them
+				taskValidationDiagnostics.scheduleRefresh();
 			}
 
 			void this.checkForInvalidMiseConfigFiles();
@@ -675,6 +687,9 @@ export class MiseExtension {
 					),
 				);
 			}),
+			vscode.commands.registerCommand(MISE_RUN_PROJECT_CHECKS, () =>
+				runProjectChecks(this.miseService),
+			),
 		);
 
 		const debouncedAddToolInfo = new Map<

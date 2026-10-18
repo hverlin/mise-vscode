@@ -11,12 +11,12 @@ export type MiseTomlType = {
 	env?: Record<string, string>;
 };
 
-interface SourcePosition {
+export interface SourcePosition {
 	line: number; // 0-based
 	character: number; // 0-based
 }
 
-interface KeyPosition {
+export interface KeyPosition {
 	keyStart: SourcePosition;
 	keyEnd: SourcePosition;
 	valueStart: SourcePosition;

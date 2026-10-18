@@ -132,6 +132,10 @@ const MIN_MISE_VERSION_FOR_TASK_CACHE = [2026, 8, 1] as const;
 // `mise run --affected` counts uncommitted changes and no longer needs
 // `experimental = true` since 2026.10.6
 const MIN_MISE_VERSION_FOR_AFFECTED_TASKS = [2026, 10, 6] as const;
+// `mise tasks validate` was added in 2025.11.4
+const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
+// `mise doctor project` and `[doctor.checks]` were added in 2026.9.6
+const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -1875,6 +1879,56 @@ export class MiseService {
 			"*",
 		]);
 		return JSON.parse(stdout);
+	}
+
+	/**
+	 * Problems of the task definitions, from `mise tasks validate`. Nothing
+	 * runs. Undefined when mise cannot report them, e.g. on versions without
+	 * the command or while a config file does not parse.
+	 */
+	async getTasksValidation(): Promise<MiseTaskValidation | undefined> {
+		if (
+			!this.getMiseBinaryPath() ||
+			!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_TASKS_VALIDATE))
+		) {
+			return undefined;
+		}
+
+		// exits 1 when it finds an error, the report is on stdout either way
+		const { stdout, stderr } = await this.execMiseCommandMergeOutput([
+			"tasks",
+			"validate",
+			"--json",
+		]);
+		try {
+			return JSON.parse(stdout);
+		} catch {
+			logger.info(`Could not validate the tasks: ${stderr.trim()}`);
+			return undefined;
+		}
+	}
+
+	async supportsProjectChecks(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_PROJECT_CHECKS);
+	}
+
+	/**
+	 * Runs the commands of the `[doctor.checks.<name>]` of the project, with its
+	 * tools and env (`mise doctor project`). Throws when mise cannot run them,
+	 * e.g. when a config file is not trusted.
+	 */
+	async runProjectChecks(): Promise<MiseProjectChecksReport> {
+		// exits 1 when a check fails, the report is on stdout either way
+		const { stdout, stderr } = await this.execMiseCommandMergeOutput([
+			"doctor",
+			"project",
+			"--json",
+		]);
+		try {
+			return JSON.parse(stdout);
+		} catch {
+			throw new Error(stderr.trim() || "mise doctor project did not report");
+		}
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {

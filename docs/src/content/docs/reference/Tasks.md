@@ -173,6 +173,42 @@ context menu in the activity bar:
 This requires mise `2026.8.1` or later. Nothing is shown for tasks that do not
 enable the cache.
 
+## Task validation
+
+The problems found by
+[`mise tasks validate`](https://mise.jdx.dev/cli/tasks/validate.html) are shown
+in the Problems panel: dependency cycles, missing dependencies, usage specs that
+do not parse, invalid timeouts, daemons missing from `[daemons]`, ... Each one
+is reported on the value it is about, e.g. the missing task in
+`depends = [...]`, and they are updated whenever a config file or a task
+changes.
+
+Dependencies using a template (`depends = ["build {{usage.target}}"]`) are not
+reported, since mise only renders them when the task runs. Like
+`mise tasks validate`, only the tasks of the workspace root are checked: in a
+[monorepo](#monorepo-tasks), the tasks of the projects are not.
+
+This requires mise `2025.11.4` or later. Set `mise.enableTaskDiagnostics` to
+`false` to turn them off.
+
+## Project checks
+
+`Mise: Run project checks` (also available from the mise status bar menu) runs
+the [project checks](https://mise.jdx.dev/configuration/project-diagnostics.html)
+declared in `[doctor.checks.<name>]` tables, with `mise doctor project`. When a
+check does not pass, the checks are listed with their message and hint, the
+failed ones first, and selecting one opens its declaration.
+
+```toml
+[doctor.checks.node]
+description = "node is installed"
+run = "node --version"
+hint = "Run mise install"
+```
+
+The checks run the commands of the project, so they only run when you ask.
+This requires mise `2026.9.6` or later.
+
 ## Task templates
 
 [Task templates](https://mise.jdx.dev/tasks/templates.html) are reusable task

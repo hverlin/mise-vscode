@@ -267,6 +267,14 @@ Enable document symbol provider for mise TOML files. Provides an outline of task
 
 ---
 
+##### `mise.enableTaskDiagnostics`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show the problems of the task definitions found by [`mise tasks validate`](https://mise.jdx.dev/cli/tasks/validate.html) in the Problems panel: dependency cycles, missing dependencies, usage specs that do not parse, unknown daemons, ... Requires mise `2025.11.4` or later.
+
+---
+
 ##### `mise.resolveMonorepoProjectConfigs`
 - **Type:** `boolean`
 - **Default:** `true`

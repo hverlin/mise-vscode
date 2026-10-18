@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	findUntrustedConfigs,
+	getMiseErrorReason,
 	getWebsiteForTool,
 	isFileTaskPath,
 	isMiseAutoUpdateOn,
@@ -481,5 +482,24 @@ describe("isMiseAutoUpdateOn", () => {
 		expect(isMiseAutoUpdateOn("off")).toBe(false);
 		expect(isMiseAutoUpdateOn("")).toBe(false);
 		expect(isMiseAutoUpdateOn(undefined)).toBe(false);
+	});
+});
+
+describe("getMiseErrorReason", () => {
+	it("extracts the reason without the hints mise appends", () => {
+		expect(
+			getMiseErrorReason(
+				[
+					"Command failed: mise run --affected --affected-json *",
+					"mise ERROR --affected requires a monorepo root configuration",
+					"mise ERROR Version: 2026.10.12 macos-arm64 (2026-10-16)",
+					"mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information",
+				].join("\n"),
+			),
+		).toBe("--affected requires a monorepo root configuration");
+	});
+
+	it("is undefined without a mise error", () => {
+		expect(getMiseErrorReason("spawn mise ENOENT")).toBeUndefined();
 	});
 });

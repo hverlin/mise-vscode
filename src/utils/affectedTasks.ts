@@ -66,20 +66,3 @@ export function buildAffectedRunFlags(base: string | undefined): string[] {
 export function formatAffectedProjectRoot(root: string): string {
 	return root ? `//${root}` : "// (monorepo root)";
 }
-
-/**
- * The reason mise gives for a failed `--affected` selection, e.g.
- * `--affected requires a monorepo root configuration`, without the version and
- * `--verbose` hints mise appends to every error.
- */
-export function getAffectedErrorReason(message: string): string | undefined {
-	return message
-		.split("\n")
-		.map((line) => line.match(/mise ERROR\s+(.*)/)?.[1]?.trim())
-		.find(
-			(reason) =>
-				reason &&
-				!reason.startsWith("Version:") &&
-				!reason.startsWith("Run with --verbose"),
-		);
-}

@@ -41,6 +41,7 @@ export const CONFIGURATION_FLAGS = {
 	customBinaryExtensions: "customBinaryExtensions",
 	customFolderExtensions: "customFolderExtensions",
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
+	enableTaskDiagnostics: "enableTaskDiagnostics",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
 } as const;
@@ -302,6 +303,10 @@ export const shouldAutoDetectMiseBinPath = () => {
 
 export const isTaskSymbolProviderEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableTaskSymbolProvider, false);
+};
+
+export const areTaskDiagnosticsEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableTaskDiagnostics, true);
 };
 
 export const shouldResolveMonorepoProjectConfigs = () => {

@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import {
 	buildAffectedRunFlags,
 	formatAffectedProjectRoot,
-	getAffectedErrorReason,
 	getAffectedTaskChoices,
 } from "./affectedTasks";
 
@@ -75,24 +74,5 @@ describe("formatAffectedProjectRoot", () => {
 	it("qualifies the root like monorepo task names", () => {
 		expect(formatAffectedProjectRoot("crates/agent")).toBe("//crates/agent");
 		expect(formatAffectedProjectRoot("")).toBe("// (monorepo root)");
-	});
-});
-
-describe("getAffectedErrorReason", () => {
-	it("extracts the reason without the hints mise appends", () => {
-		expect(
-			getAffectedErrorReason(
-				[
-					"Command failed: mise run --affected --affected-json *",
-					"mise ERROR --affected requires a monorepo root configuration",
-					"mise ERROR Version: 2026.10.12 macos-arm64 (2026-10-16)",
-					"mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information",
-				].join("\n"),
-			),
-		).toBe("--affected requires a monorepo root configuration");
-	});
-
-	it("is undefined without a mise error", () => {
-		expect(getAffectedErrorReason("spawn mise ENOENT")).toBeUndefined();
 	});
 });
