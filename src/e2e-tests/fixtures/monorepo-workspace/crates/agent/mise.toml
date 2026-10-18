@@ -1,3 +1,6 @@
+# deprecated: the config diagnostics report it without the file being open
+env_path = []
+
 [tasks.build]
 # overrides the description and the run command of the root task template
 extends = "rust:build"

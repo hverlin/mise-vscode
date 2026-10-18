@@ -145,28 +145,49 @@ suite("Config Diagnostics Test Suite", function () {
 		);
 	});
 
-	test("checks a config file of a subfolder once it is open", async () => {
-		const subfolderUri = vscode.Uri.joinPath(
-			configUri,
-			"..",
-			"backend",
-			"mise.toml",
-		);
-		const deprecations = () =>
-			vscode.languages
-				.getDiagnostics(subfolderUri)
-				.filter((diagnostic) => diagnostic.code === "deprecated-key")
-				.map((diagnostic) => diagnostic.message);
+	const backendUri = (file: string) =>
+		vscode.Uri.joinPath(configUri, "..", "backend", file);
+	const codes = (uri: vscode.Uri, code: string) =>
+		vscode.languages
+			.getDiagnostics(uri)
+			.filter((diagnostic) => diagnostic.code === code)
+			.map((diagnostic) => diagnostic.message);
+	const waitUntil = async (condition: () => boolean) => {
+		const deadline = Date.now() + DIAGNOSTICS_DEADLINE_MS;
+		while (!condition() && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+		}
+	};
+
+	test("checks a config file of a subfolder while it is open", async () => {
+		const subfolderUri = backendUri("mise.toml");
+		const deprecations = () => codes(subfolderUri, "deprecated-key");
 		// mise does not load it from the workspace root
 		assert.deepEqual(deprecations(), []);
 
-		await vscode.workspace.openTextDocument(subfolderUri);
-		const deadline = Date.now() + DIAGNOSTICS_DEADLINE_MS;
-		while (!deprecations().length && Date.now() < deadline) {
-			await new Promise((resolve) => setTimeout(resolve, 250));
-		}
+		const editor = await vscode.window.showTextDocument(subfolderUri);
+		await waitUntil(() => deprecations().length > 0);
 		assert.deepEqual(deprecations(), [
 			"`env_file` is deprecated: use env._.file instead. This will be removed in mise 2027.4.0.",
 		]);
+
+		await vscode.window.showTextDocument(editor.document);
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitUntil(() => deprecations().length === 0);
+		assert.deepEqual(deprecations(), [], "closing the tab drops them");
+	});
+
+	test("does not check a task file a config includes", async () => {
+		const tasksUri = backendUri("mise.tasks.toml");
+		await vscode.window.showTextDocument(tasksUri);
+		// backend/mise.toml is checked by then
+		await vscode.window.showTextDocument(backendUri("mise.toml"), {
+			preview: false,
+		});
+		await waitUntil(
+			() => codes(backendUri("mise.toml"), "deprecated-key").length > 0,
+		);
+		assert.deepEqual(codes(tasksUri, "unknown-key"), []);
+		await vscode.commands.executeCommand("workbench.action.closeAllEditors");
 	});
 });

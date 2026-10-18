@@ -2245,7 +2245,8 @@ export class MiseService {
 			return [];
 		}
 
-		const { stdout } = await this.cache.execCmd({
+		// not cached: a file saved twice in a row is explained twice
+		const { stdout } = await this.dedupeCache.execCmd({
 			args: ["config", "explain", "--json", "--file", filePath],
 			setMiseEnv: false,
 		});

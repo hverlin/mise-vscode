@@ -1,0 +1,3 @@
+# tasks of backend/mise.toml, not a config
+[build]
+run = "echo build"
