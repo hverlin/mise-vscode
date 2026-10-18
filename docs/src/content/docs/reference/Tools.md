@@ -33,7 +33,8 @@ in the current project. You can also the list of global tools.
 ![img.png](../../../assets/tools-activity-bar.png)
 
 The `+` button of the explorer adds a tool to a config file with `mise use`.
-Pick a tool from the registry, or type one as `backend:name` (e.g.
+Pick a tool from the registry, by its name or its description (`json` finds
+`jq`), or type one as `backend:name` (e.g.
 `github:cli/cli`), with its version if you want (`npm:prettier@3`). After
 `npm:`, `cargo:`, `gem:` or `dotnet:`, the registry tools with that backend come
 first, then the npm, crates.io, RubyGems or NuGet packages that match (mise

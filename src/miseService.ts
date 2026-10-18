@@ -2437,6 +2437,35 @@ export class MiseService {
 		);
 	}
 
+	/**
+	 * The description of each registry tool. Empty when mise cannot list them.
+	 * Slower than `miseRegistry`, which does not have them.
+	 */
+	async miseRegistryDescriptions(): Promise<Map<string, string>> {
+		if (!this.getMiseBinaryPath()) {
+			return new Map();
+		}
+
+		try {
+			const { stdout } = await this.longTTLCache.execCmd({
+				args: ["registry", "--json"],
+				setMiseEnv: false,
+			});
+			const entries = JSON.parse(stdout) as {
+				short: string;
+				description?: string | null;
+			}[];
+			return new Map(
+				entries.flatMap((entry) =>
+					entry.description ? [[entry.short, entry.description]] : [],
+				),
+			);
+		} catch (error) {
+			logger.debug("Could not read the registry descriptions", error);
+			return new Map();
+		}
+	}
+
 	async supportsPackageRegistrySearch(): Promise<boolean> {
 		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_PACKAGE_SEARCH);
 	}

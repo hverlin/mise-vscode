@@ -97,6 +97,8 @@ function setUp({
 				backends: ["aqua:jqlang/jq", "github:jqlang/jq"],
 			},
 		],
+		miseRegistryDescriptions: async () =>
+			new Map([["jq", "Command-line JSON processor"]]),
 		supportsPackageRegistrySearch: async () => canSearchPackages,
 		searchTools: (query: string) => {
 			queries.push(query);
@@ -128,6 +130,20 @@ describe("pickToolToUse", () => {
 			"prettier",
 			"jq",
 		]);
+	});
+
+	it("describes the registry tools after their backend", async () => {
+		const { fake } = setUp();
+		await settle();
+		const describe = (label: string) =>
+			fake.quickPick.items.find((item) => item.label === label)?.description;
+		expect(describe("jq")).toBe("aqua:jqlang/jq · Command-line JSON processor");
+		expect(describe("node")).toBe("core:node");
+
+		fake.type("github:jqlang");
+		expect(describe("jq")).toBe(
+			"github:jqlang/jq · Command-line JSON processor",
+		);
 	});
 
 	it("only offers the registry tools when mise cannot search packages", async () => {

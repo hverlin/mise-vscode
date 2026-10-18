@@ -15,6 +15,8 @@ const SEARCH_DELAY_MS = 300;
 type ToolPickItem = vscode.QuickPickItem & {
 	/** what `mise use` gets, the label when unset */
 	tool?: string;
+	/** of a registry tool matching a `backend:name` typed */
+	backend?: string;
 	/** the item fills in a package registry prefix to search it */
 	searchPrefix?: string;
 };
@@ -28,10 +30,13 @@ type ToolPickItem = vscode.QuickPickItem & {
 export async function pickToolToUse(
 	miseService: MiseService,
 ): Promise<string | undefined> {
-	const [registry, canSearchPackages] = await Promise.all([
+	const [registry, descriptions, canSearchPackages] = await Promise.all([
 		miseService.miseRegistry(),
+		miseService.miseRegistryDescriptions(),
 		miseService.supportsPackageRegistrySearch(),
 	]);
+	const describe = (short: string, backend: string | undefined) =>
+		[backend, descriptions.get(short)].filter(Boolean).join(" · ");
 
 	const registryItems: ToolPickItem[] = [
 		...(canSearchPackages
@@ -41,7 +46,10 @@ export async function pickToolToUse(
 					searchPrefix: prefix,
 				}))
 			: []),
-		...registry.map((tool) => ({ label: tool.short, description: tool.full })),
+		...registry.map((tool) => ({
+			label: tool.short,
+			description: describe(tool.short, tool.full),
+		})),
 	];
 
 	const quickPick = vscode.window.createQuickPick<ToolPickItem>();
@@ -75,13 +83,15 @@ export async function pickToolToUse(
 		const matches = findRegistryMatches(registry, typedTool).map(
 			({ short, backend }): ToolPickItem => ({
 				label: short,
-				description: backend,
+				description: describe(short, backend),
+				tool: short,
+				backend,
 				alwaysShow: true,
 			}),
 		);
 		const showItems = (packages: ToolPickItem[]) => {
 			const tools = [
-				...matches.map((match) => match.description),
+				...matches.map((match) => match.backend),
 				...packages.map((item) => item.tool),
 			];
 			quickPick.items = [
@@ -114,7 +124,7 @@ export async function pickToolToUse(
 		searchTimer = setTimeout(async () => {
 			let packages: ToolPickItem[] = [];
 			try {
-				const registryBackends = new Set(matches.map((m) => m.description));
+				const registryBackends = new Set(matches.map((m) => m.backend));
 				packages = (await miseService.searchTools(query))
 					.filter((result) => !registryBackends.has(result.name))
 					.map((result) => ({
