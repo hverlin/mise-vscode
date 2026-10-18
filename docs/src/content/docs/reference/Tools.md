@@ -82,6 +82,8 @@ Next to `[tools]` in a config file (`mise.toml`, `mise.local.toml`, ...):
   With the setting unset, mise does not create lockfiles automatically, and the
   extension does not suggest it either.
 
+Each lens asks for confirmation first, and shows the command it runs.
+
 Nothing is shown with `lockfile = false`. Requires mise 2026.9.16+. The
 lockfiles of an environment (`mise.test.lock`), of a monorepo subproject and
 the global one are not covered.

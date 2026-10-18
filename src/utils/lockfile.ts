@@ -107,3 +107,47 @@ export function formatLockfileChange(change: LockfileChange): string {
 export function countTools(count: number): string {
 	return `${count} ${count === 1 ? "tool" : "tools"}`;
 }
+
+/**
+ * The confirmation a lens asks before running `mise lock`: the question, what
+ * the command does, and the button that runs it
+ */
+export function describeLockCommand(
+	flags: LockFlag[],
+	lockfileName: string,
+	exists: boolean,
+): { question: string; detail: string; action: string; warning: boolean } {
+	const alsoLocal = flags.includes("--local")
+		? ""
+		: " It also updates mise.local.lock, for the tools of mise.local.toml.";
+	if (flags.includes("--upgrade")) {
+		return {
+			question: `Upgrade ${lockfileName} to format ${LATEST_LOCKFILE_FORMAT}?`,
+			detail: `Everyone who reads it, CI included, then needs mise 2026.9.16 or newer.${alsoLocal}`,
+			action: "Upgrade",
+			warning: true,
+		};
+	}
+	if (flags.includes("--bump")) {
+		return {
+			question: `Bump the versions locked in ${lockfileName}?`,
+			detail: `It moves them to the newest versions the config allows, without installing them.${alsoLocal}`,
+			action: "Bump",
+			warning: false,
+		};
+	}
+	if (!exists) {
+		return {
+			question: `Create ${lockfileName}?`,
+			detail: `It records the versions of the tools of the config, without installing them.${alsoLocal}`,
+			action: "Create",
+			warning: false,
+		};
+	}
+	return {
+		question: `Update ${lockfileName}?`,
+		detail: `It adds, updates and removes the entries of the tools of the config, without installing them.${alsoLocal}`,
+		action: "Update",
+		warning: false,
+	};
+}

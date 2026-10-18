@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import path from "node:path";
 import {
 	countTools,
+	describeLockCommand,
 	formatLockfileChange,
 	getBumps,
 	getChangesOfLockfile,
@@ -150,5 +151,38 @@ describe("countTools", () => {
 	it("counts in singular or plural", () => {
 		expect(countTools(1)).toBe("1 tool");
 		expect(countTools(3)).toBe("3 tools");
+	});
+});
+
+describe("describeLockCommand", () => {
+	it("asks before each lock command, warning before a format upgrade", () => {
+		expect(describeLockCommand([], "mise.lock", true)).toEqual({
+			question: "Update mise.lock?",
+			detail:
+				"It adds, updates and removes the entries of the tools of the config, without installing them. It also updates mise.local.lock, for the tools of mise.local.toml.",
+			action: "Update",
+			warning: false,
+		});
+		expect(describeLockCommand(["--local"], "mise.local.lock", false)).toEqual({
+			question: "Create mise.local.lock?",
+			detail:
+				"It records the versions of the tools of the config, without installing them.",
+			action: "Create",
+			warning: false,
+		});
+		expect(describeLockCommand(["--bump"], "mise.lock", true)).toMatchObject({
+			question: "Bump the versions locked in mise.lock?",
+			action: "Bump",
+			warning: false,
+		});
+		expect(
+			describeLockCommand(["--local", "--upgrade"], "mise.local.lock", true),
+		).toEqual({
+			question: "Upgrade mise.local.lock to format 3?",
+			detail:
+				"Everyone who reads it, CI included, then needs mise 2026.9.16 or newer.",
+			action: "Upgrade",
+			warning: true,
+		});
 	});
 });

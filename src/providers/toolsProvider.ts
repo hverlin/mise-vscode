@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import * as vscode from "vscode";
 import {
 	MISE_CONFIGURE_ALL_SDK_PATHS,
@@ -32,7 +34,11 @@ import {
 	expandPath,
 	isWindows,
 } from "../utils/fileUtils";
-import { LOCK_FLAGS, type LockFlag } from "../utils/lockfile";
+import {
+	describeLockCommand,
+	LOCK_FLAGS,
+	type LockFlag,
+} from "../utils/lockfile";
 import { logger } from "../utils/logger";
 import { findToolPosition } from "../utils/miseFileParser";
 import {
@@ -420,7 +426,11 @@ export function registerToolsCommands(
 		}),
 		vscode.commands.registerCommand(
 			MISE_RUN_LOCK,
-			async (lock: { configRoot?: unknown; flags?: unknown } | undefined) => {
+			async (
+				lock:
+					| { configRoot?: unknown; flags?: unknown; lockfile?: unknown }
+					| undefined,
+			) => {
 				const configRoot =
 					typeof lock?.configRoot === "string" ? lock.configRoot : undefined;
 				// the command can be run from anywhere, e.g. a link in a hover
@@ -429,8 +439,42 @@ export function registerToolsCommands(
 							LOCK_FLAGS.includes(flag),
 						)
 					: [];
+				const lockfile =
+					typeof lock?.lockfile === "string" ? lock.lockfile : undefined;
+				const args = [
+					...(configRoot ? ["-C", configRoot] : []),
+					"lock",
+					...flags,
+				];
+				// what runs in the terminal, as it is written there
+				const command = miseService.createMiseCommand(args);
+				if (!command) {
+					return;
+				}
+
+				const { question, detail, action, warning } = describeLockCommand(
+					flags,
+					lockfile
+						? path.basename(lockfile)
+						: flags.includes("--local")
+							? "mise.local.lock"
+							: "mise.lock",
+					lockfile ? existsSync(lockfile) : true,
+				);
+				const options = { modal: true, detail: `${detail}\n\n${command}` };
+				const selection = warning
+					? await vscode.window.showWarningMessage(question, options, action)
+					: await vscode.window.showInformationMessage(
+							question,
+							options,
+							action,
+						);
+				if (selection !== action) {
+					return;
+				}
+
 				await miseService.runMiseToolActionInConsole(
-					[...(configRoot ? ["-C", configRoot] : []), "lock", ...flags],
+					args,
 					`Lock ${flags.join(" ")}`.trim(),
 				);
 			},

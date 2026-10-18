@@ -207,18 +207,18 @@ function describeLockfileChanges(
 	].join("\n");
 }
 
+/** a lens running `mise lock`, once confirmed */
 function createLockCodeLens(
 	range: vscode.Range,
 	title: string,
 	tooltip: string,
-	configRoot: string,
-	flags: LockFlag[],
+	lock: { configRoot: string; flags: LockFlag[]; lockfile: string },
 ): vscode.CodeLens {
 	return new vscode.CodeLens(range, {
 		title,
 		tooltip,
 		command: MISE_RUN_LOCK,
-		arguments: [{ configRoot, flags }],
+		arguments: [lock],
 	});
 }
 
@@ -764,15 +764,13 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 								`The config changed since ${name} was written. mise lock updates it:`,
 								changes,
 							) + alsoLocal,
-							configRoot,
-							localFlags,
+							{ configRoot, flags: localFlags, lockfile: lockfilePath },
 						)
 					: createLockCodeLens(
 							top,
 							"$(check) In sync",
 							`${name} has every tool of the config. Click to refresh their checksums and URLs with mise lock.${alsoLocal}`,
-							configRoot,
-							localFlags,
+							{ configRoot, flags: localFlags, lockfile: lockfilePath },
 						),
 			);
 		}
@@ -787,8 +785,11 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 						"mise lock --bump moves to the newest versions the config allows, without installing them:",
 						bumps,
 					) + alsoLocal,
-					configRoot,
-					[...localFlags, "--bump"],
+					{
+						configRoot,
+						flags: [...localFlags, "--bump"],
+						lockfile: lockfilePath,
+					},
 				),
 			);
 		}
@@ -800,8 +801,11 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 					top,
 					`$(versions) Upgrade format v${format} → v${LATEST_LOCKFILE_FORMAT}`,
 					`mise lock --upgrade rewrites ${name} in format ${LATEST_LOCKFILE_FORMAT}. Everyone who reads it, CI included, then needs mise 2026.9.16 or newer.${alsoLocal}`,
-					configRoot,
-					[...localFlags, "--upgrade"],
+					{
+						configRoot,
+						flags: [...localFlags, "--upgrade"],
+						lockfile: lockfilePath,
+					},
 				),
 			);
 		}
@@ -894,8 +898,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 						? "Keep it out of git, like mise.local.toml."
 						: "Commit it so that every machine installs the same versions."
 				}`,
-				configRoot,
-				flags,
+				{ configRoot, flags, lockfile },
 			);
 		}
 		return createLockCodeLens(
@@ -905,8 +908,7 @@ export class MiseTomlCodeLensProvider implements vscode.CodeLensProvider {
 				`${name} does not match the config. mise lock updates it:`,
 				changes,
 			) + (local ? "" : `\n${ALSO_LOCAL}`),
-			configRoot,
-			flags,
+			{ configRoot, flags, lockfile },
 		);
 	}
 

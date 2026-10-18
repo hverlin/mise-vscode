@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
+import * as sinon from "sinon";
 import * as vscode from "vscode";
 
 const LENSES_DEADLINE_MS = 20_000;
@@ -14,7 +15,13 @@ const LENSES_DEADLINE_MS = 20_000;
 suite("Lockfile Test Suite", function () {
 	this.timeout(60_000);
 
+	const sandbox = sinon.createSandbox();
+
 	let workspaceRoot: string;
+
+	teardown(() => {
+		sandbox.restore();
+	});
 
 	suiteSetup(async () => {
 		workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
@@ -98,5 +105,49 @@ suite("Lockfile Test Suite", function () {
 			"$(lock) Create mise.local.lock",
 		);
 		assert.deepEqual(lockArguments(lens).flags, ["--local"]);
+	});
+
+	test("asks before running mise lock, with the command it runs", async () => {
+		const { lens, lenses } = await waitForLens(
+			"mise.lock",
+			"$(warning) 1 tool out of sync · Update",
+		);
+		// declined: nothing runs, the fixture stays as it is
+		const ask = sandbox
+			.stub(vscode.window, "showInformationMessage")
+			.resolves(undefined);
+		const warn = sandbox
+			.stub(vscode.window, "showWarningMessage")
+			.resolves(undefined);
+
+		await vscode.commands.executeCommand(
+			lens.command?.command ?? "",
+			...(lens.command?.arguments ?? []),
+		);
+		sinon.assert.calledOnce(ask);
+		const [question, options, action] = ask.firstCall.args as unknown as [
+			string,
+			{ modal: boolean; detail: string },
+			string,
+		];
+		assert.equal(question, "Update mise.lock?");
+		assert.equal(action, "Update");
+		assert.ok(options.modal);
+		// the command line of the terminal
+		assert.match(options.detail, /-C .*lockfile-workspace.* lock$/m);
+
+		const upgrade = lenses.find(
+			(l) => l.command?.title === "$(versions) Upgrade format v0 → v3",
+		);
+		await vscode.commands.executeCommand(
+			upgrade?.command?.command ?? "",
+			...(upgrade?.command?.arguments ?? []),
+		);
+		sinon.assert.calledOnce(warn);
+		assert.equal(warn.firstCall.args[0], "Upgrade mise.lock to format 3?");
+		assert.match(
+			(warn.firstCall.args[1] as unknown as { detail: string }).detail,
+			/ lock --upgrade$/m,
+		);
 	});
 });

@@ -287,17 +287,17 @@ describe("lockfile lenses", () => {
 			{
 				line: 0,
 				title: "$(warning) 1 tool out of sync · Update",
-				arguments: [{ configRoot: project, flags: [] }],
+				arguments: [{ configRoot: project, flags: [], lockfile }],
 			},
 			{
 				line: 0,
 				title: "$(arrow-up) Bump 1 tool",
-				arguments: [{ configRoot: project, flags: ["--bump"] }],
+				arguments: [{ configRoot: project, flags: ["--bump"], lockfile }],
 			},
 			{
 				line: 0,
 				title: "$(versions) Upgrade format v0 → v3",
-				arguments: [{ configRoot: project, flags: ["--upgrade"] }],
+				arguments: [{ configRoot: project, flags: ["--upgrade"], lockfile }],
 			},
 		]);
 	});
@@ -334,7 +334,9 @@ describe("lockfile lenses", () => {
 			{
 				line: 0,
 				title: "$(warning) 1 tool out of sync · Update",
-				arguments: [{ configRoot: project, flags: ["--local"] }],
+				arguments: [
+					{ configRoot: project, flags: ["--local"], lockfile: localLockfile },
+				],
 			},
 		]);
 	});
@@ -432,7 +434,7 @@ describe("lockfile lenses", () => {
 			expect(lenses.at(-1)).toEqual({
 				line: 0,
 				title: "$(lock) Create mise.lock",
-				arguments: [{ configRoot: project, flags: [] }],
+				arguments: [{ configRoot: project, flags: [], lockfile }],
 			});
 
 			// unset: mise does not create lockfiles
@@ -465,7 +467,7 @@ describe("lockfile lenses", () => {
 			expect(lenses.at(-1)).toEqual({
 				line: 0,
 				title: "$(warning) mise.lock out of date",
-				arguments: [{ configRoot: project, flags: [] }],
+				arguments: [{ configRoot: project, flags: [], lockfile }],
 			});
 		});
 
