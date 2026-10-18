@@ -111,7 +111,8 @@ The same support is available in shell
 - `#USAGE` lines get usage spec syntax highlighting, autocompletion, and hover
 - `#MISE` lines are highlighted as TOML, with autocompletion and hover for the
   [task configuration keys](https://mise.jdx.dev/tasks/task-configuration.html)
-  (`description`, `alias`, `depends`, `sources`, `skip_if`, ...)
+  (`description`, `alias`, `depends`, `sources`, `skip_if`, `vars`, the
+  `deny_*`/`allow_*` sandbox keys, ...)
 - `#MISE extends="template_name"` completes the
   [task templates](https://mise.jdx.dev/tasks/templates.html) declared in the
   config files
@@ -142,6 +143,26 @@ If you are using [multi-lines task script](https://mise.jdx.dev/tasks/toml-tasks
 The following languages are supported: Python, Node.js, Deno, Bun, Deno, Ruby, Bash, and Shell.
 
 ![screenshot showing syntax highlighting support when shebang is used](./syntax-highlighting-shebang.png)
+
+### Unknown and deprecated keys
+
+The keys of a config file that mise does not read, e.g. a typo, are reported in
+the Problems panel, with the key mise most likely meant and a quick fix to use
+it. Deprecated keys are reported too, with what to use instead.
+
+```toml
+[settings]
+experimantal = true # mise does not read `settings.experimantal`. Did you mean `experimental`?
+```
+
+This comes from
+[`mise config explain`](https://mise.jdx.dev/cli/config/explain.html) (mise
+2026.10.14+), which also reads a config file mise refuses to load, e.g. one with
+an unknown task key. Turn it off with `mise.enableConfigDiagnostics`.
+
+Tombi and Even Better TOML check the same schema, so they already report the
+unknown keys: with one of them installed, the extension only adds the quick fix
+to their diagnostic.
 
 ### When a config file changes
 

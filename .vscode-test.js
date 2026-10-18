@@ -614,6 +614,20 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "config-diagnostics",
+		files: "src/e2e-tests/config-diagnostics/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "config-diagnostics-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "lockfile",
 		files: "src/e2e-tests/lockfile/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "lockfile-workspace"),

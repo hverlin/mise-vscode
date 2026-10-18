@@ -33,6 +33,7 @@ import {
 	updateBinPath,
 } from "./configuration";
 import { buildAffectedRunFlags } from "./utils/affectedTasks";
+import type { ConfigKeyExplanation } from "./utils/configExplain";
 import {
 	displayPathRelativeTo,
 	expandPath,
@@ -164,6 +165,7 @@ const MIN_MISE_VERSION_FOR_AFFECTED_TASKS = [2026, 10, 6] as const;
 const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 // `mise doctor project` and `[doctor.checks]` were added in 2026.9.6
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
+const MIN_MISE_VERSION_FOR_CONFIG_EXPLAIN = [2026, 10, 14] as const;
 /** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
 const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
 /** `mise lock --dry-run --json`, `--bump`, `--upgrade`, and format 3 */
@@ -2217,6 +2219,29 @@ export class MiseService {
 			logger.info(`Could not validate the tasks: ${stderr.trim()}`);
 			return undefined;
 		}
+	}
+
+	/**
+	 * The keys a config file sets, whether mise reads them, and whether they
+	 * are deprecated (`mise config explain`). It reads the file as plain TOML,
+	 * so it also works on a config mise refuses to load. Undefined on versions
+	 * without the command.
+	 */
+	async explainConfigFile(
+		filePath: string,
+	): Promise<ConfigKeyExplanation[] | undefined> {
+		if (
+			!this.getMiseBinaryPath() ||
+			!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_CONFIG_EXPLAIN))
+		) {
+			return undefined;
+		}
+
+		const { stdout } = await this.cache.execCmd({
+			args: ["config", "explain", "--json", "--file", filePath],
+			setMiseEnv: false,
+		});
+		return JSON.parse(stdout) as ConfigKeyExplanation[];
 	}
 
 	async supportsProjectChecks(): Promise<boolean> {

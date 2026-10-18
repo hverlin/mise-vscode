@@ -395,6 +395,13 @@
           "default": false,
           "markdownDescription": "Enable document symbol provider for mise TOML files. Provides an outline of tasks, tools, env, and settings sections. This is always enabled on the web. On desktop, you can use [Tombi](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) for better TOML support."
         },
+        "mise.enableConfigDiagnostics": {
+          "order": 10.66,
+          "type": "boolean",
+          "title": "Enable config diagnostics",
+          "default": true,
+          "markdownDescription": "Show the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated in the Problems panel, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). With Tombi or Even Better TOML installed, which already report the unknown keys from the same schema, only the quick fix is added to their diagnostic. Requires mise `2026.10.14` or later."
+        },
         "mise.enableTaskDiagnostics": {
           "order": 10.65,
           "type": "boolean",

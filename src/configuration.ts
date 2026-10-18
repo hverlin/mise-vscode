@@ -42,6 +42,7 @@ export const CONFIGURATION_FLAGS = {
 	customFolderExtensions: "customFolderExtensions",
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
 	enableTaskDiagnostics: "enableTaskDiagnostics",
+	enableConfigDiagnostics: "enableConfigDiagnostics",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
 } as const;
@@ -307,6 +308,10 @@ export const isTaskSymbolProviderEnabled = () => {
 
 export const areTaskDiagnosticsEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableTaskDiagnostics, true);
+};
+
+export const areConfigDiagnosticsEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableConfigDiagnostics, true);
 };
 
 export const shouldResolveMonorepoProjectConfigs = () => {
