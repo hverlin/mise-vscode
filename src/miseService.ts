@@ -2221,20 +2221,19 @@ export class MiseService {
 		}
 	}
 
+	async supportsConfigExplain(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_CONFIG_EXPLAIN);
+	}
+
 	/**
 	 * The keys a config file sets, whether mise reads them, and whether they
-	 * are deprecated (`mise config explain`). It reads the file as plain TOML,
-	 * so it also works on a config mise refuses to load. Undefined on versions
-	 * without the command.
+	 * are deprecated (`mise config explain`, see {@link supportsConfigExplain}).
+	 * It reads the file as plain TOML, so it also works on a config mise
+	 * refuses to load.
 	 */
-	async explainConfigFile(
-		filePath: string,
-	): Promise<ConfigKeyExplanation[] | undefined> {
-		if (
-			!this.getMiseBinaryPath() ||
-			!(await this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_CONFIG_EXPLAIN))
-		) {
-			return undefined;
+	async explainConfigFile(filePath: string): Promise<ConfigKeyExplanation[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
 		}
 
 		const { stdout } = await this.cache.execCmd({
