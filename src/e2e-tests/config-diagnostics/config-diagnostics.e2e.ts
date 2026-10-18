@@ -54,11 +54,24 @@ suite("Config Diagnostics Test Suite", function () {
 		return configDiagnostics();
 	};
 
-	/** they report the unknown keys themselves, from the same schema */
-	const hasSchemaExtension = () =>
-		["tombi-toml.tombi", "tamasfe.even-better-toml"].some((id) =>
-			vscode.extensions.getExtension(id),
-		);
+	/** Tombi reports the unknown keys itself, from the same schema */
+	const hasTombi = () => !!vscode.extensions.getExtension("tombi-toml.tombi");
+
+	const summarize = () =>
+		vscode.languages
+			.getDiagnostics(configUri)
+			.filter(
+				(diagnostic) =>
+					diagnostic.code === "unknown-key" ||
+					diagnostic.code === "deprecated-key",
+			)
+			.map((diagnostic) => ({
+				line: diagnostic.range.start.line,
+				character: diagnostic.range.start.character,
+				message: diagnostic.message,
+				severity: diagnostic.severity,
+			}))
+			.sort((a, b) => a.line - b.line);
 
 	test("reports the unknown and deprecated keys of mise.toml", async () => {
 		const deprecated = {
@@ -68,7 +81,8 @@ suite("Config Diagnostics Test Suite", function () {
 				"`env_path` is deprecated: use env._.path instead. This will be removed in mise 2027.4.0.",
 			severity: vscode.DiagnosticSeverity.Information,
 		};
-		const expected = hasSchemaExtension()
+		// mise's diagnostics come first, and leave once Tombi reports the same key
+		const expected = hasTombi()
 			? [deprecated]
 			: [
 					deprecated,
@@ -84,22 +98,18 @@ suite("Config Diagnostics Test Suite", function () {
 						character: 0,
 						message:
 							"mise does not read `tasks.build.depnds`. Did you mean `depends`?",
-						severity: vscode.DiagnosticSeverity.Warning,
+						// mise refuses to load the file
+						severity: vscode.DiagnosticSeverity.Error,
 					},
 				];
-		const diagnostics = await waitForDiagnostics(expected.length);
-
-		assert.deepEqual(
-			diagnostics
-				.map((diagnostic) => ({
-					line: diagnostic.range.start.line,
-					character: diagnostic.range.start.character,
-					message: diagnostic.message,
-					severity: diagnostic.severity,
-				}))
-				.sort((a, b) => a.line - b.line),
-			expected,
-		);
+		const deadline = Date.now() + DIAGNOSTICS_DEADLINE_MS;
+		while (
+			JSON.stringify(summarize()) !== JSON.stringify(expected) &&
+			Date.now() < deadline
+		) {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+		}
+		assert.deepEqual(summarize(), expected);
 	});
 
 	test("offers to change an unknown key to the one mise suggests", async () => {

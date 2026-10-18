@@ -15,11 +15,12 @@ For the best experience with syntax highlighting and autocompletion in `mise.tom
 
 The extension will notify you on startup if neither is installed.
 
-`mise-vscode` associates the [mise JSON schema](https://mise.jdx.dev/schema/mise.json)
-with all mise configuration files for these extensions, including environment and
-platform-specific ones such as `mise.local.toml`, `mise.linux.toml`, or
-`mise/config.macos-arm64.toml` (see [`auto_env`](https://mise.jdx.dev/configuration/environments.html)),
-so autocompletion and validation work in all of them.
+Both use the [JSON Schema Store](https://www.schemastore.org) catalog by default,
+which associates the [mise JSON schema](https://mise.jdx.dev/schema/mise.json)
+with all mise configuration files, including environment and platform-specific
+ones such as `mise.local.toml`, `mise.linux.toml`, or `mise/config.macos-arm64.toml`
+(see [`auto_env`](https://mise.jdx.dev/configuration/environments.html)), so
+autocompletion and validation work in all of them.
 
 `mise-vscode` provides syntax highlighting for `tera` used for
 [templating](https://mise.jdx.dev/templates.html) in `mise.toml` files
@@ -148,7 +149,7 @@ The following languages are supported: Python, Node.js, Deno, Bun, Deno, Ruby, B
 
 The keys of a config file that mise does not read, e.g. a typo, are reported in
 the Problems panel, with the key mise most likely meant and a quick fix to use
-it. Deprecated keys are reported too, with what to use instead.
+it. Deprecated keys are reported too, with what the schema says about them.
 
 ```toml
 [settings]
@@ -160,9 +161,8 @@ This comes from
 2026.10.14+), which also reads a config file mise refuses to load, e.g. one with
 an unknown task key. Turn it off with `mise.enableConfigDiagnostics`.
 
-Tombi and Even Better TOML check the same schema, so they already report the
-unknown keys: with one of them installed, the extension only adds the quick fix
-to their diagnostic.
+Tombi and Even Better TOML check the same schema, and report some of these keys
+themselves: a key one of them already reports only gets the quick fix.
 
 ### When a config file changes
 

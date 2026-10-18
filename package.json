@@ -91,23 +91,6 @@
         "configuration": "./syntaxes/tool-versions-language-configuration.json"
       }
     ],
-    "tomlValidation": [
-      {
-        "fileMatch": [
-          "**/mise.toml",
-          "**/.mise.toml",
-          "**/mise.*.toml",
-          "**/.mise.*.toml",
-          "**/mise/config.toml",
-          "**/.mise/config.toml",
-          "**/mise/config.*.toml",
-          "**/.mise/config.*.toml",
-          "**/mise/conf.d/*.toml",
-          "**/.mise/conf.d/*.toml"
-        ],
-        "url": "https://mise.jdx.dev/schema/mise.json"
-      }
-    ],
     "grammars": [
       {
         "language": "toml",
@@ -400,7 +383,7 @@
           "type": "boolean",
           "title": "Enable config diagnostics",
           "default": true,
-          "markdownDescription": "Show the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated in the Problems panel, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). With Tombi or Even Better TOML installed, which already report the unknown keys from the same schema, only the quick fix is added to their diagnostic. Requires mise `2026.10.14` or later."
+          "markdownDescription": "Show in the Problems panel the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). A key that Tombi or Even Better TOML already reports only gets the quick fix. Requires mise `2026.10.14` or later."
         },
         "mise.enableTaskDiagnostics": {
           "order": 10.65,

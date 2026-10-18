@@ -73,6 +73,7 @@ describe("findConfigKeyProblems", () => {
 		).toEqual([
 			{
 				kind: "unknown",
+				key: "settings.experimantal",
 				line: 3,
 				start: 0,
 				end: 12,
@@ -83,6 +84,7 @@ describe("findConfigKeyProblems", () => {
 			},
 			{
 				kind: "unknown",
+				key: "tasks.b.rn",
 				line: 6,
 				start: 0,
 				end: 2,
@@ -108,6 +110,7 @@ describe("findConfigKeyProblems", () => {
 		).toEqual([
 			{
 				kind: "deprecated",
+				key: "env_file",
 				line: 0,
 				start: 0,
 				end: 8,
@@ -130,6 +133,7 @@ describe("findConfigKeyProblems", () => {
 		).toEqual([
 			{
 				kind: "unknown",
+				key: "weird",
 				line: 3,
 				start: 0,
 				end: 19,
@@ -137,5 +141,42 @@ describe("findConfigKeyProblems", () => {
 				suggestion: undefined,
 			},
 		]);
+	});
+
+	it("gives the advice of each way a deprecation is described", () => {
+		const messages = findConfigKeyProblems(
+			[
+				explanation("settings.auto_update", 1, {
+					deprecated: true,
+					description: "[deprecated] Old name for `self_update.auto`.",
+				}),
+				explanation("settings.task_timeout", 1, {
+					deprecated: true,
+					description: "Deprecated alias for `task.timeout`.",
+				}),
+				explanation("python_venv", 1, {
+					deprecated: true,
+					description:
+						"virtualenv path to activate; use env._.python.venv instead",
+				}),
+				explanation("old", 1, { deprecated: true }),
+			],
+			["key = 1"],
+		).map((problem) => problem.message);
+		expect(messages).toEqual([
+			"`settings.auto_update` is deprecated: Old name for `self_update.auto`.",
+			"`settings.task_timeout` is deprecated: alias for `task.timeout`.",
+			"`python_venv` is deprecated: virtualenv path to activate; use env._.python.venv instead",
+			"`old` is deprecated.",
+		]);
+	});
+
+	it("leaves out the env directives mise suggests for any short key", () => {
+		const [problem] = findConfigKeyProblems(
+			[explanation("dd", 1, { known: false, suggestion: "_" })],
+			["dd = 1"],
+		);
+		expect(problem?.suggestion).toBeUndefined();
+		expect(problem?.message).toBe("mise does not read `dd`.");
 	});
 });

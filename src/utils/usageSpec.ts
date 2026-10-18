@@ -336,9 +336,9 @@ See [vars](https://mise.jdx.dev/tasks/task-configuration.html#task-vars).`,
 	},
 	{
 		name: "cache",
-		detail: "Cache the outputs and logs of a successful run (experimental)",
+		detail: "[experimental] Cache the outputs and logs of a successful run",
 		insertText: "cache={ enabled = true }",
-		documentation: `Store the outputs and logs of a successful run, and restore them when the same inputs come back: \`{ enabled?, audit?, env?, command_inputs? }\`.
+		documentation: `[experimental] Store the outputs and logs of a successful run, and restore them when the same inputs come back: \`{ enabled?, audit?, env?, command_inputs? }\`.
 
 See [task caching](https://mise.jdx.dev/tasks/caching.html).`,
 	},
@@ -347,6 +347,14 @@ See [task caching](https://mise.jdx.dev/tasks/caching.html).`,
 		detail: "Output style of the task (prefix, interleave, keep-order, ...)",
 		// biome-ignore lint/suspicious/noTemplateCurlyInString: vscode snippet placeholder
 		insertText: 'output="${1|prefix,interleave,keep-order,replacing,timed|}"',
+	},
+	{
+		name: "watch",
+		detail: "Options of mise watch for this task",
+		insertText: "watch={ no_vcs_ignore = true }",
+		documentation: `Options for running the task with \`mise watch\`: \`{ no_vcs_ignore = true }\` also watches the files that \`.gitignore\` and other VCS ignore files leave out.
+
+See [watch](https://mise.jdx.dev/tasks/task-configuration.html#watch).`,
 	},
 	{
 		name: "raw_args",
@@ -422,9 +430,9 @@ See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): su
 	{
 		name: "pass_through_env",
 		detail:
-			"Sandbox: keep these variables out of the cache key when env is denied (experimental)",
+			"[experimental] Sandbox: keep these variables out of the cache key when env is denied",
 		insertText: 'pass_through_env=["$1"]',
-		documentation: `Keep these inherited variables, with \`*\` wildcards, when environment inheritance is denied, without adding their values to the task cache key.
+		documentation: `[experimental] Keep these inherited variables, with \`*\` wildcards, when environment inheritance is denied, without adding their values to the task cache key.
 
 See [sandboxing](https://mise.jdx.dev/tasks/task-configuration.html#sandbox): support differs by platform.`,
 	},

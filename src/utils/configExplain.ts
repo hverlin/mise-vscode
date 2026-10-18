@@ -14,6 +14,8 @@ export type ConfigKeyExplanation = {
 
 export type ConfigKeyProblem = {
 	kind: "unknown" | "deprecated";
+	/** e.g. `settings.experimantal` */
+	key: string;
 	/** 0-based */
 	line: number;
 	/** the name of the key on its line, or the whole line when not found */
@@ -47,9 +49,18 @@ export function findKeyName(
 	return { start, end: start + name.length };
 }
 
-/** `use env._.file instead.` out of `dotenv file(s) to load. Deprecated; use env._.file instead.` */
+/**
+ * What a deprecated key's description says to do: `use env._.file instead.`
+ * out of `dotenv file(s) to load. Deprecated; use env._.file instead.`, or
+ * the whole description when it does not say "deprecated", e.g. `[deprecated]
+ * Old name for self_update.auto.`
+ */
 function deprecationAdvice(description: string | null): string | undefined {
-	return description?.match(/\bDeprecated[;:,.]?\s*(.+)$/)?.[1]?.trim();
+	const text = description?.replace(/^\s*\[deprecated\]\s*/i, "").trim();
+	if (!text) {
+		return undefined;
+	}
+	return text.match(/\bdeprecated\b[;:,.]?\s*(.+)$/i)?.[1]?.trim() ?? text;
 }
 
 /**
@@ -78,10 +89,15 @@ export function findConfigKeyProblems(
 			: { start: indent, end: lineText.trimEnd().length };
 
 		if (!explanation.known) {
-			const suggestion = explanation.suggestion ?? undefined;
+			// mise suggests `_`, the env directives, for any short unknown key
+			const suggestion =
+				explanation.suggestion && explanation.suggestion !== "_"
+					? explanation.suggestion
+					: undefined;
 			return [
 				{
 					kind: "unknown",
+					key: explanation.key,
 					line,
 					...range,
 					message: `mise does not read \`${explanation.key}\`.${
@@ -96,6 +112,7 @@ export function findConfigKeyProblems(
 		return [
 			{
 				kind: "deprecated",
+				key: explanation.key,
 				line,
 				...range,
 				message: `\`${explanation.key}\` is deprecated${advice ? `: ${advice}` : "."}`,
