@@ -250,7 +250,7 @@ type MiseToolInfo = {
 	active_versions: string[] | null;
 	config_source: { type: string; path: string } | null;
 	tool_options: {
-		os?: string | null;
+		os?: string[] | null;
 		/** installed on first use (mise 2026.9.0+) */
 		lazy?: boolean | null;
 		install_env?: Record<string, string>;

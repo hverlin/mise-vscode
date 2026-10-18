@@ -149,8 +149,9 @@ suite("Tool Versions File Test Suite", function () {
 			)
 			.join("\n");
 		assert.ok(
-			hoverText.includes("Backend"),
-			`Expected tool hover with backend info, got: ${hoverText}`,
+			hoverText.includes("**shellcheck** · ") &&
+				hoverText.includes("**Version**"),
+			`Expected tool hover with the backend and the version, got: ${hoverText}`,
 		);
 	});
 
@@ -171,7 +172,7 @@ suite("Tool Versions File Test Suite", function () {
 			)
 			.join("\n");
 		assert.ok(
-			hoverText.includes("Website: [dart\\.dev](<https://dart.dev/>)"),
+			hoverText.includes("**Website** [dart\\.dev](<https://dart.dev/>)"),
 			`Expected the website from the registry in the hover, got: ${hoverText}`,
 		);
 	});

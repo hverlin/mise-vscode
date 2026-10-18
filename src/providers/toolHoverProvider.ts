@@ -3,18 +3,8 @@ import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
-import { escapeMarkdown } from "../utils/markdown";
-import {
-	getCleanedToolName,
-	getWebsiteForTool,
-	toWebUrl,
-} from "../utils/miseUtilts";
-import {
-	findToolUpdate,
-	formatToolOptions,
-	getWebsiteLabel,
-	markdownLink,
-} from "../utils/toolHover";
+import { getCleanedToolName, getWebsiteForTool } from "../utils/miseUtilts";
+import { findToolUpdate, formatToolHover } from "../utils/toolHover";
 import { getToolIndexForDocument } from "../utils/toolIndex";
 
 /**
@@ -77,53 +67,14 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const markdownString = new vscode.MarkdownString("");
-			const toolWebsite = await getWebsiteForTool(toolInfo);
-			// the project, when the registry knows it, besides its source
-			const projectWebsite = toWebUrl(toolInfo.url ?? undefined);
-			const update = findToolUpdate(
-				outdatedTools,
-				toolName,
-				document.uri.fsPath,
-			);
-
-			const displayRequestedVersion =
-				tool.requestedVersion || (toolInfo.requested_versions ?? []).join(", ");
-
-			markdownString.appendMarkdown(
-				[
-					[
-						"Backend",
-						toolWebsite
-							? `[${toolInfo.backend}](${toolWebsite})`
-							: `${toolInfo.backend}.`,
-					],
-					["Description", toolInfo.description],
-					[
-						"Website",
-						projectWebsite && projectWebsite !== toolWebsite
-							? markdownLink(getWebsiteLabel(projectWebsite), projectWebsite)
-							: undefined,
-					],
-					["Active version", (toolInfo.active_versions ?? []).join(", ")],
-					[
-						"Latest version",
-						update?.latest
-							? update.release_url
-								? `${escapeMarkdown(update.latest)} (${markdownLink("release notes", update.release_url)})`
-								: escapeMarkdown(update.latest)
-							: undefined,
-					],
-					[
-						"Installed Versions",
-						(toolInfo.installed_versions ?? []).join(", "),
-					],
-					["Requested Version", displayRequestedVersion],
-					["Options", formatToolOptions(toolInfo.tool_options)],
-				]
-					.filter(([, val]) => !!val)
-					.map(([k, v]) => `${k}: ${v}`)
-					.join("\n\n"),
+			const markdownString = new vscode.MarkdownString(
+				formatToolHover({
+					toolName,
+					toolInfo,
+					requestedVersion: tool.requestedVersion,
+					backendWebsite: await getWebsiteForTool(toolInfo),
+					update: findToolUpdate(outdatedTools, toolName, document.uri.fsPath),
+				}),
 			);
 
 			return new vscode.Hover([markdownString], tool.range);

@@ -1,5 +1,6 @@
 import { expandPath } from "./fileUtils";
 import { escapeMarkdown, markdownCodeSpan } from "./markdown";
+import { toWebUrl } from "./miseUtilts";
 
 /**
  * A markdown link. The destination is in angle brackets, which a `)` in the
@@ -88,4 +89,88 @@ export function formatToolOptions(
 			markdownCodeSpan(`${toTomlKey(key)} = ${toTomlValue(value)}`),
 		)
 		.join(", ");
+}
+
+const formatVersions = (versions: string[]) =>
+	versions.map(escapeMarkdown).join(", ");
+
+/** installed versions listed, the newest ones */
+const MAX_INSTALLED_VERSIONS = 5;
+
+function formatInstalledVersions(versions: string[]): string {
+	const newestFirst = [...versions].reverse();
+	const listed = formatVersions(newestFirst.slice(0, MAX_INSTALLED_VERSIONS));
+	const more = newestFirst.length - MAX_INSTALLED_VERSIONS;
+	return more > 0 ? `${listed} and ${more} more` : listed;
+}
+
+/**
+ * The hover of a tool in a config: its name and backend, its description,
+ * then one line per detail.
+ */
+export function formatToolHover({
+	toolName,
+	toolInfo,
+	requestedVersion,
+	backendWebsite,
+	update,
+}: {
+	toolName: string;
+	toolInfo: MiseToolInfo;
+	/** the version requested where the tool is hovered */
+	requestedVersion?: string;
+	/** where the backend gets the tool from, e.g. its repository */
+	backendWebsite?: string;
+	update?: MiseToolUpdate;
+}): string {
+	const backend = backendWebsite
+		? markdownLink(toolInfo.backend, backendWebsite)
+		: escapeMarkdown(toolInfo.backend);
+	const title =
+		toolName === toolInfo.backend
+			? `**${backend}**`
+			: `**${escapeMarkdown(toolName)}** · ${backend}`;
+
+	const active = toolInfo.active_versions ?? [];
+	const requested = requestedVersion
+		? escapeMarkdown(requestedVersion)
+		: formatVersions(toolInfo.requested_versions ?? []);
+	const version = active.length
+		? formatVersions(active)
+		: toolInfo.tool_options?.lazy
+			? "installs on first use"
+			: "not installed";
+	const otherInstalled = (toolInfo.installed_versions ?? []).some(
+		(installed) => !active.includes(installed),
+	);
+	// the project, when the registry knows it, besides where the tool comes from
+	const website = toWebUrl(toolInfo.url ?? undefined);
+	const options = formatToolOptions(toolInfo.tool_options);
+
+	const details = [
+		`**Version** ${version}${
+			requested && requested !== version ? ` · requested ${requested}` : ""
+		}`,
+		update?.latest &&
+			`**Update** ${escapeMarkdown(update.latest)}${
+				update.release_url
+					? ` · ${markdownLink("release notes", update.release_url)}`
+					: ""
+			}`,
+		otherInstalled &&
+			`**Installed** ${formatInstalledVersions(toolInfo.installed_versions)}`,
+		website &&
+			website !== backendWebsite &&
+			`**Website** ${markdownLink(getWebsiteLabel(website), website)}`,
+		options && `**Options** ${options}`,
+	].filter(Boolean);
+
+	return [
+		title,
+		toolInfo.description && escapeMarkdown(toolInfo.description),
+		// a line break, without the space between paragraphs
+		details.join("  \n"),
+	]
+		.filter(Boolean)
+		.join("\n\n");
 }
