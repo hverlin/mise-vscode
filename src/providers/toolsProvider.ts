@@ -43,6 +43,7 @@ import {
 	getAllConfigurableExtensions,
 } from "../utils/supportedExtensions";
 import { expandToolNames } from "../utils/toolNameMatching";
+import { hasToolVersion } from "../utils/toolSearch";
 import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
 import { CUSTOM_TOOL, pickToolToUse } from "./toolPicker";
 
@@ -448,12 +449,15 @@ export function registerToolsCommands(
 							if (!input) {
 								return "Tool name is required";
 							}
-							if (/[^@]+@[^@]+/.test(input)) {
+							if (!hasToolVersion(input)) {
 								return "Tool name must include a version (e.g. node@latest or node@20)";
 							}
 							return null;
 						},
 					});
+				} else if (hasToolVersion(selection)) {
+					// typed with its version, e.g. `npm:prettier@3`
+					selectedToolName = selection;
 				} else {
 					selectedToolName = selection;
 					const availableVersions =

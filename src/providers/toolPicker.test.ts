@@ -21,8 +21,18 @@ function createFakeQuickPick() {
 			return { dispose: () => {} };
 		};
 	let value = "";
+	let items: Item[] = [];
 	const quickPick = {
-		items: [] as Item[],
+		/** how many times the items were sent to the window */
+		itemSets: 0,
+		get items() {
+			return items;
+		},
+		// copied, as VS Code does
+		set items(newItems: Item[]) {
+			items = [...newItems];
+			quickPick.itemSets++;
+		},
 		selectedItems: [] as Item[],
 		busy: false,
 		placeholder: "",
@@ -177,21 +187,66 @@ describe("pickToolToUse", () => {
 		expect(labels(fake.quickPick.items)).not.toContain("npm:prettier");
 	});
 
-	it("shows no results when the search fails", async () => {
+	it("offers the name typed when the search finds nothing or fails", async () => {
+		const notFound = setUp();
+		await settle();
+		notFound.fake.type("npm:private-package");
+		await afterSearchDelay();
+		expect(labels(notFound.fake.quickPick.items)).toEqual([
+			"npm:private-package",
+		]);
+		notFound.fake.accept("npm:private-package");
+		expect(await notFound.picked).toBe("npm:private-package");
+
 		const logged = spyOn(logger, "info").mockImplementation(() => {});
-		const { fake } = setUp({
+		const failed = setUp({
 			searchTools: async () => {
 				throw new Error("network");
 			},
 		});
 		await settle();
-
-		fake.type("gem:rails");
+		failed.fake.type("gem:rails");
 		await afterSearchDelay();
-		expect(fake.quickPick.items).toEqual([]);
-		expect(fake.quickPick.busy).toBe(false);
+		expect(labels(failed.fake.quickPick.items)).toEqual(["gem:rails"]);
+		expect(failed.fake.quickPick.busy).toBe(false);
 		expect(logged).toHaveBeenCalled();
 		logged.mockRestore();
+	});
+
+	it("only sends the registry again after a search", async () => {
+		const { fake } = setUp({
+			searchTools: async (query) => [{ name: query, description: "" }],
+		});
+		await settle();
+		const initialSets = fake.quickPick.itemSets;
+
+		fake.type("n");
+		fake.type("no");
+		fake.type("node");
+		expect(fake.quickPick.itemSets).toBe(initialSets);
+
+		fake.type("npm:prettier");
+		await afterSearchDelay();
+		fake.type("node");
+		fake.type("nod");
+		expect(fake.quickPick.itemSets).toBe(initialSets + 2);
+		expect(labels(fake.quickPick.items)).toContain("node");
+	});
+
+	it("ignores Enter on the results of the previous search", async () => {
+		const { fake, picked } = setUp({
+			searchTools: async (query) => [{ name: query, description: "" }],
+		});
+		await settle();
+
+		fake.type("npm:prettier");
+		await afterSearchDelay();
+		fake.type("cargo:ripgrep");
+		fake.accept("npm:prettier");
+		await afterSearchDelay();
+
+		fake.accept("cargo:ripgrep");
+		expect(await picked).toBe("cargo:ripgrep");
 	});
 
 	it("resolves with the registry tool, or nothing when dismissed", async () => {

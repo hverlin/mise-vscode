@@ -37,3 +37,11 @@ export function parseToolSearchResults(stdout: string): ToolSearchResult[] {
 			return { name, description: description.join(" ") };
 		});
 }
+
+/**
+ * Whether a tool ends with a version, e.g. `node@20` or `npm:@scope/pkg@1`.
+ * The `@` of an npm scope does not start one.
+ */
+export function hasToolVersion(tool: string): boolean {
+	return /[^:@]@[^@]+$/.test(tool.trim());
+}

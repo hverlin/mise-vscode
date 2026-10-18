@@ -13,12 +13,13 @@ editor
 ![tools-decoration.png](../../../assets/tools-decoration.png)
 
 Hovering a tool in a config file shows its backend, its description and its
-versions. The hover also links to:
+versions, and:
 
-- the website of the project, when the
+- a link to the website of the project, when the
   [registry](https://mise.jdx.dev/registry.html) has one
-- the release notes of the latest version, when a newer version is available
-  and its backend publishes them (e.g. GitHub releases)
+- the latest version, when the installed one is outdated, with a link to its
+  release notes when the backend publishes them (e.g. GitHub releases, mise
+  2026.8.15+)
 
 ## Tool explorer (activity bar)
 
@@ -60,6 +61,6 @@ Use the list `List all tools` button to list all installed tools.
 - You can filter the tools used in the current project using `active` only.
 - From there, you can upgrade, uninstall or prune unused tools
 - When a newer version is available, it links to its release notes, for the
-  backends that publish them
+  backends that publish them (mise 2026.8.15+)
 
 ![tools-list.png](../../../assets/tools-list.png)

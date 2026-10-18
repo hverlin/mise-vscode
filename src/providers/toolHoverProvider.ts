@@ -3,12 +3,18 @@ import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
+import { escapeMarkdown } from "../utils/markdown";
 import {
 	getCleanedToolName,
 	getWebsiteForTool,
 	toWebUrl,
 } from "../utils/miseUtilts";
 import { getToolIndexForDocument } from "../utils/toolIndex";
+import {
+	findToolUpdate,
+	getWebsiteLabel,
+	markdownLink,
+} from "../utils/toolLinks";
 
 /**
  * How long the hover waits for `mise outdated`, which may query the network,
@@ -16,23 +22,22 @@ import { getToolIndexForDocument } from "../utils/toolIndex";
  */
 const OUTDATED_TIMEOUT_MS = 1000;
 
-/** The available update of a tool, or undefined when it takes too long */
-async function findToolUpdate(
+/** The outdated tools, or none when mise takes too long to list them */
+async function getOutdatedToolsForHover(
 	miseService: MiseService,
-	toolName: string,
-): Promise<MiseToolUpdate | undefined> {
+): Promise<MiseToolUpdate[]> {
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
-		const outdatedTools = await Promise.race([
-			miseService.getOutdatedTools(),
+		return await Promise.race([
+			// the result listed for the editor, a hover does not run mise each time
+			miseService.getOutdatedTools({ allowStale: true }),
 			new Promise<[]>((resolve) => {
 				timer = setTimeout(() => resolve([]), OUTDATED_TIMEOUT_MS);
 			}),
 		]);
-		return outdatedTools.find((t) => t.name === toolName);
 	} catch (error) {
-		logger.debug("Could not check the tool for updates", error);
-		return undefined;
+		logger.debug("Could not check the tools for updates", error);
+		return [];
 	} finally {
 		clearTimeout(timer);
 	}
@@ -63,9 +68,9 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const [toolInfo, update] = await Promise.all([
+			const [toolInfo, outdatedTools] = await Promise.all([
 				miseService.miseToolInfo(tool.toolName),
-				findToolUpdate(miseService, toolName),
+				getOutdatedToolsForHover(miseService),
 			]);
 			if (!toolInfo) {
 				return;
@@ -75,9 +80,11 @@ export const createToolHoverProvider = (
 			const toolWebsite = await getWebsiteForTool(toolInfo);
 			// the project, when the registry knows it, besides its source
 			const projectWebsite = toWebUrl(toolInfo.url ?? undefined);
-			const projectWebsiteLabel = projectWebsite
-				?.replace(/^https?:\/\//, "")
-				.replace(/\/$/, "");
+			const update = findToolUpdate(
+				outdatedTools,
+				toolName,
+				document.uri.fsPath,
+			);
 
 			const displayRequestedVersion =
 				tool.requestedVersion || (toolInfo.requested_versions ?? []).join(", ");
@@ -94,7 +101,7 @@ export const createToolHoverProvider = (
 					[
 						"Website",
 						projectWebsite && projectWebsite !== toolWebsite
-							? `[${projectWebsiteLabel}](${projectWebsite})`
+							? markdownLink(getWebsiteLabel(projectWebsite), projectWebsite)
 							: undefined,
 					],
 					["Active version", (toolInfo.active_versions ?? []).join(", ")],
@@ -102,8 +109,8 @@ export const createToolHoverProvider = (
 						"Latest version",
 						update?.latest
 							? update.release_url
-								? `${update.latest} ([release notes](${update.release_url}))`
-								: update.latest
+								? `${escapeMarkdown(update.latest)} (${markdownLink("release notes", update.release_url)})`
+								: escapeMarkdown(update.latest)
 							: undefined,
 					],
 					[

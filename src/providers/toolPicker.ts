@@ -51,6 +51,8 @@ export async function pickToolToUse(
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	// only the results of the latest search are shown
 	let searchId = 0;
+	// setting the items sends them all to the window, ~1000 for the registry
+	let showsRegistry = true;
 
 	const search = (value: string) => {
 		clearTimeout(searchTimer);
@@ -60,8 +62,9 @@ export async function pickToolToUse(
 			: undefined;
 		if (!query) {
 			quickPick.busy = false;
-			if (quickPick.items !== registryItems) {
+			if (!showsRegistry) {
 				quickPick.items = registryItems;
+				showsRegistry = true;
 			}
 			return;
 		}
@@ -81,7 +84,11 @@ export async function pickToolToUse(
 			}
 			if (id === searchId) {
 				quickPick.busy = false;
-				quickPick.items = results;
+				// e.g. a private package, or offline: the name typed can still be used
+				quickPick.items = results.length
+					? results
+					: [{ label: query, description: "Use this name", alwaysShow: true }];
+				showsRegistry = false;
 			}
 		}, SEARCH_DELAY_MS);
 	};
@@ -91,7 +98,8 @@ export async function pickToolToUse(
 			quickPick.onDidChangeValue(search),
 			quickPick.onDidAccept(() => {
 				const [selected] = quickPick.selectedItems;
-				if (!selected) {
+				// the items shown are the results for what was typed before
+				if (!selected || quickPick.busy) {
 					return;
 				}
 				if (selected.searchPrefix) {

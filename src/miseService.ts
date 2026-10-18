@@ -149,6 +149,8 @@ const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
 /** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
 const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
+/** how long a hover uses the outdated tools listed for the editor */
+const STALE_OUTDATED_TOOLS_MS = 60_000;
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -398,6 +400,7 @@ export class MiseService {
 			this.bootstrapCache.clear(),
 		]);
 		this.configToolsCache.clear();
+		this.recentOutdatedTools = undefined;
 		this.eventEmitter.fire();
 	}
 
@@ -1546,6 +1549,9 @@ export class MiseService {
 		}
 	}
 
+	/** the last `mise outdated`, which a hover uses instead of running it */
+	private recentOutdatedTools?: { tools: MiseToolUpdate[]; at: number };
+
 	/**
 	 * `[tools]` tables of the config files, re-read when a file changes. `null`
 	 * for a file that does not parse.
@@ -1652,9 +1658,21 @@ export class MiseService {
 
 	async getOutdatedTools({
 		bump = false,
+		// the last result when it is less than a minute old, e.g. for a hover
+		allowStale = false,
 	} = {}): Promise<Array<MiseToolUpdate>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
+		}
+
+		const recent = this.recentOutdatedTools;
+		if (
+			allowStale &&
+			!bump &&
+			recent &&
+			Date.now() - recent.at < STALE_OUTDATED_TOOLS_MS
+		) {
+			return recent.tools;
 		}
 
 		// --bump is only requested explicitly (button click), so bypass the TTL
@@ -1672,7 +1690,7 @@ export class MiseService {
 			return [];
 		}
 
-		return Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
+		const tools = Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
 			const foundTool = tool as {
 				name: string;
 				requested: string;
@@ -1693,6 +1711,10 @@ export class MiseService {
 				release_url: toWebUrl(foundTool.release_url),
 			};
 		});
+		if (!bump) {
+			this.recentOutdatedTools = { tools, at: Date.now() };
+		}
+		return tools;
 	}
 
 	async rmUseTool(filename: string, toolName: string) {
