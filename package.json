@@ -395,6 +395,13 @@
           "default": false,
           "markdownDescription": "Enable document symbol provider for mise TOML files. Provides an outline of tasks, tools, env, and settings sections. This is always enabled on the web. On desktop, you can use [Tombi](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) for better TOML support."
         },
+        "mise.enableTaskDiagnostics": {
+          "order": 10.65,
+          "type": "boolean",
+          "title": "Enable task diagnostics",
+          "default": true,
+          "markdownDescription": "Show the problems of the task definitions found by [`mise tasks validate`](https://mise.jdx.dev/cli/tasks/validate.html) in the Problems panel: dependency cycles, missing dependencies, usage specs that do not parse, unknown daemons, ... Requires mise `2025.11.4` or later."
+        },
         "mise.showNotificationIfMissingTools": {
           "order": 11,
           "type": "boolean",
@@ -1038,6 +1045,12 @@
       {
         "command": "mise.doctor",
         "title": "Mise: Run mise doctor",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.runProjectChecks",
+        "title": "Mise: Run project checks",
+        "icon": "$(checklist)",
         "enablement": "!isWeb"
       },
       {

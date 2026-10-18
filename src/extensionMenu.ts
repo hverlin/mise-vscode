@@ -8,6 +8,7 @@ import {
 	MISE_OPEN_EXTENSION_SETTINGS,
 	MISE_OPEN_MENU,
 	MISE_RELOAD_FROM_USER,
+	MISE_RUN_PROJECT_CHECKS,
 	MISE_SELECT_WORKSPACE_FOLDER,
 	MISE_SHOW_BOOTSTRAP,
 	MISE_SHOW_PROJECTS,
@@ -91,6 +92,10 @@ export function createMenu(miseService: MiseService) {
 					label: "Mise Doctor",
 				},
 				{
+					iconPath: new vscode.ThemeIcon("checklist"),
+					label: "Run project checks",
+				},
+				{
 					iconPath: new vscode.ThemeIcon("info"),
 					label: "About vscode-mise",
 				},
@@ -150,6 +155,9 @@ export function createMenu(miseService: MiseService) {
 				break;
 			case "Mise Doctor":
 				await vscode.commands.executeCommand(MISE_DOCTOR);
+				break;
+			case "Run project checks":
+				await vscode.commands.executeCommand(MISE_RUN_PROJECT_CHECKS);
 				break;
 			default:
 				break;

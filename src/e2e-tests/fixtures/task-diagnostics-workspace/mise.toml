@@ -1,0 +1,27 @@
+# Each task below has one problem `mise tasks validate` reports, except
+# `templated`, whose dependency only exists once its template is rendered.
+
+[tasks.build]
+run = "echo build"
+
+[tasks.missing]
+run = "echo missing"
+depends = ["build", "nope"]
+
+[tasks.templated]
+usage = 'arg "<target>"'
+run = "echo templated"
+depends = ["build {{usage.target}}"]
+
+[tasks.slow]
+run = "echo slow"
+timeout = "forever"
+
+[doctor.checks.passes]
+description = "Always passes"
+run = "true"
+
+[doctor.checks.fails]
+description = "Always fails"
+run = "exit 3"
+hint = "Nothing to fix, it is a fixture"

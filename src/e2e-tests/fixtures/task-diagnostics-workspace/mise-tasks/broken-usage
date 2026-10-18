@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="File task whose usage spec does not parse"
+#USAGE arg "<unterminated
+echo "broken usage"

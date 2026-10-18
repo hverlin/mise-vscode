@@ -53,6 +53,41 @@ type MiseRunEntry =
 			env?: Record<string, string>;
 	  };
 
+/** Report of `mise tasks validate --json` (mise 2025.11.4+) */
+type MiseTaskValidation = {
+	tasks_validated: number;
+	errors: number;
+	warnings: number;
+	issues: MiseTaskValidationIssue[];
+};
+
+type MiseTaskValidationIssue = {
+	task: string;
+	severity: "error" | "warning" | "info";
+	/** kebab-case kind of problem, e.g. `missing-dependency` */
+	category: string;
+	message: string;
+	details?: string | null;
+};
+
+/** Report of `mise doctor project --json` (mise 2026.9.6+) */
+type MiseProjectChecksReport = {
+	/** checks that could not be loaded or run at all */
+	errors: string[];
+	checks: MiseProjectCheck[];
+};
+
+/** One `[doctor.checks.<name>]` of a config file and how its command went */
+type MiseProjectCheck = {
+	name: string;
+	description: string | null;
+	/** config file declaring the check */
+	source: string;
+	status: "pass" | "fail" | "error" | "skipped";
+	message: string | null;
+	hint: string | null;
+};
+
 /**
  * The monorepo projects affected by the git changes and the tasks that would
  * run in them, as reported by `mise run --affected --affected-json <tasks>`.

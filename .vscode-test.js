@@ -517,4 +517,18 @@ module.exports = defineConfig([
 			timeout: 60_000,
 		},
 	},
+	{
+		label: "task-diagnostics",
+		files: "src/e2e-tests/task-diagnostics/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "task-diagnostics-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
 ]);

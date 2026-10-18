@@ -588,3 +588,20 @@ export function isMiseAutoUpdateOn(value: string | undefined): boolean {
 	const normalized = value?.trim().toLowerCase() ?? "";
 	return !["", "false", "no", "n", "off", "0"].includes(normalized);
 }
+
+/**
+ * The reason mise gives in the stderr of a failed command, e.g.
+ * `--affected requires a monorepo root configuration`, without the version and
+ * `--verbose` hints mise appends to every error.
+ */
+export function getMiseErrorReason(message: string): string | undefined {
+	return message
+		.split("\n")
+		.map((line) => line.match(/mise ERROR\s+(.*)/)?.[1]?.trim())
+		.find(
+			(reason) =>
+				reason &&
+				!reason.startsWith("Version:") &&
+				!reason.startsWith("Run with --verbose"),
+		);
+}

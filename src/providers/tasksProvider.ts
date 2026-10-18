@@ -26,7 +26,6 @@ import type { MiseService } from "../miseService";
 import {
 	buildAffectedRunFlags,
 	formatAffectedProjectRoot,
-	getAffectedErrorReason,
 	getAffectedTaskChoices,
 } from "../utils/affectedTasks";
 import {
@@ -42,6 +41,7 @@ import { logger } from "../utils/logger";
 import { findTaskDefinition } from "../utils/miseFileParser";
 import {
 	allowedFileTaskDirs,
+	getMiseErrorReason,
 	idiomaticFiles,
 	renderDepsArray,
 	UNPARSED_CONFIG_DESCRIPTION,
@@ -716,7 +716,7 @@ async function runAffectedTasks(miseService: MiseService) {
 		const message = error instanceof Error ? error.message : String(error);
 		logger.info("Could not find the affected tasks:", error as Error);
 		vscode.window.showErrorMessage(
-			`Cannot find the affected tasks: ${getAffectedErrorReason(message) ?? message}`,
+			`Cannot find the affected tasks: ${getMiseErrorReason(message) ?? message}`,
 		);
 		return;
 	}
