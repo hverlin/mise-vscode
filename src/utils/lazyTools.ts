@@ -70,6 +70,21 @@ export function findToolDeclaration(
 	return key === undefined ? undefined : configTools[key];
 }
 
+/**
+ * Names of the tools that are only missing versions installed on first use,
+ * e.g. not `fd = [{ version = "10", lazy = true }, "9"]` while 9 is missing
+ */
+export function getLazyToolNames(tools: MiseTool[]): Set<string> {
+	const notInstalled = tools.filter((tool) => !tool.installed);
+	return new Set(
+		notInstalled
+			.filter((tool) =>
+				notInstalled.every((other) => other.name !== tool.name || other.lazy),
+			)
+			.map((tool) => tool.name),
+	);
+}
+
 /** Tools reported as missing: not installed, and not installed on first use */
 export function getMissingTools(tools: MiseTool[]): MiseTool[] {
 	return tools.filter((tool) => !tool.installed && !tool.lazy);

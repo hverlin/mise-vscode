@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { parse } from "toml-v1";
 import {
 	findToolDeclaration,
+	getLazyToolNames,
 	getMissingTools,
 	isLazyToolDeclaration,
 	normalizeToolKey,
@@ -64,6 +65,29 @@ describe("getMissingTools", () => {
 				tool({ name: "ripgrep", installed: false, lazy: true }),
 			]),
 		).toEqual([missing]);
+	});
+});
+
+describe("getLazyToolNames", () => {
+	const tool = (overrides: Partial<MiseTool>): MiseTool => ({
+		name: "fd",
+		version: "10.2.0",
+		requested_version: "10.2.0",
+		installed: false,
+		active: false,
+		install_path: "/mise/installs/fd/10.2.0",
+		...overrides,
+	});
+
+	it("names the tools only missing versions installed on first use", () => {
+		expect(
+			getLazyToolNames([
+				tool({ name: "ripgrep", lazy: true }),
+				tool({ name: "node", installed: true }),
+				tool({ name: "fd", lazy: true }),
+				tool({ name: "fd", version: "9.0.0" }),
+			]),
+		).toEqual(new Set(["ripgrep"]));
 	});
 });
 
