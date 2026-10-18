@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import path from "node:path";
-import { findToolUpdate, getWebsiteLabel, markdownLink } from "./toolLinks";
+import {
+	findToolUpdate,
+	formatToolOptions,
+	getWebsiteLabel,
+	markdownLink,
+} from "./toolHover";
 
 describe("markdownLink", () => {
 	it("keeps the link whole with brackets in the URL or the text", () => {
@@ -65,5 +70,46 @@ describe("findToolUpdate", () => {
 			findToolUpdate([{ ...update, source: undefined }], "node", configPath),
 		).toBeUndefined();
 		expect(findToolUpdate([update], "python", configPath)).toBeUndefined();
+	});
+});
+
+describe("formatToolOptions", () => {
+	it("lists the options set, as written in a config", () => {
+		expect(
+			formatToolOptions({
+				os: ["linux", "macos"],
+				depends: null,
+				install_env: { FOO: "bar", "A.B": "c" },
+				lazy: true,
+				lazy_bins: [],
+				auto_update: null,
+				postinstall: "echo hi",
+			}),
+		).toBe(
+			[
+				'`os = ["linux", "macos"]`',
+				'`install_env = { FOO = "bar", "A.B" = "c" }`',
+				"`lazy = true`",
+				'`postinstall = "echo hi"`',
+			].join(", "),
+		);
+	});
+
+	it("is undefined when no option is set", () => {
+		expect(
+			formatToolOptions({
+				os: null,
+				depends: null,
+				install_env: {},
+				lazy: null,
+				lazy_bins: [],
+				auto_update: null,
+			}),
+		).toBeUndefined();
+		expect(formatToolOptions(undefined)).toBeUndefined();
+	});
+
+	it("keeps an option set to false", () => {
+		expect(formatToolOptions({ lazy: false })).toBe("`lazy = false`");
 	});
 });

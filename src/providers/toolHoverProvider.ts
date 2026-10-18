@@ -9,12 +9,13 @@ import {
 	getWebsiteForTool,
 	toWebUrl,
 } from "../utils/miseUtilts";
-import { getToolIndexForDocument } from "../utils/toolIndex";
 import {
 	findToolUpdate,
+	formatToolOptions,
 	getWebsiteLabel,
 	markdownLink,
-} from "../utils/toolLinks";
+} from "../utils/toolHover";
+import { getToolIndexForDocument } from "../utils/toolIndex";
 
 /**
  * How long the hover waits for `mise outdated`, which may query the network,
@@ -118,16 +119,7 @@ export const createToolHoverProvider = (
 						(toolInfo.installed_versions ?? []).join(", "),
 					],
 					["Requested Version", displayRequestedVersion],
-					[
-						"tool_options",
-						toolInfo.tool_options &&
-						(toolInfo?.tool_options.os ||
-							Object.keys(toolInfo.tool_options.install_env || {})?.length >
-								1 ||
-							Object.keys(toolInfo.tool_options).length >= 3)
-							? JSON.stringify(toolInfo.tool_options)
-							: undefined,
-					],
+					["Options", formatToolOptions(toolInfo.tool_options)],
 				]
 					.filter(([, val]) => !!val)
 					.map(([k, v]) => `${k}: ${v}`)

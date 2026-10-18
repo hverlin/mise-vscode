@@ -12,8 +12,8 @@ editor
 
 ![tools-decoration.png](../../../assets/tools-decoration.png)
 
-Hovering a tool in a config file shows its backend, its description and its
-versions, and:
+Hovering a tool in a config file shows its backend, its description, its
+versions and the options set on it (`lazy`, `os`, `postinstall`, ...), and:
 
 - a link to the website of the project, when the
   [registry](https://mise.jdx.dev/registry.html) has one
