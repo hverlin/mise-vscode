@@ -58,7 +58,7 @@ export function buildMiseErrorItems(
 		item.tooltip = full;
 		item.command = {
 			command: MISE_REVIEW_UNTRUSTED_CONFIG,
-			title: "Review the untrusted config file",
+			title: "Review the untrusted file",
 		};
 		return [
 			item,

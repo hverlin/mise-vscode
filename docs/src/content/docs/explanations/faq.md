@@ -31,7 +31,9 @@ The extension does not trust a config file that you told mise to ignore (`mise t
 
 In [paranoid mode](https://mise.jdx.dev/paranoid.html), mise requires a config file to be trusted again after every change, so the extension does not trust it automatically. The status bar shows `Mise (not trusted)` and a code lens at the top of the file lets you review and trust it.
 
-To trust the files you save in VS Code automatically, set [`mise.trustOwnEditsInParanoidMode`](/mise-vscode/reference/settings/#misetrustowneditsinparanoidmode) to `true`, or click `Trust my own edits` at the top of the config file. Only a file that was trusted before the save is trusted again: changes made outside VS Code (e.g. `git pull`) still have to be trusted from the status bar or the code lens.
+Paranoid mode can also be turned on for some of its categories only, e.g. `paranoid = ["env_files"]` (mise 2026.10.14+). With the `env_files` category, the env files mise loads (`env._.file`, `env._.source` and the `env_file` setting) need their own trust, and an edit untrusts them again. The status bar shows `Mise (not trusted)` for them too, and lets you review and trust them. With `env_files` but not `config`, the extension still trusts the config files of the workspace, and only them.
+
+To trust the files you save in VS Code automatically, config files and env files alike, set [`mise.trustOwnEditsInParanoidMode`](/mise-vscode/reference/settings/#misetrustowneditsinparanoidmode) to `true`, or, with the `config` category, click `Trust my own edits` at the top of the config file. Only a file that was trusted before the save is trusted again: changes made outside VS Code (e.g. `git pull`) still have to be trusted from the status bar or the code lens. For an env file, this is checked when you start editing it, by reading the env with mise: an env file that sets no variable, or the one of a monorepo project, has to be trusted again by you.
 
 ### The code-lens (run/watch) on top of each task is quite annoying. Can I turn it off?
 

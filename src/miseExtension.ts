@@ -462,15 +462,40 @@ export class MiseExtension {
 
 		context.subscriptions.push(
 			vscode.workspace.onWillSaveTextDocument((e) => {
+				if (e.reason !== vscode.TextDocumentSaveReason.Manual) {
+					return;
+				}
 				if (
-					e.reason === vscode.TextDocumentSaveReason.Manual &&
-					(e.document.fileName.endsWith(".toml") ||
-						isToolVersionsFile(e.document.fileName))
+					e.document.fileName.endsWith(".toml") ||
+					isToolVersionsFile(e.document.fileName)
 				) {
 					this.miseService.notifyManualSave(e.document.uri);
-					// whether the file is trusted is read before it is written
+				}
+				// a `.env` loaded with `env._.file` has trust of its own in paranoid
+				// mode. Whether the file is trusted is read before it is written
+				if (
+					e.document.fileName.endsWith(".toml") ||
+					isToolVersionsFile(e.document.fileName) ||
+					this.miseService.isEnvFile(e.document.uri.fsPath)
+				) {
 					e.waitUntil(this.miseService.expectOwnEdit(e.document.uri.fsPath));
 				}
+			}),
+			// whether mise trusts an env file is checked when its edit starts:
+			// asking mise when it is saved can take longer than VS Code waits
+			vscode.workspace.onDidChangeTextDocument((e) => {
+				if (!this.miseService.isEnvFile(e.document.uri.fsPath)) {
+					return;
+				}
+				if (e.document.isDirty) {
+					this.miseService.checkEnvFileTrust(e.document.uri.fsPath);
+				} else {
+					// saved, or reverted
+					this.miseService.endEnvFileEdit(e.document.uri.fsPath);
+				}
+			}),
+			vscode.workspace.onDidCloseTextDocument((document) => {
+				this.miseService.endEnvFileEdit(document.uri.fsPath);
 			}),
 		);
 
@@ -739,7 +764,11 @@ export class MiseExtension {
 				}
 			}),
 			vscode.workspace.onDidSaveTextDocument(async (document) => {
-				if (isToolsDocument(document)) {
+				// the file watcher only watches the env files mise loaded last time
+				if (
+					isToolsDocument(document) ||
+					this.miseService.isEnvFile(document.uri.fsPath)
+				) {
 					// before the reload, which reads the file with mise
 					await this.miseService.trustOwnEdit(document.uri.fsPath);
 					vscode.commands.executeCommand(MISE_RELOAD);
