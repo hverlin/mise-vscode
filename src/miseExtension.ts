@@ -639,7 +639,8 @@ export class MiseExtension {
 				...['"', "'", "[", ",", "/"],
 			),
 			vscode.languages.registerCompletionItemProvider(
-				allTomlFilesSelector,
+				// file tasks extend templates from their `#MISE extends=` header
+				[allTomlFilesSelector, { scheme: "file", language: "shellscript" }],
 				new TaskTemplateCompletionProvider(this.miseService),
 				...['"', "'", "=", ":"],
 			),

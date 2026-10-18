@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
 	formatRunEntries,
 	formatTaskOutputs,
+	formatTaskRunRequirements,
 	getTaskDescription,
 } from "./taskDisplay";
 
@@ -75,5 +76,37 @@ describe("formatTaskOutputs", () => {
 
 	it("formats auto-detected outputs", () => {
 		expect(formatTaskOutputs({ auto: true })).toBe("Auto-detected");
+	});
+});
+
+describe("formatTaskRunRequirements", () => {
+	it("lists the daemons, secrets and timeout of the task", () => {
+		expect(
+			formatTaskRunRequirements(
+				task({
+					daemons: ["db", "cache"],
+					secrets: ["DEPLOY_KEY"],
+					timeout: "5m",
+				}),
+			),
+		).toEqual([
+			"Daemons: `db`, `cache`",
+			"Secrets: `DEPLOY_KEY`",
+			"Timeout: `5m`",
+		]);
+	});
+
+	it("names every daemon when the task requires all of them", () => {
+		expect(formatTaskRunRequirements(task({ daemons: true }))).toEqual([
+			"Daemons: every project daemon",
+		]);
+	});
+
+	it("is empty for the values mise reports when nothing is set", () => {
+		expect(
+			formatTaskRunRequirements(
+				task({ daemons: null, secrets: [], timeout: null }),
+			),
+		).toEqual([]);
 	});
 });

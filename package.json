@@ -409,6 +409,13 @@
           "default": true,
           "markdownDescription": "Show the tools and environment variables of each [monorepo](https://mise.jdx.dev/tasks/monorepo.html) project. This spawns one mise process per project when the configuration is loaded. Disable this in large monorepos if reloads feel slow."
         },
+        "mise.affectedBase": {
+          "order": 10.8,
+          "type": "string",
+          "title": "Affected tasks base revision",
+          "default": "",
+          "markdownDescription": "Git revision `Mise: Run affected tasks` counts the changes from (`mise run --affected-base`), e.g. `origin/main` to compare a branch with its target. Uncommitted changes always count. When empty, mise uses `MISE_AFFECTED_BASE`, the CI metadata, or `HEAD~1`."
+        },
         "mise.updateEnvAutomatically": {
           "order": 12,
           "type": "boolean",
@@ -780,6 +787,12 @@
         "enablement": "!isWeb"
       },
       {
+        "command": "mise.runAffectedTasks",
+        "title": "Mise: Run affected tasks",
+        "icon": "$(git-compare)",
+        "enablement": "!isWeb"
+      },
+      {
         "command": "mise.searchTasks",
         "title": "Mise: Search tasks",
         "icon": "$(search)",
@@ -1142,6 +1155,11 @@
           "command": "mise.showHiddenTasks",
           "when": "view == miseTasksView && !mise.tasksShowHidden",
           "group": "navigation@4"
+        },
+        {
+          "command": "mise.runAffectedTasks",
+          "when": "view == miseTasksView && mise.tasksInMonorepo",
+          "group": "1_run"
         },
         {
           "command": "mise.hideHiddenTasks",

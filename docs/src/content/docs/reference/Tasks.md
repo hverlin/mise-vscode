@@ -34,6 +34,10 @@ You have several ways to run a task with the extension:
 Click on the run button to run the task. If some option/arguments are required,
 you will be prompted to enter them.
 
+Hovering the task name shows what the task gets before it starts: the
+[daemons](https://mise.jdx.dev/daemons.html) it waits for, the secrets it
+receives, and its timeout.
+
 ### Task arguments
 
 If the task declares arguments with the
@@ -282,6 +286,23 @@ declared with `[monorepo.projects]` in the monorepo root config:
 [monorepo.projects."go:example.com/fixture/gateway"]
 depends = ["go:example.com/fixture/auth"]
 ```
+
+### Affected tasks
+
+`Mise: Run affected tasks` (also available from the `...` menu of the tasks in
+the activity bar) runs a task only in the projects affected by your git
+changes, using
+[`mise run --affected`](https://mise.jdx.dev/tasks/workspace-graph.html). It
+lists the tasks that would run (`build`, `test`, ...) with the affected projects
+declaring each, and runs the selected one in a terminal.
+
+Changes are counted from a base revision: the commits since then, plus the
+staged, unstaged, and untracked files. Open editors are saved first. To compare
+a branch with its target, set the base revision with the `mise.affectedBase`
+setting (e.g. `origin/main`). When it is empty, mise uses `MISE_AFFECTED_BASE`,
+the CI metadata, or `HEAD~1`.
+
+This requires mise `2026.10.6` or later.
 
 ### Tools and environment variables
 

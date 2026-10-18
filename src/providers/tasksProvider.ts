@@ -13,6 +13,7 @@ import {
 	MISE_HIDE_HIDDEN_TASKS,
 	MISE_OPEN_FILE,
 	MISE_OPEN_TASK_DEFINITION,
+	MISE_RUN_AFFECTED_TASKS,
 	MISE_RUN_TASK,
 	MISE_RUN_TASK_WITHOUT_CACHE,
 	MISE_SEARCH_TASKS,
@@ -20,8 +21,14 @@ import {
 	MISE_SHOW_TASK_CACHE_MENU,
 	MISE_WATCH_TASK,
 } from "../commands";
-import { isMiseExtensionEnabled } from "../configuration";
+import { getAffectedBase, isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import {
+	buildAffectedRunFlags,
+	formatAffectedProjectRoot,
+	getAffectedErrorReason,
+	getAffectedTaskChoices,
+} from "../utils/affectedTasks";
 import {
 	compareSourcePaths,
 	displayPathRelativeTo,
@@ -92,6 +99,12 @@ export class MiseTasksProvider implements vscode.TreeDataProvider<TreeNode> {
 		this.hasMultipleProjects = new Set(tasks.map(getTaskProjectKey)).size > 1;
 		this.grouping = this.getEffectiveGrouping();
 		this.updateGroupingContext();
+		// `mise run --affected` needs a monorepo root, whose tasks are `//` names
+		void vscode.commands.executeCommand(
+			"setContext",
+			"mise.tasksInMonorepo",
+			tasks.some((task) => getTaskConfigRoot(task) !== null),
+		);
 	}
 
 	setShowHiddenTasks(showHiddenTasks: boolean): void {
@@ -674,6 +687,76 @@ async function pickTaskName(
 	return picked?.label;
 }
 
+/**
+ * Pick a task among the ones `mise run --affected` would run, and run it in
+ * every monorepo project affected by the git changes.
+ */
+async function runAffectedTasks(miseService: MiseService) {
+	if (!(await miseService.supportsAffectedTasks())) {
+		vscode.window.showErrorMessage(
+			"Running the affected tasks requires mise 2026.10.6 or later. Update mise with `mise self-update`.",
+		);
+		return;
+	}
+
+	// mise counts the uncommitted changes, unsaved edits would be missed
+	await vscode.workspace.saveAll(false);
+
+	const base = getAffectedBase();
+	let selection: MiseAffectedSelection | undefined;
+	try {
+		selection = await vscode.window.withProgress(
+			{
+				location: vscode.ProgressLocation.Window,
+				title: "mise: finding the affected projects",
+			},
+			() => miseService.getAffectedTasks(base),
+		);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		logger.info("Could not find the affected tasks:", error as Error);
+		vscode.window.showErrorMessage(
+			`Cannot find the affected tasks: ${getAffectedErrorReason(message) ?? message}`,
+		);
+		return;
+	}
+
+	if (!selection) {
+		vscode.window.showWarningMessage(
+			"Cannot find the affected tasks: a mise config file of the workspace is not trusted, or is ignored.",
+		);
+		return;
+	}
+
+	const choices = getAffectedTaskChoices(selection);
+	if (!choices.length) {
+		vscode.window.showInformationMessage(
+			`No task to run: no project is affected by the changes since ${selection.base}.`,
+		);
+		return;
+	}
+
+	const picked = await vscode.window.showQuickPick(
+		choices.map((choice) => ({
+			label: choice.name,
+			description: `${choice.projectRoots.length} project${choice.projectRoots.length === 1 ? "" : "s"}`,
+			detail: choice.projectRoots.map(formatAffectedProjectRoot).join(", "),
+		})),
+		{
+			title: `Run affected tasks: changes since ${selection.base}`,
+			placeHolder: "Select the task to run in the affected projects",
+			matchOnDetail: true,
+		},
+	);
+	if (!picked) {
+		return;
+	}
+
+	await miseService.runTask(picked.label, {
+		runFlags: buildAffectedRunFlags(base),
+	});
+}
+
 /** Task name from a command argument, asking the user when there is none */
 async function resolveTaskName(
 	taskProvider: MiseTasksProvider,
@@ -774,6 +857,9 @@ export function registerTasksCommands(
 				taskItem.task,
 			);
 		}),
+		vscode.commands.registerCommand(MISE_RUN_AFFECTED_TASKS, () =>
+			runAffectedTasks(miseService),
+		),
 		vscode.commands.registerCommand(
 			MISE_WATCH_TASK,
 			async (taskName: undefined | string | MiseTask | TaskItem) => {

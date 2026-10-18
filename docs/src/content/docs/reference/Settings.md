@@ -275,6 +275,14 @@ Show the tools and environment variables of each [monorepo](https://mise.jdx.dev
 
 ---
 
+##### `mise.affectedBase`
+- **Type:** `string`
+- **Default:** `""`
+
+Git revision `Mise: Run affected tasks` counts the changes from (`mise run --affected-base`), e.g. `origin/main` to compare a branch with its target. Uncommitted changes always count. When empty, mise uses `MISE_AFFECTED_BASE`, the CI metadata, or `HEAD~1`.
+
+---
+
 ##### `mise.enableBootstrapCodeLens`
 - **Type:** `boolean`
 - **Default:** `true`

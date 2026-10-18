@@ -30,6 +30,7 @@ import {
 	shouldTrustOwnEditsInParanoidMode,
 	updateBinPath,
 } from "./configuration";
+import { buildAffectedRunFlags } from "./utils/affectedTasks";
 import {
 	displayPathRelativeTo,
 	expandPath,
@@ -128,6 +129,9 @@ const MIN_MISE_VERSION_FOR_BOOTSTRAP_PLAN = [2026, 8, 2] as const;
 const MIN_MISE_VERSION_FOR_UPGRADE_NO_PRUNE = [2026, 8, 1] as const;
 // `mise cache task` and `mise cache clear --task` were added in 2026.8.1
 const MIN_MISE_VERSION_FOR_TASK_CACHE = [2026, 8, 1] as const;
+// `mise run --affected` counts uncommitted changes and no longer needs
+// `experimental = true` since 2026.10.6
+const MIN_MISE_VERSION_FOR_AFFECTED_TASKS = [2026, 10, 6] as const;
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -1840,6 +1844,37 @@ export class MiseService {
 		]);
 		ensureMiseCommand(command);
 		await runInVscodeTerminal(terminal, command);
+	}
+
+	async supportsAffectedTasks(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_AFFECTED_TASKS);
+	}
+
+	/**
+	 * The monorepo projects affected by the git changes since `base`, with
+	 * every task `mise run --affected` would run in them. Nothing runs.
+	 *
+	 * Undefined when a config of the workspace is untrusted or ignored: outside
+	 * paranoid mode, `mise run` trusts the config it reads. Throws when mise
+	 * cannot select the projects, e.g. outside of a monorepo root.
+	 */
+	async getAffectedTasks(
+		base?: string,
+	): Promise<MiseAffectedSelection | undefined> {
+		if (
+			this._untrustedConfigFiles.length ||
+			(await this.isWorkspaceConfigIgnored())
+		) {
+			return undefined;
+		}
+
+		const { stdout } = await this.execMiseCommand([
+			"run",
+			...buildAffectedRunFlags(base),
+			"--affected-json",
+			"*",
+		]);
+		return JSON.parse(stdout);
 	}
 
 	async watchTask(taskName: string, ...args: string[]): Promise<void> {

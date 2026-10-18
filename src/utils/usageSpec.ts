@@ -3,6 +3,8 @@ export interface UsageCompletionItem {
 	detail: string;
 	insertText: string;
 	documentation?: string;
+	/** open the suggestions again once inserted, for keys whose value completes */
+	triggerSuggest?: boolean;
 }
 
 /**
@@ -175,6 +177,9 @@ export const flagBlockItems: UsageCompletionItem[] = [
 	flagValueArgItem,
 ];
 
+/** A `#MISE` task configuration line of a file task */
+export const MISE_COMMENT_RE = /^\s*#MISE\s/;
+
 /**
  * Task configuration keys valid in `#MISE` comments of file tasks.
  * Each `#MISE` line is TOML.
@@ -191,6 +196,17 @@ export const fileTaskConfigItems: UsageCompletionItem[] = [
 		name: "alias",
 		detail: "Alias for the task",
 		insertText: 'alias="$1"',
+	},
+	{
+		name: "extends",
+		detail:
+			"Task template to inherit tools, env, description and other fields from",
+		insertText: 'extends="$1"',
+		documentation: `Task template to inherit tools, env, description and other fields from.
+
+The fields of the task win over the template's, and the \`usage\` flags of the template are kept next to the task's own.
+See [task templates](https://mise.jdx.dev/tasks/templates.html).`,
+		triggerSuggest: true,
 	},
 	{
 		name: "depends",
@@ -241,9 +257,46 @@ export const fileTaskConfigItems: UsageCompletionItem[] = [
 		insertText: 'shell="${1:bash -c}"',
 	},
 	{
+		name: "timeout",
+		detail: "Stop the task when it runs longer than this duration",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: vscode snippet placeholder
+		insertText: 'timeout="${1:5m}"',
+	},
+	{
+		name: "skip_if",
+		detail:
+			"Shell command run before the task: when it exits 0, the task is skipped and counts as successful",
+		insertText: 'skip_if="$1"',
+	},
+	{
 		name: "confirm",
 		detail: "Prompt for confirmation with this message before running",
 		insertText: 'confirm="$1"',
+		documentation: `Prompt for confirmation with this message before running.
+
+The table form sets the default answer and custom labels for the answers:
+
+\`\`\`toml
+#MISE confirm={message="Deploy to production?", default="no", yes="Ship it", no="Abort"}
+\`\`\``,
+	},
+	{
+		name: "secrets",
+		detail:
+			"[experimental] Secret keys the task receives while it runs. Dependencies do not inherit them",
+		insertText: 'secrets=["$1"]',
+		documentation: `[experimental] Secret keys the task receives while it runs, read from the project's secrets source. Dependencies do not inherit them, and their values are redacted from the task output.
+
+List the available keys with \`mise secrets ls\`.`,
+	},
+	{
+		name: "daemons",
+		detail:
+			"[experimental] Project daemons that must be running and ready before the task runs",
+		insertText: 'daemons=["$1"]',
+		documentation: `[experimental] Project daemons, declared in \`[daemons]\`, that must be running and ready before the task runs. Daemons that already run are left alone.
+
+\`daemons=true\` requires every daemon of the project. See [daemons](https://mise.jdx.dev/daemons.html).`,
 	},
 	{
 		name: "hide",
@@ -264,6 +317,12 @@ export const fileTaskConfigItems: UsageCompletionItem[] = [
 		name: "raw",
 		detail: "Connect the task directly to the terminal's stdin/stdout/stderr",
 		insertText: "raw=true",
+	},
+	{
+		name: "interactive",
+		detail:
+			"Give the task exclusive terminal access while other non-interactive tasks keep running in parallel",
+		insertText: "interactive=true",
 	},
 ];
 
@@ -320,7 +379,8 @@ export function getUsageHoverInfo(word: string): string | undefined {
 
 /** Hover documentation for a `#MISE` task configuration key */
 export function getFileTaskConfigHoverInfo(word: string): string | undefined {
-	return fileTaskConfigItems.find((item) => item.name === word)?.detail;
+	const item = fileTaskConfigItems.find((candidate) => candidate.name === word);
+	return item ? (item.documentation ?? item.detail) : undefined;
 }
 
 /** `{`/`}` balance of a line, ignoring braces inside double-quoted strings */

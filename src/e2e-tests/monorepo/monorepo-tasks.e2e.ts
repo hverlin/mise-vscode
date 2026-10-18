@@ -462,6 +462,38 @@ suite("Monorepo Tasks Test Suite", function () {
 		}
 	});
 
+	test("Should complete task template names in a #MISE extends header", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "file-task-extends.sh"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+		assert.strictEqual(document.languageId, "shellscript");
+
+		const lineIndex = document
+			.getText()
+			.split("\n")
+			.findIndex((line) => line.startsWith("#MISE extends="));
+		assert.ok(lineIndex >= 0, "#MISE extends line should be in the fixture");
+		const character = document.lineAt(lineIndex).text.indexOf('"') + 1;
+
+		const completions =
+			await vscode.commands.executeCommand<vscode.CompletionList>(
+				"vscode.executeCompletionItemProvider",
+				uri,
+				new vscode.Position(lineIndex, character),
+			);
+		const labels = completions.items.map((item) =>
+			typeof item.label === "string" ? item.label : item.label.label,
+		);
+
+		for (const expected of ["rust:build", "project-info"]) {
+			assert.ok(
+				labels.includes(expected),
+				`expected ${expected} in ${JSON.stringify(labels)}`,
+			);
+		}
+	});
+
 	test("Should show the resolved template when hovering extends", async () => {
 		const uri = vscode.Uri.file(
 			path.join(workspaceRoot, "crates", "protocol", "mise.toml"),

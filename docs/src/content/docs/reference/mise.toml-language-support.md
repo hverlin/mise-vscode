@@ -111,7 +111,10 @@ The same support is available in shell
 - `#USAGE` lines get usage spec syntax highlighting, autocompletion, and hover
 - `#MISE` lines are highlighted as TOML, with autocompletion and hover for the
   [task configuration keys](https://mise.jdx.dev/tasks/task-configuration.html)
-  (`description`, `alias`, `depends`, `sources`, ...)
+  (`description`, `alias`, `depends`, `sources`, `skip_if`, ...)
+- `#MISE extends="template_name"` completes the
+  [task templates](https://mise.jdx.dev/tasks/templates.html) declared in the
+  config files
 - Typing `$` in the script body suggests the `usage_*` variables from the
   `#USAGE` lines
 

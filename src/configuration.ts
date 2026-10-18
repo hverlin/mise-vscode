@@ -32,6 +32,7 @@ export const CONFIGURATION_FLAGS = {
 	teraAutoCompletion: "teraAutoCompletion",
 	enableSnippets: "enableSnippets",
 	resolveMonorepoProjectConfigs: "resolveMonorepoProjectConfigs",
+	affectedBase: "affectedBase",
 	automaticallyTrustMiseConfigFiles: "automaticallyTrustMiseConfigFiles",
 	trustOwnEditsInParanoidMode: "trustOwnEditsInParanoidMode",
 	commandTTLCacheSeconds: "commandTTLCacheSeconds",
@@ -305,6 +306,11 @@ export const isTaskSymbolProviderEnabled = () => {
 
 export const shouldResolveMonorepoProjectConfigs = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.resolveMonorepoProjectConfigs, true);
+};
+
+/** Git revision the affected tasks are computed from, empty for mise's default */
+export const getAffectedBase = (): string => {
+	return getConfOrElse(CONFIGURATION_FLAGS.affectedBase, "");
 };
 
 export const shouldShowCustomExtensionConfigWarnings = (): boolean => {
