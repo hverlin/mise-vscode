@@ -26,6 +26,20 @@ in the current project. You can also the list of global tools.
 A config file that does not parse is marked in the explorer. Its tools are the
 ones from the last time the file parsed. See [While a config file is being edited](/mise-vscode/reference/misetoml-language-support/#while-a-config-file-is-being-edited).
 
+### Lazy tools
+
+Tools declared with `lazy = true` are installed by mise the first time one of
+their commands runs. Until then, they are not reported as missing: the explorer
+and the editor show them as `installs on first use` instead of not installed.
+The extensions configured with the path of a tool (see
+[supported extensions](/mise-vscode/reference/supported-extensions/)) only pick
+it up once it is installed.
+
+```toml
+[tools]
+ripgrep = { version = "14", lazy = true }
+```
+
 ## Tools list
 
 Use the list `List all tools` button to list all installed tools.

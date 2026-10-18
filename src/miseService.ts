@@ -5,6 +5,7 @@ import {
 	readlink,
 	realpath,
 	rm,
+	stat,
 	symlink,
 } from "node:fs/promises";
 import * as os from "node:os";
@@ -40,6 +41,11 @@ import {
 	mkdirp,
 } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
+import {
+	findToolDeclaration,
+	getMissingTools,
+	isLazyToolDeclaration,
+} from "./utils/lazyTools";
 import { logger } from "./utils/logger";
 import {
 	resolveMisePath,
@@ -384,6 +390,7 @@ export class MiseService {
 			this.taskCacheCache.clear(),
 			this.bootstrapCache.clear(),
 		]);
+		this.configToolsCache.clear();
 		this.eventEmitter.fire();
 	}
 
@@ -1505,19 +1512,21 @@ export class MiseService {
 				retainOnParseError: true,
 			});
 
-			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
-				return (tools as MiseTool[]).map((tool) => {
-					return {
-						name: toolName,
-						version: tool.version,
-						requested_version: tool.requested_version,
-						active: tool.active,
-						installed: tool.installed,
-						install_path: tool.install_path,
-						source: tool.source,
-					} satisfies MiseTool;
-				});
-			});
+			return this.withLazyFlags(
+				Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
+					return (tools as MiseTool[]).map((tool) => {
+						return {
+							name: toolName,
+							version: tool.version,
+							requested_version: tool.requested_version,
+							active: tool.active,
+							installed: tool.installed,
+							install_path: tool.install_path,
+							source: tool.source,
+						} satisfies MiseTool;
+					});
+				}),
+			);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
 				if (await this.handleUntrustedFile()) {
@@ -1530,6 +1539,72 @@ export class MiseService {
 		}
 	}
 
+	/**
+	 * `[tools]` tables of the config files, re-read when a file changes. `null`
+	 * for a file that does not parse.
+	 */
+	private readonly configToolsCache = new Map<
+		string,
+		{ stamp: string; tools: Promise<Record<string, unknown> | null> }
+	>();
+
+	private async readConfigTools(
+		configPath: string,
+	): Promise<Record<string, unknown> | null> {
+		let stamp: string;
+		try {
+			const { mtimeMs, size } = await stat(configPath);
+			stamp = `${mtimeMs}:${size}`;
+		} catch {
+			return null;
+		}
+
+		const cached = this.configToolsCache.get(configPath);
+		if (cached?.stamp === stamp) {
+			return cached.tools;
+		}
+		// the tools of one file are looked up together, read it once for all
+		const tools = readFile(configPath, "utf8")
+			.then(
+				(source) =>
+					(parse(source) as { tools?: Record<string, unknown> }).tools ?? {},
+			)
+			.catch((error) => {
+				logger.debug(`Could not read the tools of ${configPath}: ${error}`);
+				return null;
+			});
+		this.configToolsCache.set(configPath, { stamp, tools });
+		return tools;
+	}
+
+	/**
+	 * `mise ls` reports the tools declared with `lazy = true` as not installed
+	 * until their first use, without saying they are lazy: their declaration
+	 * tells. Only the tools that are not installed are looked up.
+	 */
+	private async withLazyFlags(tools: MiseTool[]): Promise<MiseTool[]> {
+		return Promise.all(
+			tools.map(async (tool) => {
+				const configPath = tool.source?.path;
+				if (tool.installed || !configPath?.endsWith(".toml")) {
+					return tool;
+				}
+
+				const configTools = await this.readConfigTools(configPath);
+				const lazy = configTools
+					? isLazyToolDeclaration(
+							findToolDeclaration(configTools, tool.name),
+							tool.requested_version,
+						)
+					: // the parser does not read every file mise does (TOML 1.1), mise
+						// knows whether the tool is lazy, not which of its versions
+						(await this.miseToolInfo(tool.name).catch(() => undefined))
+							?.tool_options.lazy === true;
+				return lazy ? { ...tool, lazy } : tool;
+			}),
+		);
+	}
+
 	async getAllTools(): Promise<Array<MiseTool>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
@@ -1540,19 +1615,21 @@ export class MiseService {
 				args: ["ls", "--offline", "--json"],
 				retainOnParseError: true,
 			});
-			return Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
-				return (tools as MiseTool[]).map((tool) => {
-					return {
-						name: toolName,
-						version: tool.version,
-						requested_version: tool.requested_version,
-						active: tool.active,
-						installed: tool.installed,
-						install_path: tool.install_path,
-						source: tool.source,
-					} satisfies MiseTool;
-				});
-			});
+			return this.withLazyFlags(
+				Object.entries(JSON.parse(stdout)).flatMap(([toolName, tools]) => {
+					return (tools as MiseTool[]).map((tool) => {
+						return {
+							name: toolName,
+							version: tool.version,
+							requested_version: tool.requested_version,
+							active: tool.active,
+							installed: tool.installed,
+							install_path: tool.install_path,
+							source: tool.source,
+						} satisfies MiseTool;
+					});
+				}),
+			);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("mise trust")) {
 				if (await this.handleUntrustedFile()) {
@@ -2383,7 +2460,7 @@ export class MiseService {
 		}
 
 		const tools = await this.getCurrentTools();
-		return tools.some((tool) => !tool.installed);
+		return getMissingTools(tools).length > 0;
 	}
 
 	async miseSetEnv({

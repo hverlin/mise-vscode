@@ -8,6 +8,7 @@ import {
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { getSvgIcon } from "../utils/iconUtils";
+import { getLazyToolNames } from "../utils/lazyTools";
 import { logger } from "../utils/logger";
 import { getCleanedToolName } from "../utils/miseUtilts";
 import {
@@ -57,6 +58,7 @@ export async function showToolVersionInline(
 			: Promise.resolve([]),
 	]);
 
+	const lazyToolNames = getLazyToolNames(tools);
 	const envVarsByTool = new Map<string, string[]>();
 	for (const env of envsWithInfo) {
 		if (env.tool && env.name?.toUpperCase() !== "PATH") {
@@ -104,6 +106,10 @@ export async function showToolVersionInline(
 
 				let resolvedVersion: string | undefined;
 				let resolvedInstalled: boolean;
+				// a lazy tool is not installed until one of its commands runs
+				const notInstalledLabel = lazyToolNames.has(cleanedToolName)
+					? "Installs on first use"
+					: "Not installed";
 
 				if (toolFromList) {
 					resolvedVersion = toolFromList.version;
@@ -135,7 +141,7 @@ export async function showToolVersionInline(
 						if (isInline) {
 							continue;
 						}
-						annotations.push("Not installed");
+						annotations.push(notInstalledLabel);
 						usedTools.push(cleanedToolName);
 						continue;
 					}
@@ -156,7 +162,7 @@ export async function showToolVersionInline(
 					annotations.push(
 						resolvedInstalled
 							? `${resolvedVersion ?? ""}${envSuffix}`
-							: "Not installed",
+							: notInstalledLabel,
 					);
 				}
 				usedTools.push(cleanedToolName);
@@ -232,10 +238,13 @@ export async function showOutdatedToolsGutterIcons(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
-	const [files, outdatedTools] = await Promise.all([
+	const [files, outdatedTools, tools] = await Promise.all([
 		miseService.getCurrentConfigFiles(),
 		miseService.getOutdatedTools(),
+		miseService.getCurrentTools(),
 	]);
+	// `mise outdated` lists the lazy tools as not installed, like missing ones
+	const lazyToolNames = getLazyToolNames(tools);
 
 	const currentFile = expandPath(document.uri.fsPath);
 	if (!files.includes(currentFile)) {
@@ -265,7 +274,10 @@ export async function showOutdatedToolsGutterIcons(
 				const outdatedTool = outdatedTools.find(
 					(t) => t.name === cleanedToolName,
 				);
-				if (outdatedTool) {
+				if (
+					outdatedTool &&
+					!(!outdatedTool.version && lazyToolNames.has(cleanedToolName))
+				) {
 					hasOutdated = true;
 					outdatedNames.push(cleanedToolName);
 				}

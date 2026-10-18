@@ -207,6 +207,11 @@ type MiseTool = {
 	installed: boolean;
 	active: boolean;
 	install_path: string;
+	/**
+	 * declared with `lazy = true`: mise installs it on first use. Only resolved
+	 * for the tools that are not installed.
+	 */
+	lazy?: boolean;
 };
 
 type MiseToolUpdate = {
@@ -242,6 +247,8 @@ type MiseToolInfo = {
 	config_source: { type: string; path: string } | null;
 	tool_options: {
 		os?: string | null;
+		/** installed on first use (mise 2026.9.0+) */
+		lazy?: boolean | null;
 		install_env?: Record<string, string>;
 		api_url?: string | null;
 		url?: string | null;

@@ -97,6 +97,7 @@ import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
+import { getMissingTools } from "./utils/lazyTools";
 import { logger } from "./utils/logger";
 import { escapeMarkdown, markdownCodeSpan } from "./utils/markdown";
 import {
@@ -179,7 +180,7 @@ export class MiseExtension {
 				MISE_DISMISS_MISSING_TOOLS_WARNING,
 				async () => {
 					const tools = await this.miseService.getCurrentTools();
-					const missingTools = tools.filter((tool) => !tool.installed);
+					const missingTools = getMissingTools(tools);
 					const hash = this.generateMissingToolsHash(missingTools);
 
 					const dismissedHashes = this.context.workspaceState.get<string[]>(
@@ -1248,7 +1249,7 @@ export class MiseExtension {
 		}
 
 		this.miseService.getCurrentTools().then(async (tools) => {
-			const missingTools = tools.filter((tool) => !tool.installed);
+			const missingTools = getMissingTools(tools);
 
 			if (!missingTools.length) {
 				if (this.missingToolBarItem) {

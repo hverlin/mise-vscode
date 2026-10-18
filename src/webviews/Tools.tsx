@@ -121,7 +121,11 @@ const ToolInfo = ({
 					<div>
 						<p style={styles.label}>Status</p>
 						<p style={styles.value}>
-							{selectedTool.installed ? "Installed" : "Not Installed"}
+							{selectedTool.installed
+								? "Installed"
+								: selectedTool.lazy
+									? "Installs on first use"
+									: "Not Installed"}
 						</p>
 					</div>
 
