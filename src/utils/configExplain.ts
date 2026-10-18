@@ -19,6 +19,8 @@ export type ConfigKeyProblem = {
 	/** the name of the key on its line, or the whole line when not found */
 	start: number;
 	end: number;
+	/** the name of the key, when it was found on its line */
+	name?: string;
 	message: string;
 	suggestion?: string;
 };
@@ -69,11 +71,11 @@ export function findConfigKeyProblems(
 			return [];
 		}
 		const name = explanation.path.at(-1) ?? explanation.key;
+		const found = findKeyName(lineText, name);
 		const indent = lineText.length - lineText.trimStart().length;
-		const range = findKeyName(lineText, name) ?? {
-			start: indent,
-			end: lineText.trimEnd().length,
-		};
+		const range = found
+			? { ...found, name }
+			: { start: indent, end: lineText.trimEnd().length };
 
 		if (!explanation.known) {
 			const suggestion = explanation.suggestion ?? undefined;

@@ -54,8 +54,40 @@ suite("Config Diagnostics Test Suite", function () {
 		return configDiagnostics();
 	};
 
+	/** they report the unknown keys themselves, from the same schema */
+	const hasSchemaExtension = () =>
+		["tombi-toml.tombi", "tamasfe.even-better-toml"].some((id) =>
+			vscode.extensions.getExtension(id),
+		);
+
 	test("reports the unknown and deprecated keys of mise.toml", async () => {
-		const diagnostics = await waitForDiagnostics(3);
+		const deprecated = {
+			line: 1,
+			character: 0,
+			message:
+				"`env_path` is deprecated: use env._.path instead. This will be removed in mise 2027.4.0.",
+			severity: vscode.DiagnosticSeverity.Information,
+		};
+		const expected = hasSchemaExtension()
+			? [deprecated]
+			: [
+					deprecated,
+					{
+						line: 4,
+						character: 0,
+						message:
+							"mise does not read `settings.experimantal`. Did you mean `experimental`?",
+						severity: vscode.DiagnosticSeverity.Warning,
+					},
+					{
+						line: 8,
+						character: 0,
+						message:
+							"mise does not read `tasks.build.depnds`. Did you mean `depends`?",
+						severity: vscode.DiagnosticSeverity.Warning,
+					},
+				];
+		const diagnostics = await waitForDiagnostics(expected.length);
 
 		assert.deepEqual(
 			diagnostics
@@ -66,45 +98,23 @@ suite("Config Diagnostics Test Suite", function () {
 					severity: diagnostic.severity,
 				}))
 				.sort((a, b) => a.line - b.line),
-			[
-				{
-					line: 1,
-					character: 0,
-					message:
-						"`env_path` is deprecated: use env._.path instead. This will be removed in mise 2027.4.0.",
-					severity: vscode.DiagnosticSeverity.Information,
-				},
-				{
-					line: 4,
-					character: 0,
-					message:
-						"mise does not read `settings.experimantal`. Did you mean `experimental`?",
-					severity: vscode.DiagnosticSeverity.Warning,
-				},
-				{
-					line: 8,
-					character: 0,
-					message:
-						"mise does not read `tasks.build.depnds`. Did you mean `depends`?",
-					severity: vscode.DiagnosticSeverity.Warning,
-				},
-			],
+			expected,
 		);
 	});
 
 	test("offers to change an unknown key to the one mise suggests", async () => {
-		const diagnostic = (await waitForDiagnostics(3)).find(
-			(candidate) => candidate.range.start.line === 4,
-		);
-		assert.ok(diagnostic, "Expected the diagnostic of experimantal");
+		// once mise explained the file
+		await waitForDiagnostics(1);
 		// code actions are only computed for an open document
 		await vscode.workspace.openTextDocument(configUri);
 
+		// on `experimantal`, whoever reports it
+		const keyRange = new vscode.Range(4, 0, 4, "experimantal".length);
 		const actions =
 			(await vscode.commands.executeCommand<vscode.CodeAction[]>(
 				"vscode.executeCodeActionProvider",
 				configUri,
-				diagnostic.range,
+				keyRange,
 				vscode.CodeActionKind.QuickFix.value,
 			)) ?? [];
 		const fix = actions.find(

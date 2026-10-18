@@ -321,7 +321,7 @@ export class MiseExtension {
 			configKeyDiagnostics,
 			vscode.languages.registerCodeActionsProvider(
 				{ language: "toml" },
-				new ConfigKeyQuickFixProvider(),
+				new ConfigKeyQuickFixProvider(configKeyDiagnostics),
 				{
 					providedCodeActionKinds:
 						ConfigKeyQuickFixProvider.providedCodeActionKinds,

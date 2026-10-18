@@ -76,6 +76,7 @@ describe("findConfigKeyProblems", () => {
 				line: 3,
 				start: 0,
 				end: 12,
+				name: "experimantal",
 				message:
 					"mise does not read `settings.experimantal`. Did you mean `experimental`?",
 				suggestion: "experimental",
@@ -85,6 +86,7 @@ describe("findConfigKeyProblems", () => {
 				line: 6,
 				start: 0,
 				end: 2,
+				name: "rn",
 				message: "mise does not read `tasks.b.rn`. Did you mean `run`?",
 				suggestion: "run",
 			},
@@ -109,6 +111,7 @@ describe("findConfigKeyProblems", () => {
 				line: 0,
 				start: 0,
 				end: 8,
+				name: "env_file",
 				message:
 					"`env_file` is deprecated: use env._.file instead. This will be removed in mise 2027.4.0.",
 			},

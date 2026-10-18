@@ -160,6 +160,10 @@ This comes from
 2026.10.14+), which also reads a config file mise refuses to load, e.g. one with
 an unknown task key. Turn it off with `mise.enableConfigDiagnostics`.
 
+Tombi and Even Better TOML check the same schema, so they already report the
+unknown keys: with one of them installed, the extension only adds the quick fix
+to their diagnostic.
+
 ### When a config file changes
 
 The extension reloads when a file mise reads changes: the config files, the

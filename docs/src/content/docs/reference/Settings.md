@@ -279,7 +279,7 @@ Show the problems of the task definitions found by [`mise tasks validate`](https
 - **Type:** `boolean`
 - **Default:** `true`
 
-Show the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated in the Problems panel, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). Requires mise `2026.10.14` or later.
+Show the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated in the Problems panel, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). With Tombi or Even Better TOML installed, which already report the unknown keys from the same schema, only the quick fix is added to their diagnostic. Requires mise `2026.10.14` or later.
 
 ---
 
