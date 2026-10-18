@@ -63,6 +63,7 @@ import {
 	isNewerMiseVersion,
 	isToolVersionsFile,
 	parseMiseVersion,
+	toWebUrl,
 } from "./utils/miseUtilts";
 import { showSettingsNotification } from "./utils/notify";
 import {
@@ -89,6 +90,10 @@ import {
 	parseTaskInfoJson,
 } from "./utils/taskInfoParser";
 import { getConfigRootPaths } from "./utils/taskNames";
+import {
+	parseToolSearchResults,
+	type ToolSearchResult,
+} from "./utils/toolSearch";
 
 // https://github.com/jdx/mise/blob/main/src/env.rs
 const XDG_STATE_HOME =
@@ -142,6 +147,10 @@ const MIN_MISE_VERSION_FOR_AFFECTED_TASKS = [2026, 10, 6] as const;
 const MIN_MISE_VERSION_FOR_TASKS_VALIDATE = [2025, 11, 4] as const;
 // `mise doctor project` and `[doctor.checks]` were added in 2026.9.6
 const MIN_MISE_VERSION_FOR_PROJECT_CHECKS = [2026, 9, 6] as const;
+/** `mise search npm:...` (and `cargo:`, `gem:`, `dotnet:`) */
+const MIN_MISE_VERSION_FOR_PACKAGE_SEARCH = [2026, 9, 13] as const;
+/** how long a hover uses the outdated tools listed for the editor */
+const STALE_OUTDATED_TOOLS_MS = 60_000;
 
 function isVersionGreaterOrEqualThan(
 	version: readonly [number, number, number],
@@ -391,6 +400,7 @@ export class MiseService {
 			this.bootstrapCache.clear(),
 		]);
 		this.configToolsCache.clear();
+		this.recentOutdatedTools = undefined;
 		this.eventEmitter.fire();
 	}
 
@@ -1539,6 +1549,9 @@ export class MiseService {
 		}
 	}
 
+	/** the last `mise outdated`, which a hover uses instead of running it */
+	private recentOutdatedTools?: { tools: MiseToolUpdate[]; at: number };
+
 	/**
 	 * `[tools]` tables of the config files, re-read when a file changes. `null`
 	 * for a file that does not parse.
@@ -1645,9 +1658,21 @@ export class MiseService {
 
 	async getOutdatedTools({
 		bump = false,
+		// the last result when it is less than a minute old, e.g. for a hover
+		allowStale = false,
 	} = {}): Promise<Array<MiseToolUpdate>> {
 		if (!this.getMiseBinaryPath()) {
 			return [];
+		}
+
+		const recent = this.recentOutdatedTools;
+		if (
+			allowStale &&
+			!bump &&
+			recent &&
+			Date.now() - recent.at < STALE_OUTDATED_TOOLS_MS
+		) {
+			return recent.tools;
 		}
 
 		// --bump is only requested explicitly (button click), so bypass the TTL
@@ -1665,13 +1690,14 @@ export class MiseService {
 			return [];
 		}
 
-		return Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
+		const tools = Object.entries(JSON.parse(stdout)).map(([toolName, tool]) => {
 			const foundTool = tool as {
 				name: string;
 				requested: string;
 				current: string;
 				latest: string | null;
 				bump: string | null;
+				release_url?: string;
 				source: { type: string; path: string };
 			};
 
@@ -1682,8 +1708,13 @@ export class MiseService {
 				source: foundTool.source,
 				latest: foundTool.latest,
 				bump: foundTool.bump,
+				release_url: toWebUrl(foundTool.release_url),
 			};
 		});
+		if (!bump) {
+			this.recentOutdatedTools = { tools, at: Date.now() };
+		}
+		return tools;
 	}
 
 	async rmUseTool(filename: string, toolName: string) {
@@ -2404,6 +2435,66 @@ export class MiseService {
 						self.findIndex((e) => e.short === entry.short) === index,
 				)
 		);
+	}
+
+	/**
+	 * The description of each registry tool. Empty when mise cannot list them.
+	 * Slower than `miseRegistry`, which does not have them.
+	 */
+	async miseRegistryDescriptions(): Promise<Map<string, string>> {
+		if (!this.getMiseBinaryPath()) {
+			return new Map();
+		}
+
+		try {
+			const { stdout } = await this.longTTLCache.execCmd({
+				args: ["registry", "--json"],
+				setMiseEnv: false,
+			});
+			const entries = JSON.parse(stdout) as {
+				short: string;
+				description?: string | null;
+			}[];
+			return new Map(
+				entries.flatMap((entry) =>
+					entry.description ? [[entry.short, entry.description]] : [],
+				),
+			);
+		} catch (error) {
+			logger.debug("Could not read the registry descriptions", error);
+			return new Map();
+		}
+	}
+
+	async supportsPackageRegistrySearch(): Promise<boolean> {
+		return this.hasValidMiseVersion(MIN_MISE_VERSION_FOR_PACKAGE_SEARCH);
+	}
+
+	/**
+	 * The tools matching `query` (`mise search`). With a package registry
+	 * prefix such as `npm:`, the packages of that registry.
+	 */
+	async searchTools(query: string): Promise<ToolSearchResult[]> {
+		if (!this.getMiseBinaryPath()) {
+			return [];
+		}
+
+		try {
+			const { stdout } = await this.longTTLCache.execCmd({
+				args: ["search", query, "--no-header"],
+				setMiseEnv: false,
+			});
+			return parseToolSearchResults(stdout);
+		} catch (error) {
+			// exits 1 when nothing matches
+			if (
+				error instanceof Error &&
+				error.message.includes("not found in registry")
+			) {
+				return [];
+			}
+			throw error;
+		}
 	}
 
 	async miseBackends() {

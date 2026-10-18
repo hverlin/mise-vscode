@@ -149,8 +149,31 @@ suite("Tool Versions File Test Suite", function () {
 			)
 			.join("\n");
 		assert.ok(
-			hoverText.includes("Backend"),
-			`Expected tool hover with backend info, got: ${hoverText}`,
+			hoverText.includes("**shellcheck** · ") &&
+				hoverText.includes("**Version**"),
+			`Expected tool hover with the backend and the version, got: ${hoverText}`,
+		);
+	});
+
+	test("shows the website of the project in the hover", async () => {
+		const hovers =
+			(await vscode.commands.executeCommand<vscode.Hover[]>(
+				"vscode.executeHoverProvider",
+				document.uri,
+				new vscode.Position(lineOf("dart 3.5.0"), 1),
+			)) ?? [];
+
+		const hoverText = hovers
+			.flatMap((hover) => hover.contents)
+			.map((content) =>
+				typeof content === "string"
+					? content
+					: (content as { value: string }).value,
+			)
+			.join("\n");
+		assert.ok(
+			hoverText.includes("**Website** [dart\\.dev](<https://dart.dev/>)"),
+			`Expected the website from the registry in the hover, got: ${hoverText}`,
 		);
 	});
 });

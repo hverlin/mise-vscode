@@ -520,7 +520,18 @@ export const Tools = () => {
 									{row.original.version}
 									{outdatedToolInfo?.latest ? (
 										<small>
-											<br />({outdatedToolInfo.latest} is available)
+											<br />(
+											{outdatedToolInfo.release_url ? (
+												<a
+													href={outdatedToolInfo.release_url}
+													title="Open the release notes"
+												>
+													{outdatedToolInfo.latest}
+												</a>
+											) : (
+												outdatedToolInfo.latest
+											)}{" "}
+											is available)
 										</small>
 									) : (
 										""

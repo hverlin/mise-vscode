@@ -2,8 +2,37 @@ import type { DocumentSelector } from "vscode";
 import vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
+import { logger } from "../utils/logger";
 import { getCleanedToolName, getWebsiteForTool } from "../utils/miseUtilts";
+import { findToolUpdate, formatToolHover } from "../utils/toolHover";
 import { getToolIndexForDocument } from "../utils/toolIndex";
+
+/**
+ * How long the hover waits for `mise outdated`, which may query the network,
+ * before showing without the latest version
+ */
+const OUTDATED_TIMEOUT_MS = 1000;
+
+/** The outdated tools, or none when mise takes too long to list them */
+async function getOutdatedToolsForHover(
+	miseService: MiseService,
+): Promise<MiseToolUpdate[]> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			// the result listed for the editor, a hover does not run mise each time
+			miseService.getOutdatedTools({ allowStale: true }),
+			new Promise<[]>((resolve) => {
+				timer = setTimeout(() => resolve([]), OUTDATED_TIMEOUT_MS);
+			}),
+		]);
+	} catch (error) {
+		logger.debug("Could not check the tools for updates", error);
+		return [];
+	} finally {
+		clearTimeout(timer);
+	}
+}
 
 export const createToolHoverProvider = (
 	documentSelector: DocumentSelector,
@@ -30,46 +59,22 @@ export const createToolHoverProvider = (
 				return;
 			}
 
-			const toolInfo = await miseService.miseToolInfo(tool.toolName);
+			const [toolInfo, outdatedTools] = await Promise.all([
+				miseService.miseToolInfo(tool.toolName),
+				getOutdatedToolsForHover(miseService),
+			]);
 			if (!toolInfo) {
 				return;
 			}
 
-			const markdownString = new vscode.MarkdownString("");
-			const toolWebsite = await getWebsiteForTool(toolInfo);
-
-			const displayRequestedVersion =
-				tool.requestedVersion || (toolInfo.requested_versions ?? []).join(", ");
-
-			markdownString.appendMarkdown(
-				[
-					[
-						"Backend",
-						toolWebsite
-							? `[${toolInfo.backend}](${toolWebsite})`
-							: `${toolInfo.backend}.`,
-					],
-					["Description", toolInfo.description],
-					["Active version", (toolInfo.active_versions ?? []).join(", ")],
-					[
-						"Installed Versions",
-						(toolInfo.installed_versions ?? []).join(", "),
-					],
-					["Requested Version", displayRequestedVersion],
-					[
-						"tool_options",
-						toolInfo.tool_options &&
-						(toolInfo?.tool_options.os ||
-							Object.keys(toolInfo.tool_options.install_env || {})?.length >
-								1 ||
-							Object.keys(toolInfo.tool_options).length >= 3)
-							? JSON.stringify(toolInfo.tool_options)
-							: undefined,
-					],
-				]
-					.filter(([, val]) => !!val)
-					.map(([k, v]) => `${k}: ${v}`)
-					.join("\n\n"),
+			const markdownString = new vscode.MarkdownString(
+				formatToolHover({
+					toolName,
+					toolInfo,
+					requestedVersion: tool.requestedVersion,
+					backendWebsite: await getWebsiteForTool(toolInfo),
+					update: findToolUpdate(outdatedTools, toolName, document.uri.fsPath),
+				}),
 			);
 
 			return new vscode.Hover([markdownString], tool.range);

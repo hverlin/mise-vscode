@@ -220,6 +220,8 @@ type MiseToolUpdate = {
 	requested_version: string;
 	latest: string | null;
 	bump?: string | null;
+	/** the release notes of `latest`, for some backends (mise 2026.8.15+) */
+	release_url?: string;
 	source?: MiseToolSource;
 };
 
@@ -241,12 +243,14 @@ type MiseSettingInfo = {
 type MiseToolInfo = {
 	backend: string;
 	description: string | null;
+	/** the website of the project, from the registry when it has one */
+	url?: string | null;
 	installed_versions: string[];
 	requested_versions: string[] | null;
 	active_versions: string[] | null;
 	config_source: { type: string; path: string } | null;
 	tool_options: {
-		os?: string | null;
+		os?: string[] | null;
 		/** installed on first use (mise 2026.9.0+) */
 		lazy?: boolean | null;
 		install_env?: Record<string, string>;

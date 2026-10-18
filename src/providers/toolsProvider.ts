@@ -43,7 +43,9 @@ import {
 	getAllConfigurableExtensions,
 } from "../utils/supportedExtensions";
 import { expandToolNames } from "../utils/toolNameMatching";
+import { hasToolVersion } from "../utils/toolSearch";
 import { buildMiseErrorItems, type MiseErrorItem } from "./miseErrorItems";
+import { pickToolToUse } from "./toolPicker";
 
 type TreeItem = ToolsSourceItem | ToolItem | MiseErrorItem;
 
@@ -434,45 +436,14 @@ export function registerToolsCommands(
 					return;
 				}
 
-				const registry = await miseService.miseRegistry();
-				const selection = await vscode.window.showQuickPick(
-					[
-						{ label: "custom", description: "Enter a custom tool name" },
-						...registry.map(
-							(tool) =>
-								({
-									label: `${tool.short}`,
-									description: tool.full,
-								}) as vscode.QuickPickItem,
-						),
-					],
-					{
-						placeHolder: "Search for a tool to install (e.g. node)",
-						canPickMany: false,
-						matchOnDescription: true,
-					},
-				);
-
+				const selection = await pickToolToUse(miseService);
 				if (!selection) {
 					return;
 				}
 
-				let selectedToolName: string | undefined;
-				if (selection.label === "custom") {
-					selectedToolName = await vscode.window.showInputBox({
-						placeHolder: "Enter the tool name to use (e.g. node@latest)",
-						validateInput: (input) => {
-							if (!input) {
-								return "Tool name is required";
-							}
-							if (/[^@]+@[^@]+/.test(input)) {
-								return "Tool name must include a version (e.g. node@latest or node@20)";
-							}
-							return null;
-						},
-					});
-				} else {
-					selectedToolName = selection.label;
+				let selectedToolName = selection;
+				// a tool typed with its version, e.g. `npm:prettier@3`, is used as is
+				if (!hasToolVersion(selection)) {
 					const availableVersions =
 						await miseService.listRemoteVersions(selectedToolName);
 					const selectedVersion = await vscode.window.showQuickPick(
@@ -486,10 +457,6 @@ export function registerToolsCommands(
 						return;
 					}
 					selectedToolName = `${selectedToolName}@${selectedVersion}`;
-				}
-
-				if (!selectedToolName) {
-					return;
 				}
 
 				const normalizedPath = isWindows
