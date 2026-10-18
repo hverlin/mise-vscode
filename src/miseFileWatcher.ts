@@ -1,15 +1,95 @@
+import { readdir, readFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { parse } from "toml-v1";
 import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "./configuration";
 import type { MiseService } from "./miseService";
-import { expandPath } from "./utils/fileUtils";
+import {
+	collectLocalIncludes,
+	getMiseRcPaths,
+	readIncludeEntries,
+} from "./utils/configIncludes";
+import { expandPath, isWindows } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
 	idiomaticFiles,
+	isMiseConfigPath,
 	misePatterns,
 } from "./utils/miseUtilts";
+
+/** The miserc files of a workspace folder, see {@link getMiseRcPaths} */
+function getWorkspaceMiseRcFiles(folder: string): string[] {
+	const home = os.homedir();
+	return getMiseRcPaths({
+		cwd: folder,
+		home,
+		// mise reads an empty variable as unset
+		configDir:
+			process.env.MISE_CONFIG_DIR ||
+			path.join(
+				process.env.XDG_CONFIG_HOME || path.join(home, ".config"),
+				"mise",
+			),
+		systemConfigDir:
+			process.env.MISE_SYSTEM_CONFIG_DIR ||
+			process.env.MISE_SYSTEM_DIR ||
+			(isWindows ? undefined : "/etc/mise"),
+		ceilingPaths: (process.env.MISE_CEILING_PATHS ?? "")
+			.split(path.delimiter)
+			.filter(Boolean),
+	});
+}
+
+/**
+ * The config files of a workspace folder, read from disk: mise lists none of
+ * them while an include is broken. Only the folders mise reads configs from
+ * are listed, not the whole tree.
+ */
+async function findStandardConfigFiles(folder: string): Promise<string[]> {
+	const dirs = [
+		"",
+		".config",
+		path.join(".config", "mise"),
+		"mise",
+		".mise",
+		path.join(".config", "mise", "conf.d"),
+		path.join("mise", "conf.d"),
+		path.join(".mise", "conf.d"),
+	].map((dir) => path.join(folder, dir));
+	const files = await Promise.all(
+		dirs.map(async (dir) => {
+			try {
+				return (await readdir(dir)).map((name) => path.join(dir, name));
+			} catch {
+				return [];
+			}
+		}),
+	);
+	return files
+		.flat()
+		.filter((file) => file.endsWith(".toml") && isMiseConfigPath(file));
+}
+
+/**
+ * A config file, parsed, or undefined when it cannot be read. The parser does
+ * not read every file mise does (TOML 1.1): their `include` is read as text.
+ */
+async function readConfigFile(filePath: string): Promise<unknown> {
+	let source: string;
+	try {
+		source = await readFile(filePath, "utf8");
+	} catch {
+		return undefined;
+	}
+	try {
+		return parse(source);
+	} catch (error) {
+		logger.debug(`Reading the include of ${filePath} as text: ${error}`);
+		return { include: readIncludeEntries(source) };
+	}
+}
 
 export class MiseFileWatcher {
 	private readonly fileWatchers: vscode.FileSystemWatcher[];
@@ -57,11 +137,33 @@ export class MiseFileWatcher {
 		const envSources = envs
 			.map((env) => env.source ?? "")
 			.filter((source) => source !== "");
+		// the files mise lists are not enough: when an include is broken, mise
+		// fails before listing any, and it does not list monorepo projects
+		const standardConfigs = (
+			await Promise.all(
+				rootFolders.map((rootFolder) =>
+					findStandardConfigFiles(rootFolder.uri.fsPath),
+				),
+			)
+		).flat();
+		const includedFiles = await collectLocalIncludes(
+			[
+				...configFiles.map((c) => c.path),
+				...tasksSources,
+				...envSources,
+				...standardConfigs,
+			].filter((configPath) => configPath.endsWith(".toml")),
+			readConfigFile,
+		);
 
 		const idiomaticFilesValues = [...idiomaticFiles.values()];
 		const filesToWatch = [
 			...new Set([
 				...configFiles.map((c) => c.path),
+				...includedFiles,
+				...rootFolders.flatMap((rootFolder) =>
+					getWorkspaceMiseRcFiles(rootFolder.uri.fsPath),
+				),
 				...tasksSources,
 				...envSources,
 				...rootFolders.flatMap((rf) =>
@@ -168,5 +270,7 @@ export class MiseFileWatcher {
 		for (const watcher of this.fileWatchers) {
 			watcher.dispose();
 		}
+		// a later initialization subscribes the watchers it creates, only
+		this.fileWatchers.length = 0;
 	}
 }

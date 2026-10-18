@@ -1,3 +1,6 @@
+# merged into this config, mise reports its env as coming from this file
+include = ["shared/env.toml"]
+
 # `mise env` takes a second here, longer than what the extension still does
 # once it has started applying the env: activation resolving before the env is
 # applied cannot go unnoticed
