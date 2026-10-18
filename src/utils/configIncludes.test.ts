@@ -46,6 +46,7 @@ describe("getLocalIncludePaths", () => {
 			configPath,
 			path.join(project, ".config", "mise", "config.toml"),
 			path.join(project, "mise", "conf.d", "tools.toml"),
+			path.join(project, ".config", "mise.toml"),
 		]) {
 			expect(
 				getLocalIncludePaths(config, {
@@ -92,6 +93,20 @@ node = { version = "24",
 `;
 		expect(readIncludeEntries(source)).toEqual(["shared.toml", "local.toml"]);
 		expect(readIncludeEntries('include = "one.toml"\n')).toEqual(["one.toml"]);
+	});
+
+	it("ignores the comments, in and around the array", () => {
+		const source = `# include = ["old.toml"]
+include = [
+  "shared.toml", # the shared tools ]
+  # "disabled.toml",
+  "local.toml", # "#" in a comment
+]
+`;
+		expect(readIncludeEntries(source)).toEqual(["shared.toml", "local.toml"]);
+		expect(readIncludeEntries('include = ["a#b.toml"] # c\n')).toEqual([
+			"a#b.toml",
+		]);
 	});
 
 	it("ignores an include key of a table", () => {

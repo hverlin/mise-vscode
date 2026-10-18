@@ -8,12 +8,16 @@ const REMOTE_INCLUDE = /^(?:[a-z][a-z0-9+.-]*::|[a-z][a-z0-9+.-]*:\/\/)/i;
 
 const CONFIG_ROOT_TEMPLATE = /\{\{\s*config_root\s*\}\}/g;
 
-/** `{{ config_root }}` of a config: its project, also for `conf.d` fragments */
+/**
+ * `{{ config_root }}` of a config: its project, also for `conf.d` fragments
+ * and `.config/mise.toml`
+ */
 function getConfigRoot(configPath: string): string {
 	const dir = path.dirname(configPath);
-	return getProjectRootFromConfigPath(
+	const root = getProjectRootFromConfigPath(
 		path.basename(dir) === "conf.d" ? dir : configPath,
 	);
+	return path.basename(root) === ".config" ? path.dirname(root) : root;
 }
 
 /**
@@ -59,13 +63,34 @@ export function getLocalIncludePaths(
  */
 export function readIncludeEntries(source: string): string[] {
 	// a top-level key comes before the first table header
-	const topLevel = source.split(/^\s*\[/m)[0] ?? "";
+	const topLevel = (source.split(/^\s*\[/m)[0] ?? "")
+		.split("\n")
+		.map(stripComment)
+		.join("\n");
 	const value = /^\s*include\s*=\s*(\[[^\]]*\]|"[^"]*"|'[^']*')/m.exec(
 		topLevel,
 	)?.[1];
 	return [...(value ?? "").matchAll(/"([^"]*)"|'([^']*)'/g)].map(
 		(match) => match[1] ?? match[2] ?? "",
 	);
+}
+
+/** A line of TOML without its `# comment`, `#` in strings kept */
+function stripComment(line: string): string {
+	let quote: string | undefined;
+	for (let index = 0; index < line.length; index++) {
+		const char = line[index];
+		if (quote) {
+			if (char === quote) {
+				quote = undefined;
+			}
+		} else if (char === '"' || char === "'") {
+			quote = char;
+		} else if (char === "#") {
+			return line.slice(0, index);
+		}
+	}
+	return line;
 }
 
 /**
@@ -109,19 +134,21 @@ export function getMiseRcPaths({
 	systemConfigDir?: string;
 	ceilingPaths?: string[];
 }): string[] {
+	// expanded: the drive letter of a Windows path may differ in case
 	const ceilings = new Set(
-		ceilingPaths.map((ceiling) => path.resolve(ceiling)),
+		ceilingPaths.map((ceiling) => expandPath(path.resolve(ceiling))),
 	);
+	const homeDir = expandPath(path.resolve(home));
 	const files: string[] = [];
 
-	let dir = path.resolve(cwd);
+	let dir = expandPath(path.resolve(cwd));
 	while (!ceilings.has(dir)) {
 		files.push(
 			path.join(dir, ".miserc.local.toml"),
 			path.join(dir, ".miserc.toml"),
 		);
 		const parent = path.dirname(dir);
-		if (dir === path.resolve(home) || parent === dir) {
+		if (dir === homeDir || parent === dir) {
 			break;
 		}
 		files.push(path.join(dir, ".config", "miserc.toml"));

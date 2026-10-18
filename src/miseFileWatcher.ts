@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { parse } from "toml-v1";
@@ -15,6 +15,7 @@ import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
 	idiomaticFiles,
+	isMiseConfigPath,
 	misePatterns,
 } from "./utils/miseUtilts";
 
@@ -33,11 +34,42 @@ function getWorkspaceMiseRcFiles(folder: string): string[] {
 			),
 		systemConfigDir:
 			process.env.MISE_SYSTEM_CONFIG_DIR ||
+			process.env.MISE_SYSTEM_DIR ||
 			(isWindows ? undefined : "/etc/mise"),
 		ceilingPaths: (process.env.MISE_CEILING_PATHS ?? "")
 			.split(path.delimiter)
 			.filter(Boolean),
 	});
+}
+
+/**
+ * The config files of a workspace folder, read from disk: mise lists none of
+ * them while an include is broken. Only the folders mise reads configs from
+ * are listed, not the whole tree.
+ */
+async function findStandardConfigFiles(folder: string): Promise<string[]> {
+	const dirs = [
+		"",
+		".config",
+		path.join(".config", "mise"),
+		"mise",
+		".mise",
+		path.join(".config", "mise", "conf.d"),
+		path.join("mise", "conf.d"),
+		path.join(".mise", "conf.d"),
+	].map((dir) => path.join(folder, dir));
+	const files = await Promise.all(
+		dirs.map(async (dir) => {
+			try {
+				return (await readdir(dir)).map((name) => path.join(dir, name));
+			} catch {
+				return [];
+			}
+		}),
+	);
+	return files
+		.flat()
+		.filter((file) => file.endsWith(".toml") && isMiseConfigPath(file));
 }
 
 /**
@@ -110,22 +142,17 @@ export class MiseFileWatcher {
 		const standardConfigs = (
 			await Promise.all(
 				rootFolders.map((rootFolder) =>
-					vscode.workspace.findFiles(
-						new vscode.RelativePattern(rootFolder, `{${misePatterns}}`),
-					),
+					findStandardConfigFiles(rootFolder.uri.fsPath),
 				),
 			)
-		)
-			.flat()
-			.map((uri) => uri.fsPath);
+		).flat();
 		const includedFiles = await collectLocalIncludes(
 			[
 				...configFiles.map((c) => c.path),
-				...[...tasksSources, ...envSources].filter((source) =>
-					source.endsWith(".toml"),
-				),
+				...tasksSources,
+				...envSources,
 				...standardConfigs,
-			],
+			].filter((configPath) => configPath.endsWith(".toml")),
 			readConfigFile,
 		);
 
