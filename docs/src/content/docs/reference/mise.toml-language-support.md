@@ -41,6 +41,8 @@ run = "echo Hello, World!"
 #### Autocompletion for tools 
 
 Tool names and versions are autocompleted in the `tools` section of a `mise.toml` file.
+The details of a tool name suggestion (`Ctrl+Space` again to open them) show the
+description of the tool from the mise registry.
 
 ![Screenshot showing autocompletion of tool version](./autocomplete-tool-version.png)
 

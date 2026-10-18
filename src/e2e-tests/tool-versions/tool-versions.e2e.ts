@@ -1,4 +1,6 @@
 import * as assert from "node:assert";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
@@ -128,6 +130,43 @@ suite("Tool Versions File Test Suite", function () {
 			);
 		} finally {
 			await vscode.commands.executeCommand("undo");
+		}
+	});
+
+	test("describes the registry tools in the completions", async () => {
+		// a copy: the fixture is left as it is
+		const scratchDir = await mkdtemp(path.join(tmpdir(), "mise-vscode-e2e-"));
+		const scratchPath = path.join(scratchDir, ".tool-versions");
+		await writeFile(scratchPath, "core:");
+		try {
+			const scratch = await vscode.workspace.openTextDocument(scratchPath);
+			const completions =
+				await vscode.commands.executeCommand<vscode.CompletionList>(
+					"vscode.executeCompletionItemProvider",
+					scratch.uri,
+					new vscode.Position(0, "core:".length),
+					undefined,
+					// resolve them all, as the details of the item the user looks at
+					200,
+				);
+
+			const node = completions.items.find(
+				(item) =>
+					(typeof item.label === "string" ? item.label : item.label.label) ===
+					"core:node",
+			);
+			assert.ok(node, "Expected core:node after the core: prefix");
+			const documentation =
+				typeof node.documentation === "string"
+					? node.documentation
+					: node.documentation?.value;
+			assert.match(
+				documentation ?? "",
+				/JavaScript/,
+				`Expected the registry description of node, got: ${documentation}`,
+			);
+		} finally {
+			await rm(scratchDir, { recursive: true, force: true });
 		}
 	});
 
