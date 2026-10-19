@@ -15,6 +15,8 @@ import {
 	type PitchforkListEntry,
 	parsePitchforkVersion,
 	pitchforkConfigCandidates,
+	pitchforkEnv,
+	pitchforkProjectDir,
 	sessionDaemons,
 } from "./utils/daemons";
 import { expandPath, locateCommand } from "./utils/fileUtils";
@@ -49,10 +51,18 @@ export class DaemonCommandError extends Error {}
  * configs (`mise daemons`, experimental) and those of its pitchfork configs,
  * both supervised by pitchfork.
  *
- * Nothing here starts the supervisor by itself: `pitchfork list` would, so it
- * only runs while the supervisor is up.
+ * Nothing here starts the supervisor unless asked to start a daemon: the
+ * commands that only read or stop run with its auto-start turned off.
  */
 export class DaemonsService {
+	/** found again on every reload, see {@link forgetPitchfork} */
+	private pitchforkLookup: Promise<PitchforkBinary | undefined> | undefined;
+	/** what pitchfork last reported for a folder, while its config is mid-edit */
+	private lastReported = new Map<
+		string,
+		{ configured: PitchforkConfigEntry[]; listed?: PitchforkListEntry[] }
+	>();
+
 	constructor(private miseService: MiseService) {}
 
 	private folder(): string | undefined {
@@ -72,13 +82,16 @@ export class DaemonsService {
 			};
 		}
 
+		const folder = this.folder() ?? "";
+		const previous = this.lastReported.get(folder);
 		const [configured, status] = await Promise.all([
 			this.pitchforkJson<PitchforkConfigEntry[]>(pitchfork, [
 				"daemons",
 				"--json",
 			]).catch((error) => {
+				// e.g. a config that does not parse while typed
 				logger.info("Could not list the daemons of pitchfork", error);
-				return [];
+				return previous?.configured ?? [];
 			}),
 			this.pitchforkJson<{ status?: string; web_ui?: string | null }>(
 				pitchfork,
@@ -99,9 +112,10 @@ export class DaemonsService {
 						"--json",
 					]).catch((error) => {
 						logger.info("Could not list the daemons of the supervisor", error);
-						return undefined;
+						return previous?.listed;
 					})
 				: undefined;
+		this.lastReported.set(folder, { configured, listed });
 
 		return {
 			daemons: mergeDaemons(miseDaemons, configured, listed),
@@ -146,8 +160,19 @@ export class DaemonsService {
 	/**
 	 * The pitchfork of the project's tools, or else the one on the PATH. mise
 	 * installs one by itself when it starts a daemon, but it is not active then.
+	 * Looked up once until {@link forgetPitchfork}.
 	 */
-	async findPitchfork(): Promise<PitchforkBinary | undefined> {
+	findPitchfork(): Promise<PitchforkBinary | undefined> {
+		this.pitchforkLookup ??= this.lookUpPitchfork();
+		return this.pitchforkLookup;
+	}
+
+	/** On a reload: the tools, or the PATH, may have changed */
+	forgetPitchfork() {
+		this.pitchforkLookup = undefined;
+	}
+
+	private async lookUpPitchfork(): Promise<PitchforkBinary | undefined> {
 		// only along with mise, e.g. not before a workspace mise is approved
 		if (!this.miseService.getMiseBinaryPath()) {
 			return undefined;
@@ -171,14 +196,22 @@ export class DaemonsService {
 		return undefined;
 	}
 
+	/**
+	 * Run pitchfork. Only the commands that start daemons may start the
+	 * supervisor (`autoStart`).
+	 */
 	private async execPitchfork(
 		pitchfork: PitchforkBinary,
 		args: string[],
-		cwd = this.folder(),
+		{
+			cwd = this.folder(),
+			autoStart = false,
+		}: { cwd?: string; autoStart?: boolean } = {},
 	): Promise<string> {
 		logger.debug(`> ${pitchfork.path} ${args.join(" ")}`);
 		const { code, stdout, stderr } = await safeExec(pitchfork.path, args, {
 			cwd,
+			env: pitchforkEnv({ autoStart }),
 		});
 		if (code !== 0) {
 			throw new DaemonCommandError(
@@ -196,9 +229,12 @@ export class DaemonsService {
 		return JSON.parse(await this.execPitchfork(pitchfork, args)) as T;
 	}
 
-	private async execMiseDaemons(args: string[]) {
+	/** mise runs pitchfork, which starts the supervisor unless told not to */
+	private async execMiseDaemons(args: string[], { autoStart = false } = {}) {
 		try {
-			await this.miseService.execMiseCommand(["daemons", ...args]);
+			await this.miseService.execMiseCommand(["daemons", ...args], {
+				env: pitchforkEnv({ autoStart }),
+			});
 		} catch (error) {
 			throw new DaemonCommandError(
 				daemonCommandError((error as Error).message),
@@ -216,14 +252,15 @@ export class DaemonsService {
 		daemon: Daemon,
 		pitchfork: PitchforkBinary | undefined,
 	): Promise<void> {
+		const autoStart = action !== "stop";
 		if (daemon.kind === "mise") {
-			await this.execMiseDaemons([action, daemon.id]);
+			await this.execMiseDaemons([action, daemon.id], { autoStart });
 			return;
 		}
 		if (!pitchfork) {
 			throw new DaemonCommandError("pitchfork is not installed");
 		}
-		await this.execPitchfork(pitchfork, [action, daemon.id]);
+		await this.execPitchfork(pitchfork, [action, daemon.id], { autoStart });
 	}
 
 	/**
@@ -251,13 +288,16 @@ export class DaemonsService {
 				errors.push((error as Error).message);
 			}
 		};
+		const autoStart = action === "start";
 		if (project.some((daemon) => daemon.kind === "mise")) {
-			await attempt(() => this.execMiseDaemons([action]));
+			await attempt(() => this.execMiseDaemons([action], { autoStart }));
 		}
 		if (pitchforkIds.length && state.pitchfork) {
 			const pitchfork = state.pitchfork;
 			await attempt(() =>
-				this.execPitchfork(pitchfork, [action, ...pitchforkIds]),
+				this.execPitchfork(pitchfork, [action, ...pitchforkIds], {
+					autoStart,
+				}),
 			);
 		}
 		if (errors.length) {
@@ -309,112 +349,140 @@ export class DaemonsService {
 	}
 
 	/**
-	 * What a session in this folder is about: the daemons that start or stop
-	 * with it (see {@link sessionDaemons}), from its mise configs and its
-	 * pitchfork configs, and whether mise has to register its own first: it
-	 * does that when it starts them, which a session does not.
+	 * The projects a session in this folder joins, by root directory, with the
+	 * daemons that start or stop with them (see {@link sessionDaemons}). A
+	 * project is where its config is, which can be above the folder, and
+	 * pitchfork only stops on leaving the daemons of a directory inside the one
+	 * left. mise registers its daemons with pitchfork when it starts them,
+	 * which a session does not, so a root whose mise daemons start with the
+	 * session is registered first.
+	 *
+	 * `undefined` when a config could not be read, e.g. while it is typed: the
+	 * session stays as it was rather than leaving.
 	 */
-	async sessionDaemons(
+	async sessionRoots(
 		folder: string,
-	): Promise<{ daemons: string[]; register: boolean }> {
-		const read = async (file: string) => {
-			try {
-				return sessionDaemons(parse(await readFile(file, "utf8")));
-			} catch {
-				// gone, or does not parse yet
-				return [];
+	): Promise<
+		Map<string, { daemons: string[]; register: boolean }> | undefined
+	> {
+		const roots = new Map<string, { daemons: string[]; register: boolean }>();
+		const add = (root: string, daemons: string[], register: boolean) => {
+			if (!daemons.length) {
+				return;
 			}
+			const entry = roots.get(root) ?? { daemons: [], register: false };
+			entry.daemons.push(...daemons);
+			entry.register ||= register;
+			roots.set(root, entry);
 		};
-		const miseFiles = await this.miseDaemonSources(folder);
-		const pitchforkFiles = pitchforkConfigCandidates(folder, "").filter(
-			(file) => existsSync(file),
-		);
+		const read = async (file: string) =>
+			parse(await readFile(file, "utf8")) as unknown;
 
-		const fromMise = (
-			await Promise.all(
-				miseFiles.map(async (file) =>
-					(await read(file)).map((daemon) => `${file}#${daemon}`),
-				),
-			)
-		).flat();
-		const fromPitchfork = (
-			await Promise.all(
-				pitchforkFiles.map(async (file) =>
-					(await read(file)).map((daemon) => `${file}#${daemon}`),
-				),
-			)
-		).flat();
-		return {
-			daemons: [...fromMise, ...fromPitchfork].sort(),
-			register: fromMise.some((daemon) => /:(start|start,stop)$/.test(daemon)),
-		};
+		try {
+			// the daemons a config file declares for a project
+			const bySource = new Map<
+				string,
+				{ root: string; source: string; names: string[] }
+			>();
+			for (const daemon of await this.miseSessionCandidates(folder)) {
+				const key = JSON.stringify([daemon.root, daemon.source]);
+				const entry = bySource.get(key) ?? { ...daemon, names: [] };
+				entry.names.push(daemon.name);
+				bySource.set(key, entry);
+			}
+			for (const { root, source, names } of bySource.values()) {
+				const declared = sessionDaemons(await read(source), names).map(
+					(daemon) => `${source}#${daemon}`,
+				);
+				add(
+					root,
+					declared,
+					declared.some((daemon) => /:start(,stop)?$/.test(daemon)),
+				);
+			}
+
+			for (const file of pitchforkConfigCandidates(folder, "").filter((file) =>
+				existsSync(file),
+			)) {
+				add(
+					pitchforkProjectDir(file),
+					sessionDaemons(await read(file)).map((daemon) => `${file}#${daemon}`),
+					false,
+				);
+			}
+		} catch (error) {
+			logger.info(`Could not read the session daemons of ${folder}`, error);
+			return undefined;
+		}
+
+		for (const entry of roots.values()) {
+			entry.daemons.sort();
+		}
+		return roots;
 	}
 
-	private async miseDaemonSources(folder: string): Promise<string[]> {
+	/** The mise daemons seen from a folder, with their project and config */
+	private async miseSessionCandidates(
+		folder: string,
+	): Promise<{ name: string; root: string; source: string }[]> {
 		if (!(await this.supportsMiseDaemons())) {
 			return [];
 		}
-		try {
-			const { stdout } = await this.miseService.execMiseCommand([
-				"-C",
-				folder,
-				"daemons",
-				"ls",
-				"--json",
-			]);
-			const daemons = JSON.parse(stdout) as MiseDaemonEntry[];
-			return [
-				...new Set(
-					daemons
-						.map((daemon) => daemon.source)
-						.filter((source): source is string => !!source)
-						.map(expandPath),
-				),
-			];
-		} catch {
-			return [];
-		}
+		const { stdout } = await this.miseService.execMiseCommand([
+			"-C",
+			folder,
+			"daemons",
+			"ls",
+			"--json",
+		]);
+		return (JSON.parse(stdout) as MiseDaemonEntry[]).flatMap((daemon) =>
+			daemon.root && daemon.source
+				? [
+						{
+							name: daemon.name,
+							root: expandPath(daemon.root),
+							source: expandPath(daemon.source),
+						},
+					]
+				: [],
+		);
 	}
 
 	/**
-	 * Join the pitchfork session of a folder for this window, the way a shell
+	 * Join the pitchfork session of a project for this window, the way a shell
 	 * entering it does. pitchfork ends the session by itself once the window's
 	 * process exits.
 	 */
 	async enterSession(
-		folder: string,
+		root: string,
 		pitchfork: PitchforkBinary,
 		{ register }: { register: boolean },
 	): Promise<void> {
 		if (register) {
 			try {
-				await this.miseService.execMiseCommand([
-					"-C",
-					folder,
-					"daemons",
-					"register",
-				]);
+				await this.miseService.execMiseCommand(
+					["-C", root, "daemons", "register"],
+					{ env: pitchforkEnv({ autoStart: true }) },
+				);
 			} catch (error) {
 				logger.warn(
-					`Could not register the daemons of ${folder}: ${daemonCommandError((error as Error).message)}`,
+					`Could not register the daemons of ${root}: ${daemonCommandError((error as Error).message)}`,
 				);
 			}
 		}
 		await this.execPitchfork(
 			pitchfork,
-			["project", "enter", "--pid", String(process.pid), "--directory", folder],
-			folder,
+			["project", "enter", "--pid", String(process.pid), "--directory", root],
+			{ cwd: root, autoStart: true },
 		);
 	}
 
-	async leaveSession(
-		folder: string,
-		pitchfork: PitchforkBinary,
-	): Promise<void> {
+	/** Leaving never starts a supervisor: without one, there is no session */
+	async leaveSession(root: string, pitchfork: PitchforkBinary): Promise<void> {
 		await this.execPitchfork(
 			pitchfork,
-			["project", "leave", "--pid", String(process.pid), "--directory", folder],
-			folder,
+			["project", "leave", "--pid", String(process.pid), "--directory", root],
+			{ cwd: root },
 		);
 	}
 }

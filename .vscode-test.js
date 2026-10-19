@@ -649,6 +649,8 @@ module.exports = defineConfig([
 			MISE_GLOBAL_CONFIG_FILE: path.join(daemonsStateDir, "config.toml"),
 			PITCHFORK_STATE_DIR: path.join(daemonsStateDir, "pitchfork-state"),
 			PITCHFORK_CONFIG_DIR: path.join(daemonsStateDir, "pitchfork-config"),
+			// leaving a session stops its `auto = ["stop"]` daemons this long after
+			PITCHFORK_AUTOSTOP_DELAY: "1s",
 		},
 		mocha: {
 			require: ["tsx/cjs"],

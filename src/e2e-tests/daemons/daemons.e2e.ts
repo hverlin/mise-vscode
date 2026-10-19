@@ -158,19 +158,19 @@ suite("Daemons Test Suite", function () {
 		await waitForStatus("clock", "stopped");
 	});
 
-	test("starts the daemons of the workspace session", async () => {
+	test("starts and stops the daemons of the workspace session", async () => {
 		assert.notEqual(daemonNamed(await load(), "ticker").status, "running");
 		await vscode.workspace
 			.getConfiguration("mise")
 			.update("autoStartStopDaemons", true, true);
-		const ticker = await waitForStatus("ticker", "running");
+		await waitForStatus("ticker", "running");
 		// the others start on demand only
 		assert.notEqual(daemonNamed(await load(), "clock").status, "running");
 
+		// leaving the session stops it, see PITCHFORK_AUTOSTOP_DELAY
 		await vscode.workspace
 			.getConfiguration("mise")
 			.update("autoStartStopDaemons", undefined, true);
-		await vscode.commands.executeCommand("mise.stopDaemon", ticker);
 		await waitForStatus("ticker", "stopped");
 	});
 });

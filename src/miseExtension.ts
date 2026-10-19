@@ -360,7 +360,9 @@ export class MiseExtension {
 			...pitchforkConfigWatchers,
 			vscode.languages.registerCodeLensProvider(
 				{ language: "toml" },
-				new DaemonCodeLensProvider(daemonsProvider),
+				new DaemonCodeLensProvider(daemonsProvider, () =>
+					this.miseService.getCurrentWorkspaceFolderPath(),
+				),
 			),
 		);
 
@@ -471,6 +473,7 @@ export class MiseExtension {
 				// (extension disabled, binary not approved) to clear them
 				taskValidationDiagnostics.scheduleRefresh();
 				configKeyDiagnostics.scheduleRefresh();
+				daemonsService.forgetPitchfork();
 				void daemonsProvider.refresh();
 				void daemonsSession.sync();
 			}

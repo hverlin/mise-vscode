@@ -5,11 +5,14 @@ import {
 	declaredDaemonNames,
 	describeDaemon,
 	isPitchforkConfigPath,
+	isSamePath,
 	isVersionAtLeast,
 	mergeDaemons,
 	type PitchforkListEntry,
 	parsePitchforkVersion,
 	pitchforkConfigCandidates,
+	pitchforkEnv,
+	pitchforkProjectDir,
 	sessionDaemons,
 } from "./daemons";
 
@@ -225,6 +228,63 @@ describe("declared daemons", () => {
 				},
 			}),
 		).toEqual(["api:start,stop", "worker:stop"]);
+	});
+
+	it("keeps to the daemons named", () => {
+		expect(
+			sessionDaemons(
+				{
+					daemons: {
+						api: { auto: ["start"] },
+						worker: { auto: ["stop"] },
+					},
+				},
+				["worker"],
+			),
+		).toEqual(["worker:stop"]);
+	});
+});
+
+describe("pitchforkProjectDir", () => {
+	it("is the directory of the config, or the one above .config", () => {
+		expect(pitchforkProjectDir("/repo/shop/pitchfork.toml")).toBe(
+			path.resolve("/repo/shop"),
+		);
+		expect(pitchforkProjectDir("/repo/shop/.config/pitchfork.toml")).toBe(
+			path.resolve("/repo/shop"),
+		);
+	});
+});
+
+describe("pitchforkEnv", () => {
+	const env = {
+		PATH: "/usr/bin",
+		ELECTRON_RUN_AS_NODE: "1",
+		VSCODE_PID: "42",
+		MISE_ENV: "dev",
+	};
+
+	it("leaves out what VS Code sets for its own processes", () => {
+		expect(pitchforkEnv({ autoStart: true }, env)).toEqual({
+			PATH: "/usr/bin",
+			MISE_ENV: "dev",
+		});
+	});
+
+	it("keeps pitchfork from starting a supervisor", () => {
+		expect(
+			pitchforkEnv({ autoStart: false }, env).PITCHFORK_SUPERVISOR_AUTO_START,
+		).toBe("false");
+	});
+});
+
+describe("isSamePath", () => {
+	it("ignores the case of Windows paths only", () => {
+		expect(isSamePath("/repo/mise.toml", "/repo/./mise.toml", false)).toBe(
+			true,
+		);
+		expect(isSamePath("/Repo/mise.toml", "/repo/mise.toml", false)).toBe(false);
+		expect(isSamePath("/Repo/mise.toml", "/repo/mise.toml", true)).toBe(true);
 	});
 });
 

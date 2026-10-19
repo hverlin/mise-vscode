@@ -6,6 +6,8 @@ export type MiseDaemonEntry = {
 	id: string;
 	name: string;
 	status: string;
+	/** the project directory the daemon belongs to */
+	root?: string | null;
 	/** the mise config file declaring the daemon */
 	source?: string | null;
 	preset?: string | null;
@@ -242,6 +244,17 @@ export function pitchforkConfigCandidates(
 	}
 }
 
+/** Whether two paths name the same file, ignoring the case of Windows paths */
+export function isSamePath(
+	a: string,
+	b: string,
+	windows = process.platform === "win32",
+): boolean {
+	const normalize = (filePath: string) =>
+		windows ? path.resolve(filePath).toLowerCase() : path.resolve(filePath);
+	return normalize(a) === normalize(b);
+}
+
 /** Whether pitchfork reads daemons from this file */
 export function isPitchforkConfigPath(filePath: string, env = process.env) {
 	const normalized = path.resolve(filePath);
@@ -272,15 +285,18 @@ export function declaredDaemonNames(config: unknown): string[] {
  * The daemons of a parsed config that a session starts or stops, from their
  * `auto` key: the shell hook, or the editor, starts the `auto = ["start"]`
  * ones when entering the project, and stops the `auto = ["stop"]` ones once
- * the last session left. As `name:start,stop`.
+ * the last session left. As `name:start,stop`, for the names given or all.
  */
-export function sessionDaemons(config: unknown): string[] {
+export function sessionDaemons(config: unknown, names?: string[]): string[] {
 	const daemons = (config as { daemons?: Record<string, unknown> } | undefined)
 		?.daemons;
 	if (!daemons || typeof daemons !== "object") {
 		return [];
 	}
 	return Object.entries(daemons).flatMap(([name, daemon]) => {
+		if (names && !names.includes(name)) {
+			return [];
+		}
 		const auto = (daemon as { auto?: unknown } | undefined)?.auto;
 		const actions = Array.isArray(auto)
 			? auto.filter(
@@ -289,6 +305,39 @@ export function sessionDaemons(config: unknown): string[] {
 			: [];
 		return actions.length ? [`${name}:${[...actions].sort().join(",")}`] : [];
 	});
+}
+
+/**
+ * The project directory of a pitchfork config, the one its daemons belong to:
+ * where the file is, or the directory above its `.config`.
+ */
+export function pitchforkProjectDir(configPath: string): string {
+	const directory = path.dirname(configPath);
+	return path.basename(directory) === ".config"
+		? path.dirname(directory)
+		: directory;
+}
+
+/**
+ * The environment of a command that may start the pitchfork supervisor: it
+ * outlives the editor and every daemon inherits it, so none of the variables
+ * VS Code sets for its own processes (`ELECTRON_RUN_AS_NODE`, ...) go there.
+ * `autoStart: false` keeps a command from starting one.
+ */
+export function pitchforkEnv(
+	{ autoStart }: { autoStart: boolean },
+	env: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+	const result: NodeJS.ProcessEnv = {};
+	for (const [key, value] of Object.entries(env)) {
+		if (!/^(VSCODE_|ELECTRON_)/.test(key)) {
+			result[key] = value;
+		}
+	}
+	if (!autoStart) {
+		result.PITCHFORK_SUPERVISOR_AUTO_START = "false";
+	}
+	return result;
 }
 
 const ANSI_ESCAPE = new RegExp(

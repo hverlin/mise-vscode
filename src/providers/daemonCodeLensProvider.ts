@@ -15,6 +15,9 @@ import {
 	GLOBAL_NAMESPACE,
 	isDaemonActive,
 	isPitchforkConfigPath,
+	isSamePath,
+	pitchforkConfigCandidates,
+	pitchforkProjectDir,
 	pitchforkUserConfig,
 } from "../utils/daemons";
 import { expandPath } from "../utils/fileUtils";
@@ -41,11 +44,7 @@ function pitchforkNamespace(filePath: string, config: unknown): string {
 	if (typeof declared === "string" && declared) {
 		return declared;
 	}
-	let directory = path.dirname(filePath);
-	if (path.basename(directory) === ".config") {
-		directory = path.dirname(directory);
-	}
-	return path.basename(directory);
+	return path.basename(pitchforkProjectDir(filePath));
 }
 
 /**
@@ -55,7 +54,11 @@ function pitchforkNamespace(filePath: string, config: unknown): string {
 export class DaemonCodeLensProvider implements vscode.CodeLensProvider {
 	readonly onDidChangeCodeLenses: vscode.Event<void>;
 
-	constructor(private provider: MiseDaemonsProvider) {
+	constructor(
+		private provider: MiseDaemonsProvider,
+		/** the folder whose daemons the provider knows */
+		private folder: () => string | undefined,
+	) {
 		this.onDidChangeCodeLenses = provider.onDidChangeState;
 	}
 
@@ -78,6 +81,19 @@ export class DaemonCodeLensProvider implements vscode.CodeLensProvider {
 		const namespace = isPitchfork
 			? pitchforkNamespace(filePath, parser.parsed)
 			: undefined;
+		// another folder's config may declare daemons of the same name
+		const folder = this.folder();
+		if (
+			namespace !== undefined &&
+			!(
+				folder &&
+				pitchforkConfigCandidates(folder, namespace).some((candidate) =>
+					isSamePath(candidate, filePath),
+				)
+			)
+		) {
+			return [];
+		}
 
 		const lenses: vscode.CodeLens[] = [];
 		for (const name of declaredDaemonNames(parser.parsed)) {
@@ -92,7 +108,7 @@ export class DaemonCodeLensProvider implements vscode.CodeLensProvider {
 							daemon.kind === "mise" &&
 							daemon.name === name &&
 							!!daemon.source &&
-							expandPath(daemon.source) === filePath,
+							isSamePath(expandPath(daemon.source), filePath),
 					);
 			if (daemon) {
 				lenses.push(...this.lensesOf(daemon, range));

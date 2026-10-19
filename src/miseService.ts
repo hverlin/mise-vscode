@@ -1027,10 +1027,19 @@ export class MiseService {
 	 * previous output so the views keep showing the last state the machine was
 	 * actually in, instead of emptying until the file parses again. Any other
 	 * failure still throws, so real errors are never masked.
+	 * @param env the environment of mise, the extension's by default
 	 */
 	async execMiseCommand(
 		args: string[],
-		{ setMiseEnv = true, retainOnParseError = false } = {},
+		{
+			setMiseEnv = true,
+			retainOnParseError = false,
+			env,
+		}: {
+			setMiseEnv?: boolean;
+			retainOnParseError?: boolean;
+			env?: NodeJS.ProcessEnv;
+		} = {},
 	) {
 		const miseBinaryPath = this.getMiseBinaryPath();
 		ensureMiseCommand(miseBinaryPath);
@@ -1040,6 +1049,7 @@ export class MiseService {
 
 		const result = await safeExec(miseBinaryPath, miseArgs, {
 			cwd: this.getCurrentWorkspaceFolderPath(),
+			env,
 		});
 		const { code } = result;
 		const stdout = this.toOpenedPaths(result.stdout);

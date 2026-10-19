@@ -369,13 +369,15 @@ export function registerDaemonsCommands(
 	daemonsService: DaemonsService,
 	folder: () => string | undefined,
 ) {
+	/** by daemon id: `global/web` and `shop/web` both get a `logs web` */
 	const terminals = new Map<string, vscode.Terminal>();
 	const showInTerminal = (
+		key: string,
 		name: string,
 		command: { shellPath: string; shellArgs: string[] },
 		location?: vscode.TerminalLocation,
 	) => {
-		const previous = terminals.get(name);
+		const previous = terminals.get(key);
 		if (previous && previous.exitStatus === undefined) {
 			previous.show();
 			return;
@@ -387,7 +389,7 @@ export function registerDaemonsCommands(
 			...command,
 			location,
 		});
-		terminals.set(name, terminal);
+		terminals.set(key, terminal);
 		terminal.show();
 	};
 
@@ -466,7 +468,7 @@ export function registerDaemonsCommands(
 					);
 					return;
 				}
-				showInTerminal(`logs ${daemon.name}`, command);
+				showInTerminal(`logs:${daemon.id}`, `logs ${daemon.name}`, command);
 			},
 		),
 		vscode.commands.registerCommand(
@@ -475,7 +477,7 @@ export function registerDaemonsCommands(
 				const daemon = await resolveDaemon(
 					provider,
 					argument,
-					(daemon) => !!daemon.url,
+					(daemon) => !!daemon.url && isDaemonActive(daemon),
 					"Daemon to open in the browser",
 				);
 				if (daemon?.url) {
@@ -512,7 +514,12 @@ export function registerDaemonsCommands(
 				);
 				return;
 			}
-			showInTerminal("pitchfork", command, vscode.TerminalLocation.Editor);
+			showInTerminal(
+				"tui",
+				"pitchfork",
+				command,
+				vscode.TerminalLocation.Editor,
+			);
 		}),
 		vscode.commands.registerCommand(MISE_OPEN_PITCHFORK_WEB_UI, async () => {
 			await provider.refresh();

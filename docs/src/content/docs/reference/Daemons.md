@@ -23,8 +23,8 @@ It uses the pitchfork of the project's tools, or the one on the `PATH`
 
 The `Daemons` panel in the activity bar lists the daemons of the current
 workspace folder, with their status and, while they run, their port. It only
-shows up when the folder has daemons. The daemons of the global pitchfork
-config are listed under `Global`.
+shows up when there are daemons. The daemons of the global pitchfork config
+are listed under `Global`, in every workspace.
 
 From each daemon, you can:
 
@@ -41,8 +41,9 @@ every daemon), open the pitchfork dashboard (`pitchfork tui`) in an editor
 tab, and open the pitchfork [web UI](https://pitchfork.jdx.dev/guides/web-ui)
 when the supervisor serves it.
 
-The panel refreshes while it is visible. Listing the daemons never starts the
-pitchfork supervisor: until it runs, the daemons show as `available`.
+The panel refreshes while it is visible. Only starting a daemon starts the
+pitchfork supervisor: listing, stopping or leaving a session never does. Until
+it runs, the daemons show as `available`.
 
 ## Code lenses
 
@@ -56,11 +57,12 @@ enters their project, and stops the ones with `auto = ["stop"]` once the last
 shell left (see
 [Start and stop with your shell](https://mise.jdx.dev/daemons.html#automatic-start-and-stop)).
 
-With `mise.autoStartStopDaemons`, VS Code does the same for each workspace
-folder while it is open: the window joins the pitchfork session of the folder,
-and leaves it when the folder is closed. pitchfork also ends the session once
-VS Code exits. The mise daemons that start this way are registered with
-pitchfork first, which installs their missing tools.
+With `mise.autoStartStopDaemons`, VS Code does the same for the projects of
+the workspace folders: the window joins the pitchfork session of each project
+(the directory of its config, which can be above the folder), and leaves it
+when the folder is closed. pitchfork also ends the session once VS Code exits.
+The mise daemons that start this way are registered with pitchfork first,
+which installs their missing tools.
 
 ```toml
 # mise.toml
