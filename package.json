@@ -2,7 +2,7 @@
   "name": "mise-vscode",
   "displayName": "Mise VSCode",
   "publisher": "hverlin",
-  "description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
+  "description": "mise and pitchfork support for Visual Studio Code (dev-tools, tasks, environment variables and daemons)",
   "version": "1.27.0",
   "repository": {
     "type": "git",
