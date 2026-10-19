@@ -50,6 +50,20 @@ it runs, the daemons show as `available`.
 Each daemon declared in a mise config or a pitchfork config gets a code lens
 with its status, and actions to start, stop, restart it or show its logs.
 
+## Editing daemons
+
+In a mise config, the names of daemons are completed in the `daemons` of a
+task, the `depends` of a daemon and the members of a group, with hover and
+go to definition (see
+[mise.toml language support](/mise-vscode/reference/misetoml-language-support/#autocompletion-for-daemons)).
+
+Type `mise-daemon` to get snippets for the different kinds of daemons:
+`mise-daemon` (a command, with a readiness check on its port),
+`mise-daemon-preset` (a [service preset](https://mise.jdx.dev/daemons/presets.html)
+such as PostgreSQL), `mise-daemon-task` (a mise task), `mise-daemon-auto` (a
+daemon that starts and stops with the shell or the workspace) and
+`mise-daemon-groups`.
+
 ## Start and stop daemons with the workspace
 
 pitchfork starts the daemons declared with `auto = ["start"]` when a shell

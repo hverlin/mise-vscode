@@ -456,7 +456,7 @@
           "type": "boolean",
           "title": "Enable snippets",
           "default": true,
-          "markdownDescription": "Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks.\n\nThey are also hidden by `#editor.snippetSuggestions#` set to `none` and by `#editor.suggest.showSnippets#` set to `false`, which apply to every extension."
+          "markdownDescription": "Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks, and daemon snippets (`mise-daemon`, ...) in mise configuration files.\n\nThey are also hidden by `#editor.snippetSuggestions#` set to `none` and by `#editor.suggest.showSnippets#` set to `false`, which apply to every extension."
         },
         "mise.automaticallyTrustMiseConfigFiles": {
           "order": 15,

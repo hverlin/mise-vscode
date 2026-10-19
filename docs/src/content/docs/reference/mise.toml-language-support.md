@@ -77,6 +77,19 @@ being edited and in its parent config files. See the
 [task templates section](/mise-vscode/reference/tasks/#task-templates) of the tasks
 reference for the hover, go-to-definition, and find-references support.
 
+#### Autocompletion for daemons
+
+The names of [daemons](/mise-vscode/reference/daemons/) are completed where a
+value refers to them: the `daemons` of a task, the `depends` of a daemon, and
+the members of a `[daemon_groups]` group (which can also name other groups).
+`preset = "..."` completes the
+[service presets](https://mise.jdx.dev/daemons/presets.html) of mise, and
+`task = "..."` the task a daemon runs. In a `pitchfork.toml`, the same goes for
+the `depends` of a daemon and the members of a `[groups.<name>]` group.
+
+Hovering a daemon name shows its status, with actions to start, stop or
+restart it and to show its logs, and Cmd/Ctrl+Click goes to its declaration.
+
 ### Task arguments (usage spec)
 
 Task arguments are declared with the
@@ -130,6 +143,8 @@ This extension adds the following code lens features:
 - A `add tool` code lens that to automatically add a tool to a `mise.toml` file
 - Lockfile code lenses on `mise.lock` and next to `[tools]`, see
   [Lockfile](/mise-vscode/reference/tools/#lockfile)
+- Each daemon has its status and start/stop code lenses, see
+  [Daemons](/mise-vscode/reference/daemons/#code-lenses)
 
 ### Code navigation
 
@@ -138,6 +153,8 @@ This extension adds the following code lens features:
 - Cmd/Ctrl+Click on `extends = "template_name"` opens the
   `[task_templates.template_name]` declaration; _Find all references_ on a
   declaration lists every task extending it
+- Cmd/Ctrl+Click on a daemon name (`daemons = ["postgres"]` of a task,
+  `depends` of a daemon, members of a group) opens its declaration
 
 ### Syntax highlighting for shebang
 

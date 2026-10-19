@@ -6,3 +6,20 @@ pitchfork = "2.31.0"
 
 [daemons.web]
 run = "exec sleep 600"
+
+[daemons.api]
+run = "exec sleep 600"
+depends = ["web"]
+
+[daemon_groups]
+backend = ["web", "api"]
+
+[tasks.test]
+daemons = ["web"]
+run = "echo test"
+
+[daemons.worker]
+task = "test"
+
+[tasks.web]
+run = "echo web"

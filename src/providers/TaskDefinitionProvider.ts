@@ -20,7 +20,11 @@ import {
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "../utils/taskTemplates";
-import { getTaskNameValueContext } from "../utils/tomlParsing";
+import {
+	getTaskNameValueContext,
+	isDaemonsKeyPath,
+	isTaskOfDaemonKeyPath,
+} from "../utils/tomlParsing";
 
 export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	private miseService: MiseService;
@@ -64,8 +68,13 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			return null;
 		}
 
-		// `depends` under [tools.*] refers to other tools, not tasks
-		if (keyPath[0] === "tools") {
+		// `depends` under [tools.*] refers to other tools, not tasks, and under
+		// [daemons.*] to other daemons (see daemonNameProviders): a daemon only
+		// names a task in its `task`
+		if (
+			keyPath[0] === "tools" ||
+			(isDaemonsKeyPath(keyPath) && !isTaskOfDaemonKeyPath(keyPath))
+		) {
 			return null;
 		}
 

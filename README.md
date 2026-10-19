@@ -112,13 +112,15 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
   [pitchfork](https://pitchfork.jdx.dev/) daemons of the project, with their
   status
 - ▶️ Start/Stop/Restart them, follow their logs, open them in the browser
+- ✍️ Completion, hover and go to definition for daemon names in `mise.toml`
 - 🔁 Optionally start and stop them with the workspace (`auto = ["start", "stop"]`)
 
 ### Snippets
 
-- 📝 `mise-task` snippets to create tasks in `mise.toml` and task files. They
-  are only suggested in the files mise loads, and only where a task can be
-  inserted. Set `mise.enableSnippets` to `false` to turn them off.
+- 📝 `mise-task` snippets to create tasks in `mise.toml` and task files, and
+  `mise-daemon` snippets to declare daemons in `mise.toml`. They are only
+  suggested in the files mise loads, and only where they can be inserted. Set
+  `mise.enableSnippets` to `false` to turn them off.
 
 ### Integration with VSCode tasks (`launch.json`)
 

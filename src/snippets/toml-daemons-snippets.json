@@ -1,0 +1,48 @@
+{
+	"daemon": {
+		"prefix": "mise-daemon",
+		"description": "[experimental] Declare a daemon running a command, ready once its port accepts connections",
+		"body": [
+			"[daemons.${1:api}]",
+			"run = \"exec ${2:npm run dev}\"",
+			"ready_port = ${3:3000}",
+			"$0"
+		]
+	},
+	"daemonPreset": {
+		"prefix": "mise-daemon-preset",
+		"description": "[experimental] Declare a database or a message broker from a mise service preset, at a major version",
+		"body": [
+			"[daemons.${1:db}]",
+			"preset = \"${2|postgres,redis,cockroachdb,nats,spicedb|}\"",
+			"version = \"$3\"",
+			"$0"
+		]
+	},
+	"daemonTask": {
+		"prefix": "mise-daemon-task",
+		"description": "[experimental] Declare a daemon running a mise task",
+		"body": [
+			"[daemons.${1:dev}]",
+			"task = \"${2:dev}\"",
+			"ready_port = ${3:8080}",
+			"$0"
+		]
+	},
+	"daemonAuto": {
+		"prefix": "mise-daemon-auto",
+		"description": "[experimental] Declare a daemon that starts when entering the project, and stops once the last shell left",
+		"body": [
+			"[daemons.${1:api}]",
+			"run = \"exec ${2:npm run dev}\"",
+			"ready_port = ${3:3000}",
+			"auto = [\"start\", \"stop\"]",
+			"$0"
+		]
+	},
+	"daemonGroups": {
+		"prefix": "mise-daemon-groups",
+		"description": "[experimental] Name sets of daemons, such as the default group `mise daemons start` starts",
+		"body": ["[daemon_groups]", "default = [${1:\"api\"}]", "$0"]
+	}
+}

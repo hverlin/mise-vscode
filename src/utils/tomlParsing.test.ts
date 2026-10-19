@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import type * as vscode from "vscode";
 import {
+	type DaemonNameContext,
 	getConfigRootsArrayContext,
+	getDaemonNameAt,
+	getDaemonNameValueContext,
 	getTaskNameValueContext,
 	isPositionInTasksContext,
 	isPositionInToolsContext,
@@ -555,5 +558,206 @@ describe("getTaskNameValueContext", () => {
 		expect(contextAt('[tasks.a]\ndepends = ["build"] |')).toBeUndefined();
 		expect(contextAt('[tasks.a]\ndepends = ["build"]\n|')).toBeUndefined();
 		expect(contextAt('[tasks.a]\nrun = [{ |task = "b" }]')).toBeUndefined();
+	});
+});
+
+/** The document and cursor of a toml with the cursor marked with `|` */
+const withCursor = (toml: string) => {
+	const lines = toml.split("\n");
+	const line = lines.findIndex((text) => text.includes("|"));
+	const character = (lines[line] ?? "").indexOf("|");
+	return {
+		document: fakeDocument(toml.replace("|", "")),
+		position: { line, character } as vscode.Position,
+	};
+};
+
+describe("getTaskNameValueContext in daemons", () => {
+	const contextAt = (toml: string) => {
+		const { document, position } = withCursor(toml);
+		return getTaskNameValueContext(document, position);
+	};
+
+	it("leaves the depends of a daemon to the daemon names", () => {
+		expect(
+			contextAt('[daemons.api]\nrun = "x"\ndepends = ["|"]'),
+		).toBeUndefined();
+		expect(contextAt('daemons.api.depends = ["|"]')).toBeUndefined();
+	});
+
+	it("completes the task a daemon runs", () => {
+		expect(contextAt('[daemons.core]\ntask = "|"')).toEqual({ inQuote: true });
+		expect(contextAt('[daemons]\ncore = { task = "|" }')).toEqual({
+			inQuote: true,
+		});
+		expect(contextAt('[daemons.core]\nargs = ["|"]')).toBeUndefined();
+	});
+
+	it("is not misled by header-like lines of a multiline string", () => {
+		expect(
+			contextAt(
+				[
+					"[daemons.api]",
+					"run = '''",
+					"[server]",
+					"'''",
+					'depends = ["|"]',
+				].join("\n"),
+			),
+		).toBeUndefined();
+	});
+});
+
+describe("getDaemonNameValueContext", () => {
+	const contextAt = (toml: string) => {
+		const { document, position } = withCursor(toml);
+		return getDaemonNameValueContext(document, position);
+	};
+	const ofTask = (inQuote: boolean): DaemonNameContext => ({
+		inQuote,
+		accepts: "daemonsAndGroups",
+		syntax: "mise",
+	});
+
+	it("completes the daemons of a task", () => {
+		expect(contextAt('[tasks.test]\ndaemons = ["pg", "|"]')).toEqual(
+			ofTask(true),
+		);
+		expect(contextAt('[tasks.test]\ndaemons = "|"')).toEqual(ofTask(true));
+		expect(contextAt("[tasks.test]\ndaemons = |")).toEqual(ofTask(false));
+		expect(contextAt('[tasks]\ntest = { run = "x", daemons = ["|"] }')).toEqual(
+			ofTask(true),
+		);
+		expect(contextAt('[task_templates.t]\ndaemons = ["|"]')).toEqual(
+			ofTask(true),
+		);
+	});
+
+	it("reads quoted task names", () => {
+		expect(contextAt('tasks."test:e2e".daemons = ["|"]')).toEqual(ofTask(true));
+		expect(contextAt('[tasks]\n"test:e2e" = { daemons = ["|"] }')).toEqual(
+			ofTask(true),
+		);
+		expect(contextAt('[tasks."test e2e"]\ndaemons = ["|"]')).toEqual(
+			ofTask(true),
+		);
+	});
+
+	it("completes the depends of a daemon, but not itself", () => {
+		const ofApi: DaemonNameContext = {
+			inQuote: true,
+			accepts: "daemons",
+			owner: "api",
+			syntax: "any",
+		};
+		expect(contextAt('[daemons.api]\ndepends = ["|"]')).toEqual(ofApi);
+		expect(
+			contextAt('[daemons]\napi = { run = "x", depends = ["|"] }'),
+		).toEqual(ofApi);
+		expect(
+			contextAt('[daemons."my.api"]\ndepends = [\n  "db",\n  "|"\n]'),
+		).toEqual({ ...ofApi, owner: "my.api" });
+		// pitchfork reads a list only
+		expect(contextAt('[daemons.api]\ndepends = "|"')).toBeUndefined();
+	});
+
+	it("completes the members of a group", () => {
+		const ofFull: DaemonNameContext = {
+			inQuote: true,
+			accepts: "daemonsAndGroups",
+			owner: "full",
+			syntax: "mise",
+		};
+		expect(contextAt('[daemon_groups]\nfull = ["default", "|"]')).toEqual(
+			ofFull,
+		);
+		expect(contextAt('[daemon_groups.full]\ndaemons = ["|"]')).toEqual(ofFull);
+	});
+
+	it("completes the members of a pitchfork group", () => {
+		expect(contextAt('[groups.all]\ndaemons = ["|"]')).toEqual({
+			inQuote: true,
+			accepts: "daemons",
+			syntax: "pitchfork",
+		});
+		expect(contextAt('[groups.all]\ngroups = ["|"]')).toEqual({
+			inQuote: true,
+			accepts: "groups",
+			owner: "all",
+			syntax: "pitchfork",
+		});
+	});
+
+	it("completes the preset of a daemon", () => {
+		expect(contextAt('[daemons.db]\npreset = "|"')).toEqual({
+			inQuote: true,
+			accepts: "presets",
+			syntax: "mise",
+		});
+	});
+
+	it("is not misled by lines that look like headers", () => {
+		expect(
+			contextAt(
+				[
+					"[daemons.api]",
+					'run = """',
+					"[server]",
+					'"""',
+					'depends = ["|"]',
+				].join("\n"),
+			),
+		).toEqual({
+			inQuote: true,
+			accepts: "daemons",
+			owner: "api",
+			syntax: "any",
+		});
+		expect(
+			contextAt(
+				[
+					"[tasks.test]",
+					"depends = [",
+					'  ["lint"]',
+					"]",
+					'daemons = ["|"]',
+				].join("\n"),
+			),
+		).toEqual(ofTask(true));
+	});
+
+	it("leaves the other values alone", () => {
+		expect(contextAt('[tasks.test]\nrun = "|"')).toBeUndefined();
+		expect(contextAt('[tasks.test]\ndepends = ["|"]')).toBeUndefined();
+		expect(contextAt('[daemons.api]\nrun = "|"')).toBeUndefined();
+		expect(contextAt('[daemons.api]\ntask = "|"')).toBeUndefined();
+		// the version of the shorthand
+		expect(contextAt('[daemons]\npostgres = "|"')).toBeUndefined();
+		expect(contextAt('[daemons.api]\ndepends = [["|"]]')).toBeUndefined();
+		expect(contextAt("[daemons.api]\ndepends = [{ |")).toBeUndefined();
+		expect(contextAt('[daemon_groups]\nfull = "|"')).toBeUndefined();
+	});
+});
+
+describe("getDaemonNameAt", () => {
+	it("finds the daemon name under the cursor", () => {
+		const { document, position } = withCursor(
+			'[tasks.test]\ndaemons = ["postgres", "re|dis"]',
+		);
+		expect(getDaemonNameAt(document, position)).toEqual({
+			name: "redis",
+			start: 24,
+			end: 29,
+			context: { inQuote: true, accepts: "daemonsAndGroups", syntax: "mise" },
+		});
+	});
+
+	it("is undefined elsewhere", () => {
+		const outside = withCursor(
+			'[tasks.test]\ndaemons = ["postgres",| "redis"]',
+		);
+		expect(getDaemonNameAt(outside.document, outside.position)).toBeUndefined();
+		const run = withCursor('[tasks.test]\nrun = "ec|ho"');
+		expect(getDaemonNameAt(run.document, run.position)).toBeUndefined();
 	});
 });

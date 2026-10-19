@@ -178,9 +178,83 @@ const TASK_DEPENDS_FIELDS = new Set(["depends", "depends_post", "wait_for"]);
 /** Task fields whose entries are shell commands, task names only in tables */
 const TASK_RUN_FIELDS = new Set(["run", "run_windows"]);
 
-const TOML_ASSIGNMENT = /^\s*([\w.'"-]+)\s*=/;
+/** `key =`, `a.b =`, `tasks."test:e2e".daemons =` */
+const TOML_ASSIGNMENT =
+	/^\s*((?:[\w-]+|"[^"]*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"[^"]*"|'[^']*'))*)\s*=/;
 /** a header holds a single (dotted) key, unlike an array element line */
 const TOML_SECTION_HEADER = /^\s*\[\[?[^,=[\]]*\]\]?\s*(?:#.*)?$/;
+
+/** The segments of a dotted key, `tasks."docs:build".depends` included */
+function splitDottedKey(raw: string): string[] {
+	const segments: string[] = [];
+	let rest = raw.trim();
+	while (rest) {
+		const { first, rest: remaining } = splitFirstKeySegment(rest);
+		segments.push(first);
+		rest = remaining.replace(/^\./, "").trim();
+	}
+	return segments;
+}
+
+/**
+ * The key path of the table a line is in, from the closest header above it.
+ * A line that only looks like a header, in a multiline string or a multiline
+ * array (`run = """` ... `[server]`, or `["lint"]` in a `depends` array), is
+ * not one.
+ */
+function enclosingTablePath(
+	document: vscode.TextDocument,
+	line: number,
+): string[] {
+	let table: string[] = [];
+	/** the delimiter of the multiline string the scan is in */
+	let multiline: string | undefined;
+	/** open arrays and inline tables */
+	let depth = 0;
+
+	for (let i = 0; i < line; i++) {
+		const text = document.lineAt(i).text;
+		if (!multiline && depth === 0 && TOML_SECTION_HEADER.test(text)) {
+			table = splitDottedKey(
+				text
+					.trim()
+					.replace(/^\[\[?/, "")
+					.replace(/\]\]?\s*(?:#.*)?$/, ""),
+			);
+			continue;
+		}
+		for (let j = 0; j < text.length; j++) {
+			if (multiline) {
+				if (multiline === '"""' && text[j] === "\\") {
+					j++;
+				} else if (text.startsWith(multiline, j)) {
+					multiline = undefined;
+					j += 2;
+				}
+				continue;
+			}
+			const char = text[j];
+			if (text.startsWith('"""', j) || text.startsWith("'''", j)) {
+				multiline = text.slice(j, j + 3);
+				j += 2;
+			} else if (char === '"' || char === "'") {
+				// a string of one line
+				for (j++; j < text.length && text[j] !== char; j++) {
+					if (char === '"' && text[j] === "\\") {
+						j++;
+					}
+				}
+			} else if (char === "#") {
+				break;
+			} else if (char === "[" || char === "{") {
+				depth++;
+			} else if (char === "]" || char === "}") {
+				depth = Math.max(0, depth - 1);
+			}
+		}
+	}
+	return table;
+}
 
 /** An open `[` array or `{` inline table around the cursor */
 type TomlFrame =
@@ -191,7 +265,9 @@ type TomlFrame =
 function findEnclosingAssignment(
 	document: vscode.TextDocument,
 	position: vscode.Position,
-): { field: string; line: number; valueStart: number } | undefined {
+):
+	| { field: string; keys: string[]; line: number; valueStart: number }
+	| undefined {
 	for (let i = position.line; i >= 0; i--) {
 		const text =
 			i === position.line
@@ -201,9 +277,10 @@ function findEnclosingAssignment(
 		const match = text.match(TOML_ASSIGNMENT);
 		if (match?.[1]) {
 			// `tasks.build.depends = [` is the same field as `depends = [`
-			const segments = match[1].split(".");
+			const keys = splitDottedKey(match[1]);
 			return {
-				field: extractTomlKey(segments[segments.length - 1] ?? ""),
+				field: keys[keys.length - 1] ?? "",
+				keys,
 				line: i,
 				valueStart: match[0].length,
 			};
@@ -330,6 +407,28 @@ export function getTaskNameValueContext(
 	}
 
 	const { frames, inQuote } = scanned;
+
+	// in a daemon, only `task` names a task: `depends` names daemons, see
+	// getDaemonNameValueContext
+	const table = [
+		...enclosingTablePath(document, assignment.line),
+		...assignment.keys,
+	];
+	if (table[0] === "daemons" || table[0] === "daemon_groups") {
+		const path = [
+			...table,
+			...frames.flatMap((entry) =>
+				entry.kind === "table" && entry.key ? [entry.key] : [],
+			),
+		];
+		const isTaskOfDaemon =
+			path.length === 3 &&
+			path[0] === "daemons" &&
+			path[2] === "task" &&
+			!frames.some((entry) => entry.kind === "array");
+		return isTaskOfDaemon ? { inQuote } : undefined;
+	}
+
 	const frame = frames[frames.length - 1];
 	const parent = frames[frames.length - 2];
 
@@ -377,6 +476,137 @@ export function getTaskNameValueContext(
 		return { inQuote };
 	}
 
+	return undefined;
+}
+
+/** A key path in the `[daemons]` or `[daemon_groups]` of a config */
+export const isDaemonsKeyPath = (keyPath: readonly unknown[]) =>
+	keyPath[0] === "daemons" || keyPath[0] === "daemon_groups";
+
+/** `[daemons.<name>] task = "..."`: the task a daemon runs */
+export const isTaskOfDaemonKeyPath = (keyPath: readonly unknown[]) =>
+	keyPath.length === 3 && keyPath[0] === "daemons" && keyPath[2] === "task";
+
+/** What a value naming daemons accepts */
+export type DaemonNameContext = {
+	inQuote: boolean;
+	accepts: "daemons" | "groups" | "daemonsAndGroups" | "presets";
+	/** the daemon or group the value belongs to, which does not name itself */
+	owner?: string;
+	/** the config it means something in: a mise config, a pitchfork one, or both */
+	syntax: "mise" | "pitchfork" | "any";
+};
+
+/**
+ * Checks whether the position is on a value naming daemons
+ * (https://mise.jdx.dev/daemons.html), in a mise or a pitchfork config:
+ *
+ * - the `daemons` of a mise task (or task template): daemons, or groups
+ * - the `depends` of a daemon: other daemons
+ * - the members of a mise `[daemon_groups]` group, in its array or table form:
+ *   daemons, or other groups
+ * - the `daemons` and `groups` of a pitchfork `[groups.<name>]` group
+ * - the `preset` of a mise daemon: a service preset
+ *
+ * As a string, or an entry of a flat array where only an array is accepted.
+ */
+export function getDaemonNameValueContext(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+): DaemonNameContext | undefined {
+	const assignment = findEnclosingAssignment(document, position);
+	if (!assignment) {
+		return undefined;
+	}
+	const scanned = scanTomlValue(document, position, assignment);
+	if (!scanned) {
+		return undefined;
+	}
+
+	const { frames, inQuote } = scanned;
+	const frame = frames[frames.length - 1];
+	// `{ |` is a key position
+	if (frame?.kind === "table" && !frame.key) {
+		return undefined;
+	}
+	// only one level of array, holding the names
+	const arrays = frames.filter((entry) => entry.kind === "array");
+	if (arrays.length > 1 || (arrays.length === 1 && frame?.kind !== "array")) {
+		return undefined;
+	}
+	const inArray = arrays.length === 1;
+
+	const path = [
+		...enclosingTablePath(document, assignment.line),
+		...assignment.keys,
+		...frames.flatMap((entry) =>
+			entry.kind === "table" && entry.key ? [entry.key] : [],
+		),
+	];
+	const [section, owner, field, ...rest] = path;
+	if (rest.length || !owner) {
+		return undefined;
+	}
+
+	if (
+		(section === "tasks" || section === "task_templates") &&
+		field === "daemons"
+	) {
+		return { inQuote, accepts: "daemonsAndGroups", syntax: "mise" };
+	}
+	if (section === "daemons") {
+		// pitchfork reads a list only
+		if (field === "depends" && inArray) {
+			return { inQuote, accepts: "daemons", owner, syntax: "any" };
+		}
+		if (field === "preset" && !inArray) {
+			return { inQuote, accepts: "presets", syntax: "mise" };
+		}
+		return undefined;
+	}
+	if (
+		section === "daemon_groups" &&
+		(field === undefined || field === "daemons") &&
+		inArray
+	) {
+		return { inQuote, accepts: "daemonsAndGroups", owner, syntax: "mise" };
+	}
+	if (section === "groups" && inArray) {
+		if (field === "daemons") {
+			return { inQuote, accepts: "daemons", syntax: "pitchfork" };
+		}
+		if (field === "groups") {
+			return { inQuote, accepts: "groups", owner, syntax: "pitchfork" };
+		}
+	}
+	return undefined;
+}
+
+/**
+ * The daemon name under the cursor, with the context it is in (see
+ * {@link getDaemonNameValueContext}): a string of a value naming daemons.
+ */
+export function getDaemonNameAt(
+	document: vscode.TextDocument,
+	position: vscode.Position,
+):
+	| { name: string; start: number; end: number; context: DaemonNameContext }
+	| undefined {
+	const line = document.lineAt(position.line).text;
+	for (const match of line.matchAll(/"([^"\\]*)"|'([^']*)'/g)) {
+		const start = (match.index ?? 0) + 1;
+		const name = match[1] ?? match[2] ?? "";
+		const end = start + name.length;
+		if (position.character < start || position.character > end || !name) {
+			continue;
+		}
+		// the text before is all the context needs
+		const context = getDaemonNameValueContext(document, {
+			line: position.line,
+			character: start,
+		} as vscode.Position);
+		return context ? { name, start, end, context } : undefined;
+	}
 	return undefined;
 }
 

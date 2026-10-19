@@ -1,4 +1,3 @@
-import path from "node:path";
 import * as vscode from "vscode";
 import {
 	MISE_OPEN_DAEMON_URL,
@@ -17,8 +16,7 @@ import {
 	isPitchforkConfigPath,
 	isSamePath,
 	pitchforkConfigCandidates,
-	pitchforkProjectDir,
-	pitchforkUserConfig,
+	pitchforkNamespace,
 } from "../utils/daemons";
 import { expandPath } from "../utils/fileUtils";
 import { getCachedTomlParser } from "../utils/miseFileParser";
@@ -28,24 +26,6 @@ import {
 	type MiseDaemonsProvider,
 	PENDING_LABELS,
 } from "./daemonsProvider";
-
-/**
- * The namespace pitchfork gives the daemons of a project config: its
- * `namespace`, or the name of its directory (the one above `.config`).
- */
-function pitchforkNamespace(filePath: string, config: unknown): string {
-	if (
-		path.resolve(filePath) === path.resolve(pitchforkUserConfig()) ||
-		filePath.startsWith("/etc/pitchfork/")
-	) {
-		return GLOBAL_NAMESPACE;
-	}
-	const declared = (config as { namespace?: unknown } | undefined)?.namespace;
-	if (typeof declared === "string" && declared) {
-		return declared;
-	}
-	return path.basename(pitchforkProjectDir(filePath));
-}
 
 /**
  * Over each daemon a config declares: its status, and what can be done with

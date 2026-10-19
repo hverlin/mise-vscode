@@ -62,9 +62,33 @@ describe("snippet definitions", () => {
 
 	// they share a namespace so that one prefix brings up everything the
 	// extension offers, and none of them competes with a toml schema key
-	it("are all under the mise-task prefix", () => {
+	it("are all under the mise- prefix", () => {
 		for (const snippet of [...tomlSnippets, ...fileTaskSnippets]) {
-			expect(snippet.prefix).toMatch(/^mise-task(-[a-z]+)*$/);
+			expect(snippet.prefix).toMatch(/^mise-(task|daemon)(-[a-z]+)*$/);
+		}
+	});
+
+	it("list the daemon snippets after the task ones", () => {
+		const prefixes = tomlSnippets.map((snippet) => snippet.prefix);
+		const firstDaemon = prefixes.indexOf("mise-daemon");
+		expect(prefixes.slice(firstDaemon)).toEqual([
+			"mise-daemon",
+			"mise-daemon-preset",
+			"mise-daemon-task",
+			"mise-daemon-auto",
+			"mise-daemon-groups",
+		]);
+		expect(
+			prefixes
+				.slice(0, firstDaemon)
+				.every((prefix) => prefix.startsWith("mise-task")),
+		).toBe(true);
+		// the order the suggest widget shows them in
+		const sortTexts = tomlSnippets.map((snippet) => snippet.sortText);
+		expect(sortTexts).toEqual([...sortTexts].sort());
+		// a daemon declares a table, as a task does
+		for (const snippet of tomlSnippets.slice(firstDaemon)) {
+			expect(snippet.body).toMatch(/^\[daemon(s|_groups)/);
 		}
 	});
 });

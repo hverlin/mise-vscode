@@ -70,7 +70,7 @@ function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 	return new vscode.ThemeIcon("circle-large-outline");
 }
 
-function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
+export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 	const lines = [`**${daemon.name}** ${markdownCodeSpan(daemon.id)}`, ""];
 	lines.push(`Status: ${daemon.disabled ? "disabled" : daemon.status}`);
 	if (daemon.error) {
@@ -327,10 +327,11 @@ async function resolveDaemon(
 	return picked?.daemon;
 }
 
-async function openDaemonDefinition(
+/** Where a daemon is declared: its mise config, or a pitchfork config */
+export async function findDaemonDefinition(
 	daemon: Daemon,
 	folder: string | undefined,
-) {
+): Promise<vscode.Location | undefined> {
 	const files =
 		daemon.kind === "mise"
 			? daemon.source
@@ -349,18 +350,32 @@ async function openDaemonDefinition(
 			);
 			const range = findKeyInTomlDocument(document, ["daemons"], daemon.name);
 			if (range) {
-				const editor = await vscode.window.showTextDocument(document);
-				editor.selection = new vscode.Selection(range.start, range.end);
-				editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-				return;
+				return new vscode.Location(document.uri, range);
 			}
 		} catch {
 			// gone since
 		}
 	}
-	vscode.window.showInformationMessage(
-		`Could not find where the daemon "${daemon.name}" is declared`,
+	return undefined;
+}
+
+async function openDaemonDefinition(
+	daemon: Daemon,
+	folder: string | undefined,
+) {
+	const location = await findDaemonDefinition(daemon, folder);
+	if (!location) {
+		vscode.window.showInformationMessage(
+			`Could not find where the daemon "${daemon.name}" is declared`,
+		);
+		return;
+	}
+	const editor = await vscode.window.showTextDocument(location.uri);
+	editor.selection = new vscode.Selection(
+		location.range.start,
+		location.range.end,
 	);
+	editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
 }
 
 export function registerDaemonsCommands(
