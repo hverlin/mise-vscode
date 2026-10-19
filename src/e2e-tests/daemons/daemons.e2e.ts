@@ -36,14 +36,18 @@ suite("Daemons Test Suite", function () {
 		return daemon;
 	};
 
-	const waitForStatus = async (name: string, status: string) => {
+	/** Polls the daemon until it has one of the statuses */
+	const waitForStatus = async (name: string, ...statuses: string[]) => {
 		const deadline = Date.now() + DEADLINE_MS;
 		let daemon = daemonNamed(await load(), name);
-		while (daemon.status !== status && Date.now() < deadline) {
+		while (!statuses.includes(daemon.status) && Date.now() < deadline) {
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			daemon = daemonNamed(await load(), name);
 		}
-		assert.equal(daemon.status, status, `${name} should be ${status}`);
+		assert.ok(
+			statuses.includes(daemon.status),
+			`${name} should be ${statuses.join(" or ")}, got ${daemon.status}`,
+		);
 		return daemon;
 	};
 
@@ -171,6 +175,7 @@ suite("Daemons Test Suite", function () {
 		await vscode.workspace
 			.getConfiguration("mise")
 			.update("autoStartStopDaemons", undefined, true);
-		await waitForStatus("ticker", "stopped");
+		// pitchfork may also drop it from its state: declared, not started
+		await waitForStatus("ticker", "stopped", "available");
 	});
 });
