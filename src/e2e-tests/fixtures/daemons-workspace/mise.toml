@@ -1,0 +1,8 @@
+[settings]
+experimental = true
+
+[tools]
+pitchfork = "2.31.0"
+
+[daemons.web]
+run = "exec sleep 600"

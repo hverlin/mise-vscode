@@ -2,7 +2,7 @@
   "name": "mise-vscode",
   "displayName": "Mise VSCode",
   "publisher": "hverlin",
-  "description": "mise support for Visual Studio code  (dev-tools, tasks and environment variables)",
+  "description": "mise and pitchfork support for Visual Studio Code (dev-tools, tasks, environment variables and daemons)",
   "version": "1.27.0",
   "repository": {
     "type": "git",
@@ -30,7 +30,9 @@
     "tasks",
     "envs",
     "environment variables",
-    "scripts"
+    "scripts",
+    "pitchfork",
+    "daemons"
   ],
   "icon": "resources/icon.png",
   "main": "./dist/extension.js",
@@ -363,6 +365,14 @@
           "title": "Enable bootstrap code lens",
           "default": true,
           "markdownDescription": "Show a code lens on each `[bootstrap.*]` section reporting how many of its entries are not in their desired state.\n\nRequires `#mise.enableCodeLens#` and mise 2026.7.16+. Reading the status runs `mise bootstrap status`, which inspects the machine (installed packages, cloned repos, macOS defaults, Docker Compose projects); the result is cached and only read for files that declare a bootstrap section."
+        },
+        "mise.autoStartStopDaemons": {
+          "order": 11.5,
+          "type": "boolean",
+          "scope": "machine",
+          "title": "Start and stop daemons with the workspace",
+          "default": false,
+          "markdownDescription": "Give each workspace folder a [pitchfork](https://pitchfork.jdx.dev/) session while it is open, as a shell gets one when it enters the folder: the daemons declared with `auto = [\"start\"]` start, and the ones with `auto = [\"stop\"]` stop once no session is left (see [Start and stop with your shell](https://mise.jdx.dev/daemons.html#automatic-start-and-stop)). The mise daemons that start this way are registered with pitchfork first, which installs their missing tools.\n\nRequires pitchfork 2.25.0 or later. Only your user settings can turn it on."
         },
         "mise.enableToolLinks": {
           "order": 10.5,
@@ -713,6 +723,11 @@
           "id": "miseEnvsView",
           "name": "Environment Variables",
           "when": "!isWeb"
+        },
+        {
+          "id": "miseDaemonsView",
+          "name": "Daemons",
+          "when": "!isWeb && mise.hasDaemons"
         },
         {
           "id": "miseBootstrapView",
@@ -1076,6 +1091,65 @@
         "command": "mise.openBootstrapEntryDefinition",
         "title": "Mise: Open Bootstrap Entry Definition",
         "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.startDaemon",
+        "title": "Mise: Start Daemon",
+        "icon": "$(play)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.stopDaemon",
+        "title": "Mise: Stop Daemon",
+        "icon": "$(debug-stop)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.restartDaemon",
+        "title": "Mise: Restart Daemon",
+        "icon": "$(debug-restart)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.showDaemonLogs",
+        "title": "Mise: Show Daemon Logs",
+        "icon": "$(output)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openDaemonUrl",
+        "title": "Mise: Open Daemon in Browser",
+        "icon": "$(globe)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openDaemonDefinition",
+        "title": "Mise: Open Daemon Definition",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.startAllDaemons",
+        "title": "Mise: Start Project Daemons",
+        "icon": "$(run-all)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.stopAllDaemons",
+        "title": "Mise: Stop Project Daemons",
+        "icon": "$(stop-circle)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openPitchforkTui",
+        "title": "Mise: Open pitchfork Dashboard",
+        "icon": "$(terminal)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.openPitchforkWebUi",
+        "title": "Mise: Open pitchfork Web UI",
+        "icon": "$(link-external)",
+        "enablement": "!isWeb"
       }
     ],
     "menus": {
@@ -1131,6 +1205,46 @@
         {
           "command": "mise.openBootstrapEntryDefinition",
           "when": "false"
+        },
+        {
+          "command": "mise.startDaemon",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.stopDaemon",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.restartDaemon",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.showDaemonLogs",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.openDaemonUrl",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.openDaemonDefinition",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.startAllDaemons",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.stopAllDaemons",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.openPitchforkTui",
+          "when": "mise.hasDaemons || mise.hasPitchfork"
+        },
+        {
+          "command": "mise.openPitchforkWebUi",
+          "when": "mise.hasDaemons || mise.hasPitchfork"
         }
       ],
       "view/title": [
@@ -1226,8 +1340,28 @@
         },
         {
           "command": "mise.reloadConfiguration",
-          "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView || view == miseBootstrapView",
+          "when": "view == miseTasksView || view == miseToolsView || view == miseEnvsView || view == miseBootstrapView || view == miseDaemonsView",
           "group": "navigation@5"
+        },
+        {
+          "command": "mise.startAllDaemons",
+          "when": "view == miseDaemonsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mise.stopAllDaemons",
+          "when": "view == miseDaemonsView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mise.openPitchforkTui",
+          "when": "view == miseDaemonsView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "mise.openPitchforkWebUi",
+          "when": "view == miseDaemonsView && mise.hasPitchfork",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -1335,6 +1469,61 @@
           "when": "view == miseEnvsView && (viewItem == visibleEnvItem || viewItem == hiddenEnvItem)",
           "command": "mise.copyEnvVariableValue",
           "group": "2_modification"
+        },
+        {
+          "command": "mise.startDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive/",
+          "group": "inline@1"
+        },
+        {
+          "command": "mise.stopDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "group": "inline@1"
+        },
+        {
+          "command": "mise.restartDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "group": "inline@2"
+        },
+        {
+          "command": "mise.openDaemonUrl",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active;url/",
+          "group": "inline@3"
+        },
+        {
+          "command": "mise.showDaemonLogs",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/",
+          "group": "inline@4"
+        },
+        {
+          "command": "mise.startDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive/",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "mise.stopDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "mise.restartDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "mise.showDaemonLogs",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/",
+          "group": "1_actions@3"
+        },
+        {
+          "command": "mise.openDaemonUrl",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active;url/",
+          "group": "2_navigation@1"
+        },
+        {
+          "command": "mise.openDaemonDefinition",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/",
+          "group": "2_navigation@2"
         }
       ],
       "editor/lineNumber/context": [

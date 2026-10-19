@@ -317,6 +317,16 @@ Show notification if tools are not installed.
 
 ---
 
+##### `mise.autoStartStopDaemons`
+- **Type:** `boolean`
+- **Default:** `false`
+
+Give each workspace folder a [pitchfork](https://pitchfork.jdx.dev/) session while it is open, as a shell gets one when it enters the folder: the daemons declared with `auto = ["start"]` start, and the ones with `auto = ["stop"]` stop once no session is left (see [Start and stop with your shell](https://mise.jdx.dev/daemons.html#automatic-start-and-stop)). The mise daemons that start this way are registered with pitchfork first, which installs their missing tools.
+
+Requires pitchfork 2.25.0 or later. Only your user settings can turn it on.
+
+---
+
 ##### `mise.updateEnvAutomatically`
 - **Type:** `boolean`
 - **Default:** `true`

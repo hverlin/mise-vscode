@@ -43,6 +43,7 @@ export const CONFIGURATION_FLAGS = {
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
 	enableTaskDiagnostics: "enableTaskDiagnostics",
 	enableConfigDiagnostics: "enableConfigDiagnostics",
+	autoStartStopDaemons: "autoStartStopDaemons",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
 } as const;
@@ -213,6 +214,10 @@ export const enableExtensionForWorkspace = async () => {
 		true,
 		vscode.ConfigurationTarget.Workspace,
 	);
+};
+
+export const shouldAutoStartStopDaemons = (): boolean => {
+	return getConfOrElse(CONFIGURATION_FLAGS.autoStartStopDaemons, false);
 };
 
 export const isCodeLensEnabled = () => {

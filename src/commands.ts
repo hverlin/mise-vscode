@@ -78,3 +78,13 @@ export const MISE_TOGGLE_TRUST_OWN_EDITS =
 	"mise.toggleTrustOwnEditsInParanoidMode";
 export const MISE_REVOKE_WORKSPACE_BINARIES =
 	"mise.revokeWorkspaceBinaryApprovals";
+export const MISE_START_DAEMON = "mise.startDaemon";
+export const MISE_STOP_DAEMON = "mise.stopDaemon";
+export const MISE_RESTART_DAEMON = "mise.restartDaemon";
+export const MISE_SHOW_DAEMON_LOGS = "mise.showDaemonLogs";
+export const MISE_OPEN_DAEMON_URL = "mise.openDaemonUrl";
+export const MISE_OPEN_DAEMON_DEFINITION = "mise.openDaemonDefinition";
+export const MISE_START_ALL_DAEMONS = "mise.startAllDaemons";
+export const MISE_STOP_ALL_DAEMONS = "mise.stopAllDaemons";
+export const MISE_OPEN_PITCHFORK_TUI = "mise.openPitchforkTui";
+export const MISE_OPEN_PITCHFORK_WEB_UI = "mise.openPitchforkWebUi";

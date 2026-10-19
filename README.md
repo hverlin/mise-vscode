@@ -1,4 +1,4 @@
-# mise-vscode 🛠️
+# mise-vscode 🧑‍🍳
 
 [![VS Code Marketplace](https://vsmarketplacebadges.dev/version/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![VS Code Marketplace](https://vsmarketplacebadges.dev/installs-short/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
@@ -6,7 +6,7 @@
 [![Open VSX](https://img.shields.io/open-vsx/dt/hverlin/mise-vscode)](https://open-vsx.org/extension/hverlin/mise-vscode)
 [![Documentation](https://img.shields.io/badge/wiki-Documentation-blue)](https://hverlin.github.io/mise-vscode/)
 
-Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`). [Documentation](https://hverlin.github.io/mise-vscode/)
+Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`) and [pitchfork](https://pitchfork.jdx.dev/). [Documentation](https://hverlin.github.io/mise-vscode/)
 
 > [mise](https://mise.jdx.dev/) is a polyglot tool version manager, environment
 > variables manager, and tasks runner.
@@ -16,11 +16,15 @@ Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`)
 > - Like direnv, it manages environment variables for different project
 >   directories.
 > - Like make, it manages tasks used to build and test projects.
+>
+> [pitchfork](https://pitchfork.jdx.dev/) runs the daemons of a project, like a
+> database or a development server, which mise can declare too.
 
 This VSCode extension provides an easy way to manage `mise`
 [tasks](https://hverlin.github.io/mise-vscode/reference/tasks/),
-[tools](https://hverlin.github.io/mise-vscode/reference/tools/), and
-[environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
+[tools](https://hverlin.github.io/mise-vscode/reference/tools/),
+[environment variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/),
+and [daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
 directly from your editor.
 
 It can automatically
@@ -102,6 +106,14 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📍 Quick navigation to environment variable definitions
 - 🔄 Automatically load environment variables from `mise.toml` files in VS Code
 
+### [Daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
+
+- 🚦 View the [mise daemons](https://mise.jdx.dev/daemons.html) and
+  [pitchfork](https://pitchfork.jdx.dev/) daemons of the project, with their
+  status
+- ▶️ Start/Stop/Restart them, follow their logs, open them in the browser
+- 🔁 Optionally start and stop them with the workspace (`auto = ["start", "stop"]`)
+
 ### Snippets
 
 - 📝 `mise-task` snippets to create tasks in `mise.toml` and task files. They
@@ -130,6 +142,7 @@ for more information.
 - [Tasks](https://hverlin.github.io/mise-vscode/reference/tasks/)
 - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
 - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
+- [Daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
 - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
 
 ### Guides

@@ -1,0 +1,6 @@
+[daemons.clock]
+run = "exec sleep 600"
+
+[daemons.ticker]
+run = "exec sleep 600"
+auto = ["start", "stop"]
