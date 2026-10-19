@@ -1,4 +1,4 @@
-# mise-vscode 🛠️
+# mise-vscode 🧑‍🍳
 
 [![VS Code Marketplace](https://vsmarketplacebadges.dev/version/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
 [![VS Code Marketplace](https://vsmarketplacebadges.dev/installs-short/hverlin.mise-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=hverlin.mise-vscode)
