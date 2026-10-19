@@ -514,6 +514,9 @@ function isInTeraString(text: string): boolean {
 	return quote !== undefined;
 }
 
+/** A `.` that reads an attribute, not the `...` of a spread */
+const ATTRIBUTE = /(?<!\.)\.\s*$/;
+
 /** `{% filter upper %}` applies a filter to a block */
 const FILTER_TAG = /\{%-?\s*filter\s+$/;
 
@@ -523,18 +526,22 @@ export function getTeraCompletionContext(
 	if (isInTeraString(linePrefix)) {
 		return "string";
 	}
-	const beforeWord = linePrefix.replace(/\w*$/, "");
+	const beforeWord = linePrefix.replace(/(?<!\w)\w*$/, "");
 	if (/\|\s*$/.test(beforeWord) || FILTER_TAG.test(beforeWord)) {
 		return "filter";
 	}
 	if (/\bis\s+(?:not\s+)?$/.test(beforeWord)) {
 		return "test";
 	}
-	if (beforeWord.endsWith(".")) {
+	if (ATTRIBUTE.test(beforeWord)) {
 		return "attribute";
 	}
 	return "expression";
 }
+
+/** Not the `constructor` or `toString` every object has */
+const own = (record: Record<string, string>, key: string) =>
+	Object.hasOwn(record, key) ? record[key] : undefined;
 
 const hoverOf = (entry: { detail: string; documentation?: MarkdownString }) =>
 	entry.documentation ?? new vscode.MarkdownString(entry.detail);
@@ -555,8 +562,8 @@ export function getTeraHoverInformation(
 		return undefined;
 	}
 	if (/\|\s*$/.test(textBefore) || FILTER_TAG.test(textBefore)) {
-		const filter = named(teraFilters, teraFilterAliases[word] ?? word);
-		const replacement = deprecatedTeraFilters[word];
+		const filter = named(teraFilters, own(teraFilterAliases, word) ?? word);
+		const replacement = own(deprecatedTeraFilters, word);
 		return filter
 			? hoverOf(filter)
 			: replacement
@@ -565,14 +572,14 @@ export function getTeraHoverInformation(
 	}
 	if (/\bis\s+(?:not\s+)?$/.test(textBefore)) {
 		const test = named(teraTests);
-		const replacement = deprecatedTeraTests[word];
+		const replacement = own(deprecatedTeraTests, word);
 		return test
 			? hoverOf(test)
 			: replacement
 				? deprecated("test", word, replacement)
 				: undefined;
 	}
-	if (/\.\s*$/.test(textBefore)) {
+	if (ATTRIBUTE.test(textBefore)) {
 		return undefined;
 	}
 	const entry =

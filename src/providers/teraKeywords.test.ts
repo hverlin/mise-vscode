@@ -35,6 +35,20 @@ describe("getTeraCompletionContext", () => {
 		expect(getTeraCompletionContext("{% if this ")).toBe("expression");
 	});
 
+	it("completes expressions in a spread", () => {
+		expect(getTeraCompletionContext("{{ [...")).toBe("expression");
+		expect(getTeraCompletionContext("{{ [...it")).toBe("expression");
+		expect(getTeraCompletionContext("{{ [...items, ...")).toBe("expression");
+		expect(getTeraCompletionContext("{{ {...")).toBe("expression");
+		expect(getTeraCompletionContext("{{ env.HO")).toBe("attribute");
+	});
+
+	it("finds the context of a long line quickly", () => {
+		const start = performance.now();
+		getTeraCompletionContext(`{{ ${"a".repeat(100_000)} `);
+		expect(performance.now() - start).toBeLessThan(100);
+	});
+
 	it("completes nothing in a string literal", () => {
 		expect(getTeraCompletionContext("{{ exec(command='ls | ")).toBe("string");
 		expect(getTeraCompletionContext('{% if x == "this is ')).toBe("string");
@@ -70,6 +84,10 @@ describe("getTeraHoverInformation", () => {
 		expect(hover("unknown", "{{ x | ")).toBeUndefined();
 		expect(hover("lower", "{{ exec(command='ls | ")).toBeUndefined();
 		expect(hover("slug", "{{ x | ")).toContain("slug");
+		expect(hover("range", "{{ [...", "(end=3)] }}")).toContain("range");
+		expect(hover("constructor", "{{ x | ")).toBeUndefined();
+		expect(hover("toString", "{% if x is ")).toBeUndefined();
+		expect(hover("__proto__", "{{ x | ")).toBeUndefined();
 	});
 });
 
