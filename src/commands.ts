@@ -93,3 +93,5 @@ export const MISE_STOP_DAEMON_GROUP = "mise.stopDaemonGroup";
 export const MISE_RESTART_DAEMON_GROUP = "mise.restartDaemonGroup";
 export const MISE_REVEAL_DAEMON_DATA = "mise.revealDaemonData";
 export const MISE_RESET_DAEMON_DATA = "mise.resetDaemonData";
+export const MISE_ENABLE_DAEMON = "mise.enableDaemon";
+export const MISE_DISABLE_DAEMON = "mise.disableDaemon";

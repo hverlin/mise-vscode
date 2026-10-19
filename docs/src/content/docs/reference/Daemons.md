@@ -50,6 +50,23 @@ after a confirmation, it stops the daemon, deletes its data directory and
 starts it again. A directory holding your home directory, a workspace folder
 or the project is never deleted.
 
+While the pitchfork supervisor runs, a daemon can be disabled from its context
+menu (`pitchfork disable`): pitchfork no longer starts it, by hand, with a group
+or a session, nor restarts it when it exits, until it is enabled again. A
+daemon that runs keeps running. A
+[oneshot](https://pitchfork.jdx.dev/guides/oneshot-tasks) daemon, which runs to
+completion, shows `completed` with a check mark once it succeeded, and a
+[cron](https://pitchfork.jdx.dev/guides/scheduling) daemon shows its schedule,
+and when it runs next while the supervisor is up. It only runs on schedule
+while the supervisor runs and knows its project.
+
+The [shared servers](https://mise.jdx.dev/daemons/sharing.html#shared-server-providers)
+of your global mise config (`[daemon_providers]`) are listed under
+`Shared servers`, where they can be started, stopped or restarted
+(`mise daemons providers start <name>`); stopping or restarting one asks first,
+as every checkout that uses it loses its database meanwhile. Their data is never
+reset from here. mise does not support shared servers on Windows.
+
 From the panel title bar, you can start or stop all the daemons of the project
 (for mise, the [`default` group](https://mise.jdx.dev/daemons.html#groups) or
 every daemon), open the pitchfork dashboard (`pitchfork tui`) in an editor

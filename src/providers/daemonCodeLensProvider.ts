@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import {
+	MISE_ENABLE_DAEMON,
 	MISE_OPEN_DAEMON_URL,
 	MISE_RESTART_DAEMON,
 	MISE_SHOW_DAEMON_LOGS,
@@ -143,6 +144,8 @@ export class DaemonCodeLensProvider implements vscode.CodeLensProvider {
 			if (daemon.url) {
 				lenses.push(lens("$(globe) Open", MISE_OPEN_DAEMON_URL));
 			}
+		} else if (daemon.disabled) {
+			lenses.push(lens("$(circle-large-outline) Enable", MISE_ENABLE_DAEMON));
 		} else {
 			lenses.push(lens("$(play) Start", MISE_START_DAEMON));
 		}

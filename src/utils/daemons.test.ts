@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import path from "node:path";
 import {
+	cronScheduleOf,
 	daemonCommandError,
 	declaredDaemonNames,
 	declaredGroups,
 	describeDaemon,
+	describeNextRun,
 	groupDaemons,
 	isPitchforkConfigPath,
 	isResettableDataDir,
@@ -21,6 +23,7 @@ import {
 	pitchforkProjectDir,
 	sessionDaemons,
 	summarizeDaemons,
+	toSharedServers,
 } from "./daemons";
 
 const listed = (
@@ -556,5 +559,76 @@ describe("daemon failures", () => {
 			text: "$(server-process) 1 $(error) 2",
 		});
 		expect(summarizeDaemons([]).text).toBe("$(server-process) 0");
+	});
+});
+
+describe("pitchfork extras", () => {
+	it("lists the shared servers, with their live status", () => {
+		const [server] = toSharedServers(
+			[
+				{
+					name: "shared-pg",
+					id: "mise-provider-shared-pg/server",
+					status: "available",
+					source: "/home/me/.config/mise/config.toml",
+					preset: "postgres",
+					port: 5504,
+					data_dir: "/state/shared-pg/data",
+				},
+			],
+			[listed("mise-provider-shared-pg/server", "running", { pid: 7 })],
+		);
+		expect(server).toMatchObject({
+			name: "shared-pg",
+			kind: "provider",
+			status: "running",
+			pid: 7,
+			port: 5504,
+			namespace: "mise-provider-shared-pg",
+		});
+	});
+
+	it("reads the cron of a daemon, as a string or a table", () => {
+		const config = {
+			daemons: {
+				backup: { run: "x", cron: "0 0 2 * * *" },
+				report: { run: "y", cron: { schedule: "0 30 9 * * MON-FRI" } },
+				web: { run: "z" },
+			},
+		};
+		expect(cronScheduleOf(config, "backup")).toBe("0 0 2 * * *");
+		expect(cronScheduleOf(config, "report")).toBe("0 30 9 * * MON-FRI");
+		expect(cronScheduleOf(config, "web")).toBeUndefined();
+		expect(cronScheduleOf(undefined, "web")).toBeUndefined();
+	});
+
+	it("shows when a cron daemon runs next", () => {
+		const now = new Date(2026, 9, 18, 10, 0);
+		const [backup] = mergeDaemons([], [{ id: "shop/backup" }], undefined);
+		if (!backup) {
+			throw new Error("no daemon");
+		}
+		backup.cron = {
+			schedule: "0 0 11 * * *",
+			nextRun: new Date(2026, 9, 18, 11, 0).toISOString(),
+		};
+		expect(describeDaemon(backup, now)).toMatch(/^available · next \S+/);
+		expect(
+			describeNextRun(new Date(2026, 9, 18, 9, 0).toISOString(), now),
+		).toBe("due");
+		expect(
+			describeNextRun(new Date(2026, 9, 20, 9, 0).toISOString(), now),
+		).not.toBe(
+			describeNextRun(new Date(2026, 9, 18, 11, 0).toISOString(), now),
+		);
+	});
+
+	it("knows a oneshot daemon", () => {
+		const [once] = mergeDaemons(
+			[],
+			[{ id: "shop/once" }],
+			[listed("shop/once", "completed", { oneshot: true })],
+		);
+		expect(once).toMatchObject({ oneshot: true, status: "completed" });
 	});
 });
