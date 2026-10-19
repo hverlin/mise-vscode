@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import * as vscode from "vscode";
 import {
+	MISE_DISABLE_DAEMON,
+	MISE_ENABLE_DAEMON,
 	MISE_OPEN_DAEMON_DEFINITION,
 	MISE_OPEN_DAEMON_URL,
 	MISE_OPEN_PITCHFORK_TUI,
@@ -56,6 +58,7 @@ type TreeItem =
 	| DaemonItem
 	| GroupsItem
 	| GroupItem
+	| SharedServersItem
 	| GlobalDaemonsItem
 	| MessageItem;
 
@@ -69,6 +72,12 @@ function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 	if (daemon.disabled) {
 		return new vscode.ThemeIcon("circle-slash");
 	}
+	if (daemon.oneshot && daemon.status === "completed") {
+		return new vscode.ThemeIcon(
+			"pass",
+			new vscode.ThemeColor("testing.iconPassed"),
+		);
+	}
 	if (daemon.status === "running") {
 		return new vscode.ThemeIcon(
 			"pass-filled",
@@ -80,6 +89,10 @@ function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 			"error",
 			new vscode.ThemeColor("testing.iconFailed"),
 		);
+	}
+	// waiting for its next run
+	if (daemon.cron) {
+		return new vscode.ThemeIcon("watch");
 	}
 	return new vscode.ThemeIcon("circle-large-outline");
 }
@@ -110,10 +123,31 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 			`Data: ${daemon.dataSize ? `${daemon.dataSize} in ` : ""}${markdownCodeSpan(daemon.dataDir)}`,
 		);
 	}
+	if (daemon.oneshot) {
+		lines.push("Runs to completion (`oneshot`)");
+	}
+	if (daemon.cron) {
+		lines.push(
+			[
+				`Schedule: ${markdownCodeSpan(daemon.cron.schedule)}`,
+				...(daemon.cron.nextRun
+					? [`next run ${new Date(daemon.cron.nextRun).toLocaleString()}`]
+					: []),
+				...(daemon.cron.lastRun
+					? [`last run ${new Date(daemon.cron.lastRun).toLocaleString()}`]
+					: []),
+			].join(" · "),
+		);
+	}
+	const declaredIn = daemon.source
+		? markdownCodeSpan(daemon.source)
+		: undefined;
 	lines.push(
-		daemon.kind === "mise"
-			? `Declared in ${daemon.source ? markdownCodeSpan(daemon.source) : "a mise config"}`
-			: "Declared in a pitchfork config",
+		{
+			mise: `Declared in ${declaredIn ?? "a mise config"}`,
+			pitchfork: "Declared in a pitchfork config",
+			provider: `Shared server, declared in ${declaredIn ?? "the global mise config"}`,
+		}[daemon.kind],
 	);
 	// a blank line between the lines, which markdown would join
 	return new vscode.MarkdownString(lines.join("\n\n"));
@@ -137,6 +171,9 @@ export class DaemonItem extends vscode.TreeItem {
 			isDaemonActive(daemon) ? "active" : "inactive",
 			...(daemon.url ? ["url"] : []),
 			...(daemon.dataDir ? ["data"] : []),
+			// a shared server holds the data of every checkout
+			...(daemon.dataDir && daemon.kind === "mise" ? ["resettable"] : []),
+			daemon.disabled ? "disabled" : "enabled",
 		].join(";");
 		this.command = {
 			command: MISE_OPEN_DAEMON_DEFINITION,
@@ -190,6 +227,17 @@ export class GroupItem extends vscode.TreeItem {
 			...(active.length ? ["someActive"] : []),
 			...(active.length < daemons.length ? ["someInactive"] : []),
 		].join(";");
+	}
+}
+
+class SharedServersItem extends vscode.TreeItem {
+	constructor(public readonly daemons: DaemonItem[]) {
+		super("Shared servers", vscode.TreeItemCollapsibleState.Collapsed);
+		this.id = "miseDaemons:sharedServers";
+		this.description = `(${daemons.length})`;
+		this.tooltip =
+			"The servers of `[daemon_providers]` in your global mise config, shared by the checkouts that use them";
+		this.iconPath = new vscode.ThemeIcon("server-environment");
 	}
 }
 
@@ -279,7 +327,7 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 			vscode.commands.executeCommand(
 				"setContext",
 				"mise.hasDaemons",
-				!!state?.daemons.length,
+				!!state?.daemons.length || !!state?.sharedServers.length,
 			),
 			vscode.commands.executeCommand(
 				"setContext",
@@ -299,6 +347,17 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 			() => this.daemonsService.run(action, daemon, this._state?.pitchfork),
 			`Could not ${action} ${daemon.name}`,
 			daemon,
+		);
+	}
+
+	/** Keep pitchfork from starting a daemon, or let it again */
+	setEnabledWithPending(daemon: Daemon, enabled: boolean) {
+		return this.runPending(
+			[daemon.id],
+			enabled ? "enabling…" : "disabling…",
+			() =>
+				this.daemonsService.setEnabled(daemon, enabled, this._state?.pitchfork),
+			`Could not ${enabled ? "enable" : "disable"} ${daemon.name}`,
 		);
 	}
 
@@ -380,7 +439,11 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	getChildren(element?: TreeItem): TreeItem[] {
-		if (element instanceof GlobalDaemonsItem || element instanceof GroupItem) {
+		if (
+			element instanceof GlobalDaemonsItem ||
+			element instanceof GroupItem ||
+			element instanceof SharedServersItem
+		) {
 			return element.daemons;
 		}
 		if (element instanceof GroupsItem) {
@@ -434,6 +497,9 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		if (global.length) {
 			items.push(new GlobalDaemonsItem(global));
 		}
+		if (this._state.sharedServers.length) {
+			items.push(new SharedServersItem(this._state.sharedServers.map(toItem)));
+		}
 		return items;
 	}
 }
@@ -476,7 +542,7 @@ export async function findDaemonDefinition(
 	folder: string | undefined,
 ): Promise<vscode.Location | undefined> {
 	const files =
-		daemon.kind === "mise"
+		daemon.kind !== "pitchfork"
 			? daemon.source
 				? [expandPath(daemon.source)]
 				: []
@@ -485,13 +551,14 @@ export async function findDaemonDefinition(
 						existsSync(file),
 					)
 				: [];
+	const table = daemon.kind === "provider" ? "daemon_providers" : "daemons";
 
 	for (const file of files) {
 		try {
 			const document = await vscode.workspace.openTextDocument(
 				vscode.Uri.file(file),
 			);
-			const range = findKeyInTomlDocument(document, ["daemons"], daemon.name);
+			const range = findKeyInTomlDocument(document, [table], daemon.name);
 			if (range) {
 				return new vscode.Location(document.uri, range);
 			}
@@ -724,6 +791,22 @@ export function registerDaemonsCommands(
 				},
 			),
 		),
+		...([true, false] as const).map((enabled) =>
+			vscode.commands.registerCommand(
+				enabled ? MISE_ENABLE_DAEMON : MISE_DISABLE_DAEMON,
+				async (argument: unknown) => {
+					const daemon = await resolveDaemon(
+						provider,
+						argument,
+						(daemon) => daemon.disabled === enabled,
+						enabled ? "Daemon to enable" : "Daemon to disable",
+					);
+					if (daemon) {
+						await provider.setEnabledWithPending(daemon, enabled);
+					}
+				},
+			),
+		),
 		vscode.commands.registerCommand(
 			MISE_REVEAL_DAEMON_DATA,
 			async (argument: unknown) => {
@@ -747,7 +830,7 @@ export function registerDaemonsCommands(
 				const daemon = await resolveDaemon(
 					provider,
 					argument,
-					(daemon) => !!daemon.dataDir,
+					(daemon) => !!daemon.dataDir && daemon.kind === "mise",
 					"Daemon whose data to reset",
 				);
 				if (daemon) {

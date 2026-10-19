@@ -18,7 +18,8 @@ Visual Studio Code extension for [mise](https://mise.jdx.dev/) (`mise-en-place`)
 > - Like make, it manages tasks used to build and test projects.
 >
 > [pitchfork](https://pitchfork.jdx.dev/) runs the daemons of a project, like a
-> database or a development server, which mise can declare too.
+> database or a development server, which
+> [mise can declare too](https://mise.jdx.dev/daemons.html).
 
 This VSCode extension provides an easy way to manage `mise`
 [tasks](https://hverlin.github.io/mise-vscode/reference/tasks/),

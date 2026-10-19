@@ -7,7 +7,7 @@ import * as sinon from "sinon";
 import * as vscode from "vscode";
 import { DaemonsService, type DaemonsState } from "../../daemonsService";
 import { MiseService } from "../../miseService";
-import type { Daemon } from "../../utils/daemons";
+import { type Daemon, describeDaemon } from "../../utils/daemons";
 import { safeExec } from "../../utils/shell";
 import { isMiseAtLeast } from "../test-utils";
 
@@ -16,8 +16,8 @@ const DEADLINE_MS = 30_000;
 /**
  * The daemons of fixtures/daemons-workspace: `web`, `api` (which depends on
  * `web`) and `worker` (which runs the task `test`) in mise.toml, `clock`,
- * `ticker` and `crasher` (which fails 5 seconds after it starts) in
- * pitchfork.toml. The suite has a pitchfork supervisor of its own
+ * `ticker`, `crasher` (which fails 5 seconds after it starts), `once` (a
+ * oneshot) and `hourly` (a cron daemon) in pitchfork.toml. The suite has a pitchfork supervisor of its own
  * (see .vscode-test.js), stopped at the end.
  */
 suite("Daemons Test Suite", function () {
@@ -42,17 +42,34 @@ suite("Daemons Test Suite", function () {
 		return daemon;
 	};
 
+	/** The errors the extension showed, for the assertion messages */
+	const errors: string[] = [];
+	setup(() => {
+		errors.length = 0;
+		sinon
+			.stub(vscode.window, "showErrorMessage")
+			.callsFake(async (message: string) => {
+				errors.push(message);
+				return undefined;
+			});
+	});
+	teardown(() => {
+		sinon.restore();
+	});
+
 	/** Polls the daemon until it has one of the statuses */
 	const waitForStatus = async (name: string, ...statuses: string[]) => {
 		const deadline = Date.now() + DEADLINE_MS;
-		let daemon = daemonNamed(await load(), name);
+		let state = await load();
+		let daemon = daemonNamed(state, name);
 		while (!statuses.includes(daemon.status) && Date.now() < deadline) {
 			await new Promise((resolve) => setTimeout(resolve, 500));
-			daemon = daemonNamed(await load(), name);
+			state = await load();
+			daemon = daemonNamed(state, name);
 		}
 		assert.ok(
 			statuses.includes(daemon.status),
-			`${name} should be ${statuses.join(" or ")}, got ${daemon.status}`,
+			`${name} should be ${statuses.join(" or ")}, got ${daemon.status} (supervisor ${state.supervisor}, errors: ${errors.join(" | ") || "none"})`,
 		);
 		return daemon;
 	};
@@ -130,6 +147,8 @@ suite("Daemons Test Suite", function () {
 				{ name: "api", kind: "mise", status: "available" },
 				{ name: "clock", kind: "pitchfork", status: "available" },
 				{ name: "crasher", kind: "pitchfork", status: "available" },
+				{ name: "hourly", kind: "pitchfork", status: "available" },
+				{ name: "once", kind: "pitchfork", status: "available" },
 				{ name: "ticker", kind: "pitchfork", status: "available" },
 				{ name: "web", kind: "mise", status: "available" },
 				{ name: "worker", kind: "mise", status: "available" },
@@ -341,15 +360,59 @@ suite("Daemons Test Suite", function () {
 		await waitForStatus("clock", "stopped");
 	});
 
+	test("disables and enables a daemon", async () => {
+		const clock = daemonNamed(await load(), "clock");
+		await vscode.commands.executeCommand("mise.disableDaemon", clock);
+		assert.equal(daemonNamed(await load(), "clock").disabled, true);
+		await vscode.commands.executeCommand("mise.enableDaemon", clock);
+		assert.equal(daemonNamed(await load(), "clock").disabled, false);
+	});
+
+	test("shows a oneshot daemon that ran to completion", async () => {
+		const once = daemonNamed(await load(), "once");
+		await vscode.commands.executeCommand("mise.startDaemon", once);
+		const done = await waitForStatus("once", "completed");
+		assert.equal(done.oneshot, true);
+	});
+
+	test("shows when a cron daemon runs next", async () => {
+		// the supervisor runs by now, and knows the schedule from the config
+		const hourly = daemonNamed(await load(), "hourly");
+		assert.equal(hourly.cron?.schedule, "0 0 * * * *");
+		assert.ok(hourly.cron?.nextRun, "the supervisor reports the next run");
+		assert.match(describeDaemon(hourly), / · next /);
+	});
+
+	test("lists the shared servers of the global config", async () => {
+		const globalConfig = process.env.MISE_GLOBAL_CONFIG_FILE ?? "";
+		assert.ok(globalConfig, "the suite has a global config of its own");
+		await fs.writeFile(
+			globalConfig,
+			'[settings]\nexperimental = true\n\n[daemon_providers.shared-pg]\npreset = "postgres"\nversion = "18"\n',
+		);
+		try {
+			const servers =
+				process.platform === "win32" ? [] : (await load()).sharedServers;
+			assert.deepEqual(
+				servers.map(({ name, kind, status }) => ({ name, kind, status })),
+				process.platform === "win32"
+					? []
+					: [{ name: "shared-pg", kind: "provider", status: "available" }],
+			);
+		} finally {
+			await fs.rm(globalConfig, { force: true });
+		}
+	});
+
 	test("notifies when a running daemon fails", async () => {
 		const warnings: string[] = [];
-		const stub = sinon
+		sinon
 			.stub(vscode.window, "showWarningMessage")
 			.callsFake(async (message: string) => {
 				warnings.push(message);
 				return undefined;
 			});
-		try {
+		{
 			const crasher = daemonNamed(await load(), "crasher");
 			// it runs 5 seconds, then exits with 3
 			await vscode.commands.executeCommand("mise.startDaemon", crasher);
@@ -366,8 +429,6 @@ suite("Daemons Test Suite", function () {
 				warnings.some((message) => /^Daemon crasher failed/.test(message)),
 				`Expected a notification, got: ${warnings.join(" | ")}`,
 			);
-		} finally {
-			stub.restore();
 		}
 	});
 

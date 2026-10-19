@@ -39,6 +39,26 @@ export type PitchforkListEntry = {
 	error?: string | null;
 	active_port?: number | null;
 	port?: number[] | null;
+	/** a task that runs to completion rather than a service */
+	oneshot?: boolean;
+};
+
+/** An entry of `mise daemons providers ls --json`: a shared server */
+export type SharedServerEntry = {
+	name: string;
+	id: string;
+	status: string;
+	source?: string | null;
+	preset?: string | null;
+	port?: number | null;
+	data_dir?: string | null;
+};
+
+/** The schedule of a cron daemon, from `pitchfork status --json` */
+export type CronStatus = {
+	cron_schedule?: string | null;
+	cron_last_run?: string | null;
+	cron_next_run?: string | null;
 };
 
 export type Daemon = {
@@ -46,8 +66,11 @@ export type Daemon = {
 	id: string;
 	name: string;
 	namespace: string;
-	/** declared in the `[daemons]` of a mise config, or in a pitchfork config */
-	kind: "mise" | "pitchfork";
+	/**
+	 * declared in the `[daemons]` of a mise config, in a pitchfork config, or
+	 * a shared server of the global `[daemon_providers]` of mise
+	 */
+	kind: "mise" | "pitchfork" | "provider";
 	status: string;
 	pid?: number;
 	port?: number;
@@ -64,6 +87,10 @@ export type Daemon = {
 	dataDir?: string;
 	dataSize?: string;
 	disabled: boolean;
+	/** runs to completion: `completed` is its success */
+	oneshot?: boolean;
+	/** for a cron daemon, its schedule, and its last and next runs (RFC 3339) */
+	cron?: { schedule: string; lastRun?: string; nextRun?: string };
 };
 
 /**
@@ -148,6 +175,7 @@ export function mergeDaemons(
 			dataDir: entry.data_dir ?? undefined,
 			dataSize: entry.data_size_human ?? undefined,
 			disabled: state?.disabled ?? false,
+			oneshot: state?.oneshot || undefined,
 		});
 	}
 
@@ -166,6 +194,7 @@ export function mergeDaemons(
 			error: state?.error ?? undefined,
 			run: run ?? undefined,
 			disabled: state?.disabled ?? false,
+			oneshot: state?.oneshot || undefined,
 		};
 	};
 
@@ -511,6 +540,64 @@ export function daemonCommandError(output: string): string {
 	return relevant.join(" ").replace(/^(Error:\s*)?×\s*/, "");
 }
 
+/** The shared servers of mise, with what the supervisor reports about them */
+export function toSharedServers(
+	entries: SharedServerEntry[],
+	listed: PitchforkListEntry[] | undefined,
+): Daemon[] {
+	const live = new Map((listed ?? []).map((entry) => [entry.id, entry]));
+	return entries.map((entry) => {
+		const state = live.get(entry.id);
+		return {
+			id: entry.id,
+			name: entry.name,
+			namespace: namespaceOf(entry.id),
+			kind: "provider",
+			status: state?.status ?? entry.status,
+			pid: state?.pid ?? undefined,
+			port: portOf(state) ?? entry.port ?? undefined,
+			error: state?.error ?? undefined,
+			preset: entry.preset ?? undefined,
+			source: entry.source ?? undefined,
+			dataDir: entry.data_dir ?? undefined,
+			disabled: state?.disabled ?? false,
+		};
+	});
+}
+
+/** The `cron` of a daemon in a parsed config: `{ schedule = "..." }` */
+export function cronScheduleOf(
+	config: unknown,
+	name: string,
+): string | undefined {
+	const daemon = (config as { daemons?: Record<string, unknown> } | undefined)
+		?.daemons?.[name];
+	const cron = (daemon as { cron?: unknown } | undefined)?.cron;
+	const schedule =
+		typeof cron === "string"
+			? cron
+			: (cron as { schedule?: unknown } | undefined)?.schedule;
+	return typeof schedule === "string" && schedule ? schedule : undefined;
+}
+
+/** When a cron daemon runs next, as the view shows it */
+export function describeNextRun(iso: string, now = new Date()): string {
+	const next = new Date(iso);
+	if (Number.isNaN(next.getTime())) {
+		return iso;
+	}
+	if (next.getTime() <= now.getTime()) {
+		return "due";
+	}
+	const time = next.toLocaleTimeString(undefined, {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+	return next.toDateString() === now.toDateString()
+		? time
+		: `${next.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${time}`;
+}
+
 /**
  * The daemons that failed since their previous status (by id): running, or
  * about to change state, then, errored or failed now. A daemon stopped on
@@ -543,10 +630,13 @@ export function summarizeDaemons(daemons: Daemon[]): {
 }
 
 /** What the view shows next to a daemon: its status, and its port */
-export function describeDaemon(daemon: Daemon): string {
+export function describeDaemon(daemon: Daemon, now = new Date()): string {
 	const parts = [daemon.disabled ? "disabled" : daemon.status];
 	if (daemon.port !== undefined && isDaemonActive(daemon)) {
 		parts.push(`:${daemon.port}`);
+	}
+	if (daemon.cron?.nextRun && !isDaemonActive(daemon) && !daemon.disabled) {
+		parts.push(`next ${describeNextRun(daemon.cron.nextRun, now)}`);
 	}
 	return parts.join(" · ");
 }

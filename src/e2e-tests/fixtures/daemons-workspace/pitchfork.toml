@@ -7,3 +7,11 @@ auto = ["start", "stop"]
 
 [daemons.crasher]
 run = "sh -c 'sleep 5; exit 3'"
+
+[daemons.once]
+run = "echo done"
+oneshot = true
+
+[daemons.hourly]
+run = "echo tick"
+cron = "0 0 * * * *"

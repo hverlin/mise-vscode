@@ -4,6 +4,8 @@ import os from "node:os";
 import { parse } from "toml-v1";
 import type { MiseService } from "./miseService";
 import {
+	type CronStatus,
+	cronScheduleOf,
 	type Daemon,
 	type DaemonGroup,
 	daemonCommandError,
@@ -20,8 +22,11 @@ import {
 	parsePitchforkVersion,
 	pitchforkConfigCandidates,
 	pitchforkEnv,
+	pitchforkNamespace,
 	pitchforkProjectDir,
+	type SharedServerEntry,
 	sessionDaemons,
+	toSharedServers,
 } from "./utils/daemons";
 import { expandPath, locateCommand } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
@@ -58,6 +63,8 @@ export type PitchforkBinary = {
 export type DaemonsState = {
 	daemons: Daemon[];
 	groups: DaemonGroup[];
+	/** the shared servers of the global `[daemon_providers]` of mise */
+	sharedServers: Daemon[];
 	pitchfork?: PitchforkBinary;
 	/** whether the pitchfork supervisor runs, which `pitchfork list` needs */
 	supervisor: "up" | "down" | "unknown";
@@ -93,15 +100,20 @@ export class DaemonsService {
 	}
 
 	async load(): Promise<DaemonsState> {
-		const [miseDaemons, pitchfork, miseGroups] = await Promise.all([
-			this.listMiseDaemons(),
-			this.findPitchfork(),
-			this.listMiseGroups(),
-		]);
+		const [miseDaemons, pitchfork, miseGroups, sharedServers] =
+			await Promise.all([
+				this.listMiseDaemons(),
+				this.findPitchfork(),
+				this.listMiseGroups(),
+				this.listSharedServers(),
+			]);
 		if (!pitchfork?.supported) {
+			const daemons = mergeDaemons(miseDaemons, [], undefined);
+			await this.addCronSchedules(daemons, undefined);
 			return {
-				daemons: mergeDaemons(miseDaemons, [], undefined),
+				daemons,
 				groups: miseGroups,
+				sharedServers: toSharedServers(sharedServers, undefined),
 				pitchfork,
 				supervisor: "unknown",
 			};
@@ -142,9 +154,15 @@ export class DaemonsService {
 				: undefined;
 		this.lastReported.set(folder, { configured, listed });
 
+		const daemons = mergeDaemons(miseDaemons, configured, listed);
+		await this.addCronSchedules(
+			daemons,
+			supervisor === "up" ? pitchfork : undefined,
+		);
 		return {
-			daemons: mergeDaemons(miseDaemons, configured, listed),
+			daemons,
 			groups: [...miseGroups, ...(await this.listPitchforkGroups(folder))],
+			sharedServers: toSharedServers(sharedServers, listed),
 			pitchfork,
 			supervisor,
 			webUi: status?.web_ui ?? undefined,
@@ -181,6 +199,87 @@ export class DaemonsService {
 			logger.info("Could not list the daemons of mise", error);
 			return [];
 		}
+	}
+
+	/** The shared servers of mise, which Windows does not have */
+	private async listSharedServers(): Promise<SharedServerEntry[]> {
+		if (process.platform === "win32" || !(await this.supportsMiseDaemons())) {
+			return [];
+		}
+		try {
+			const { stdout } = await this.miseService.execMiseCommand(
+				["daemons", "providers", "ls", "--json"],
+				{ retainOnParseError: true },
+			);
+			return JSON.parse(stdout) as SharedServerEntry[];
+		} catch (error) {
+			logger.info("Could not list the shared servers of mise", error);
+			return [];
+		}
+	}
+
+	/**
+	 * The schedule of the cron daemons, from their config, and when they run,
+	 * from the supervisor when it is up (`pitchfork status`, which only reads
+	 * its state).
+	 */
+	private async addCronSchedules(
+		daemons: Daemon[],
+		pitchfork: PitchforkBinary | undefined,
+	): Promise<void> {
+		const folder = this.folder();
+		const parsed = new Map<string, Promise<unknown>>();
+		const read = (file: string) => {
+			if (!parsed.has(file)) {
+				parsed.set(file, readToml(file));
+			}
+			return parsed.get(file) as Promise<unknown>;
+		};
+		await Promise.all(
+			daemons.map(async (daemon) => {
+				const files =
+					daemon.kind === "mise"
+						? daemon.source
+							? [expandPath(daemon.source)]
+							: []
+						: folder
+							? pitchforkConfigCandidates(folder, daemon.namespace).filter(
+									(file) => existsSync(file),
+								)
+							: [];
+				let schedule: string | undefined;
+				for (const file of files) {
+					const config = await read(file);
+					if (
+						daemon.kind === "pitchfork" &&
+						pitchforkNamespace(file, config) !== daemon.namespace
+					) {
+						continue;
+					}
+					schedule = cronScheduleOf(config, daemon.name);
+					if (schedule) {
+						break;
+					}
+				}
+				if (!schedule) {
+					return;
+				}
+				daemon.cron = { schedule };
+				if (!pitchfork) {
+					return;
+				}
+				const status = await this.pitchforkJson<CronStatus>(pitchfork, [
+					"status",
+					"--json",
+					daemon.id,
+				]).catch(() => undefined);
+				daemon.cron = {
+					schedule: status?.cron_schedule ?? schedule,
+					lastRun: status?.cron_last_run ?? undefined,
+					nextRun: status?.cron_next_run ?? undefined,
+				};
+			}),
+		);
 	}
 
 	/** The `[daemon_groups]` of the mise configs, the closest config first */
@@ -321,10 +420,35 @@ export class DaemonsService {
 			await this.execMiseDaemons([action, daemon.id], { autoStart });
 			return;
 		}
+		if (daemon.kind === "provider") {
+			await this.execMiseDaemons(["providers", action, daemon.name], {
+				autoStart,
+			});
+			return;
+		}
 		if (!pitchfork) {
 			throw new DaemonCommandError("pitchfork is not installed");
 		}
 		await this.execPitchfork(pitchfork, [action, daemon.id], { autoStart });
+	}
+
+	/**
+	 * Keep pitchfork from starting a daemon, or let it again (`disable`,
+	 * `enable`): a disabled daemon is not restarted when it exits, nor started
+	 * by a session or a group.
+	 */
+	async setEnabled(
+		daemon: Daemon,
+		enabled: boolean,
+		pitchfork: PitchforkBinary | undefined,
+	): Promise<void> {
+		if (!pitchfork) {
+			throw new DaemonCommandError("pitchfork is not installed");
+		}
+		await this.execPitchfork(pitchfork, [
+			enabled ? "enable" : "disable",
+			daemon.id,
+		]);
 	}
 
 	/** Start, stop or restart the daemons of a group */

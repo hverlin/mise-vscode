@@ -47,6 +47,19 @@ shows where it keeps its data and how much there is. From its context menu,
 fresh data, as the mise docs describe: after a confirmation, it stops the
 daemon, deletes its data directory and starts it again.
 
+A daemon can be disabled from its context menu (`pitchfork disable`): pitchfork
+no longer restarts it when it exits, nor starts it with a group or a session,
+until it is enabled again. A [oneshot](https://pitchfork.jdx.dev/guides/oneshot-tasks)
+daemon, which runs to completion, shows `completed` with a check mark once it
+succeeded, and a [cron](https://pitchfork.jdx.dev/guides/scheduling) daemon
+shows its schedule, and when it runs next while the supervisor is up.
+
+The [shared servers](https://mise.jdx.dev/daemons/sharing.html#shared-server-providers)
+of your global mise config (`[daemon_providers]`) are listed under
+`Shared servers`, where they can be started, stopped or restarted
+(`mise daemons providers start <name>`). Their data is never reset from here:
+it holds the database of every checkout that uses them.
+
 From the panel title bar, you can start or stop all the daemons of the project
 (for mise, the [`default` group](https://mise.jdx.dev/daemons.html#groups) or
 every daemon), open the pitchfork dashboard (`pitchfork tui`) in an editor
