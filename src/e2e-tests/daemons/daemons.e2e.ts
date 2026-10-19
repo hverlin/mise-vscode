@@ -1,4 +1,7 @@
 import * as assert from "node:assert";
+import { existsSync } from "node:fs";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { DaemonsService, type DaemonsState } from "../../daemonsService";
@@ -284,6 +287,45 @@ suite("Daemons Test Suite", function () {
 		await vscode.commands.executeCommand("mise.stopDaemon", running);
 		await waitForStatus("web", "stopped");
 		await waitForLens("mise.toml", 6, "$(play) Start");
+	});
+
+	test("starts and stops a group of daemons", async () => {
+		const backend = (await load()).groups.find(
+			(group) => group.name === "backend",
+		);
+		assert.deepEqual(backend?.members, ["web", "api"]);
+		await vscode.commands.executeCommand("mise.startDaemonGroup", backend);
+		await waitForStatus("web", "running");
+		await waitForStatus("api", "running");
+		// the others are left alone
+		assert.notEqual(daemonNamed(await load(), "worker").status, "running");
+
+		await vscode.commands.executeCommand("mise.stopDaemonGroup", backend);
+		await waitForStatus("web", "stopped", "available");
+		await waitForStatus("api", "stopped", "available");
+	});
+
+	test("resets the data of a daemon", async () => {
+		// a preset would download its database: web stands for one here
+		const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), "mise-e2e-data-"));
+		await fs.writeFile(path.join(dataDir, "PG_VERSION"), "18");
+		const web = { ...daemonNamed(await load(), "web"), dataDir };
+
+		await daemonsService.resetData(web);
+		assert.ok(!existsSync(dataDir), "the data directory is removed");
+		await waitForStatus("web", "running");
+
+		await vscode.commands.executeCommand("mise.stopDaemon", web);
+		await waitForStatus("web", "stopped", "available");
+	});
+
+	test("does not reset a data directory holding the workspace", async () => {
+		const web = { ...daemonNamed(await load(), "web"), dataDir: workspaceRoot };
+		await assert.rejects(
+			daemonsService.resetData(web),
+			/cannot be reset|no data/,
+		);
+		assert.ok(existsSync(path.join(workspaceRoot, "mise.toml")));
 	});
 
 	test("starts and stops a pitchfork daemon", async () => {

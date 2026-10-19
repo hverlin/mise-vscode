@@ -1150,6 +1150,36 @@
         "title": "Mise: Open pitchfork Web UI",
         "icon": "$(link-external)",
         "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.startDaemonGroup",
+        "title": "Mise: Start Daemon Group",
+        "icon": "$(play)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.stopDaemonGroup",
+        "title": "Mise: Stop Daemon Group",
+        "icon": "$(debug-stop)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.restartDaemonGroup",
+        "title": "Mise: Restart Daemon Group",
+        "icon": "$(debug-restart)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.revealDaemonData",
+        "title": "Mise: Reveal Daemon Data",
+        "icon": "$(folder-opened)",
+        "enablement": "!isWeb"
+      },
+      {
+        "command": "mise.resetDaemonData",
+        "title": "Mise: Reset Daemon Data...",
+        "icon": "$(discard)",
+        "enablement": "!isWeb"
       }
     ],
     "menus": {
@@ -1245,6 +1275,26 @@
         {
           "command": "mise.openPitchforkWebUi",
           "when": "mise.hasDaemons || mise.hasPitchfork"
+        },
+        {
+          "command": "mise.startDaemonGroup",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.stopDaemonGroup",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.restartDaemonGroup",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.revealDaemonData",
+          "when": "mise.hasDaemons"
+        },
+        {
+          "command": "mise.resetDaemonData",
+          "when": "mise.hasDaemons"
         }
       ],
       "view/title": [
@@ -1524,6 +1574,41 @@
           "command": "mise.openDaemonDefinition",
           "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/",
           "group": "2_navigation@2"
+        },
+        {
+          "command": "mise.startDaemonGroup",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemonGroup/ && viewItem =~ /;someInactive/",
+          "group": "inline@1"
+        },
+        {
+          "command": "mise.stopDaemonGroup",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemonGroup/ && viewItem =~ /;someActive/",
+          "group": "inline@2"
+        },
+        {
+          "command": "mise.startDaemonGroup",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemonGroup/ && viewItem =~ /;someInactive/",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "mise.stopDaemonGroup",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemonGroup/ && viewItem =~ /;someActive/",
+          "group": "1_actions@2"
+        },
+        {
+          "command": "mise.restartDaemonGroup",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemonGroup/ && viewItem =~ /;someActive/",
+          "group": "1_actions@3"
+        },
+        {
+          "command": "mise.revealDaemonData",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;data/",
+          "group": "3_data@1"
+        },
+        {
+          "command": "mise.resetDaemonData",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;data/",
+          "group": "3_data@2"
         }
       ],
       "editor/lineNumber/context": [

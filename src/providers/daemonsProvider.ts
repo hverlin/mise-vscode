@@ -5,12 +5,17 @@ import {
 	MISE_OPEN_DAEMON_URL,
 	MISE_OPEN_PITCHFORK_TUI,
 	MISE_OPEN_PITCHFORK_WEB_UI,
+	MISE_RESET_DAEMON_DATA,
 	MISE_RESTART_DAEMON,
+	MISE_RESTART_DAEMON_GROUP,
+	MISE_REVEAL_DAEMON_DATA,
 	MISE_SHOW_DAEMON_LOGS,
 	MISE_START_ALL_DAEMONS,
 	MISE_START_DAEMON,
+	MISE_START_DAEMON_GROUP,
 	MISE_STOP_ALL_DAEMONS,
 	MISE_STOP_DAEMON,
+	MISE_STOP_DAEMON_GROUP,
 } from "../commands";
 import { isMiseExtensionEnabled } from "../configuration";
 import type {
@@ -21,8 +26,10 @@ import type {
 import { findKeyInTomlDocument } from "../utils/bootstrapDocument";
 import {
 	type Daemon,
+	type DaemonGroup,
 	describeDaemon,
 	GLOBAL_NAMESPACE,
+	groupDaemons,
 	isDaemonActive,
 	isDaemonFailed,
 	MIN_PITCHFORK_VERSION,
@@ -43,7 +50,12 @@ export const PENDING_LABELS: Record<DaemonAction, string> = {
 	restart: "restarting…",
 };
 
-type TreeItem = DaemonItem | GlobalDaemonsItem | MessageItem;
+type TreeItem =
+	| DaemonItem
+	| GroupsItem
+	| GroupItem
+	| GlobalDaemonsItem
+	| MessageItem;
 
 function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 	if (
@@ -91,6 +103,11 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 	if (daemon.run) {
 		lines.push(`Runs: ${markdownCodeSpan(daemon.run)}`);
 	}
+	if (daemon.dataDir) {
+		lines.push(
+			`Data: ${daemon.dataSize ? `${daemon.dataSize} in ` : ""}${markdownCodeSpan(daemon.dataDir)}`,
+		);
+	}
 	lines.push(
 		daemon.kind === "mise"
 			? `Declared in ${daemon.source ? markdownCodeSpan(daemon.source) : "a mise config"}`
@@ -103,13 +120,13 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 export class DaemonItem extends vscode.TreeItem {
 	constructor(
 		public readonly daemon: Daemon,
-		pending: DaemonAction | undefined,
+		pending: string | undefined,
+		/** a daemon also listed under a group gets an id of its own there */
+		idPrefix = "",
 	) {
 		super(daemon.name, vscode.TreeItemCollapsibleState.None);
-		this.id = daemon.id;
-		this.description = pending
-			? PENDING_LABELS[pending]
-			: describeDaemon(daemon);
+		this.id = `${idPrefix}${daemon.id}`;
+		this.description = pending ?? describeDaemon(daemon);
 		this.tooltip = daemonTooltip(daemon);
 		this.iconPath = daemonIcon(daemon, !!pending);
 		// e.g. `miseDaemon;active;url`, matched with `viewItem =~ /;active/`
@@ -117,12 +134,60 @@ export class DaemonItem extends vscode.TreeItem {
 			"miseDaemon",
 			isDaemonActive(daemon) ? "active" : "inactive",
 			...(daemon.url ? ["url"] : []),
+			...(daemon.dataDir ? ["data"] : []),
 		].join(";");
 		this.command = {
 			command: MISE_OPEN_DAEMON_DEFINITION,
 			title: "Open Definition",
 			arguments: [daemon],
 		};
+	}
+}
+
+const groupKey = (group: DaemonGroup) => `${group.kind}:${group.name}`;
+
+class GroupsItem extends vscode.TreeItem {
+	constructor(public readonly groups: GroupItem[]) {
+		super("Groups", vscode.TreeItemCollapsibleState.Collapsed);
+		this.id = "miseDaemons:groups";
+		this.description = `(${groups.length})`;
+		this.tooltip =
+			"The groups of daemons of the project: `[daemon_groups]` in mise, `[groups]` in pitchfork";
+		this.iconPath = new vscode.ThemeIcon("layers");
+	}
+}
+
+export class GroupItem extends vscode.TreeItem {
+	constructor(
+		public readonly group: DaemonGroup,
+		public readonly daemons: DaemonItem[],
+		pending: string | undefined,
+	) {
+		super(group.name, vscode.TreeItemCollapsibleState.Collapsed);
+		this.id = `miseDaemons:group:${groupKey(group)}`;
+		const active = daemons.filter((item) => isDaemonActive(item.daemon));
+		this.description =
+			pending ??
+			[
+				`${active.length}/${daemons.length} running`,
+				...(group.kind === "mise" && group.name === "default"
+					? ["started by default"]
+					: []),
+			].join(" · ");
+		this.tooltip = new vscode.MarkdownString(
+			[
+				`**${group.name}** ${group.kind === "mise" ? "mise" : "pitchfork"} group`,
+				`Members: ${group.members.map((member) => markdownCodeSpan(member)).join(", ")}`,
+				`Declared in ${markdownCodeSpan(group.source)}`,
+			].join("\n\n"),
+		);
+		this.iconPath = new vscode.ThemeIcon(pending ? "loading~spin" : "layers");
+		// e.g. `miseDaemonGroup;someActive`, see the menus of package.json
+		this.contextValue = [
+			"miseDaemonGroup",
+			...(active.length ? ["someActive"] : []),
+			...(active.length < daemons.length ? ["someInactive"] : []),
+		].join(";");
 	}
 }
 
@@ -161,7 +226,8 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 	readonly onDidChangeState = this._onDidChangeState.event;
 
 	private _state: DaemonsState | undefined;
-	private pending = new Map<string, DaemonAction>();
+	/** what is being done to a daemon, or a group, by id */
+	private pending = new Map<string, string>();
 	private loading: Promise<void> | undefined;
 	private reloadAfterLoading = false;
 
@@ -171,7 +237,8 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		return this._state;
 	}
 
-	pendingAction(daemon: Daemon): DaemonAction | undefined {
+	/** What is being done to a daemon, e.g. `starting…` */
+	pendingLabel(daemon: Daemon): string | undefined {
 		return this.pending.get(daemon.id);
 	}
 
@@ -223,24 +290,72 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	/** Run an action on a daemon, showing it as pending meanwhile */
-	async runWithPending(daemon: Daemon, action: DaemonAction) {
-		if (this.pending.has(daemon.id)) {
+	runWithPending(daemon: Daemon, action: DaemonAction) {
+		return this.runPending(
+			[daemon.id],
+			PENDING_LABELS[action],
+			() => this.daemonsService.run(action, daemon, this._state?.pitchfork),
+			`Could not ${action} ${daemon.name}`,
+			daemon,
+		);
+	}
+
+	/** Run an action on the daemons of a group */
+	runGroupWithPending(group: DaemonGroup, action: DaemonAction) {
+		const members = groupDaemons(
+			group,
+			this._state?.groups ?? [],
+			this._state?.daemons ?? [],
+		);
+		return this.runPending(
+			[groupKey(group), ...members.map((daemon) => daemon.id)],
+			PENDING_LABELS[action],
+			() => this.daemonsService.runGroup(action, group, this._state?.pitchfork),
+			`Could not ${action} the group ${group.name}`,
+		);
+	}
+
+	/** Reset the data of a preset */
+	resetDataWithPending(daemon: Daemon) {
+		return this.runPending(
+			[daemon.id],
+			"resetting data…",
+			() => this.daemonsService.resetData(daemon),
+			`Could not reset the data of ${daemon.name}`,
+			daemon,
+		);
+	}
+
+	/**
+	 * Run something, showing what it does to the daemons, or groups, it is
+	 * about meanwhile. A failure is reported, with the logs of the daemon.
+	 */
+	private async runPending(
+		keys: string[],
+		label: string,
+		run: () => Promise<void>,
+		failure: string,
+		daemon?: Daemon,
+	) {
+		if (keys.some((key) => this.pending.has(key))) {
 			return;
 		}
-		this.pending.set(daemon.id, action);
+		for (const key of keys) {
+			this.pending.set(key, label);
+		}
 		this._onDidChangeTreeData.fire();
 		this._onDidChangeState.fire();
 		try {
 			await vscode.window.withProgress(
 				{ location: { viewId: DAEMONS_VIEW_ID } },
-				() => this.daemonsService.run(action, daemon, this._state?.pitchfork),
+				run,
 			);
 		} catch (error) {
 			const showLogs = "Show logs";
 			void vscode.window
 				.showErrorMessage(
-					`Could not ${action} ${daemon.name}: ${(error as Error).message}`,
-					showLogs,
+					`${failure}: ${(error as Error).message}`,
+					...(daemon ? [showLogs] : []),
 				)
 				.then((selection) => {
 					if (selection === showLogs) {
@@ -248,7 +363,9 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 					}
 				});
 		} finally {
-			this.pending.delete(daemon.id);
+			for (const key of keys) {
+				this.pending.delete(key);
+			}
 			// the pending label leaves even when the state did not change
 			this._onDidChangeTreeData.fire();
 			this._onDidChangeState.fire();
@@ -261,15 +378,18 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	getChildren(element?: TreeItem): TreeItem[] {
-		if (element instanceof GlobalDaemonsItem) {
+		if (element instanceof GlobalDaemonsItem || element instanceof GroupItem) {
 			return element.daemons;
+		}
+		if (element instanceof GroupsItem) {
+			return element.groups;
 		}
 		if (element || !this._state) {
 			return [];
 		}
 
 		const items: TreeItem[] = [];
-		const { pitchfork, daemons } = this._state;
+		const { pitchfork, daemons, groups } = this._state;
 		if (pitchfork && !pitchfork.supported) {
 			items.push(
 				new MessageItem(
@@ -280,6 +400,27 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		}
 		const toItem = (daemon: Daemon) =>
 			new DaemonItem(daemon, this.pending.get(daemon.id));
+		const groupItems = groups
+			.map((group) => {
+				const members = groupDaemons(group, groups, daemons);
+				return new GroupItem(
+					group,
+					members.map(
+						(daemon) =>
+							new DaemonItem(
+								daemon,
+								this.pending.get(daemon.id),
+								`group:${groupKey(group)}/`,
+							),
+					),
+					this.pending.get(groupKey(group)),
+				);
+			})
+			// a group of nothing the view knows about
+			.filter((item) => item.daemons.length);
+		if (groupItems.length) {
+			items.push(new GroupsItem(groupItems));
+		}
 		items.push(
 			...daemons
 				.filter((daemon) => daemon.namespace !== GLOBAL_NAMESPACE)
@@ -357,6 +498,54 @@ export async function findDaemonDefinition(
 		}
 	}
 	return undefined;
+}
+
+/** The group a command applies to: the clicked item, or one to pick */
+async function resolveGroup(
+	provider: MiseDaemonsProvider,
+	argument: unknown,
+	placeHolder: string,
+): Promise<DaemonGroup | undefined> {
+	if (argument instanceof GroupItem) {
+		return argument.group;
+	}
+	if (argument && typeof argument === "object" && "members" in argument) {
+		return argument as DaemonGroup;
+	}
+	await provider.refresh();
+	const groups = provider.state?.groups ?? [];
+	if (!groups.length) {
+		vscode.window.showInformationMessage("No group of daemons to pick from.");
+		return undefined;
+	}
+	const picked = await vscode.window.showQuickPick(
+		groups.map((group) => ({
+			label: group.name,
+			description: group.members.join(", "),
+			detail: group.source,
+			group,
+		})),
+		{ placeHolder },
+	);
+	return picked?.group;
+}
+
+async function resetDaemonData(provider: MiseDaemonsProvider, daemon: Daemon) {
+	if (!daemon.dataDir) {
+		return;
+	}
+	const reset = "Reset data";
+	const selection = await vscode.window.showWarningMessage(
+		`Reset the data of ${daemon.name}?`,
+		{
+			modal: true,
+			detail: `This stops ${daemon.name}, deletes ${daemon.dataDir}${daemon.dataSize ? ` (${daemon.dataSize})` : ""}, and starts it again with fresh data. Back up anything you want to keep first.`,
+		},
+		reset,
+	);
+	if (selection === reset) {
+		await provider.resetDataWithPending(daemon);
+	}
 }
 
 async function openDaemonDefinition(
@@ -511,6 +700,56 @@ export function registerDaemonsCommands(
 				);
 				if (daemon) {
 					await openDaemonDefinition(daemon, folder());
+				}
+			},
+		),
+		...(["start", "stop", "restart"] as const).map((groupAction) =>
+			vscode.commands.registerCommand(
+				{
+					start: MISE_START_DAEMON_GROUP,
+					stop: MISE_STOP_DAEMON_GROUP,
+					restart: MISE_RESTART_DAEMON_GROUP,
+				}[groupAction],
+				async (argument: unknown) => {
+					const group = await resolveGroup(
+						provider,
+						argument,
+						`Group of daemons to ${groupAction}`,
+					);
+					if (group) {
+						await provider.runGroupWithPending(group, groupAction);
+					}
+				},
+			),
+		),
+		vscode.commands.registerCommand(
+			MISE_REVEAL_DAEMON_DATA,
+			async (argument: unknown) => {
+				const daemon = await resolveDaemon(
+					provider,
+					argument,
+					(daemon) => !!daemon.dataDir,
+					"Daemon whose data to reveal",
+				);
+				if (daemon?.dataDir) {
+					await vscode.commands.executeCommand(
+						"revealFileInOS",
+						vscode.Uri.file(daemon.dataDir),
+					);
+				}
+			},
+		),
+		vscode.commands.registerCommand(
+			MISE_RESET_DAEMON_DATA,
+			async (argument: unknown) => {
+				const daemon = await resolveDaemon(
+					provider,
+					argument,
+					(daemon) => !!daemon.dataDir,
+					"Daemon whose data to reset",
+				);
+				if (daemon) {
+					await resetDaemonData(provider, daemon);
 				}
 			},
 		),

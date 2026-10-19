@@ -16,6 +16,9 @@ export type MiseDaemonEntry = {
 	url?: string | null;
 	/** `off` for a daemon the pitchfork proxy does not serve, e.g. a database */
 	proxy?: string | null;
+	/** where a preset keeps its data */
+	data_dir?: string | null;
+	data_size_human?: string | null;
 };
 
 /** An entry of `pitchfork daemons --json`: a daemon of the pitchfork configs */
@@ -57,7 +60,22 @@ export type Daemon = {
 	source?: string;
 	/** for a mise daemon, the project it belongs to */
 	root?: string;
+	/** for a preset, where it keeps its data, and how much there is */
+	dataDir?: string;
+	dataSize?: string;
 	disabled: boolean;
+};
+
+/**
+ * A named set of daemons: a mise `[daemon_groups]` group, or a pitchfork
+ * `[groups.<name>]` one. Its members are daemons, or other groups.
+ */
+export type DaemonGroup = {
+	name: string;
+	kind: "mise" | "pitchfork";
+	members: string[];
+	/** the config file declaring it */
+	source: string;
 };
 
 /** The namespace of the daemons of the user's own pitchfork config */
@@ -127,6 +145,8 @@ export function mergeDaemons(
 			preset: entry.preset ?? undefined,
 			source: entry.source ?? undefined,
 			root: entry.root ?? undefined,
+			dataDir: entry.data_dir ?? undefined,
+			dataSize: entry.data_size_human ?? undefined,
 			disabled: state?.disabled ?? false,
 		});
 	}
@@ -273,6 +293,105 @@ export function isPitchforkConfigPath(filePath: string, env = process.env) {
 	}
 	// `.config/pitchfork.toml`, or one of a project directory
 	return true;
+}
+
+const strings = (value: unknown): string[] =>
+	Array.isArray(value)
+		? value.filter((entry): entry is string => typeof entry === "string")
+		: [];
+
+/**
+ * The groups a parsed config declares: mise's `[daemon_groups]`, as
+ * `name = [...]` or `[daemon_groups.name]` with `daemons = [...]`, or
+ * pitchfork's `[groups.name]` with `daemons = [...]` and `groups = [...]`.
+ */
+export function declaredGroups(
+	config: unknown,
+	kind: DaemonGroup["kind"],
+	source: string,
+): DaemonGroup[] {
+	const table =
+		kind === "mise"
+			? (config as { daemon_groups?: unknown } | undefined)?.daemon_groups
+			: (config as { groups?: unknown } | undefined)?.groups;
+	if (!table || typeof table !== "object" || Array.isArray(table)) {
+		return [];
+	}
+	return Object.entries(table).map(([name, value]) => {
+		const group = value as { daemons?: unknown; groups?: unknown } | undefined;
+		const members =
+			kind === "mise"
+				? strings(Array.isArray(value) ? value : group?.daemons)
+				: [...strings(group?.daemons), ...strings(group?.groups)];
+		return { name, kind, members, source };
+	});
+}
+
+/**
+ * The daemons a group starts: its members, with the groups among them
+ * expanded in place. A member names a group of the same kind when there is
+ * one, else a daemon by name or by id.
+ */
+export function groupDaemons(
+	group: DaemonGroup,
+	groups: DaemonGroup[],
+	daemons: Daemon[],
+): Daemon[] {
+	const found = new Map<string, Daemon>();
+	const visited = new Set<string>();
+	const expand = (current: DaemonGroup) => {
+		if (visited.has(current.name)) {
+			return;
+		}
+		visited.add(current.name);
+		for (const member of current.members) {
+			const nested = groups.find(
+				(candidate) =>
+					candidate.kind === group.kind && candidate.name === member,
+			);
+			if (nested) {
+				expand(nested);
+				continue;
+			}
+			const daemon = daemons.find(
+				(candidate) =>
+					candidate.kind === group.kind &&
+					(candidate.id === member || candidate.name === member),
+			);
+			if (daemon) {
+				found.set(daemon.id, daemon);
+			}
+		}
+	};
+	expand(group);
+	return [...found.values()];
+}
+
+/**
+ * Whether the data directory of a preset can be removed to reset it: an
+ * absolute path that is neither the filesystem root nor holds the home
+ * directory or a workspace folder, which a broken report could name.
+ */
+export function isResettableDataDir(
+	dataDir: string,
+	keep: string[] = [os.homedir()],
+): boolean {
+	if (!path.isAbsolute(dataDir)) {
+		return false;
+	}
+	const resolved = path.resolve(dataDir);
+	if (path.dirname(resolved) === resolved) {
+		return false;
+	}
+	return keep.every((kept) => {
+		const relative = path.relative(resolved, path.resolve(kept));
+		// not when `kept` is the directory itself, or inside it
+		return (
+			relative === ".." ||
+			relative.startsWith(`..${path.sep}`) ||
+			path.isAbsolute(relative)
+		);
+	});
 }
 
 /** The names of the daemons a parsed config declares under `[daemons]` */

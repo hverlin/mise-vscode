@@ -3,8 +3,11 @@ import path from "node:path";
 import {
 	daemonCommandError,
 	declaredDaemonNames,
+	declaredGroups,
 	describeDaemon,
+	groupDaemons,
 	isPitchforkConfigPath,
+	isResettableDataDir,
 	isSamePath,
 	isVersionAtLeast,
 	mergeDaemons,
@@ -306,5 +309,125 @@ describe("daemonCommandError", () => {
 		expect(daemonCommandError("Error:   × Daemon shop/web not found\n")).toBe(
 			"Daemon shop/web not found",
 		);
+	});
+});
+
+describe("daemon groups", () => {
+	const daemons = mergeDaemons(
+		[
+			{ id: "shop/web", name: "web", status: "running" },
+			{ id: "shop/api", name: "api", status: "available" },
+			{ id: "shop/db", name: "db", status: "available" },
+		],
+		[{ id: "shop/clock" }],
+		undefined,
+	);
+
+	it("reads mise groups in both forms, and pitchfork ones", () => {
+		expect(
+			declaredGroups(
+				{
+					daemon_groups: {
+						default: ["web"],
+						full: { daemons: ["default", "api"] },
+					},
+				},
+				"mise",
+				"/shop/mise.toml",
+			),
+		).toEqual([
+			{
+				name: "default",
+				kind: "mise",
+				members: ["web"],
+				source: "/shop/mise.toml",
+			},
+			{
+				name: "full",
+				kind: "mise",
+				members: ["default", "api"],
+				source: "/shop/mise.toml",
+			},
+		]);
+		expect(
+			declaredGroups(
+				{ groups: { all: { daemons: ["clock"], groups: ["backend"] } } },
+				"pitchfork",
+				"/shop/pitchfork.toml",
+			),
+		).toEqual([
+			{
+				name: "all",
+				kind: "pitchfork",
+				members: ["clock", "backend"],
+				source: "/shop/pitchfork.toml",
+			},
+		]);
+		expect(declaredGroups({ groups: {} }, "mise", "/x")).toEqual([]);
+	});
+
+	it("expands the groups a group names, once", () => {
+		const groups = declaredGroups(
+			{
+				daemon_groups: {
+					default: ["web", "full"],
+					full: ["default", "api", "shop/db", "gone"],
+				},
+			},
+			"mise",
+			"/shop/mise.toml",
+		);
+		const [defaultGroup] = groups;
+		expect(
+			defaultGroup &&
+				groupDaemons(defaultGroup, groups, daemons).map((daemon) => daemon.id),
+		).toEqual(["shop/web", "shop/api", "shop/db"]);
+	});
+
+	it("keeps to the daemons of the same kind", () => {
+		const [group] = declaredGroups(
+			{ daemon_groups: { all: ["web", "clock"] } },
+			"mise",
+			"/shop/mise.toml",
+		);
+		expect(
+			group && groupDaemons(group, [group], daemons).map((daemon) => daemon.id),
+		).toEqual(["shop/web"]);
+	});
+});
+
+describe("preset data", () => {
+	it("comes from mise", () => {
+		const [db] = mergeDaemons(
+			[
+				{
+					id: "shop/db",
+					name: "db",
+					status: "available",
+					data_dir: "/state/db/data",
+					data_size_human: "52 MB",
+				},
+			],
+			[],
+			undefined,
+		);
+		expect(db).toMatchObject({ dataDir: "/state/db/data", dataSize: "52 MB" });
+	});
+
+	it("is only removed from a directory that holds nothing else", () => {
+		const home = path.join(path.sep, "home", "me");
+		const keep = [home, path.join(home, "shop")];
+		expect(
+			isResettableDataDir(path.join(home, ".local", "state", "db"), keep),
+		).toBe(true);
+		expect(
+			isResettableDataDir(path.join(home, "shop", ".data", "db"), keep),
+		).toBe(true);
+		expect(isResettableDataDir(home, keep)).toBe(false);
+		expect(isResettableDataDir(path.join(home, "shop"), keep)).toBe(false);
+		expect(isResettableDataDir(path.join(path.sep, "home"), keep)).toBe(false);
+		expect(isResettableDataDir(path.sep, keep)).toBe(false);
+		expect(isResettableDataDir("relative/db", keep)).toBe(false);
+		expect(isResettableDataDir(path.join(home, "..data"), keep)).toBe(true);
 	});
 });

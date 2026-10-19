@@ -35,6 +35,18 @@ From each daemon, you can:
 - open it in the browser, for an HTTP daemon
 - go to where it is declared (click on it)
 
+The groups of the project, mise's
+[`[daemon_groups]`](https://mise.jdx.dev/daemons.html#groups) and pitchfork's
+`[groups]`, are listed under `Groups`, each with its daemons and how many of
+them run. A group can be started, stopped or restarted at once
+(`mise daemons start --group <name>`, `pitchfork start --group <name>`).
+
+A [preset](https://mise.jdx.dev/daemons/presets.html), such as PostgreSQL,
+shows where it keeps its data and how much there is. From its context menu,
+`Reveal Daemon Data` opens that directory, and `Reset Daemon Data...` gives it
+fresh data, as the mise docs describe: after a confirmation, it stops the
+daemon, deletes its data directory and starts it again.
+
 From the panel title bar, you can start or stop all the daemons of the project
 (for mise, the [`default` group](https://mise.jdx.dev/daemons.html#groups) or
 every daemon), open the pitchfork dashboard (`pitchfork tui`) in an editor

@@ -1,12 +1,16 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import { parse } from "toml-v1";
 import type { MiseService } from "./miseService";
 import {
 	type Daemon,
+	type DaemonGroup,
 	daemonCommandError,
+	declaredGroups,
 	GLOBAL_NAMESPACE,
 	isDaemonActive,
+	isResettableDataDir,
 	isVersionAtLeast,
 	MIN_PITCHFORK_VERSION,
 	type MiseDaemonEntry,
@@ -23,6 +27,24 @@ import { expandPath, locateCommand } from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import { safeExec } from "./utils/shell";
 
+/** A parsed TOML file, or `undefined` when it does not parse */
+async function readToml(file: string): Promise<unknown> {
+	try {
+		return parse(await readFile(file, "utf8"));
+	} catch {
+		return undefined;
+	}
+}
+
+/** One group of each name and kind: the first, from the closest config */
+const uniqueGroups = (groups: DaemonGroup[]): DaemonGroup[] =>
+	groups.filter(
+		(group, index) =>
+			groups.findIndex(
+				(other) => other.kind === group.kind && other.name === group.name,
+			) === index,
+	);
+
 /** `mise daemons register`, qualified daemon ids and `--all` came with 2026.9.12 */
 const MIN_MISE_VERSION_FOR_DAEMONS = [2026, 9, 12] as const;
 
@@ -35,6 +57,7 @@ export type PitchforkBinary = {
 
 export type DaemonsState = {
 	daemons: Daemon[];
+	groups: DaemonGroup[];
 	pitchfork?: PitchforkBinary;
 	/** whether the pitchfork supervisor runs, which `pitchfork list` needs */
 	supervisor: "up" | "down" | "unknown";
@@ -70,13 +93,15 @@ export class DaemonsService {
 	}
 
 	async load(): Promise<DaemonsState> {
-		const [miseDaemons, pitchfork] = await Promise.all([
+		const [miseDaemons, pitchfork, miseGroups] = await Promise.all([
 			this.listMiseDaemons(),
 			this.findPitchfork(),
+			this.listMiseGroups(),
 		]);
 		if (!pitchfork?.supported) {
 			return {
 				daemons: mergeDaemons(miseDaemons, [], undefined),
+				groups: miseGroups,
 				pitchfork,
 				supervisor: "unknown",
 			};
@@ -119,6 +144,7 @@ export class DaemonsService {
 
 		return {
 			daemons: mergeDaemons(miseDaemons, configured, listed),
+			groups: [...miseGroups, ...(await this.listPitchforkGroups(folder))],
 			pitchfork,
 			supervisor,
 			webUi: status?.web_ui ?? undefined,
@@ -155,6 +181,44 @@ export class DaemonsService {
 			logger.info("Could not list the daemons of mise", error);
 			return [];
 		}
+	}
+
+	/** The `[daemon_groups]` of the mise configs, the closest config first */
+	private async listMiseGroups(): Promise<DaemonGroup[]> {
+		if (!(await this.supportsMiseDaemons())) {
+			return [];
+		}
+		const files = (await this.miseService.getMiseConfigFiles().catch(() => []))
+			.map((file) => expandPath(file.path))
+			.filter((file) => file.endsWith(".toml"));
+		return uniqueGroups(
+			(
+				await Promise.all(
+					files.map(async (file) =>
+						declaredGroups(await readToml(file), "mise", file),
+					),
+				)
+			).flat(),
+		);
+	}
+
+	/** The `[groups]` of the pitchfork configs of a project */
+	private async listPitchforkGroups(folder: string): Promise<DaemonGroup[]> {
+		if (!folder) {
+			return [];
+		}
+		const files = pitchforkConfigCandidates(folder, "").filter((file) =>
+			existsSync(file),
+		);
+		return uniqueGroups(
+			(
+				await Promise.all(
+					files.map(async (file) =>
+						declaredGroups(await readToml(file), "pitchfork", file),
+					),
+				)
+			).flat(),
+		);
 	}
 
 	/**
@@ -261,6 +325,53 @@ export class DaemonsService {
 			throw new DaemonCommandError("pitchfork is not installed");
 		}
 		await this.execPitchfork(pitchfork, [action, daemon.id], { autoStart });
+	}
+
+	/** Start, stop or restart the daemons of a group */
+	async runGroup(
+		action: DaemonAction,
+		group: DaemonGroup,
+		pitchfork: PitchforkBinary | undefined,
+	): Promise<void> {
+		const autoStart = action !== "stop";
+		if (group.kind === "mise") {
+			await this.execMiseDaemons([action, "--group", group.name], {
+				autoStart,
+			});
+			return;
+		}
+		if (!pitchfork) {
+			throw new DaemonCommandError("pitchfork is not installed");
+		}
+		await this.execPitchfork(pitchfork, [action, "--group", group.name], {
+			autoStart,
+		});
+	}
+
+	/**
+	 * Reset the data of a preset, as the mise docs say: stop it, remove its
+	 * data directory (the directory itself: mise refuses to start a preset
+	 * whose directory lacks the marker it writes), and start it, which
+	 * initializes fresh data.
+	 */
+	async resetData(daemon: Daemon): Promise<void> {
+		const { dataDir } = daemon;
+		const folders = this.folder() ? [this.folder() as string] : [];
+		if (
+			daemon.kind !== "mise" ||
+			!dataDir ||
+			!isResettableDataDir(dataDir, [os.homedir(), ...folders])
+		) {
+			throw new DaemonCommandError(
+				`${daemon.name} has no data directory that can be reset`,
+			);
+		}
+		if (isDaemonActive(daemon)) {
+			await this.execMiseDaemons(["stop", daemon.id]);
+		}
+		logger.info(`Removing the data of ${daemon.id}: ${dataDir}`);
+		await rm(dataDir, { recursive: true, force: true });
+		await this.execMiseDaemons(["start", daemon.id], { autoStart: true });
 	}
 
 	/**
