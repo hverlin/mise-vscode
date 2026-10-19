@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+	deprecatedTeraFilters,
+	deprecatedTeraTests,
 	getTeraCompletionContext,
 	getTeraHoverInformation,
 	teraFilters,
@@ -32,6 +34,15 @@ describe("getTeraCompletionContext", () => {
 		);
 		expect(getTeraCompletionContext("{% if this ")).toBe("expression");
 	});
+
+	it("completes nothing in a string literal", () => {
+		expect(getTeraCompletionContext("{{ exec(command='ls | ")).toBe("string");
+		expect(getTeraCompletionContext('{% if x == "this is ')).toBe("string");
+		expect(
+			getTeraCompletionContext("{{ read_json(path='p.json')['a'] | "),
+		).toBe("filter");
+		expect(getTeraCompletionContext("{{ 'a' }} {{ x | ")).toBe("filter");
+	});
 });
 
 describe("getTeraHoverInformation", () => {
@@ -57,16 +68,18 @@ describe("getTeraHoverInformation", () => {
 		expect(hover("env", "{{ ", ".HOME }}")).toContain("environment");
 		expect(hover("HOME", "{{ env.", " }}")).toBeUndefined();
 		expect(hover("unknown", "{{ x | ")).toBeUndefined();
+		expect(hover("lower", "{{ exec(command='ls | ")).toBeUndefined();
+		expect(hover("slug", "{{ x | ")).toContain("slug");
 	});
 });
 
 describe("Tera keywords", () => {
 	it("suggests nothing deprecated", () => {
 		for (const filter of teraFilters) {
-			expect(hover(filter.name, "{{ x | ")).not.toContain("deprecated");
+			expect(Object.keys(deprecatedTeraFilters)).not.toContain(filter.name);
 		}
 		for (const test of teraTests) {
-			expect(hover(test.name, "{% if x is ")).not.toContain("deprecated");
+			expect(Object.keys(deprecatedTeraTests)).not.toContain(test.name);
 		}
 	});
 

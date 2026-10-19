@@ -3,6 +3,7 @@
 FILTER = "{{ config_root | }}"
 TEST = "{% if config_root is %}yes{% endif %}"
 NOT_TEST = "{% if config_root is not %}yes{% endif %}"
+HOVER_TEST = "{% if config_root is defined %}yes{% endif %}"
 EXPRESSION = "{{  }}"
 FUNCTION = "{{ read_json(path='package.json')['name'] }}"
 DEPRECATED = "{{ 3 | as_str }}"

@@ -108,4 +108,9 @@ suite("Tera Completion Test Suite", function () {
 		const asStr = await hoverAt(after("DEPRECATED", "| as_"));
 		assert.match(asStr, /deprecated: use `str` instead/);
 	});
+
+	test("explains a test, in a tag", async () => {
+		const defined = await hoverAt(after("HOVER_TEST", "is def"));
+		assert.match(defined, /The variable is defined/);
+	});
 });

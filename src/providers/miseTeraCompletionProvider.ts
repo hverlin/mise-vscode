@@ -36,11 +36,12 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 			return;
 		}
 
-		if (!this.isInTomlString(document, position)) {
+		// cheaper than finding whether a multiline string holds the position
+		if (!this.isInTeraContext(linePrefix)) {
 			return;
 		}
 
-		if (!this.isInTeraContext(linePrefix)) {
+		if (!this.isInTomlString(document, position)) {
 			return;
 		}
 
@@ -49,6 +50,7 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 		// `{% filter %}`
 		if (
 			context === "attribute" ||
+			context === "string" ||
 			(completionContext?.triggerCharacter === " " && context === "expression")
 		) {
 			return;
@@ -263,34 +265,27 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 	}
 }
 
+/** Whether a position is between `{{` and `}}`, or `{%` and `%}`, on its line */
 const isInsideTeraExpression = (
 	document: vscode.TextDocument,
 	position: vscode.Position,
 ): boolean => {
 	const line = document.lineAt(position.line).text;
-	let openBraceIndex = -1;
-	let closeBraceIndex = -1;
-
-	for (let i = position.character; i >= 0; i--) {
-		if (line.substring(i - 1, i + 1) === "{{") {
-			openBraceIndex = i - 1;
-			break;
-		}
-	}
-
-	for (let i = position.character; i < line.length - 1; i++) {
-		if (line.substring(i, i + 2) === "}}") {
-			closeBraceIndex = i;
-			break;
-		}
-	}
-
+	const before = line.slice(0, position.character);
+	const after = line.slice(position.character);
 	return (
-		openBraceIndex !== -1 &&
-		closeBraceIndex !== -1 &&
-		position.character > openBraceIndex &&
-		position.character < closeBraceIndex
-	);
+		[
+			["{{", "}}"],
+			["{%", "%}"],
+		] as const
+	).some(([open, close]) => {
+		const opened = before.lastIndexOf(open);
+		return (
+			opened !== -1 &&
+			!before.slice(opened).includes(close) &&
+			after.includes(close)
+		);
+	});
 };
 
 export const createTeraHoverProvider = (

@@ -30,7 +30,7 @@ export const teraVariables = [
 	{
 		name: "config_source",
 		detail:
-			"Absolute path of the config file the template is in, as reached: symlinks are not resolved",
+			"Absolute path of the config file the template is in, as reached: symlinks are not resolved. Not available in task run scripts",
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
@@ -52,7 +52,7 @@ export const teraVariables = [
 	{
 		name: "tools",
 		detail:
-			"Access installed tool information (example: tools.node.version, tools.node.install_path)",
+			"Access installed tool information (example: tools.node.version, tools.node.path)",
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
@@ -79,6 +79,12 @@ export const teraVariables = [
 	{
 		name: "xdg_state_home",
 		detail: "XDG state home directory",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
+		name: "loop",
+		detail:
+			"Inside a for loop: loop.index, loop.index0, loop.first, loop.last, loop.length",
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
@@ -419,7 +425,7 @@ export const teraTests = [
  * The Tera v1 filters and tests mise still accepts, with a warning, until
  * 2027.4.0: not suggested, but explained on hover
  */
-const deprecatedTeraFilters: Record<string, string> = {
+export const deprecatedTeraFilters: Record<string, string> = {
 	as_str: "`str`",
 	escape: "`escape_html`",
 	linebreaksbr: "`newlines_to_br`",
@@ -431,9 +437,15 @@ const deprecatedTeraFilters: Record<string, string> = {
 	map: "`[item.name for item in items]`",
 	filter: "`[item for item in items if item.active]`",
 };
-const deprecatedTeraTests: Record<string, string> = {
+export const deprecatedTeraTests: Record<string, string> = {
 	object: "`map`",
 	divisibleby: "`divisible_by(divisor=...)`",
+};
+
+/** Other names of filters, explained on hover but not suggested twice */
+const teraFilterAliases: Record<string, string> = {
+	slug: "slugify",
+	filesizeformat: "filesize_format",
 };
 
 const deprecated = (kind: string, name: string, replacement: string) =>
@@ -454,6 +466,7 @@ export const teraKeywords = [
 	"continue",
 	"set",
 	"set_global",
+	"endset",
 	"filter",
 	"endfilter",
 	"component",
@@ -465,6 +478,9 @@ export const teraKeywords = [
 	"not",
 	"in",
 	"is",
+	"true",
+	"false",
+	"none",
 ].map((keyword) => ({
 	name: keyword,
 	kind: vscode.CompletionItemKind.Keyword,
@@ -475,7 +491,28 @@ export type TeraCompletionContext =
 	| "filter"
 	| "test"
 	| "attribute"
+	| "string"
 	| "expression";
+
+/**
+ * Whether text ends inside a string literal of the last Tera expression or
+ * tag, such as `{{ exec(command='ls | `
+ */
+function isInTeraString(text: string): boolean {
+	const start = Math.max(text.lastIndexOf("{{"), text.lastIndexOf("{%"));
+	if (start === -1) {
+		return false;
+	}
+	let quote: string | undefined;
+	for (const char of text.slice(start + 2)) {
+		if (quote) {
+			quote = char === quote ? undefined : quote;
+		} else if (char === "'" || char === '"' || char === "`") {
+			quote = char;
+		}
+	}
+	return quote !== undefined;
+}
 
 /** `{% filter upper %}` applies a filter to a block */
 const FILTER_TAG = /\{%-?\s*filter\s+$/;
@@ -483,6 +520,9 @@ const FILTER_TAG = /\{%-?\s*filter\s+$/;
 export function getTeraCompletionContext(
 	linePrefix: string,
 ): TeraCompletionContext {
+	if (isInTeraString(linePrefix)) {
+		return "string";
+	}
 	const beforeWord = linePrefix.replace(/\w*$/, "");
 	if (/\|\s*$/.test(beforeWord) || FILTER_TAG.test(beforeWord)) {
 		return "filter";
@@ -508,11 +548,14 @@ export function getTeraHoverInformation(
 	textBefore: string,
 	textAfter: string,
 ): MarkdownString | undefined {
-	const named = <T extends { name: string }>(entries: T[]) =>
-		entries.find((entry) => entry.name === word);
+	const named = <T extends { name: string }>(entries: T[], name = word) =>
+		entries.find((entry) => entry.name === name);
 
+	if (isInTeraString(textBefore)) {
+		return undefined;
+	}
 	if (/\|\s*$/.test(textBefore) || FILTER_TAG.test(textBefore)) {
-		const filter = named(teraFilters);
+		const filter = named(teraFilters, teraFilterAliases[word] ?? word);
 		const replacement = deprecatedTeraFilters[word];
 		return filter
 			? hoverOf(filter)
