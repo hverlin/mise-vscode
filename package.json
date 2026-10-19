@@ -712,17 +712,20 @@
         {
           "id": "miseTasksView",
           "name": "Tasks",
-          "when": "!isWeb"
+          "when": "!isWeb",
+          "icon": "$(checklist)"
         },
         {
           "id": "miseToolsView",
           "name": "Tools",
-          "when": "!isWeb"
+          "when": "!isWeb",
+          "icon": "$(tools)"
         },
         {
           "id": "miseEnvsView",
           "name": "Environment Variables",
-          "when": "!isWeb"
+          "when": "!isWeb",
+          "icon": "$(symbol-variable)"
         },
         {
           "id": "miseDaemonsView",
@@ -734,7 +737,8 @@
           "id": "miseBootstrapView",
           "name": "Bootstrap",
           "when": "!isWeb",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "icon": "$(rocket)"
         }
       ]
     },
