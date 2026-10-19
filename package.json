@@ -30,7 +30,9 @@
     "tasks",
     "envs",
     "environment variables",
-    "scripts"
+    "scripts",
+    "pitchfork",
+    "daemons"
   ],
   "icon": "resources/icon.png",
   "main": "./dist/extension.js",
