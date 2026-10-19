@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.27.0](https://github.com/hverlin/mise-vscode/compare/v1.26.1...v1.27.0) (2026-10-19)
+
+
+### Features
+
+* config diagnostics for monorepo projects and open config files ([#345](https://github.com/hverlin/mise-vscode/issues/345)) ([f576afd](https://github.com/hverlin/mise-vscode/commit/f576afd94931ec35b8e44a55e9cf6857cf4a2d2f))
+* lockfile code lenses ([#340](https://github.com/hverlin/mise-vscode/issues/340)) ([f964a7b](https://github.com/hverlin/mise-vscode/commit/f964a7b95cff4155d1e3fe00d2a1935e3fc2084b))
+* new task fields and run affected tasks ([#332](https://github.com/hverlin/mise-vscode/issues/332)) ([759824c](https://github.com/hverlin/mise-vscode/commit/759824cdac72ad6bf3e0d94696dd8c06c9487c0b))
+* registry descriptions in tool-name completions ([#344](https://github.com/hverlin/mise-vscode/issues/344)) ([e5c99ba](https://github.com/hverlin/mise-vscode/commit/e5c99ba0cf77a7fad6f697bde0f39d20e88575eb))
+* show task problems and run project checks ([#334](https://github.com/hverlin/mise-vscode/issues/334)) ([bf8727a](https://github.com/hverlin/mise-vscode/commit/bf8727abb86777e4b46bd0b1dc86fb412798187a))
+* tool release notes and website links, package registry search ([#338](https://github.com/hverlin/mise-vscode/issues/338)) ([0132e6d](https://github.com/hverlin/mise-vscode/commit/0132e6d91a8e325b92cc07476a019633d531d518))
+* unknown and deprecated config keys, new #MISE header keys ([#342](https://github.com/hverlin/mise-vscode/issues/342)) ([50698cd](https://github.com/hverlin/mise-vscode/commit/50698cdebe8a8b5a0dea2af19355844d2f46b602))
+
+
+### Bug Fixes
+
+* do not report lazy tools as missing ([#335](https://github.com/hverlin/mise-vscode/issues/335)) ([0c67868](https://github.com/hverlin/mise-vscode/commit/0c67868d2bd32fecdd3493ca2b5debb5b234c6ad))
+* mask the env values with smaller dots ([#339](https://github.com/hverlin/mise-vscode/issues/339)) ([6246c92](https://github.com/hverlin/mise-vscode/commit/6246c92829b74c5b10f64ff519cb5c58c207923c))
+* paranoid mode categories and env file trust ([#341](https://github.com/hverlin/mise-vscode/issues/341)) ([c7ef199](https://github.com/hverlin/mise-vscode/commit/c7ef1997e0a8d2bcf8223098b2c75d7797f635f3))
+* reload when an included config file or a miserc file changes ([#337](https://github.com/hverlin/mise-vscode/issues/337)) ([75a40e5](https://github.com/hverlin/mise-vscode/commit/75a40e57f25cb5fc9e8a6a75b1370b5caddea3be))
+* Tombi reporting mise config problems twice, config diagnostics review follow-ups ([#343](https://github.com/hverlin/mise-vscode/issues/343)) ([3132e52](https://github.com/hverlin/mise-vscode/commit/3132e523d0f985844b8bafab1194728869ad84a2))
+
 ## [1.26.1](https://github.com/hverlin/mise-vscode/compare/v1.26.0...v1.26.1) (2026-10-17)
 
 
