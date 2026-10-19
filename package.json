@@ -1576,7 +1576,7 @@
         },
         {
           "command": "mise.startDaemon",
-          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive/",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive(?!.*;disabled)/",
           "group": "inline@1"
         },
         {
@@ -1586,7 +1586,7 @@
         },
         {
           "command": "mise.restartDaemon",
-          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active(?!.*;disabled)/",
           "group": "inline@2"
         },
         {
@@ -1601,7 +1601,7 @@
         },
         {
           "command": "mise.startDaemon",
-          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive/",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive(?!.*;disabled)/",
           "group": "1_actions@1"
         },
         {
@@ -1611,7 +1611,7 @@
         },
         {
           "command": "mise.restartDaemon",
-          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active/",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;active(?!.*;disabled)/",
           "group": "1_actions@2"
         },
         {
@@ -1673,6 +1673,11 @@
           "command": "mise.enableDaemon",
           "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;disabled/ && mise.hasPitchfork",
           "group": "4_pitchfork@1"
+        },
+        {
+          "command": "mise.enableDaemon",
+          "when": "view == miseDaemonsView && viewItem =~ /^miseDaemon;/ && viewItem =~ /;inactive.*;disabled/",
+          "group": "inline@1"
         }
       ],
       "editor/lineNumber/context": [

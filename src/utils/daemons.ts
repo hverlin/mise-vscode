@@ -689,9 +689,13 @@ export function summarizeDaemons(daemons: Daemon[]): {
 
 /** What the view shows next to a daemon: its status, and its port */
 export function describeDaemon(daemon: Daemon, now = new Date()): string {
-	const parts = [daemon.disabled ? "disabled" : daemon.status];
+	const parts = [daemon.status];
 	if (daemon.port !== undefined && isDaemonActive(daemon)) {
 		parts.push(`:${daemon.port}`);
+	}
+	// disabling does not stop a daemon that runs
+	if (daemon.disabled) {
+		parts.push("disabled");
 	}
 	if (daemon.cron?.nextRun && !isDaemonActive(daemon) && !daemon.disabled) {
 		parts.push(`next ${describeNextRun(daemon.cron.nextRun, now)}`);

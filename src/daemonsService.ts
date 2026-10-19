@@ -231,6 +231,21 @@ export class DaemonsService {
 			}
 			return parsed.get(file) as Promise<unknown>;
 		};
+		// the configs of a namespace, looked for once
+		const candidates = new Map<string, string[]>();
+		const configsOf = (namespace: string) => {
+			if (!candidates.has(namespace)) {
+				candidates.set(
+					namespace,
+					folder
+						? pitchforkConfigCandidates(folder, namespace).filter((file) =>
+								existsSync(file),
+							)
+						: [],
+				);
+			}
+			return candidates.get(namespace) as string[];
+		};
 		await Promise.all(
 			daemons.map(async (daemon) => {
 				const files =
@@ -238,11 +253,7 @@ export class DaemonsService {
 						? daemon.source
 							? [expandPath(daemon.source)]
 							: []
-						: folder
-							? pitchforkConfigCandidates(folder, daemon.namespace).filter(
-									(file) => existsSync(file),
-								)
-							: [];
+						: configsOf(daemon.namespace);
 				let schedule: string | undefined;
 				for (const file of files) {
 					const config = await read(file);
@@ -445,10 +456,19 @@ export class DaemonsService {
 		if (!pitchfork) {
 			throw new DaemonCommandError("pitchfork is not installed");
 		}
-		await this.execPitchfork(pitchfork, [
-			enabled ? "enable" : "disable",
-			daemon.id,
-		]);
+		try {
+			await this.execPitchfork(pitchfork, [
+				enabled ? "enable" : "disable",
+				daemon.id,
+			]);
+		} catch (error) {
+			if (/not found/i.test((error as Error).message)) {
+				throw new DaemonCommandError(
+					"the supervisor does not know it yet: start it once first",
+				);
+			}
+			throw error;
+		}
 	}
 
 	/**

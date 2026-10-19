@@ -64,14 +64,18 @@ type TreeItem =
 	| GlobalDaemonsItem
 	| MessageItem;
 
-function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
+function daemonIcon(
+	daemon: Daemon,
+	pending: boolean,
+	supervisorUp: boolean,
+): vscode.ThemeIcon {
 	if (
 		pending ||
 		["waiting", "stopping", "restarting"].includes(daemon.status)
 	) {
 		return new vscode.ThemeIcon("loading~spin");
 	}
-	if (daemon.disabled) {
+	if (daemon.disabled && !isDaemonActive(daemon)) {
 		return new vscode.ThemeIcon("circle-slash");
 	}
 	if (daemon.oneshot && daemon.status === "completed") {
@@ -92,8 +96,8 @@ function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 			new vscode.ThemeColor("testing.iconFailed"),
 		);
 	}
-	// waiting for its next run
-	if (daemon.cron) {
+	// waiting for its next run, which only a supervisor makes
+	if (daemon.cron && supervisorUp) {
 		return new vscode.ThemeIcon("watch");
 	}
 	return new vscode.ThemeIcon("circle-large-outline");
@@ -101,7 +105,9 @@ function daemonIcon(daemon: Daemon, pending: boolean): vscode.ThemeIcon {
 
 export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 	const lines = [`**${daemon.name}** ${markdownCodeSpan(daemon.id)}`, ""];
-	lines.push(`Status: ${daemon.disabled ? "disabled" : daemon.status}`);
+	lines.push(
+		`Status: ${daemon.status}${daemon.disabled ? " (disabled: pitchfork does not start it, nor restart it)" : ""}`,
+	);
 	if (daemon.error) {
 		lines.push(`Error: ${daemon.error}`);
 	}
@@ -138,6 +144,9 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 					: []),
 			].join(" · "),
 		);
+		lines.push(
+			"It runs on schedule while the pitchfork supervisor runs and knows the project",
+		);
 	}
 	const declaredIn = daemon.source
 		? markdownCodeSpan(daemon.source)
@@ -159,12 +168,14 @@ export class DaemonItem extends vscode.TreeItem {
 		pending: string | undefined,
 		/** a daemon also listed under a group gets an id of its own there */
 		idPrefix = "",
+		/** pitchfork can only disable a daemon its supervisor knows */
+		supervisorUp = false,
 	) {
 		super(daemon.name, vscode.TreeItemCollapsibleState.None);
 		this.id = `${idPrefix}${daemon.id}`;
 		this.description = pending ?? describeDaemon(daemon);
 		this.tooltip = daemonTooltip(daemon);
-		this.iconPath = daemonIcon(daemon, !!pending);
+		this.iconPath = daemonIcon(daemon, !!pending, supervisorUp);
 		// e.g. `miseDaemon;active;url`, matched with `viewItem =~ /;active/`
 		this.contextValue = [
 			"miseDaemon",
@@ -176,7 +187,10 @@ export class DaemonItem extends vscode.TreeItem {
 			...(daemon.dataDir && existsSync(daemon.dataDir) && daemon.kind === "mise"
 				? ["resettable"]
 				: []),
-			daemon.disabled ? "disabled" : "enabled",
+			// a shared server disabled would be skipped by every checkout
+			...(supervisorUp && daemon.kind !== "provider"
+				? [daemon.disabled ? "disabled" : "enabled"]
+				: []),
 		].join(";");
 		this.command = {
 			command: MISE_OPEN_DAEMON_DEFINITION,
@@ -343,7 +357,34 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 	}
 
 	/** Run an action on a daemon, showing it as pending meanwhile */
-	runWithPending(daemon: Daemon, action: DaemonAction) {
+	async runWithPending(daemon: Daemon, action: DaemonAction) {
+		if (daemon.disabled && action !== "stop") {
+			// pitchfork would ignore it without a word
+			const enable = "Enable";
+			const selection = await vscode.window.showInformationMessage(
+				`${daemon.name} is disabled: pitchfork does not start it.`,
+				enable,
+			);
+			if (selection === enable) {
+				await this.setEnabledWithPending(daemon, true);
+			}
+			return;
+		}
+		if (daemon.kind === "provider" && action !== "start") {
+			const confirm = action === "stop" ? "Stop" : "Restart";
+			const selection = await vscode.window.showWarningMessage(
+				`${confirm} the shared server ${daemon.name}?`,
+				{
+					modal: true,
+					detail:
+						"Every checkout that uses it loses its database until it runs again.",
+				},
+				confirm,
+			);
+			if (selection !== confirm) {
+				return;
+			}
+		}
 		return this.runPending(
 			[daemon.id],
 			PENDING_LABELS[action],
@@ -492,8 +533,9 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 				),
 			);
 		}
+		const supervisorUp = this._state.supervisor === "up";
 		const toItem = (daemon: Daemon) =>
-			new DaemonItem(daemon, this.pending.get(daemon.id));
+			new DaemonItem(daemon, this.pending.get(daemon.id), "", supervisorUp);
 		const groupItems = groups
 			.map((group) => {
 				const members = groupDaemons(group, groups, daemons);
@@ -505,6 +547,7 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 								daemon,
 								this.pending.get(daemon.id),
 								`group:${groupKey(group)}/`,
+								supervisorUp,
 							),
 					),
 					this.pending.get(groupKey(group)),
@@ -548,7 +591,10 @@ async function resolveDaemon(
 	}
 
 	await provider.refresh();
-	const candidates = (provider.state?.daemons ?? []).filter(filter);
+	const candidates = [
+		...(provider.state?.daemons ?? []),
+		...(provider.state?.sharedServers ?? []),
+	].filter(filter);
 	if (!candidates.length) {
 		vscode.window.showInformationMessage("No daemon to pick from.");
 		return undefined;
