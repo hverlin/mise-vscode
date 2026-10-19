@@ -69,7 +69,7 @@ jobs:
           - group: core
             labels: default tool-versions bootstrap broken-config command-injection symlinked-workspace paranoid-trust paranoid-categories paranoid-env-files env-on-activation
           - group: workspaces
-            labels: projects custom-extensions task-cache task-diagnostics config-diagnostics lockfile monorepo multi-root-python
+            labels: projects custom-extensions task-cache task-diagnostics config-diagnostics daemons lockfile monorepo multi-root-python
           # multi-root and go share their toolchain store, so the go
           # downloads happen once when they run on the same runner
           - group: go

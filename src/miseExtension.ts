@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import path from "node:path";
 import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import { version } from "../package.json";
@@ -46,6 +47,7 @@ import {
 	shouldShowNotificationIfMissingTools,
 	shouldTrustOwnEditsInParanoidMode,
 } from "./configuration";
+import { DaemonsService } from "./daemonsService";
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
 import { MiseFileWatcher } from "./miseFileWatcher";
 import { MiseService } from "./miseService";
@@ -58,6 +60,14 @@ import {
 	ConfigKeyQuickFixProvider,
 } from "./providers/configKeyDiagnostics";
 import { ConfigRootsCompletionProvider } from "./providers/configRootsCompletionProvider";
+import { DaemonCodeLensProvider } from "./providers/daemonCodeLensProvider";
+import {
+	DAEMONS_VIEW_ID,
+	MiseDaemonsProvider,
+	pollWhileVisible,
+	registerDaemonsCommands,
+} from "./providers/daemonsProvider";
+import { DaemonsSession } from "./providers/daemonsSession";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
@@ -99,6 +109,7 @@ import {
 } from "./providers/toolsProvider";
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
+import { pitchforkUserConfig } from "./utils/daemons";
 import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
 import { getMissingTools } from "./utils/lazyTools";
@@ -312,6 +323,47 @@ export class MiseExtension {
 		registerEnvsCommands(context, envsProvider, this.miseService);
 		registerBootstrapCommands(context, this.miseService);
 
+		const daemonsService = new DaemonsService(this.miseService);
+		const daemonsProvider = new MiseDaemonsProvider(daemonsService);
+		const daemonsTreeView = vscode.window.createTreeView(DAEMONS_VIEW_ID, {
+			treeDataProvider: daemonsProvider,
+		});
+		const daemonsSession = new DaemonsSession(daemonsService);
+		registerDaemonsCommands(context, daemonsProvider, daemonsService, () =>
+			this.miseService.getCurrentWorkspaceFolderPath(),
+		);
+		// the mise configs reload everything, see MiseFileWatcher
+		const pitchforkConfigWatchers = [
+			vscode.workspace.createFileSystemWatcher(
+				"**/{pitchfork,pitchfork.local}.toml",
+			),
+			vscode.workspace.createFileSystemWatcher(
+				new vscode.RelativePattern(
+					vscode.Uri.file(path.dirname(pitchforkUserConfig())),
+					"config.toml",
+				),
+			),
+		];
+		const onPitchforkConfigChange = () => {
+			void daemonsProvider.refresh();
+			void daemonsSession.sync();
+		};
+		for (const watcher of pitchforkConfigWatchers) {
+			watcher.onDidChange(onPitchforkConfigChange);
+			watcher.onDidCreate(onPitchforkConfigChange);
+			watcher.onDidDelete(onPitchforkConfigChange);
+		}
+		context.subscriptions.push(
+			daemonsTreeView,
+			pollWhileVisible(daemonsTreeView, daemonsProvider),
+			daemonsSession,
+			...pitchforkConfigWatchers,
+			vscode.languages.registerCodeLensProvider(
+				{ language: "toml" },
+				new DaemonCodeLensProvider(daemonsProvider),
+			),
+		);
+
 		const taskValidationDiagnostics = new TaskValidationDiagnostics(
 			this.miseService,
 		);
@@ -419,6 +471,8 @@ export class MiseExtension {
 				// (extension disabled, binary not approved) to clear them
 				taskValidationDiagnostics.scheduleRefresh();
 				configKeyDiagnostics.scheduleRefresh();
+				void daemonsProvider.refresh();
+				void daemonsSession.sync();
 			}
 
 			void this.checkForInvalidMiseConfigFiles();
@@ -585,8 +639,9 @@ export class MiseExtension {
 					if (!selectedUri) {
 						return;
 					}
-					const path = selectedUri as string;
-					vscode.window.showTextDocument(vscode.Uri.file(path));
+					vscode.window.showTextDocument(
+						vscode.Uri.file(selectedUri as string),
+					);
 				},
 			),
 		);

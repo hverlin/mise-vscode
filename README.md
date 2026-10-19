@@ -102,6 +102,14 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📍 Quick navigation to environment variable definitions
 - 🔄 Automatically load environment variables from `mise.toml` files in VS Code
 
+### [Daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
+
+- 🚦 View the [mise daemons](https://mise.jdx.dev/daemons.html) and
+  [pitchfork](https://pitchfork.jdx.dev/) daemons of the project, with their
+  status
+- ▶️ Start/Stop/Restart them, follow their logs, open them in the browser
+- 🔁 Optionally start and stop them with the workspace (`auto = ["start", "stop"]`)
+
 ### Snippets
 
 - 📝 `mise-task` snippets to create tasks in `mise.toml` and task files. They
@@ -130,6 +138,7 @@ for more information.
 - [Tasks](https://hverlin.github.io/mise-vscode/reference/tasks/)
 - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
 - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
+- [Daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
 - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
 
 ### Guides

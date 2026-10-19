@@ -63,6 +63,16 @@ const paranoidEnvFilesStateDir = path.join(
 );
 fs.rmSync(paranoidEnvFilesStateDir, { recursive: true, force: true });
 
+// The daemons suite runs a pitchfork supervisor of its own, with none of the
+// machine's daemons, and starts from no registered daemon on every run. Its
+// socket path has to fit in 104 bytes, which the temp dir of macOS does not
+// leave room for.
+const daemonsStateDir = path.join(
+	process.platform === "win32" ? os.tmpdir() : "/tmp",
+	"mise-vscode-e2e-daemons",
+);
+fs.rmSync(daemonsStateDir, { recursive: true, force: true });
+
 const multiRootWorkspaceFile = generatedWorkspaceFile(
 	"multi-root-workspace",
 	"multi-root",
@@ -625,6 +635,24 @@ module.exports = defineConfig([
 		mocha: {
 			require: ["tsx/cjs"],
 			timeout: 60_000,
+		},
+	},
+	{
+		label: "daemons",
+		files: "src/e2e-tests/daemons/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "daemons-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+			MISE_STATE_DIR: path.join(daemonsStateDir, "mise"),
+			MISE_GLOBAL_CONFIG_FILE: path.join(daemonsStateDir, "config.toml"),
+			PITCHFORK_STATE_DIR: path.join(daemonsStateDir, "pitchfork-state"),
+			PITCHFORK_CONFIG_DIR: path.join(daemonsStateDir, "pitchfork-config"),
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 120_000,
 		},
 	},
 	{
