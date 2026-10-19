@@ -909,7 +909,7 @@ export class MiseExtension {
 			vscode.languages.registerCompletionItemProvider(
 				allTomlFilesSelector,
 				new TeraCompletionProvider(this.miseService),
-				...["{", "%", "|", "."],
+				...["{", "%", "|", ".", " "],
 			),
 		);
 

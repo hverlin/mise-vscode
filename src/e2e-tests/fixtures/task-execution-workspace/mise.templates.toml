@@ -1,0 +1,8 @@
+# mise loads this file only with MISE_ENV=templates
+[env]
+FILTER = "{{ config_root | }}"
+TEST = "{% if config_root is %}yes{% endif %}"
+NOT_TEST = "{% if config_root is not %}yes{% endif %}"
+EXPRESSION = "{{  }}"
+FUNCTION = "{{ read_json(path='package.json')['name'] }}"
+DEPRECATED = "{{ 3 | as_str }}"

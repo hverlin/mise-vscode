@@ -4,10 +4,12 @@ import { isTeraAutoCompletionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import {
+	getTeraCompletionContext,
+	getTeraHoverInformation,
 	teraFilters,
 	teraFunctions,
-	teraHoverInformation,
 	teraKeywords,
+	teraTests,
 	teraVariables,
 } from "./teraKeywords";
 
@@ -20,6 +22,8 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 	async provideCompletionItems(
 		document: vscode.TextDocument,
 		position: vscode.Position,
+		_token?: vscode.CancellationToken,
+		completionContext?: vscode.CompletionContext,
 	) {
 		const lineText = document.lineAt(position).text;
 		const linePrefix = lineText.substring(0, position.character);
@@ -29,6 +33,24 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 		}
 
 		if (!document.fileName.endsWith(".toml")) {
+			return;
+		}
+
+		if (!this.isInTomlString(document, position)) {
+			return;
+		}
+
+		if (!this.isInTeraContext(linePrefix)) {
+			return;
+		}
+
+		const context = getTeraCompletionContext(linePrefix);
+		// a space only triggers the tests after `is`, and the filters of
+		// `{% filter %}`
+		if (
+			context === "attribute" ||
+			(completionContext?.triggerCharacter === " " && context === "expression")
+		) {
 			return;
 		}
 
@@ -42,77 +64,64 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 			}
 		}
 
-		if (!this.isInTomlString(document, position)) {
-			return;
-		}
-
-		if (!this.isInTeraContext(linePrefix)) {
-			return;
-		}
-
-		const items: vscode.CompletionItem[] = [];
 		const stringContext = this.getStringContext(lineText, position.character);
+		const withInsertText = (
+			item: vscode.CompletionItem,
+			insertText?: string,
+		) => {
+			if (insertText) {
+				item.insertText = new vscode.SnippetString(
+					this.adjustInsertText(insertText, stringContext),
+				);
+			}
+			return item;
+		};
 
-		if (this.shouldProvideVariables(linePrefix)) {
-			items.push(
-				...teraVariables.map((v) => {
-					const item = new vscode.CompletionItem(v.name, v.kind);
-					item.detail = v.detail;
-					return item;
-				}),
-			);
+		if (context === "filter") {
+			return teraFilters.map((f) => {
+				const item = new vscode.CompletionItem(
+					f.name,
+					vscode.CompletionItemKind.Method,
+				);
+				item.detail = f.detail;
+				return withInsertText(item, f.insertText);
+			});
 		}
 
-		if (this.shouldProvideFunctions(linePrefix)) {
-			items.push(
-				...teraFunctions.map((f) => {
-					const item = new vscode.CompletionItem(
-						f.name,
-						vscode.CompletionItemKind.Function,
-					);
-					item.detail = f.detail;
-					item.documentation = f.documentation;
-					if (f.insertText) {
-						const adjustedInsertText = this.adjustInsertText(
-							f.insertText,
-							stringContext,
-						);
-						item.insertText = new vscode.SnippetString(adjustedInsertText);
-					}
-					return item;
-				}),
-			);
+		if (context === "test") {
+			const items = teraTests.map((t) => {
+				const item = new vscode.CompletionItem(
+					t.name,
+					vscode.CompletionItemKind.Method,
+				);
+				item.detail = t.detail;
+				return withInsertText(item, t.insertText);
+			});
+			if (!/\bnot\s+\w*$/.test(linePrefix)) {
+				items.push(
+					new vscode.CompletionItem("not", vscode.CompletionItemKind.Keyword),
+				);
+			}
+			return items;
 		}
 
-		if (this.shouldProvideFilters(linePrefix)) {
-			items.push(
-				...teraFilters.map((f) => {
-					const item = new vscode.CompletionItem(
-						f.name,
-						vscode.CompletionItemKind.Method,
-					);
-					item.detail = f.detail;
-					if (f.insertText) {
-						const adjustedInsertText = this.adjustInsertText(
-							f.insertText,
-							stringContext,
-						);
-						item.insertText = new vscode.SnippetString(adjustedInsertText);
-					}
-					return item;
-				}),
-			);
-		}
-
-		if (this.shouldProvideKeywords(linePrefix)) {
-			items.push(
-				...teraKeywords.map((k) => {
-					return new vscode.CompletionItem(k.name, k.kind);
-				}),
-			);
-		}
-
-		return items;
+		return [
+			...teraVariables.map((v) => {
+				const item = new vscode.CompletionItem(v.name, v.kind);
+				item.detail = v.detail;
+				return item;
+			}),
+			...teraFunctions.map((f) => {
+				const item = new vscode.CompletionItem(
+					f.name,
+					vscode.CompletionItemKind.Function,
+				);
+				item.detail = f.detail;
+				item.documentation = f.documentation;
+				return withInsertText(item, f.insertText);
+			}),
+			...teraKeywords.map((k) => new vscode.CompletionItem(k.name, k.kind)),
+		];
 	}
 
 	private isInTomlString(
@@ -252,33 +261,6 @@ export class TeraCompletionProvider implements vscode.CompletionItemProvider {
 	private isInTeraContext(linePrefix: string): boolean {
 		return /\{\{[^}]*$/.test(linePrefix) || /\{%[^%]*$/.test(linePrefix);
 	}
-
-	private shouldProvideVariables(linePrefix: string): boolean {
-		return (
-			!linePrefix.trimEnd().endsWith("|") && !linePrefix.trimEnd().endsWith(".")
-		);
-	}
-
-	private shouldProvideFunctions(linePrefix: string): boolean {
-		return (
-			!linePrefix.trimEnd().endsWith("|") && !linePrefix.trimEnd().endsWith(".")
-		);
-	}
-
-	private shouldProvideFilters(linePrefix: string): boolean {
-		return linePrefix.trimEnd().endsWith("|");
-	}
-
-	private shouldProvideKeywords(linePrefix: string): boolean {
-		if (
-			linePrefix.trimEnd().endsWith("|") ||
-			linePrefix.trimEnd().endsWith(".")
-		) {
-			return false;
-		}
-
-		return /\{%[^%]*$/.test(linePrefix) || /\{\{[^}]*$/.test(linePrefix);
-	}
 }
 
 const isInsideTeraExpression = (
@@ -343,12 +325,12 @@ export const createTeraHoverProvider = (
 				return undefined;
 			}
 
-			const word = document.getText(wordRange);
-
-			const info = teraHoverInformation.get(word);
-			if (info) {
-				return new vscode.Hover([info]);
-			}
-			return undefined;
+			const line = document.lineAt(position.line).text;
+			const info = getTeraHoverInformation(
+				document.getText(wordRange),
+				line.slice(0, wordRange.start.character),
+				line.slice(wordRange.end.character),
+			);
+			return info ? new vscode.Hover([info], wordRange) : undefined;
 		},
 	});
