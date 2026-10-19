@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.28.0](https://github.com/hverlin/mise-vscode/compare/v1.27.0...v1.28.0) (2026-10-19)
+
+
+### Features
+
+* daemon groups and preset data in the Daemons view ([#350](https://github.com/hverlin/mise-vscode/issues/350)) ([cedcc4c](https://github.com/hverlin/mise-vscode/commit/cedcc4c898e0433cf96a67ce7bdc680888f57352))
+* daemon names in mise.toml, mise-daemon snippets ([#347](https://github.com/hverlin/mise-vscode/issues/347)) ([10235a8](https://github.com/hverlin/mise-vscode/commit/10235a822754a887f143a3df77a884a5bdeb40a6))
+* Daemons view for mise and pitchfork daemons ([#346](https://github.com/hverlin/mise-vscode/issues/346)) ([41bc646](https://github.com/hverlin/mise-vscode/commit/41bc646b9decc6f4dd9e98e79d4b24cfed077685))
+* notify daemon failures, daemons in the status bar ([#351](https://github.com/hverlin/mise-vscode/issues/351)) ([ca77fa7](https://github.com/hverlin/mise-vscode/commit/ca77fa717d51a402fca30c9c4a173f55d364ae86))
+* pitchfork extras in the Daemons view ([#353](https://github.com/hverlin/mise-vscode/issues/353)) ([fe437b6](https://github.com/hverlin/mise-vscode/commit/fe437b6ee86d1f55a02c924ee3f79803ee9fb1ed))
+* provide the mise and pitchfork MCP servers to VS Code ([#354](https://github.com/hverlin/mise-vscode/issues/354)) ([657f7d0](https://github.com/hverlin/mise-vscode/commit/657f7d02c23297b7654c0860c7cde16a2eae6057))
+
 ## [1.27.0](https://github.com/hverlin/mise-vscode/compare/v1.26.1...v1.27.0) (2026-10-19)
 
 
