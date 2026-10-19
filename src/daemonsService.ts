@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
-import { readFile, rm } from "node:fs/promises";
+import { readFile, realpath, rm } from "node:fs/promises";
 import os from "node:os";
+import path from "node:path";
 import { parse } from "toml-v1";
+import * as vscode from "vscode";
 import type { MiseService } from "./miseService";
 import {
 	type Daemon,
@@ -15,6 +17,7 @@ import {
 	MIN_PITCHFORK_VERSION,
 	type MiseDaemonEntry,
 	mergeDaemons,
+	mergeGroups,
 	type PitchforkConfigEntry,
 	type PitchforkListEntry,
 	parsePitchforkVersion,
@@ -35,15 +38,6 @@ async function readToml(file: string): Promise<unknown> {
 		return undefined;
 	}
 }
-
-/** One group of each name and kind: the first, from the closest config */
-const uniqueGroups = (groups: DaemonGroup[]): DaemonGroup[] =>
-	groups.filter(
-		(group, index) =>
-			groups.findIndex(
-				(other) => other.kind === group.kind && other.name === group.name,
-			) === index,
-	);
 
 /** `mise daemons register`, qualified daemon ids and `--all` came with 2026.9.12 */
 const MIN_MISE_VERSION_FOR_DAEMONS = [2026, 9, 12] as const;
@@ -80,6 +74,8 @@ export class DaemonCommandError extends Error {}
 export class DaemonsService {
 	/** found again on every reload, see {@link forgetPitchfork} */
 	private pitchforkLookup: Promise<PitchforkBinary | undefined> | undefined;
+	/** the groups of each config file, while it does not parse mid-edit */
+	private lastGroups = new Map<string, DaemonGroup[]>();
 	/** what pitchfork last reported for a folder, while its config is mid-edit */
 	private lastReported = new Map<
 		string,
@@ -183,7 +179,7 @@ export class DaemonsService {
 		}
 	}
 
-	/** The `[daemon_groups]` of the mise configs, the closest config first */
+	/** The `[daemon_groups]` of the mise configs, see mergeGroups */
 	private async listMiseGroups(): Promise<DaemonGroup[]> {
 		if (!(await this.supportsMiseDaemons())) {
 			return [];
@@ -191,34 +187,38 @@ export class DaemonsService {
 		const files = (await this.miseService.getMiseConfigFiles().catch(() => []))
 			.map((file) => expandPath(file.path))
 			.filter((file) => file.endsWith(".toml"));
-		return uniqueGroups(
-			(
-				await Promise.all(
-					files.map(async (file) =>
-						declaredGroups(await readToml(file), "mise", file),
-					),
-				)
-			).flat(),
-		);
+		return mergeGroups(await this.groupsOf(files, "mise"));
 	}
 
-	/** The `[groups]` of the pitchfork configs of a project */
+	/** The `[groups]` of the pitchfork configs of a project, and the user's */
 	private async listPitchforkGroups(folder: string): Promise<DaemonGroup[]> {
 		if (!folder) {
 			return [];
 		}
-		const files = pitchforkConfigCandidates(folder, "").filter((file) =>
-			existsSync(file),
+		const files = [
+			...pitchforkConfigCandidates(folder, ""),
+			...pitchforkConfigCandidates(folder, GLOBAL_NAMESPACE),
+		].filter((file) => existsSync(file));
+		return mergeGroups(await this.groupsOf(files, "pitchfork"));
+	}
+
+	/** The groups of config files, those of a file that does not parse kept */
+	private async groupsOf(
+		files: string[],
+		kind: DaemonGroup["kind"],
+	): Promise<DaemonGroup[]> {
+		const groups = await Promise.all(
+			files.map(async (file) => {
+				const config = await readToml(file);
+				if (config === undefined) {
+					return this.lastGroups.get(file) ?? [];
+				}
+				const declared = declaredGroups(config, kind, file);
+				this.lastGroups.set(file, declared);
+				return declared;
+			}),
 		);
-		return uniqueGroups(
-			(
-				await Promise.all(
-					files.map(async (file) =>
-						declaredGroups(await readToml(file), "pitchfork", file),
-					),
-				)
-			).flat(),
-		);
+		return groups.flat();
 	}
 
 	/**
@@ -327,10 +327,15 @@ export class DaemonsService {
 		await this.execPitchfork(pitchfork, [action, daemon.id], { autoStart });
 	}
 
-	/** Start, stop or restart the daemons of a group */
+	/**
+	 * Start, stop or restart the daemons of a group. pitchfork gets the daemons
+	 * by id: its `--group` would pick the group mise writes into its generated
+	 * config when both have the same name.
+	 */
 	async runGroup(
 		action: DaemonAction,
 		group: DaemonGroup,
+		members: Daemon[],
 		pitchfork: PitchforkBinary | undefined,
 	): Promise<void> {
 		const autoStart = action !== "stop";
@@ -343,9 +348,38 @@ export class DaemonsService {
 		if (!pitchfork) {
 			throw new DaemonCommandError("pitchfork is not installed");
 		}
-		await this.execPitchfork(pitchfork, [action, "--group", group.name], {
-			autoStart,
-		});
+		if (!members.length) {
+			throw new DaemonCommandError(`no daemon of ${group.name} is known`);
+		}
+		await this.execPitchfork(
+			pitchfork,
+			[action, ...members.map((daemon) => daemon.id)],
+			{ autoStart },
+		);
+	}
+
+	/**
+	 * The data directory of a preset, as the filesystem names it, when it can
+	 * be removed to reset it: not one holding the home directory, a workspace
+	 * folder or the daemon's project, which a broken report could name.
+	 */
+	async resettableDataDir(daemon: Daemon): Promise<string | undefined> {
+		if (daemon.kind !== "mise" || !daemon.dataDir) {
+			return undefined;
+		}
+		const real = (file: string) =>
+			realpath(file).catch(() => path.resolve(file));
+		const dataDir = await real(daemon.dataDir);
+		const keep = await Promise.all(
+			[
+				os.homedir(),
+				...(vscode.workspace.workspaceFolders ?? []).map(
+					(folder) => folder.uri.fsPath,
+				),
+				...(daemon.root ? [daemon.root] : []),
+			].map(real),
+		);
+		return isResettableDataDir(dataDir, keep) ? dataDir : undefined;
 	}
 
 	/**
@@ -355,20 +389,14 @@ export class DaemonsService {
 	 * initializes fresh data.
 	 */
 	async resetData(daemon: Daemon): Promise<void> {
-		const { dataDir } = daemon;
-		const folders = this.folder() ? [this.folder() as string] : [];
-		if (
-			daemon.kind !== "mise" ||
-			!dataDir ||
-			!isResettableDataDir(dataDir, [os.homedir(), ...folders])
-		) {
+		const dataDir = await this.resettableDataDir(daemon);
+		if (!dataDir) {
 			throw new DaemonCommandError(
 				`${daemon.name} has no data directory that can be reset`,
 			);
 		}
-		if (isDaemonActive(daemon)) {
-			await this.execMiseDaemons(["stop", daemon.id]);
-		}
+		// whatever the view last saw: it may have been started since
+		await this.execMiseDaemons(["stop", daemon.id]);
 		logger.info(`Removing the data of ${daemon.id}: ${dataDir}`);
 		await rm(dataDir, { recursive: true, force: true });
 		await this.execMiseDaemons(["start", daemon.id], { autoStart: true });
