@@ -62,14 +62,16 @@ it runs, the daemons show as `available`.
 
 ## Failures and the status bar
 
-When a running daemon fails, for example a development server that exits with
-an error, a notification says so, with buttons to show its logs or restart it.
-The status bar shows how many daemons of the project run, and how many failed;
-click it to open the Daemons panel.
+When a running daemon of the project fails, for example a development server
+that exits with an error, a notification says so, with buttons to show its logs
+or restart it. The status bar shows how many daemons of the project run, and
+how many failed since the window opened; click it to open the Daemons panel.
 
-The daemons are checked every 5 seconds while the panel is visible, and every
-15 seconds while it is hidden and a daemon runs. Turn the notifications off
-with `mise.notifyDaemonFailures`, and the status bar item with
+In a focused window, the daemons are checked every 5 seconds while the panel
+is visible, every 15 seconds while it is hidden and a daemon runs, and every
+minute while none runs but the pitchfork supervisor does, to notice a daemon
+started from a terminal. Turn the notifications off with
+`mise.notifyDaemonFailures`, and the status bar item with
 `mise.showDaemonsInStatusBar`.
 
 ## Code lenses

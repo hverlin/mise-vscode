@@ -45,6 +45,8 @@ export const DAEMONS_VIEW_ID = "miseDaemonsView";
 const POLL_INTERVAL_MS = 5_000;
 /** and while it is hidden, as long as a daemon runs */
 const HIDDEN_POLL_INTERVAL_MS = 15_000;
+/** and while none runs, but the supervisor does */
+const IDLE_POLL_INTERVAL_MS = 60_000;
 
 export const PENDING_LABELS: Record<DaemonAction, string> = {
 	start: "starting…",
@@ -301,6 +303,23 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		);
 	}
 
+	/** Start the daemons of the project, or stop the ones that run */
+	async runAllWithPending(action: "start" | "stop") {
+		await this.refresh();
+		const state = this._state;
+		if (!state?.daemons.length) {
+			return;
+		}
+		await this.runPending(
+			state.daemons
+				.filter((daemon) => daemon.namespace !== GLOBAL_NAMESPACE)
+				.map((daemon) => daemon.id),
+			PENDING_LABELS[action],
+			() => this.daemonsService.runAll(action, state),
+			`Could not ${action} the daemons`,
+		);
+	}
+
 	/** Run an action on the daemons of a group */
 	runGroupWithPending(group: DaemonGroup, action: DaemonAction) {
 		const members = groupDaemons(
@@ -370,13 +389,16 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 					}
 				});
 		} finally {
+			// the state after the action, before the daemons are not pending
+			// anymore: the failure notifications must not take the outcome of
+			// the action for a crash (see DaemonsStatus)
+			await this.refresh();
 			for (const key of keys) {
 				this.pending.delete(key);
 			}
 			// the pending label leaves even when the state did not change
 			this._onDidChangeTreeData.fire();
 			this._onDidChangeState.fire();
-			await this.refresh();
 		}
 	}
 
@@ -627,32 +649,6 @@ export function registerDaemonsCommands(
 		terminal.show();
 	};
 
-	const runAll = async (action: "start" | "stop") => {
-		await provider.refresh();
-		const state = provider.state;
-		if (!state?.daemons.length) {
-			return;
-		}
-		try {
-			await vscode.window.withProgress(
-				{
-					location: vscode.ProgressLocation.Notification,
-					title:
-						action === "start"
-							? "Starting the daemons of the project"
-							: "Stopping the daemons of the project",
-				},
-				() => daemonsService.runAll(action, state),
-			);
-		} catch (error) {
-			vscode.window.showErrorMessage(
-				`Could not ${action} the daemons: ${(error as Error).message}`,
-			);
-		} finally {
-			await provider.refresh();
-		}
-	};
-
 	const action =
 		(action: DaemonAction, filter: (daemon: Daemon) => boolean) =>
 		async (argument: unknown) => {
@@ -783,12 +779,12 @@ export function registerDaemonsCommands(
 				}
 			},
 		),
-		vscode.commands.registerCommand(MISE_START_ALL_DAEMONS, async () => {
-			await runAll("start");
-		}),
-		vscode.commands.registerCommand(MISE_STOP_ALL_DAEMONS, async () => {
-			await runAll("stop");
-		}),
+		vscode.commands.registerCommand(MISE_START_ALL_DAEMONS, () =>
+			provider.runAllWithPending("start"),
+		),
+		vscode.commands.registerCommand(MISE_STOP_ALL_DAEMONS, () =>
+			provider.runAllWithPending("stop"),
+		),
 		vscode.commands.registerCommand(MISE_OPEN_PITCHFORK_TUI, async () => {
 			await provider.refresh();
 			const command = daemonsService.tuiCommand(provider.state?.pitchfork);
@@ -838,7 +834,8 @@ export function registerDaemonsCommands(
 /**
  * Poll the daemons in a focused window: often while the view is visible, less
  * so while it is hidden and a daemon runs, which the failure notifications
- * and the status bar follow (see DaemonsStatus). Not at all otherwise.
+ * and the status bar follow (see DaemonsStatus), and rarely while none runs
+ * but the supervisor does, to notice a daemon started from a terminal.
  */
 export function pollDaemons(
 	treeView: vscode.TreeView<unknown>,
@@ -854,7 +851,10 @@ export function pollDaemons(
 				? POLL_INTERVAL_MS
 				: running
 					? HIDDEN_POLL_INTERVAL_MS
-					: undefined;
+					: // a daemon may be started from a terminal
+						provider.state?.supervisor === "up" && provider.state.daemons.length
+						? IDLE_POLL_INTERVAL_MS
+						: undefined;
 		if (next === interval) {
 			return;
 		}

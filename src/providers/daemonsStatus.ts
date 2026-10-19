@@ -8,6 +8,7 @@ import {
 import {
 	type Daemon,
 	describeDaemon,
+	GLOBAL_NAMESPACE,
 	isDaemonActive,
 	isDaemonFailed,
 	newlyFailedDaemons,
@@ -29,6 +30,10 @@ export class DaemonsStatus implements vscode.Disposable {
 	);
 	/** the status of each daemon at the previous update, by id */
 	private previous = new Map<string, string>();
+	/** the daemons whose failure was notified and is not dismissed yet */
+	private open = new Set<string>();
+	/** the daemons seen failing since the window opened, while they still do */
+	private failedHere = new Set<string>();
 	private listeners: vscode.Disposable[];
 
 	constructor(private provider: MiseDaemonsProvider) {
@@ -49,24 +54,47 @@ export class DaemonsStatus implements vscode.Disposable {
 	}
 
 	private update() {
-		const daemons = this.provider.state?.daemons ?? [];
-		// a daemon the user is acting on reports its own failure
+		// the daemons of the project: those of the user's pitchfork config
+		// belong to every window
+		const daemons = (this.provider.state?.daemons ?? []).filter(
+			(daemon) => daemon.namespace !== GLOBAL_NAMESPACE,
+		);
+		// a daemon the user is acting on reports its own failure: its status
+		// once the action is done is where its watch starts again
 		const settled = daemons.filter(
 			(daemon) => !this.provider.pendingLabel(daemon),
 		);
-		if (shouldNotifyDaemonFailures()) {
-			for (const daemon of newlyFailedDaemons(this.previous, settled)) {
+		for (const daemon of daemons) {
+			if (this.provider.pendingLabel(daemon)) {
+				this.previous.delete(daemon.id);
+			}
+		}
+		for (const daemon of newlyFailedDaemons(this.previous, settled)) {
+			this.failedHere.add(daemon.id);
+			// once while its notification is open: pitchfork may retry it
+			if (shouldNotifyDaemonFailures() && !this.open.has(daemon.id)) {
 				void this.alert(daemon);
 			}
 		}
-		this.previous = new Map(
-			settled.map((daemon) => [daemon.id, daemon.status]),
-		);
+		for (const daemon of settled) {
+			this.previous.set(daemon.id, daemon.status);
+		}
+		for (const id of this.failedHere) {
+			const daemon = daemons.find((candidate) => candidate.id === id);
+			if (!daemon || !isDaemonFailed(daemon)) {
+				this.failedHere.delete(id);
+			}
+		}
 		this.updateItem(daemons);
 	}
 
 	private updateItem(daemons: Daemon[]) {
-		const { running, failed, text } = summarizeDaemons(daemons);
+		// a failure from before the window opened is the view's to show
+		const { running, failed, text } = summarizeDaemons(
+			daemons.filter(
+				(daemon) => !isDaemonFailed(daemon) || this.failedHere.has(daemon.id),
+			),
+		);
 		if (!shouldShowDaemonsInStatusBar() || (!running && !failed)) {
 			this.item.hide();
 			return;
@@ -90,11 +118,14 @@ export class DaemonsStatus implements vscode.Disposable {
 	private async alert(daemon: Daemon) {
 		const showLogs = "Show logs";
 		const restart = "Restart";
-		const selection = await vscode.window.showWarningMessage(
-			`Daemon ${daemon.name} failed${daemon.error ? `: ${daemon.error}` : ""}`,
-			showLogs,
-			restart,
-		);
+		this.open.add(daemon.id);
+		const selection = await Promise.resolve(
+			vscode.window.showWarningMessage(
+				`Daemon ${daemon.name} failed${daemon.error ? `: ${daemon.error}` : ""}`,
+				showLogs,
+				restart,
+			),
+		).finally(() => this.open.delete(daemon.id));
 		if (selection === showLogs) {
 			await vscode.commands.executeCommand(MISE_SHOW_DAEMON_LOGS, daemon);
 		} else if (selection === restart) {

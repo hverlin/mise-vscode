@@ -16,7 +16,7 @@ const DEADLINE_MS = 30_000;
 /**
  * The daemons of fixtures/daemons-workspace: `web`, `api` (which depends on
  * `web`) and `worker` (which runs the task `test`) in mise.toml, `clock`,
- * `ticker` and `crasher` (which fails 5 seconds after it starts) in
+ * `ticker` and `crasher` (which fails 8 seconds after it starts) in
  * pitchfork.toml. The suite has a pitchfork supervisor of its own
  * (see .vscode-test.js), stopped at the end.
  */
@@ -351,10 +351,12 @@ suite("Daemons Test Suite", function () {
 			});
 		try {
 			const crasher = daemonNamed(await load(), "crasher");
-			// it runs 5 seconds, then exits with 3
+			// it runs 8 seconds, then exits with 3
 			await vscode.commands.executeCommand("mise.startDaemon", crasher);
 			await waitForStatus("crasher", "errored", "failed");
-			// the hidden view checks every 15 seconds while a daemon runs
+			// the hidden view checks every 15 seconds while a daemon runs, in a
+			// focused window, which a test window may not be: check now
+			await vscode.commands.executeCommand("mise.refreshEntry");
 			const deadline = Date.now() + 40_000;
 			while (
 				!warnings.some((message) => message.includes("crasher")) &&
