@@ -82,6 +82,11 @@ mock.module("vscode", () => {
 			createOutputChannel: () => {},
 		},
 		CodeLens,
+		CompletionItemKind: {
+			Function: 2,
+			Variable: 5,
+			Keyword: 13,
+		},
 		ConfigurationTarget: {},
 		EventEmitter,
 		MarkdownString,

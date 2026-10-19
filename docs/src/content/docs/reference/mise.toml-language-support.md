@@ -90,6 +90,18 @@ the `depends` of a daemon and the members of a `[groups.<name>]` group.
 Hovering a daemon name shows its status, with actions to start, stop or
 restart it and to show its logs, and Cmd/Ctrl+Click goes to its declaration.
 
+#### Autocompletion for templates
+
+Inside `{{ ... }}` and `{% ... %}`, the extension completes the
+[variables, functions, filters and tests](https://mise.jdx.dev/templates.html)
+of mise's Tera 2 engine: variables and functions such as `config_source`,
+`system_brew_prefix`, `read_json()` or `libc()`, filters after `|`, and tests
+after `is` (such as `is starting_with(pat="mac")`). Hovering one explains it.
+
+The Tera v1 helpers that mise deprecates, such as `as_str` or `map`, are not
+suggested. Hovering one shows what replaces it, before mise 2027.4.0 removes it.
+Set `mise.teraAutoCompletion` to `false` to turn completion and hover off.
+
 ### Task arguments (usage spec)
 
 Task arguments are declared with the
