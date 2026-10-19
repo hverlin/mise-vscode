@@ -116,6 +116,11 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - ✍️ Completion, hover and go to definition for daemon names in `mise.toml`
 - 🔁 Optionally start and stop them with the workspace (`auto = ["start", "stop"]`)
 
+### [AI agents (MCP)](https://hverlin.github.io/mise-vscode/reference/ai-agents/)
+
+- 🤖 Optionally provide the `mise mcp` and `pitchfork mcp` servers to the AI
+  agents of VS Code
+
 ### Snippets
 
 - 📝 `mise-task` snippets to create tasks in `mise.toml` and task files, and
@@ -146,6 +151,7 @@ for more information.
 - [mise.toml language support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
 - [Supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)
 - [Daemons](https://hverlin.github.io/mise-vscode/reference/daemons/)
+- [AI agents (MCP)](https://hverlin.github.io/mise-vscode/reference/ai-agents/)
 - [Extension Settings](https://hverlin.github.io/mise-vscode/reference/settings/)
 
 ### Guides

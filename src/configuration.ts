@@ -45,6 +45,7 @@ export const CONFIGURATION_FLAGS = {
 	enableConfigDiagnostics: "enableConfigDiagnostics",
 	autoStartStopDaemons: "autoStartStopDaemons",
 	notifyDaemonFailures: "notifyDaemonFailures",
+	mcpServers: "mcpServers",
 	showDaemonsInStatusBar: "showDaemonsInStatusBar",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
@@ -216,6 +217,11 @@ export const enableExtensionForWorkspace = async () => {
 		true,
 		vscode.ConfigurationTarget.Workspace,
 	);
+};
+
+/** The MCP servers to provide to the agents of VS Code: `mise`, `pitchfork` */
+export const getMcpServers = (): string[] => {
+	return getConfOrElse<string[]>(CONFIGURATION_FLAGS.mcpServers, []);
 };
 
 export const shouldNotifyDaemonFailures = (): boolean => {

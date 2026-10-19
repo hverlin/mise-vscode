@@ -82,6 +82,7 @@ import {
 import { addToolInfoToEditor } from "./providers/inlineToolDecorator";
 import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
 import { MiseTomlTaskSymbolProvider } from "./providers/MiseTomlTaskSymbolProvider";
+import { registerMcpServers } from "./providers/mcpServers";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
 import { MiseSnippetProvider } from "./providers/miseSnippetProvider";
@@ -335,6 +336,11 @@ export class MiseExtension {
 			treeDataProvider: daemonsProvider,
 		});
 		const daemonsSession = new DaemonsSession(daemonsService);
+		const updateMcpServers = registerMcpServers(
+			context,
+			this.miseService,
+			daemonsService,
+		);
 		registerDaemonsCommands(context, daemonsProvider, daemonsService, () =>
 			this.miseService.getCurrentWorkspaceFolderPath(),
 		);
@@ -483,6 +489,7 @@ export class MiseExtension {
 				daemonsService.forgetPitchfork();
 				void daemonsProvider.refresh();
 				void daemonsSession.sync();
+				updateMcpServers();
 			}
 
 			void this.checkForInvalidMiseConfigFiles();
