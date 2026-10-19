@@ -569,6 +569,37 @@ export function daemonCommandError(output: string): string {
 	return relevant.join(" ").replace(/^(Error:\s*)?×\s*/, "");
 }
 
+/**
+ * The daemons that failed since their previous status (by id): running, or
+ * about to change state, then, errored or failed now. A daemon stopped on
+ * purpose ends up stopped, not failed.
+ */
+export function newlyFailedDaemons(
+	previous: ReadonlyMap<string, string>,
+	daemons: Daemon[],
+): Daemon[] {
+	return daemons.filter(
+		(daemon) =>
+			isDaemonFailed(daemon) &&
+			ACTIVE_STATUSES.has(previous.get(daemon.id) ?? ""),
+	);
+}
+
+/** What the status bar shows: how many daemons run, and how many failed */
+export function summarizeDaemons(daemons: Daemon[]): {
+	running: number;
+	failed: number;
+	text: string;
+} {
+	const running = daemons.filter(isDaemonActive).length;
+	const failed = daemons.filter(isDaemonFailed).length;
+	const text = [
+		`$(server-process) ${running}`,
+		...(failed ? [`$(error) ${failed}`] : []),
+	].join(" ");
+	return { running, failed, text };
+}
+
 /** What the view shows next to a daemon: its status, and its port */
 export function describeDaemon(daemon: Daemon): string {
 	const parts = [daemon.disabled ? "disabled" : daemon.status];

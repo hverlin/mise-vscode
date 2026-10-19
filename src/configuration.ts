@@ -44,6 +44,8 @@ export const CONFIGURATION_FLAGS = {
 	enableTaskDiagnostics: "enableTaskDiagnostics",
 	enableConfigDiagnostics: "enableConfigDiagnostics",
 	autoStartStopDaemons: "autoStartStopDaemons",
+	notifyDaemonFailures: "notifyDaemonFailures",
+	showDaemonsInStatusBar: "showDaemonsInStatusBar",
 	skipWorkspaceBinaryApproval: "skipWorkspaceBinaryApproval",
 	showCustomExtensionConfigWarnings: "showCustomExtensionConfigWarnings",
 } as const;
@@ -214,6 +216,14 @@ export const enableExtensionForWorkspace = async () => {
 		true,
 		vscode.ConfigurationTarget.Workspace,
 	);
+};
+
+export const shouldNotifyDaemonFailures = (): boolean => {
+	return getConfOrElse(CONFIGURATION_FLAGS.notifyDaemonFailures, true);
+};
+
+export const shouldShowDaemonsInStatusBar = (): boolean => {
+	return getConfOrElse(CONFIGURATION_FLAGS.showDaemonsInStatusBar, true);
 };
 
 export const shouldAutoStartStopDaemons = (): boolean => {

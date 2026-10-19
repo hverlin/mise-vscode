@@ -13,12 +13,14 @@ import {
 	mergeDaemons,
 	mergeGroups,
 	miseConfigProjectDir,
+	newlyFailedDaemons,
 	type PitchforkListEntry,
 	parsePitchforkVersion,
 	pitchforkConfigCandidates,
 	pitchforkEnv,
 	pitchforkProjectDir,
 	sessionDaemons,
+	summarizeDaemons,
 } from "./daemons";
 
 const listed = (
@@ -513,5 +515,46 @@ describe("preset data", () => {
 		expect(
 			isResettableDataDir("C:\\Users\\me\\AppData\\mise\\db", keep, true),
 		).toBe(true);
+	});
+});
+
+describe("daemon failures", () => {
+	const daemons = mergeDaemons(
+		[],
+		[
+			{ id: "shop/web" },
+			{ id: "shop/api" },
+			{ id: "shop/db" },
+			{ id: "shop/job" },
+		],
+		[
+			listed("shop/web", "errored", { error: "exit code 1" }),
+			listed("shop/api", "errored"),
+			listed("shop/db", "stopped"),
+			listed("shop/job", "running"),
+		],
+	);
+
+	it("are the running daemons that errored since", () => {
+		const previous = new Map([
+			["shop/web", "running"],
+			// it was not running: a failed start reports itself
+			["shop/api", "available"],
+			// stopped on purpose
+			["shop/db", "running"],
+		]);
+		expect(
+			newlyFailedDaemons(previous, daemons).map((daemon) => daemon.id),
+		).toEqual(["shop/web"]);
+		expect(newlyFailedDaemons(new Map(), daemons)).toEqual([]);
+	});
+
+	it("are counted in the status bar", () => {
+		expect(summarizeDaemons(daemons)).toEqual({
+			running: 1,
+			failed: 2,
+			text: "$(server-process) 1 $(error) 2",
+		});
+		expect(summarizeDaemons([]).text).toBe("$(server-process) 0");
 	});
 });

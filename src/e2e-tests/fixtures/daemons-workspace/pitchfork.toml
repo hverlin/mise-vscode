@@ -4,3 +4,7 @@ run = "exec sleep 600"
 [daemons.ticker]
 run = "exec sleep 600"
 auto = ["start", "stop"]
+
+[daemons.crasher]
+run = "sh -c 'sleep 8; exit 3'"
+ready_delay = 1

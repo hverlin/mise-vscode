@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as sinon from "sinon";
 import * as vscode from "vscode";
 import { DaemonsService, type DaemonsState } from "../../daemonsService";
 import { MiseService } from "../../miseService";
@@ -14,8 +15,9 @@ const DEADLINE_MS = 30_000;
 
 /**
  * The daemons of fixtures/daemons-workspace: `web`, `api` (which depends on
- * `web`) and `worker` (which runs the task `test`) in mise.toml, `clock` and
- * `ticker` in pitchfork.toml. The suite has a pitchfork supervisor of its own
+ * `web`) and `worker` (which runs the task `test`) in mise.toml, `clock`,
+ * `ticker` and `crasher` (which fails 8 seconds after it starts) in
+ * pitchfork.toml. The suite has a pitchfork supervisor of its own
  * (see .vscode-test.js), stopped at the end.
  */
 suite("Daemons Test Suite", function () {
@@ -127,6 +129,7 @@ suite("Daemons Test Suite", function () {
 			[
 				{ name: "api", kind: "mise", status: "available" },
 				{ name: "clock", kind: "pitchfork", status: "available" },
+				{ name: "crasher", kind: "pitchfork", status: "available" },
 				{ name: "ticker", kind: "pitchfork", status: "available" },
 				{ name: "web", kind: "mise", status: "available" },
 				{ name: "worker", kind: "mise", status: "available" },
@@ -336,6 +339,38 @@ suite("Daemons Test Suite", function () {
 
 		await vscode.commands.executeCommand("mise.stopDaemon", running);
 		await waitForStatus("clock", "stopped");
+	});
+
+	test("notifies when a running daemon fails", async () => {
+		const warnings: string[] = [];
+		const stub = sinon
+			.stub(vscode.window, "showWarningMessage")
+			.callsFake(async (message: string) => {
+				warnings.push(message);
+				return undefined;
+			});
+		try {
+			const crasher = daemonNamed(await load(), "crasher");
+			// it runs 8 seconds, then exits with 3
+			await vscode.commands.executeCommand("mise.startDaemon", crasher);
+			await waitForStatus("crasher", "errored", "failed");
+			// the hidden view checks every 15 seconds while a daemon runs, in a
+			// focused window, which a test window may not be: check now
+			await vscode.commands.executeCommand("mise.refreshEntry");
+			const deadline = Date.now() + 40_000;
+			while (
+				!warnings.some((message) => message.includes("crasher")) &&
+				Date.now() < deadline
+			) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
+			assert.ok(
+				warnings.some((message) => /^Daemon crasher failed/.test(message)),
+				`Expected a notification, got: ${warnings.join(" | ")}`,
+			);
+		} finally {
+			stub.restore();
+		}
 	});
 
 	test("starts and stops the daemons of the workspace session", async () => {
