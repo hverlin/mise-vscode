@@ -106,9 +106,7 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 		lines.push(`Runs: ${markdownCodeSpan(daemon.run)}`);
 	}
 	if (daemon.dataDir) {
-		lines.push(
-			`Data: ${daemon.dataSize ? `${daemon.dataSize} in ` : ""}${markdownCodeSpan(daemon.dataDir)}`,
-		);
+		lines.push(`Data: ${markdownCodeSpan(daemon.dataDir)}`);
 	}
 	lines.push(
 		daemon.kind === "mise"
@@ -136,7 +134,8 @@ export class DaemonItem extends vscode.TreeItem {
 			"miseDaemon",
 			isDaemonActive(daemon) ? "active" : "inactive",
 			...(daemon.url ? ["url"] : []),
-			...(daemon.dataDir ? ["data"] : []),
+			// mise reports it before the preset first starts
+			...(daemon.dataDir && existsSync(daemon.dataDir) ? ["data"] : []),
 		].join(";");
 		this.command = {
 			command: MISE_OPEN_DAEMON_DEFINITION,
@@ -180,7 +179,7 @@ export class GroupItem extends vscode.TreeItem {
 			[
 				`**${group.name}** ${group.kind === "mise" ? "mise" : "pitchfork"} group`,
 				`Members: ${group.members.map((member) => markdownCodeSpan(member)).join(", ")}`,
-				`Declared in ${markdownCodeSpan(group.source)}`,
+				`Declared in ${group.sources.map((source) => markdownCodeSpan(source)).join(", ")}`,
 			].join("\n\n"),
 		);
 		this.iconPath = new vscode.ThemeIcon(pending ? "loading~spin" : "layers");
@@ -312,7 +311,13 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		return this.runPending(
 			[groupKey(group), ...members.map((daemon) => daemon.id)],
 			PENDING_LABELS[action],
-			() => this.daemonsService.runGroup(action, group, this._state?.pitchfork),
+			() =>
+				this.daemonsService.runGroup(
+					action,
+					group,
+					members,
+					this._state?.pitchfork,
+				),
 			`Could not ${action} the group ${group.name}`,
 		);
 	}
@@ -515,7 +520,15 @@ async function resolveGroup(
 		return argument as DaemonGroup;
 	}
 	await provider.refresh();
-	const groups = provider.state?.groups ?? [];
+	// as the view lists them: the groups of daemons it knows
+	const groups = (provider.state?.groups ?? []).filter(
+		(group) =>
+			groupDaemons(
+				group,
+				provider.state?.groups ?? [],
+				provider.state?.daemons ?? [],
+			).length,
+	);
 	if (!groups.length) {
 		vscode.window.showInformationMessage("No group of daemons to pick from.");
 		return undefined;
@@ -524,7 +537,7 @@ async function resolveGroup(
 		groups.map((group) => ({
 			label: group.name,
 			description: group.members.join(", "),
-			detail: group.source,
+			detail: group.sources.join(", "),
 			group,
 		})),
 		{ placeHolder },
@@ -532,8 +545,23 @@ async function resolveGroup(
 	return picked?.group;
 }
 
-async function resetDaemonData(provider: MiseDaemonsProvider, daemon: Daemon) {
-	if (!daemon.dataDir) {
+async function resetDaemonData(
+	provider: MiseDaemonsProvider,
+	daemonsService: DaemonsService,
+	daemon: Daemon,
+) {
+	if (provider.pendingLabel(daemon)) {
+		vscode.window.showInformationMessage(
+			`${daemon.name} is busy (${provider.pendingLabel(daemon)}), try again once it is done.`,
+		);
+		return;
+	}
+	// before asking: a directory that cannot be reset is not offered
+	const dataDir = await daemonsService.resettableDataDir(daemon);
+	if (!dataDir) {
+		vscode.window.showErrorMessage(
+			`The data of ${daemon.name} cannot be reset from here.`,
+		);
 		return;
 	}
 	const reset = "Reset data";
@@ -541,7 +569,7 @@ async function resetDaemonData(provider: MiseDaemonsProvider, daemon: Daemon) {
 		`Reset the data of ${daemon.name}?`,
 		{
 			modal: true,
-			detail: `This stops ${daemon.name}, deletes ${daemon.dataDir}${daemon.dataSize ? ` (${daemon.dataSize})` : ""}, and starts it again with fresh data. Back up anything you want to keep first.`,
+			detail: `This stops ${daemon.name}, deletes ${dataDir}, and starts it again with fresh data. Back up anything you want to keep first.`,
 		},
 		reset,
 	);
@@ -751,7 +779,7 @@ export function registerDaemonsCommands(
 					"Daemon whose data to reset",
 				);
 				if (daemon) {
-					await resetDaemonData(provider, daemon);
+					await resetDaemonData(provider, daemonsService, daemon);
 				}
 			},
 		),

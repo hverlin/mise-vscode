@@ -38,14 +38,17 @@ From each daemon, you can:
 The groups of the project, mise's
 [`[daemon_groups]`](https://mise.jdx.dev/daemons.html#groups) and pitchfork's
 `[groups]`, are listed under `Groups`, each with its daemons and how many of
-them run. A group can be started, stopped or restarted at once
+them run. As `mise daemons start --group` does, a mise group of a child project
+also covers the group of the same name in its parent projects. A group can be started, stopped or restarted at once
 (`mise daemons start --group <name>`, `pitchfork start --group <name>`).
 
 A [preset](https://mise.jdx.dev/daemons/presets.html), such as PostgreSQL,
-shows where it keeps its data and how much there is. From its context menu,
-`Reveal Daemon Data` opens that directory, and `Reset Daemon Data...` gives it
-fresh data, as the mise docs describe: after a confirmation, it stops the
-daemon, deletes its data directory and starts it again.
+shows where it keeps its data. From its context menu, `Reveal Daemon Data`
+opens that directory, and `Reset Daemon Data...` gives it fresh data, as the
+[mise docs](https://mise.jdx.dev/daemons/data.html#reset-a-database) describe:
+after a confirmation, it stops the daemon, deletes its data directory and
+starts it again. A directory holding your home directory, a workspace folder
+or the project is never deleted.
 
 From the panel title bar, you can start or stop all the daemons of the project
 (for mise, the [`default` group](https://mise.jdx.dev/daemons.html#groups) or
