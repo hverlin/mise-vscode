@@ -761,7 +761,8 @@
         {
           "id": "miseDaemonsView",
           "name": "Daemons",
-          "when": "!isWeb && mise.hasDaemons"
+          "when": "!isWeb && mise.hasDaemons",
+          "icon": "$(server-process)"
         },
         {
           "id": "miseBootstrapView",
