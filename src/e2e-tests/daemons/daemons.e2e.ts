@@ -121,6 +121,7 @@ suite("Daemons Test Suite", function () {
 				.map(({ name, kind, status }) => ({ name, kind, status }))
 				.sort((a, b) => a.name.localeCompare(b.name)),
 			[
+				{ name: "api", kind: "mise", status: "available" },
 				{ name: "clock", kind: "pitchfork", status: "available" },
 				{ name: "ticker", kind: "pitchfork", status: "available" },
 				{ name: "web", kind: "mise", status: "available" },
@@ -138,6 +139,96 @@ suite("Daemons Test Suite", function () {
 		await waitForLens("mise.toml", 6, "$(play) Start");
 		await waitForLens("pitchfork.toml", 0, "$(play) Start");
 		await waitForLens("pitchfork.toml", 3, "$(play) Start");
+	});
+
+	const miseToml = () =>
+		vscode.workspace.openTextDocument(path.join(workspaceRoot, "mise.toml"));
+
+	const completionsAt = async (line: number, character: number) => {
+		const document = await miseToml();
+		const list = await vscode.commands.executeCommand<vscode.CompletionList>(
+			"vscode.executeCompletionItemProvider",
+			document.uri,
+			new vscode.Position(line, character),
+		);
+		return list.items.map((item) => ({
+			label: typeof item.label === "string" ? item.label : item.label.label,
+			detail: item.detail ?? "",
+		}));
+	};
+
+	test("completes daemon names", async () => {
+		// `daemons = ["|web"]` of a task: daemons and groups
+		const ofTask = await completionsAt(17, 12);
+		for (const name of ["web", "api", "backend"]) {
+			assert.ok(
+				ofTask.some((item) => item.label === name),
+				`Expected ${name}, got: ${ofTask.map((item) => item.label).join(", ")}`,
+			);
+		}
+		assert.match(
+			ofTask.find((item) => item.label === "web")?.detail ?? "",
+			/^daemon · /,
+		);
+		assert.match(
+			ofTask.find((item) => item.label === "backend")?.detail ?? "",
+			/^daemon group: web, api$/,
+		);
+
+		// `depends = ["|web"]` of api: the other daemons only, and no task
+		const ofDaemon = (await completionsAt(11, 12)).map((item) => item.label);
+		assert.ok(ofDaemon.includes("web"));
+		assert.ok(!ofDaemon.includes("api"), "a daemon does not depend on itself");
+		assert.ok(!ofDaemon.includes("backend"), "depends names daemons");
+		assert.ok(!ofDaemon.includes("test"), "depends of a daemon is not a task");
+	});
+
+	test("goes from a daemon name to its declaration", async () => {
+		const document = await miseToml();
+		for (const [line, character] of [
+			[17, 13],
+			[11, 13],
+			[14, 13],
+		] as const) {
+			const locations =
+				(await vscode.commands.executeCommand<
+					(vscode.Location | vscode.LocationLink)[]
+				>(
+					"vscode.executeDefinitionProvider",
+					document.uri,
+					new vscode.Position(line, character),
+				)) ?? [];
+			assert.deepEqual(
+				locations.map((location) =>
+					"targetRange" in location
+						? location.targetRange.start.line
+						: location.range.start.line,
+				),
+				[6],
+				`${line + 1}:${character + 1} should go to [daemons.web] only`,
+			);
+		}
+	});
+
+	test("shows the status of a daemon name on hover", async () => {
+		const document = await miseToml();
+		const hovers =
+			(await vscode.commands.executeCommand<vscode.Hover[]>(
+				"vscode.executeHoverProvider",
+				document.uri,
+				new vscode.Position(17, 13),
+			)) ?? [];
+		const text = hovers
+			.flatMap((hover) => hover.contents)
+			.map((content) =>
+				typeof content === "string"
+					? content
+					: (content as vscode.MarkdownString).value,
+			)
+			.join("\n");
+		assert.match(text, /\*\*web\*\*/);
+		assert.match(text, /Status: available/);
+		assert.match(text, /\[Start\]\(command:mise\.startDaemon\?/);
 	});
 
 	test("starts and stops a mise daemon", async () => {

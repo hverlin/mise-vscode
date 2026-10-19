@@ -62,6 +62,11 @@ import {
 import { ConfigRootsCompletionProvider } from "./providers/configRootsCompletionProvider";
 import { DaemonCodeLensProvider } from "./providers/daemonCodeLensProvider";
 import {
+	DaemonNameCompletionProvider,
+	DaemonNameDefinitionProvider,
+	DaemonNameHoverProvider,
+} from "./providers/daemonNameProviders";
+import {
 	DAEMONS_VIEW_ID,
 	MiseDaemonsProvider,
 	pollWhileVisible,
@@ -768,6 +773,21 @@ export class MiseExtension {
 			vscode.languages.registerHoverProvider(
 				allTomlFilesSelector,
 				new TaskHoverProvider(this.miseService),
+			),
+			vscode.languages.registerCompletionItemProvider(
+				allTomlFilesSelector,
+				new DaemonNameCompletionProvider(daemonsProvider),
+				...['"', "'", "[", ","],
+			),
+			vscode.languages.registerDefinitionProvider(
+				allTomlFilesSelector,
+				new DaemonNameDefinitionProvider(daemonsProvider, () =>
+					this.miseService.getCurrentWorkspaceFolderPath(),
+				),
+			),
+			vscode.languages.registerHoverProvider(
+				allTomlFilesSelector,
+				new DaemonNameHoverProvider(daemonsProvider),
 			),
 		);
 

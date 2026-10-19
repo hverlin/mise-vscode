@@ -84,12 +84,12 @@ suite("Snippets Test Suite", function () {
 					typeof item.label === "string" ? item.label : item.label.label,
 				)
 				// the namespace of the extension, other providers contribute here too
-				.filter((label) => label.startsWith("mise-task"))
+				.filter((label) => /^mise-(task|daemon)/.test(label))
 				.sort()
 		);
 	};
 
-	test("offers task snippets on an empty line of a mise config file", async () => {
+	test("offers task and daemon snippets on an empty line of a mise config file", async () => {
 		const document = await openFixture("mise.snippets.toml");
 		const labels = await snippetLabels(document, endOfDocument(document));
 		assert.deepEqual(labels, prefixesOf(tomlSnippets));

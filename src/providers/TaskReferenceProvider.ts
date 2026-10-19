@@ -71,6 +71,13 @@ export class TaskReferenceProvider implements vscode.ReferenceProvider {
 			return templateReferences;
 		}
 
+		// daemons, not tasks
+		const section =
+			getCachedTomlParser(document)?.getKeyAtPosition(position)?.key[0];
+		if (section === "daemons" || section === "daemon_groups") {
+			return [];
+		}
+
 		const word = document.getText(
 			document.getWordRangeAtPosition(position, TASK_NAME_REGEX),
 		);

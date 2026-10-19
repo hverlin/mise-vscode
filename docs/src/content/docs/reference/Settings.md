@@ -363,7 +363,7 @@ Enable Tera auto-completion in `mise.toml` files.
 - **Type:** `boolean`
 - **Default:** `true`
 
-Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks.
+Suggest task snippets (`mise-task`, `mise-task-script`, ...) in mise configuration files and in file tasks, and daemon snippets (`mise-daemon`, ...) in mise configuration files.
 
 They are also hidden by `editor.snippetSuggestions` set to `none` and by `editor.suggest.showSnippets` set to `false`, which apply to every extension.
 

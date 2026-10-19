@@ -76,14 +76,8 @@ export class MiseSnippetProvider implements vscode.CompletionItemProvider {
 		const typed = document.getText(range);
 		const snippets = isToml ? tomlSnippets : fileTaskSnippets;
 
-		return snippets.map((snippet, index) =>
-			buildCompletionItem(
-				snippet,
-				range,
-				typed,
-				isToml ? "toml" : "shell",
-				index,
-			),
+		return snippets.map((snippet) =>
+			buildCompletionItem(snippet, range, typed, isToml ? "toml" : "shell"),
 		);
 	}
 }
@@ -93,7 +87,6 @@ function buildCompletionItem(
 	range: vscode.Range,
 	typed: string,
 	language: string,
-	index: number,
 ): vscode.CompletionItem {
 	const item = new vscode.CompletionItem(
 		snippet.prefix,
@@ -107,10 +100,10 @@ function buildCompletionItem(
 	item.insertText = new vscode.SnippetString(snippet.body);
 	item.range = range;
 	// keep the snippets in the order they are declared in, from the plainest to
-	// the most complete, rather than alphabetically. The `mise-task` stem keeps
-	// them where their label would have put them, next to each other and not
-	// ahead of what the toml schema suggests
-	item.sortText = `mise-task${String(index).padStart(2, "0")}`;
+	// the most complete, rather than alphabetically. The `mise-task` and
+	// `mise-daemon` stems keep them where their label would have put them, next
+	// to each other and not ahead of what the toml schema suggests
+	item.sortText = snippet.sortText;
 	// the `[` of `[tas` and the `#` of `#mi` are replaced by the snippet, so
 	// they have to be part of what the typed text is filtered against
 	const openingChar =

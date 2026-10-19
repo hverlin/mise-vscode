@@ -62,9 +62,33 @@ describe("snippet definitions", () => {
 
 	// they share a namespace so that one prefix brings up everything the
 	// extension offers, and none of them competes with a toml schema key
-	it("are all under the mise-task prefix", () => {
+	it("are all under the mise- prefix", () => {
 		for (const snippet of [...tomlSnippets, ...fileTaskSnippets]) {
-			expect(snippet.prefix).toMatch(/^mise-task(-[a-z]+)*$/);
+			expect(snippet.prefix).toMatch(/^mise-(task|daemon)(-[a-z]+)*$/);
+		}
+	});
+
+	it("keep the daemon snippets together, after the task ones", () => {
+		const daemons = tomlSnippets.filter((snippet) =>
+			snippet.prefix.startsWith("mise-daemon"),
+		);
+		expect(daemons.map((snippet) => snippet.prefix)).toEqual([
+			"mise-daemon",
+			"mise-daemon-preset",
+			"mise-daemon-task",
+			"mise-daemon-auto",
+			"mise-daemon-groups",
+		]);
+		expect(daemons.map((snippet) => snippet.sortText)).toEqual([
+			"mise-daemon00",
+			"mise-daemon01",
+			"mise-daemon02",
+			"mise-daemon03",
+			"mise-daemon04",
+		]);
+		// a daemon declares a table, as a task does
+		for (const snippet of daemons) {
+			expect(snippet.body).toMatch(/^\[daemon(s|_groups)/);
 		}
 	});
 });
