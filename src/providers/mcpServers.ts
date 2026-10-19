@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { CONFIGURATION_FLAGS, getMcpServers } from "../configuration";
+import { getMcpServers, isMiseExtensionEnabled } from "../configuration";
 import type { DaemonsService } from "../daemonsService";
 import type { MiseService } from "../miseService";
 import { logger } from "../utils/logger";
@@ -7,6 +7,9 @@ import { buildMcpServers } from "../utils/mcpServers";
 
 /** The id of `contributes.mcpServerDefinitionProviders` in package.json */
 export const MCP_PROVIDER_ID = "mise.mcpServers";
+
+/** `mise mcp` no longer needs `experimental = true` since 2026.6.6 */
+const MIN_MISE_VERSION_FOR_MCP = [2026, 6, 6] as const;
 
 /** The MCP API of VS Code 1.101+, which the types of the engine predate */
 type McpStdioServerDefinition = {
@@ -36,8 +39,8 @@ type McpApi = {
  * in `mise.mcpServers`, in the current workspace folder. Nothing on a VS Code
  * without the MCP API (before 1.101).
  *
- * @returns what to call when the servers may have changed: a reload, a folder
- * switch
+ * @returns what to call when the servers may have changed: on every reload,
+ * which also follows a change of the setting
  */
 export function registerMcpServers(
 	context: vscode.ExtensionContext,
@@ -51,10 +54,19 @@ export function registerMcpServers(
 		return () => {};
 	}
 
+	/** the version of each mise binary, as reloads happen on every save */
+	const miseVersions = new Map<string, Promise<string>>();
+	const miseVersion = (path: string) => {
+		if (!miseVersions.has(path)) {
+			miseVersions.set(path, miseService.getVersion());
+		}
+		return miseVersions.get(path) as Promise<string>;
+	};
+
 	/** the servers enabled that can run, in the current folder */
 	const currentServers = async () => {
 		const enabled = getMcpServers();
-		if (!enabled.length || !vscode.workspace.isTrusted) {
+		if (!enabled.length || !isMiseExtensionEnabled()) {
 			return [];
 		}
 		const misePath = miseService.getMiseBinaryPath();
@@ -65,24 +77,26 @@ export function registerMcpServers(
 			enabled,
 			folder: miseService.getCurrentWorkspaceFolderPath(),
 			mise:
-				misePath && enabled.includes("mise")
+				misePath &&
+				enabled.includes("mise") &&
+				(await miseService.hasValidMiseVersion(MIN_MISE_VERSION_FOR_MCP))
 					? {
 							path: misePath,
 							globalArgs: miseService.buildMiseArgs([]),
-							version: await miseService.getVersion(),
+							version: await miseVersion(misePath),
 						}
 					: undefined,
 			pitchfork: pitchfork?.supported
-				? { path: pitchfork.path, version: pitchfork.version.join(".") }
+				? { path: pitchfork.path, version: pitchfork.version }
 				: undefined,
 		});
 	};
 	let provided = "[]";
 
 	const changed = new vscode.EventEmitter<void>();
-	context.subscriptions.push(
-		changed,
-		register(MCP_PROVIDER_ID, {
+	let registration: vscode.Disposable;
+	try {
+		registration = register(MCP_PROVIDER_ID, {
 			onDidChangeMcpServerDefinitions: changed.event,
 			provideMcpServerDefinitions: async () => {
 				const servers = await currentServers();
@@ -104,17 +118,17 @@ export function registerMcpServers(
 					return definition;
 				});
 			},
-		}),
-		vscode.workspace.onDidChangeConfiguration((event) => {
-			if (
-				event.affectsConfiguration(`mise.${CONFIGURATION_FLAGS.mcpServers}`)
-			) {
-				changed.fire();
-			}
-		}),
-	);
-	// a reload happens on every save: tell VS Code only of a change, such as
-	// another folder, mise version, or `--env`
+		});
+	} catch (error) {
+		// VS Code 1.100 has the API, behind a proposal extensions cannot use
+		logger.info("MCP servers are not available in this VS Code", error);
+		changed.dispose();
+		return () => {};
+	}
+	context.subscriptions.push(changed, registration);
+
+	// a reload happens on every save, and when the setting changes: tell VS
+	// Code only of a change, such as the setting, another folder, or `--env`
 	return () => {
 		void currentServers()
 			.then((servers) => {

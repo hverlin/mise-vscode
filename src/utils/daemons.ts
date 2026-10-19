@@ -550,6 +550,9 @@ export function pitchforkNamespace(
 	return path.basename(pitchforkProjectDir(configPath));
 }
 
+/** A variable VS Code sets for its own processes, e.g. `ELECTRON_RUN_AS_NODE` */
+export const isEditorEnvKey = (key: string) => /^(VSCODE_|ELECTRON_)/.test(key);
+
 /**
  * The environment of a command that may start the pitchfork supervisor: it
  * outlives the editor and every daemon inherits it, so none of the variables
@@ -562,7 +565,7 @@ export function pitchforkEnv(
 ): NodeJS.ProcessEnv {
 	const result: NodeJS.ProcessEnv = {};
 	for (const [key, value] of Object.entries(env)) {
-		if (!/^(VSCODE_|ELECTRON_)/.test(key)) {
+		if (!isEditorEnvKey(key)) {
 			result[key] = value;
 		}
 	}

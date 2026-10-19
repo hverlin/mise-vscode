@@ -347,7 +347,7 @@ Show how many daemons of the project run, and how many failed since the window o
 - **Type:** `array` (array of `string`)
 - **Default:** `[]`
 
-The [MCP](https://modelcontextprotocol.io/) servers to provide to the AI agents of VS Code (for example the agent mode of Copilot), started in the current workspace folder: [`mise mcp`](https://mise.jdx.dev/mcp.html) and [`pitchfork mcp`](https://pitchfork.jdx.dev/guides/mcp). The environment resource of `mise mcp` holds the real values of the project's environment variables, secrets included, and its tools can run tasks and install tools. Requires VS Code 1.101 or later. Only your user settings can set it.
+The [MCP](https://modelcontextprotocol.io/) servers to provide to the AI agents of VS Code (for example the agent mode of Copilot), started in the current workspace folder: [`mise mcp`](https://mise.jdx.dev/mcp.html) (mise 2026.6.6+) and [`pitchfork mcp`](https://pitchfork.jdx.dev/guides/mcp) (kept to the project's daemons with pitchfork 2.32.0+, else every project's). The environment resource of `mise mcp` holds the real values of the project's environment variables, secrets included, and its tools can run tasks and install tools. Requires VS Code 1.101 or later. Only your user settings can set it.
 
 **Available options:**
 

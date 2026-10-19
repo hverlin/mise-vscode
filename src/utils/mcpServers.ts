@@ -1,3 +1,5 @@
+import { isEditorEnvKey, isVersionAtLeast } from "./daemons";
+
 /** The MCP servers the extension can provide to the agents of VS Code */
 export const MCP_SERVERS = ["mise", "pitchfork"] as const;
 export type McpServerName = (typeof MCP_SERVERS)[number];
@@ -22,10 +24,13 @@ export type McpServerSpec = {
 function withoutEditorEnv(env: NodeJS.ProcessEnv): Record<string, null> {
 	return Object.fromEntries(
 		Object.keys(env)
-			.filter((key) => /^(VSCODE_|ELECTRON_)/.test(key))
+			.filter(isEditorEnvKey)
 			.map((key) => [key, null]),
 	);
 }
+
+/** `pitchfork mcp --local` keeps the server to the project, since 2.32.0 */
+const MIN_PITCHFORK_VERSION_FOR_LOCAL_MCP = [2, 32, 0] as const;
 
 /**
  * The servers enabled in `mise.mcpServers` that can run: `mise mcp` for the
@@ -43,7 +48,7 @@ export function buildMcpServers({
 	folder: string | undefined;
 	/** `globalArgs`: what mise gets before its command, e.g. `--env dev` */
 	mise?: { path: string; globalArgs: string[]; version?: string };
-	pitchfork?: { path: string; version: string };
+	pitchfork?: { path: string; version: [number, number, number] };
 	env?: NodeJS.ProcessEnv;
 }): McpServerSpec[] {
 	const servers: McpServerSpec[] = [];
@@ -65,10 +70,16 @@ export function buildMcpServers({
 		servers.push({
 			label: "pitchfork",
 			command: pitchfork.path,
-			args: ["mcp"],
+			// before, it reaches the daemons of every project of the machine
+			args: isVersionAtLeast(
+				pitchfork.version,
+				MIN_PITCHFORK_VERSION_FOR_LOCAL_MCP,
+			)
+				? ["mcp", "--local"]
+				: ["mcp"],
 			cwd: folder,
 			env: withoutEditorEnv(env),
-			version: pitchfork.version,
+			version: pitchfork.version.join("."),
 		});
 	}
 	return servers;

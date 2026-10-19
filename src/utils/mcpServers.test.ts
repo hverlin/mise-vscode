@@ -4,7 +4,10 @@ import { buildMcpServers } from "./mcpServers";
 describe("buildMcpServers", () => {
 	const env = { PATH: "/usr/bin", ELECTRON_RUN_AS_NODE: "1", VSCODE_PID: "42" };
 	const mise = { path: "/bin/mise", globalArgs: [], version: "2026.10.14" };
-	const pitchfork = { path: "/bin/pitchfork", version: "2.31.0" };
+	const pitchfork = {
+		path: "/bin/pitchfork",
+		version: [2, 31, 0] as [number, number, number],
+	};
 
 	it("provides the servers enabled, in the folder", () => {
 		expect(
@@ -33,6 +36,16 @@ describe("buildMcpServers", () => {
 				version: "2.31.0",
 			},
 		]);
+	});
+
+	it("keeps pitchfork to the project once it can", () => {
+		const [server] = buildMcpServers({
+			enabled: ["pitchfork"],
+			folder: "/repo",
+			pitchfork: { ...pitchfork, version: [2, 32, 0] },
+			env,
+		});
+		expect(server?.args).toEqual(["mcp", "--local"]);
 	});
 
 	it("passes the environment of mise.miseEnv to mise", () => {
