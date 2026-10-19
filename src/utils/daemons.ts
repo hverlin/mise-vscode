@@ -55,6 +55,8 @@ export type Daemon = {
 	run?: string;
 	/** for a mise daemon, the config file declaring it */
 	source?: string;
+	/** for a mise daemon, the project it belongs to */
+	root?: string;
 	disabled: boolean;
 };
 
@@ -124,6 +126,7 @@ export function mergeDaemons(
 			error: state?.error ?? undefined,
 			preset: entry.preset ?? undefined,
 			source: entry.source ?? undefined,
+			root: entry.root ?? undefined,
 			disabled: state?.disabled ?? false,
 		});
 	}
@@ -316,6 +319,29 @@ export function pitchforkProjectDir(configPath: string): string {
 	return path.basename(directory) === ".config"
 		? path.dirname(directory)
 		: directory;
+}
+
+/**
+ * The namespace pitchfork gives the daemons of a config: `global` for the
+ * user's and the system's, else its `namespace`, or the name of its project
+ * directory.
+ */
+export function pitchforkNamespace(
+	configPath: string,
+	config: unknown,
+	env = process.env,
+): string {
+	if (
+		isSamePath(configPath, pitchforkUserConfig(env)) ||
+		isSamePath(configPath, PITCHFORK_SYSTEM_CONFIG)
+	) {
+		return GLOBAL_NAMESPACE;
+	}
+	const declared = (config as { namespace?: unknown } | undefined)?.namespace;
+	if (typeof declared === "string" && declared) {
+		return declared;
+	}
+	return path.basename(pitchforkProjectDir(configPath));
 }
 
 /**

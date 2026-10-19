@@ -10,7 +10,8 @@ import { isMiseAtLeast } from "../test-utils";
 const DEADLINE_MS = 30_000;
 
 /**
- * The daemons of fixtures/daemons-workspace: `web` in mise.toml, `clock` and
+ * The daemons of fixtures/daemons-workspace: `web`, `api` (which depends on
+ * `web`) and `worker` (which runs the task `test`) in mise.toml, `clock` and
  * `ticker` in pitchfork.toml. The suite has a pitchfork supervisor of its own
  * (see .vscode-test.js), stopped at the end.
  */
@@ -125,6 +126,7 @@ suite("Daemons Test Suite", function () {
 				{ name: "clock", kind: "pitchfork", status: "available" },
 				{ name: "ticker", kind: "pitchfork", status: "available" },
 				{ name: "web", kind: "mise", status: "available" },
+				{ name: "worker", kind: "mise", status: "available" },
 			],
 		);
 		// listing never starts one
@@ -229,6 +231,47 @@ suite("Daemons Test Suite", function () {
 		assert.match(text, /\*\*web\*\*/);
 		assert.match(text, /Status: available/);
 		assert.match(text, /\[Start\]\(command:mise\.startDaemon\?/);
+	});
+
+	test("completes and resolves the task a daemon runs", async () => {
+		// `task = "|test"` of worker
+		const tasks = (await completionsAt(21, 8)).map((item) => item.label);
+		assert.ok(tasks.includes("test"), `got: ${tasks.join(", ")}`);
+		assert.ok(!tasks.includes("api"), "task names a task, not a daemon");
+
+		const document = await miseToml();
+		const locations =
+			(await vscode.commands.executeCommand<
+				(vscode.Location | vscode.LocationLink)[]
+			>(
+				"vscode.executeDefinitionProvider",
+				document.uri,
+				new vscode.Position(21, 9),
+			)) ?? [];
+		assert.deepEqual(
+			locations.map((location) =>
+				"targetRange" in location
+					? location.targetRange.start.line
+					: location.range.start.line,
+			),
+			[16],
+			"should go to [tasks.test]",
+		);
+	});
+
+	test("does not take a daemon name for the task of that name", async () => {
+		const document = await miseToml();
+		// `daemons = ["web"]` names the daemon web, not the task web
+		const references =
+			(await vscode.commands.executeCommand<vscode.Location[]>(
+				"vscode.executeReferenceProvider",
+				document.uri,
+				new vscode.Position(17, 13),
+			)) ?? [];
+		assert.deepEqual(
+			references.map((reference) => reference.range.start.line),
+			[],
+		);
 	});
 
 	test("starts and stops a mise daemon", async () => {

@@ -83,8 +83,9 @@ The names of [daemons](/mise-vscode/reference/daemons/) are completed where a
 value refers to them: the `daemons` of a task, the `depends` of a daemon, and
 the members of a `[daemon_groups]` group (which can also name other groups).
 `preset = "..."` completes the
-[service presets](https://mise.jdx.dev/daemons/presets.html) of mise. The same
-goes for the `depends` of a daemon in a `pitchfork.toml`.
+[service presets](https://mise.jdx.dev/daemons/presets.html) of mise, and
+`task = "..."` the task a daemon runs. In a `pitchfork.toml`, the same goes for
+the `depends` of a daemon and the members of a `[groups.<name>]` group.
 
 Hovering a daemon name shows its status, with actions to start, stop or
 restart it and to show its logs, and Cmd/Ctrl+Click goes to its declaration.

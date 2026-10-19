@@ -68,26 +68,26 @@ describe("snippet definitions", () => {
 		}
 	});
 
-	it("keep the daemon snippets together, after the task ones", () => {
-		const daemons = tomlSnippets.filter((snippet) =>
-			snippet.prefix.startsWith("mise-daemon"),
-		);
-		expect(daemons.map((snippet) => snippet.prefix)).toEqual([
+	it("list the daemon snippets after the task ones", () => {
+		const prefixes = tomlSnippets.map((snippet) => snippet.prefix);
+		const firstDaemon = prefixes.indexOf("mise-daemon");
+		expect(prefixes.slice(firstDaemon)).toEqual([
 			"mise-daemon",
 			"mise-daemon-preset",
 			"mise-daemon-task",
 			"mise-daemon-auto",
 			"mise-daemon-groups",
 		]);
-		expect(daemons.map((snippet) => snippet.sortText)).toEqual([
-			"mise-daemon00",
-			"mise-daemon01",
-			"mise-daemon02",
-			"mise-daemon03",
-			"mise-daemon04",
-		]);
+		expect(
+			prefixes
+				.slice(0, firstDaemon)
+				.every((prefix) => prefix.startsWith("mise-task")),
+		).toBe(true);
+		// the order the suggest widget shows them in
+		const sortTexts = tomlSnippets.map((snippet) => snippet.sortText);
+		expect(sortTexts).toEqual([...sortTexts].sort());
 		// a daemon declares a table, as a task does
-		for (const snippet of daemons) {
+		for (const snippet of tomlSnippets.slice(firstDaemon)) {
 			expect(snippet.body).toMatch(/^\[daemon(s|_groups)/);
 		}
 	});

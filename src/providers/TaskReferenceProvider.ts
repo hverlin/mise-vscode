@@ -18,6 +18,11 @@ import {
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
 } from "../utils/taskTemplates";
+import {
+	getDaemonNameAt,
+	isDaemonsKeyPath,
+	isTaskOfDaemonKeyPath,
+} from "../utils/tomlParsing";
 
 export async function getReferencesForTask(task: MiseTask, tasks: MiseTask[]) {
 	const tasksReference = tasks.filter((t) => isTaskDependency(t, task));
@@ -71,10 +76,14 @@ export class TaskReferenceProvider implements vscode.ReferenceProvider {
 			return templateReferences;
 		}
 
-		// daemons, not tasks
-		const section =
-			getCachedTomlParser(document)?.getKeyAtPosition(position)?.key[0];
-		if (section === "daemons" || section === "daemon_groups") {
+		// a daemon, not a task: its declaration, or a name in a task's `daemons`,
+		// a daemon's `depends` or a group
+		const keyPath =
+			getCachedTomlParser(document)?.getKeyAtPosition(position)?.key ?? [];
+		if (
+			getDaemonNameAt(document, position) ||
+			(isDaemonsKeyPath(keyPath) && !isTaskOfDaemonKeyPath(keyPath))
+		) {
 			return [];
 		}
 

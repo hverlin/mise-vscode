@@ -9,8 +9,8 @@ export type MiseSnippet = {
 	/** TextMate snippet syntax, as `vscode.SnippetString` takes it */
 	body: string;
 	/**
-	 * Sorts the snippets of a family next to each other, where their label
-	 * would have put them, and in the order they are declared in
+	 * Keeps the snippets in the order they are declared in, next to each other
+	 * where the label `mise-task` would have put them
 	 */
 	sortText: string;
 };
@@ -21,28 +21,27 @@ type SnippetDefinitions = Record<
 >;
 
 /** The definitions are listed in the order they are suggested in */
-const toSnippets = (
-	definitions: SnippetDefinitions,
-	family: string,
-): MiseSnippet[] =>
-	Object.values(definitions).map(({ prefix, description, body }, index) => ({
-		prefix,
-		description,
-		body: body.join("\n"),
-		sortText: `${family}${String(index).padStart(2, "0")}`,
-	}));
+const toSnippets = (...definitions: SnippetDefinitions[]): MiseSnippet[] =>
+	definitions
+		.flatMap((group) => Object.values(group))
+		.map(({ prefix, description, body }, index) => ({
+			prefix,
+			description,
+			body: body.join("\n"),
+			sortText: `mise-task${String(index).padStart(2, "0")}`,
+		}));
 
-/** Snippets for mise config files (`[tasks.name]`, `[daemons.name]`, ...) */
-export const tomlSnippets = [
-	...toSnippets(tomlSnippetDefinitions, "mise-task"),
-	...toSnippets(tomlDaemonSnippetDefinitions, "mise-daemon"),
-];
+/**
+ * Snippets for mise config files (`[tasks.name]`, then `[daemons.name]`,
+ * which are experimental)
+ */
+export const tomlSnippets = toSnippets(
+	tomlSnippetDefinitions,
+	tomlDaemonSnippetDefinitions,
+);
 
 /** Snippets for file tasks (`#MISE`/`#USAGE` headers) */
-export const fileTaskSnippets = toSnippets(
-	fileTaskSnippetDefinitions,
-	"mise-task",
-);
+export const fileTaskSnippets = toSnippets(fileTaskSnippetDefinitions);
 
 /** The typed text a snippet replaces, as a column range on the cursor line */
 export type SnippetPosition = { replaceStart: number };

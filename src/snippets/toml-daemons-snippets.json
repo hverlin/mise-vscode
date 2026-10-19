@@ -11,11 +11,11 @@
 	},
 	"daemonPreset": {
 		"prefix": "mise-daemon-preset",
-		"description": "[experimental] Declare a database or a message broker from a mise service preset",
+		"description": "[experimental] Declare a database or a message broker from a mise service preset, at a major version",
 		"body": [
 			"[daemons.${1:db}]",
 			"preset = \"${2|postgres,redis,cockroachdb,nats,spicedb|}\"",
-			"version = \"${3:latest}\"",
+			"version = \"$3\"",
 			"$0"
 		]
 	},

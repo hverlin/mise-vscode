@@ -100,9 +100,9 @@ function buildCompletionItem(
 	item.insertText = new vscode.SnippetString(snippet.body);
 	item.range = range;
 	// keep the snippets in the order they are declared in, from the plainest to
-	// the most complete, rather than alphabetically. The `mise-task` and
-	// `mise-daemon` stems keep them where their label would have put them, next
-	// to each other and not ahead of what the toml schema suggests
+	// the most complete and the task ones first, rather than alphabetically.
+	// The `mise-task` stem keeps them where their label would have put them,
+	// next to each other and not ahead of what the toml schema suggests
 	item.sortText = snippet.sortText;
 	// the `[` of `[tas` and the `#` of `#mi` are replaced by the snippet, so
 	// they have to be part of what the typed text is filtered against

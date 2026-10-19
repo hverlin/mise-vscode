@@ -17,3 +17,9 @@ backend = ["web", "api"]
 [tasks.test]
 daemons = ["web"]
 run = "echo test"
+
+[daemons.worker]
+task = "test"
+
+[tasks.web]
+run = "echo web"
