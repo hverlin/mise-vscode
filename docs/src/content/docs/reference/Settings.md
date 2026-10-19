@@ -331,7 +331,7 @@ Requires pitchfork 2.25.0 or later. Only your user settings can turn it on.
 - **Type:** `boolean`
 - **Default:** `true`
 
-Show a notification when a running daemon fails (it exits with an error), with its logs a click away. The daemons are checked while the Daemons view is visible, and every 15 seconds while it is hidden and a daemon runs.
+Show a notification when a running daemon of the project fails (it exits with an error), with its logs a click away. In a focused window, the daemons are checked while the Daemons view is visible, every 15 seconds while it is hidden and a daemon runs, and every minute while none runs but the pitchfork supervisor does.
 
 ---
 
@@ -339,7 +339,7 @@ Show a notification when a running daemon fails (it exits with an error), with i
 - **Type:** `boolean`
 - **Default:** `true`
 
-Show how many daemons of the project run, and how many failed, in the status bar. Nothing is shown while none runs or failed.
+Show how many daemons of the project run, and how many failed since the window opened, in the status bar. Nothing is shown while none runs or failed.
 
 ---
 

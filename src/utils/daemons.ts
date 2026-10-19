@@ -18,7 +18,6 @@ export type MiseDaemonEntry = {
 	proxy?: string | null;
 	/** where a preset keeps its data */
 	data_dir?: string | null;
-	data_size_human?: string | null;
 };
 
 /** An entry of `pitchfork daemons --json`: a daemon of the pitchfork configs */
@@ -83,9 +82,8 @@ export type Daemon = {
 	source?: string;
 	/** for a mise daemon, the project it belongs to */
 	root?: string;
-	/** for a preset, where it keeps its data, and how much there is */
+	/** for a preset, where it keeps its data */
 	dataDir?: string;
-	dataSize?: string;
 	disabled: boolean;
 	/** runs to completion: `completed` is its success */
 	oneshot?: boolean;
@@ -101,8 +99,10 @@ export type DaemonGroup = {
 	name: string;
 	kind: "mise" | "pitchfork";
 	members: string[];
-	/** the config file declaring it */
-	source: string;
+	/** the config files declaring it: mise merges a name across projects */
+	sources: string[];
+	/** for a pitchfork group, the namespace its short member names are in */
+	namespace?: string;
 };
 
 /** The namespace of the daemons of the user's own pitchfork config */
@@ -173,7 +173,6 @@ export function mergeDaemons(
 			source: entry.source ?? undefined,
 			root: entry.root ?? undefined,
 			dataDir: entry.data_dir ?? undefined,
-			dataSize: entry.data_size_human ?? undefined,
 			disabled: state?.disabled ?? false,
 			oneshot: state?.oneshot || undefined,
 		});
@@ -346,20 +345,68 @@ export function declaredGroups(
 	if (!table || typeof table !== "object" || Array.isArray(table)) {
 		return [];
 	}
+	const namespace =
+		kind === "pitchfork" ? pitchforkNamespace(source, config) : undefined;
 	return Object.entries(table).map(([name, value]) => {
 		const group = value as { daemons?: unknown; groups?: unknown } | undefined;
 		const members =
 			kind === "mise"
 				? strings(Array.isArray(value) ? value : group?.daemons)
 				: [...strings(group?.daemons), ...strings(group?.groups)];
-		return { name, kind, members, source };
+		return {
+			name,
+			kind,
+			members,
+			sources: [source],
+			...(namespace ? { namespace } : {}),
+		};
 	});
+}
+
+/** The project a mise config belongs to: `.config/mise/config.toml` is in `.` */
+export function miseConfigProjectDir(configPath: string): string {
+	let directory = path.dirname(configPath);
+	while (
+		["conf.d", "mise", ".mise", ".config"].includes(path.basename(directory))
+	) {
+		directory = path.dirname(directory);
+	}
+	return directory;
+}
+
+/**
+ * The groups of a project, from its configs, the closest first. A config
+ * overrides a group of the same project, but mise resolves a name in each
+ * project of a hierarchy, so `mise daemons start --group web` from a child
+ * project acts on the `web` groups of the child and of its parents: their
+ * members are merged. pitchfork keeps the closest group of a name.
+ */
+export function mergeGroups(groups: DaemonGroup[]): DaemonGroup[] {
+	const merged = new Map<string, DaemonGroup & { projects: Set<string> }>();
+	for (const group of groups) {
+		const key = `${group.kind}:${group.name}`;
+		const project =
+			group.kind === "mise" ? miseConfigProjectDir(group.sources[0] ?? "") : "";
+		const known = merged.get(key);
+		if (!known) {
+			merged.set(key, { ...group, projects: new Set([project]) });
+			continue;
+		}
+		if (group.kind === "pitchfork" || known.projects.has(project)) {
+			continue;
+		}
+		known.projects.add(project);
+		known.members = [...new Set([...known.members, ...group.members])];
+		known.sources = [...known.sources, ...group.sources];
+	}
+	return [...merged.values()].map(({ projects: _, ...group }) => group);
 }
 
 /**
  * The daemons a group starts: its members, with the groups among them
  * expanded in place. A member names a group of the same kind when there is
- * one, else a daemon by name or by id.
+ * one, else a daemon: by id when qualified (`shop/api`), else by name, in the
+ * namespace of the file declaring it for pitchfork.
  */
 export function groupDaemons(
 	group: DaemonGroup,
@@ -382,12 +429,16 @@ export function groupDaemons(
 				expand(nested);
 				continue;
 			}
-			const daemon = daemons.find(
-				(candidate) =>
-					candidate.kind === group.kind &&
-					(candidate.id === member || candidate.name === member),
-			);
-			if (daemon) {
+			const matches = member.includes("/")
+				? daemons.filter((candidate) => candidate.id === member)
+				: daemons.filter(
+						(candidate) =>
+							candidate.kind === group.kind &&
+							candidate.name === member &&
+							(group.kind === "mise" ||
+								candidate.namespace === current.namespace),
+					);
+			for (const daemon of matches) {
 				found.set(daemon.id, daemon);
 			}
 		}
@@ -404,21 +455,28 @@ export function groupDaemons(
 export function isResettableDataDir(
 	dataDir: string,
 	keep: string[] = [os.homedir()],
+	windows = process.platform === "win32",
 ): boolean {
-	if (!path.isAbsolute(dataDir)) {
+	const paths = windows ? path.win32 : path.posix;
+	// `\\?\C:\Users\me` is `C:\Users\me`, and Windows ignores case
+	const normalize = (value: string) => {
+		const resolved = paths.resolve(value.replace(/^\\\\\?\\/, ""));
+		return windows ? resolved.toLowerCase() : resolved;
+	};
+	if (!paths.isAbsolute(dataDir.replace(/^\\\\\?\\/, ""))) {
 		return false;
 	}
-	const resolved = path.resolve(dataDir);
-	if (path.dirname(resolved) === resolved) {
+	const resolved = normalize(dataDir);
+	if (paths.dirname(resolved) === resolved) {
 		return false;
 	}
 	return keep.every((kept) => {
-		const relative = path.relative(resolved, path.resolve(kept));
+		const relative = paths.relative(resolved, normalize(kept));
 		// not when `kept` is the directory itself, or inside it
 		return (
 			relative === ".." ||
-			relative.startsWith(`..${path.sep}`) ||
-			path.isAbsolute(relative)
+			relative.startsWith(`..${paths.sep}`) ||
+			paths.isAbsolute(relative)
 		);
 	});
 }

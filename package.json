@@ -379,14 +379,14 @@
           "type": "boolean",
           "title": "Notify daemon failures",
           "default": true,
-          "markdownDescription": "Show a notification when a running daemon fails (it exits with an error), with its logs a click away. The daemons are checked while the Daemons view is visible, and every 15 seconds while it is hidden and a daemon runs."
+          "markdownDescription": "Show a notification when a running daemon of the project fails (it exits with an error), with its logs a click away. In a focused window, the daemons are checked while the Daemons view is visible, every 15 seconds while it is hidden and a daemon runs, and every minute while none runs but the pitchfork supervisor does."
         },
         "mise.showDaemonsInStatusBar": {
           "order": 11.7,
           "type": "boolean",
           "title": "Show daemons in the status bar",
           "default": true,
-          "markdownDescription": "Show how many daemons of the project run, and how many failed, in the status bar. Nothing is shown while none runs or failed."
+          "markdownDescription": "Show how many daemons of the project run, and how many failed since the window opened, in the status bar. Nothing is shown while none runs or failed."
         },
         "mise.enableToolLinks": {
           "order": 10.5,

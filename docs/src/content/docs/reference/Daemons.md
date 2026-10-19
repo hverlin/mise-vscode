@@ -38,14 +38,17 @@ From each daemon, you can:
 The groups of the project, mise's
 [`[daemon_groups]`](https://mise.jdx.dev/daemons.html#groups) and pitchfork's
 `[groups]`, are listed under `Groups`, each with its daemons and how many of
-them run. A group can be started, stopped or restarted at once
+them run. As `mise daemons start --group` does, a mise group of a child project
+also covers the group of the same name in its parent projects. A group can be started, stopped or restarted at once
 (`mise daemons start --group <name>`, `pitchfork start --group <name>`).
 
 A [preset](https://mise.jdx.dev/daemons/presets.html), such as PostgreSQL,
-shows where it keeps its data and how much there is. From its context menu,
-`Reveal Daemon Data` opens that directory, and `Reset Daemon Data...` gives it
-fresh data, as the mise docs describe: after a confirmation, it stops the
-daemon, deletes its data directory and starts it again.
+shows where it keeps its data. From its context menu, `Reveal Daemon Data`
+opens that directory, and `Reset Daemon Data...` gives it fresh data, as the
+[mise docs](https://mise.jdx.dev/daemons/data.html#reset-a-database) describe:
+after a confirmation, it stops the daemon, deletes its data directory and
+starts it again. A directory holding your home directory, a workspace folder
+or the project is never deleted.
 
 A daemon can be disabled from its context menu (`pitchfork disable`): pitchfork
 no longer restarts it when it exits, nor starts it with a group or a session,
@@ -72,14 +75,16 @@ it runs, the daemons show as `available`.
 
 ## Failures and the status bar
 
-When a running daemon fails, for example a development server that exits with
-an error, a notification says so, with buttons to show its logs or restart it.
-The status bar shows how many daemons of the project run, and how many failed;
-click it to open the Daemons panel.
+When a running daemon of the project fails, for example a development server
+that exits with an error, a notification says so, with buttons to show its logs
+or restart it. The status bar shows how many daemons of the project run, and
+how many failed since the window opened; click it to open the Daemons panel.
 
-The daemons are checked every 5 seconds while the panel is visible, and every
-15 seconds while it is hidden and a daemon runs. Turn the notifications off
-with `mise.notifyDaemonFailures`, and the status bar item with
+In a focused window, the daemons are checked every 5 seconds while the panel
+is visible, every 15 seconds while it is hidden and a daemon runs, and every
+minute while none runs but the pitchfork supervisor does, to notice a daemon
+started from a terminal. Turn the notifications off with
+`mise.notifyDaemonFailures`, and the status bar item with
 `mise.showDaemonsInStatusBar`.
 
 ## Code lenses

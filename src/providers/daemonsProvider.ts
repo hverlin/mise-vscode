@@ -47,6 +47,8 @@ export const DAEMONS_VIEW_ID = "miseDaemonsView";
 const POLL_INTERVAL_MS = 5_000;
 /** and while it is hidden, as long as a daemon runs */
 const HIDDEN_POLL_INTERVAL_MS = 15_000;
+/** and while none runs, but the supervisor does */
+const IDLE_POLL_INTERVAL_MS = 60_000;
 
 export const PENDING_LABELS: Record<DaemonAction, string> = {
 	start: "starting…",
@@ -119,9 +121,7 @@ export function daemonTooltip(daemon: Daemon): vscode.MarkdownString {
 		lines.push(`Runs: ${markdownCodeSpan(daemon.run)}`);
 	}
 	if (daemon.dataDir) {
-		lines.push(
-			`Data: ${daemon.dataSize ? `${daemon.dataSize} in ` : ""}${markdownCodeSpan(daemon.dataDir)}`,
-		);
+		lines.push(`Data: ${markdownCodeSpan(daemon.dataDir)}`);
 	}
 	if (daemon.oneshot) {
 		lines.push("Runs to completion (`oneshot`)");
@@ -170,9 +170,12 @@ export class DaemonItem extends vscode.TreeItem {
 			"miseDaemon",
 			isDaemonActive(daemon) ? "active" : "inactive",
 			...(daemon.url ? ["url"] : []),
-			...(daemon.dataDir ? ["data"] : []),
+			// mise reports it before the preset first starts
+			...(daemon.dataDir && existsSync(daemon.dataDir) ? ["data"] : []),
 			// a shared server holds the data of every checkout
-			...(daemon.dataDir && daemon.kind === "mise" ? ["resettable"] : []),
+			...(daemon.dataDir && existsSync(daemon.dataDir) && daemon.kind === "mise"
+				? ["resettable"]
+				: []),
 			daemon.disabled ? "disabled" : "enabled",
 		].join(";");
 		this.command = {
@@ -217,7 +220,7 @@ export class GroupItem extends vscode.TreeItem {
 			[
 				`**${group.name}** ${group.kind === "mise" ? "mise" : "pitchfork"} group`,
 				`Members: ${group.members.map((member) => markdownCodeSpan(member)).join(", ")}`,
-				`Declared in ${markdownCodeSpan(group.source)}`,
+				`Declared in ${group.sources.map((source) => markdownCodeSpan(source)).join(", ")}`,
 			].join("\n\n"),
 		);
 		this.iconPath = new vscode.ThemeIcon(pending ? "loading~spin" : "layers");
@@ -361,6 +364,23 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		);
 	}
 
+	/** Start the daemons of the project, or stop the ones that run */
+	async runAllWithPending(action: "start" | "stop") {
+		await this.refresh();
+		const state = this._state;
+		if (!state?.daemons.length) {
+			return;
+		}
+		await this.runPending(
+			state.daemons
+				.filter((daemon) => daemon.namespace !== GLOBAL_NAMESPACE)
+				.map((daemon) => daemon.id),
+			PENDING_LABELS[action],
+			() => this.daemonsService.runAll(action, state),
+			`Could not ${action} the daemons`,
+		);
+	}
+
 	/** Run an action on the daemons of a group */
 	runGroupWithPending(group: DaemonGroup, action: DaemonAction) {
 		const members = groupDaemons(
@@ -371,7 +391,13 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 		return this.runPending(
 			[groupKey(group), ...members.map((daemon) => daemon.id)],
 			PENDING_LABELS[action],
-			() => this.daemonsService.runGroup(action, group, this._state?.pitchfork),
+			() =>
+				this.daemonsService.runGroup(
+					action,
+					group,
+					members,
+					this._state?.pitchfork,
+				),
 			`Could not ${action} the group ${group.name}`,
 		);
 	}
@@ -424,13 +450,16 @@ export class MiseDaemonsProvider implements vscode.TreeDataProvider<TreeItem> {
 					}
 				});
 		} finally {
+			// the state after the action, before the daemons are not pending
+			// anymore: the failure notifications must not take the outcome of
+			// the action for a crash (see DaemonsStatus)
+			await this.refresh();
 			for (const key of keys) {
 				this.pending.delete(key);
 			}
 			// the pending label leaves even when the state did not change
 			this._onDidChangeTreeData.fire();
 			this._onDidChangeState.fire();
-			await this.refresh();
 		}
 	}
 
@@ -582,7 +611,15 @@ async function resolveGroup(
 		return argument as DaemonGroup;
 	}
 	await provider.refresh();
-	const groups = provider.state?.groups ?? [];
+	// as the view lists them: the groups of daemons it knows
+	const groups = (provider.state?.groups ?? []).filter(
+		(group) =>
+			groupDaemons(
+				group,
+				provider.state?.groups ?? [],
+				provider.state?.daemons ?? [],
+			).length,
+	);
 	if (!groups.length) {
 		vscode.window.showInformationMessage("No group of daemons to pick from.");
 		return undefined;
@@ -591,7 +628,7 @@ async function resolveGroup(
 		groups.map((group) => ({
 			label: group.name,
 			description: group.members.join(", "),
-			detail: group.source,
+			detail: group.sources.join(", "),
 			group,
 		})),
 		{ placeHolder },
@@ -599,8 +636,23 @@ async function resolveGroup(
 	return picked?.group;
 }
 
-async function resetDaemonData(provider: MiseDaemonsProvider, daemon: Daemon) {
-	if (!daemon.dataDir) {
+async function resetDaemonData(
+	provider: MiseDaemonsProvider,
+	daemonsService: DaemonsService,
+	daemon: Daemon,
+) {
+	if (provider.pendingLabel(daemon)) {
+		vscode.window.showInformationMessage(
+			`${daemon.name} is busy (${provider.pendingLabel(daemon)}), try again once it is done.`,
+		);
+		return;
+	}
+	// before asking: a directory that cannot be reset is not offered
+	const dataDir = await daemonsService.resettableDataDir(daemon);
+	if (!dataDir) {
+		vscode.window.showErrorMessage(
+			`The data of ${daemon.name} cannot be reset from here.`,
+		);
 		return;
 	}
 	const reset = "Reset data";
@@ -608,7 +660,7 @@ async function resetDaemonData(provider: MiseDaemonsProvider, daemon: Daemon) {
 		`Reset the data of ${daemon.name}?`,
 		{
 			modal: true,
-			detail: `This stops ${daemon.name}, deletes ${daemon.dataDir}${daemon.dataSize ? ` (${daemon.dataSize})` : ""}, and starts it again with fresh data. Back up anything you want to keep first.`,
+			detail: `This stops ${daemon.name}, deletes ${dataDir}, and starts it again with fresh data. Back up anything you want to keep first.`,
 		},
 		reset,
 	);
@@ -664,32 +716,6 @@ export function registerDaemonsCommands(
 		});
 		terminals.set(key, terminal);
 		terminal.show();
-	};
-
-	const runAll = async (action: "start" | "stop") => {
-		await provider.refresh();
-		const state = provider.state;
-		if (!state?.daemons.length) {
-			return;
-		}
-		try {
-			await vscode.window.withProgress(
-				{
-					location: vscode.ProgressLocation.Notification,
-					title:
-						action === "start"
-							? "Starting the daemons of the project"
-							: "Stopping the daemons of the project",
-				},
-				() => daemonsService.runAll(action, state),
-			);
-		} catch (error) {
-			vscode.window.showErrorMessage(
-				`Could not ${action} the daemons: ${(error as Error).message}`,
-			);
-		} finally {
-			await provider.refresh();
-		}
 	};
 
 	const action =
@@ -834,16 +860,16 @@ export function registerDaemonsCommands(
 					"Daemon whose data to reset",
 				);
 				if (daemon) {
-					await resetDaemonData(provider, daemon);
+					await resetDaemonData(provider, daemonsService, daemon);
 				}
 			},
 		),
-		vscode.commands.registerCommand(MISE_START_ALL_DAEMONS, async () => {
-			await runAll("start");
-		}),
-		vscode.commands.registerCommand(MISE_STOP_ALL_DAEMONS, async () => {
-			await runAll("stop");
-		}),
+		vscode.commands.registerCommand(MISE_START_ALL_DAEMONS, () =>
+			provider.runAllWithPending("start"),
+		),
+		vscode.commands.registerCommand(MISE_STOP_ALL_DAEMONS, () =>
+			provider.runAllWithPending("stop"),
+		),
 		vscode.commands.registerCommand(MISE_OPEN_PITCHFORK_TUI, async () => {
 			await provider.refresh();
 			const command = daemonsService.tuiCommand(provider.state?.pitchfork);
@@ -893,7 +919,8 @@ export function registerDaemonsCommands(
 /**
  * Poll the daemons in a focused window: often while the view is visible, less
  * so while it is hidden and a daemon runs, which the failure notifications
- * and the status bar follow (see DaemonsStatus). Not at all otherwise.
+ * and the status bar follow (see DaemonsStatus), and rarely while none runs
+ * but the supervisor does, to notice a daemon started from a terminal.
  */
 export function pollDaemons(
 	treeView: vscode.TreeView<unknown>,
@@ -909,7 +936,10 @@ export function pollDaemons(
 				? POLL_INTERVAL_MS
 				: running
 					? HIDDEN_POLL_INTERVAL_MS
-					: undefined;
+					: // a daemon may be started from a terminal
+						provider.state?.supervisor === "up" && provider.state.daemons.length
+						? IDLE_POLL_INTERVAL_MS
+						: undefined;
 		if (next === interval) {
 			return;
 		}
