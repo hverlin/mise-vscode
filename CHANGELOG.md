@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/hverlin/mise-vscode/compare/v1.28.0...v1.29.0) (2026-10-19)
+
+
+### Features
+
+* Tera completions match the Tera 2 engine of mise ([#355](https://github.com/hverlin/mise-vscode/issues/355)) ([fd7a78e](https://github.com/hverlin/mise-vscode/commit/fd7a78e689ccf420e6cad4769b3619120fe4dcb2))
+
 ## [1.28.0](https://github.com/hverlin/mise-vscode/compare/v1.27.0...v1.28.0) (2026-10-19)
 
 
