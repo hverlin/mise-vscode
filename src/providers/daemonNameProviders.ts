@@ -11,6 +11,7 @@ import { findKeyInTomlDocument } from "../utils/bootstrapDocument";
 import {
 	type Daemon,
 	declaredDaemonNames,
+	declaredGroups,
 	describeDaemon,
 	isDaemonActive,
 	isPitchforkConfigPath,
@@ -50,44 +51,13 @@ type DaemonNames = {
 	groups: Map<string, string[]>;
 };
 
-/** The members of a group, as mise or pitchfork declare it */
-function groupsOf(
-	parsed: unknown,
-	isPitchfork: boolean,
-): Map<string, string[]> {
-	const strings = (value: unknown) =>
-		Array.isArray(value)
-			? value.filter((member): member is string => typeof member === "string")
-			: [];
-	const groups = new Map<string, string[]>();
-	if (isPitchfork) {
-		// `[groups.all]` with `daemons = [...]` and `groups = [...]`
-		const table = (parsed as { groups?: Record<string, unknown> } | undefined)
-			?.groups;
-		for (const [name, value] of Object.entries(table ?? {})) {
-			const group = value as
-				| { daemons?: unknown; groups?: unknown }
-				| undefined;
-			groups.set(name, [...strings(group?.daemons), ...strings(group?.groups)]);
-		}
-		return groups;
-	}
-	// `name = [...]`, or `[daemon_groups.name]` with `daemons = [...]`
-	const table = (
-		parsed as { daemon_groups?: Record<string, unknown> } | undefined
-	)?.daemon_groups;
-	for (const [name, value] of Object.entries(table ?? {})) {
-		groups.set(
-			name,
-			strings(
-				Array.isArray(value)
-					? value
-					: (value as { daemons?: unknown } | undefined)?.daemons,
-			),
-		);
-	}
-	return groups;
-}
+/** The groups of a config, with their members */
+const groupsOf = (parsed: unknown, isPitchfork: boolean, source: string) =>
+	new Map(
+		declaredGroups(parsed, isPitchfork ? "pitchfork" : "mise", source).map(
+			(group) => [group.name, group.members],
+		),
+	);
 
 /**
  * The daemons a config can name: the ones it declares, and the ones of the
@@ -140,7 +110,7 @@ function daemonNamesOf(
 			daemons.set(daemon.name, daemon);
 		}
 	}
-	return { daemons, groups: groupsOf(parsed, isPitchfork) };
+	return { daemons, groups: groupsOf(parsed, isPitchfork, filePath) };
 }
 
 /** Where a config declares its groups: `[groups]` for pitchfork */

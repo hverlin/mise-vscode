@@ -21,11 +21,7 @@ import {
 import { expandPath } from "../utils/fileUtils";
 import { getCachedTomlParser } from "../utils/miseFileParser";
 import { isMiseConfigPath } from "../utils/miseUtilts";
-import {
-	DAEMONS_VIEW_ID,
-	type MiseDaemonsProvider,
-	PENDING_LABELS,
-} from "./daemonsProvider";
+import { DAEMONS_VIEW_ID, type MiseDaemonsProvider } from "./daemonsProvider";
 
 /**
  * Over each daemon a config declares: its status, and what can be done with
@@ -122,12 +118,12 @@ export class DaemonCodeLensProvider implements vscode.CodeLensProvider {
 	}
 
 	private lensesOf(daemon: Daemon, range: vscode.Range): vscode.CodeLens[] {
-		const pending = this.provider.pendingAction(daemon);
+		const pending = this.provider.pendingLabel(daemon);
 		const lens = (title: string, command: string) =>
 			new vscode.CodeLens(range, { title, command, arguments: [daemon] });
 
 		const status = pending
-			? `$(loading~spin) ${PENDING_LABELS[pending]}`
+			? `$(loading~spin) ${pending}`
 			: `$(${isDaemonActive(daemon) ? "pass-filled" : "circle-large-outline"}) ${describeDaemon(daemon)}`;
 		const lenses = [
 			new vscode.CodeLens(range, {

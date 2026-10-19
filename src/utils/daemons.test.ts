@@ -3,11 +3,16 @@ import path from "node:path";
 import {
 	daemonCommandError,
 	declaredDaemonNames,
+	declaredGroups,
 	describeDaemon,
+	groupDaemons,
 	isPitchforkConfigPath,
+	isResettableDataDir,
 	isSamePath,
 	isVersionAtLeast,
 	mergeDaemons,
+	mergeGroups,
+	miseConfigProjectDir,
 	type PitchforkListEntry,
 	parsePitchforkVersion,
 	pitchforkConfigCandidates,
@@ -306,5 +311,207 @@ describe("daemonCommandError", () => {
 		expect(daemonCommandError("Error:   × Daemon shop/web not found\n")).toBe(
 			"Daemon shop/web not found",
 		);
+	});
+});
+
+describe("daemon groups", () => {
+	const daemons = mergeDaemons(
+		[
+			{ id: "shop/web", name: "web", status: "running" },
+			{ id: "shop/api", name: "api", status: "available" },
+			{ id: "shop/db", name: "db", status: "available" },
+		],
+		[{ id: "shop/clock" }, { id: "app/db" }, { id: "work/db" }],
+		undefined,
+	);
+
+	it("reads mise groups in both forms, and pitchfork ones", () => {
+		expect(
+			declaredGroups(
+				{
+					daemon_groups: {
+						default: ["web"],
+						full: { daemons: ["default", "api"] },
+					},
+				},
+				"mise",
+				"/shop/mise.toml",
+			),
+		).toEqual([
+			{
+				name: "default",
+				kind: "mise",
+				members: ["web"],
+				sources: ["/shop/mise.toml"],
+			},
+			{
+				name: "full",
+				kind: "mise",
+				members: ["default", "api"],
+				sources: ["/shop/mise.toml"],
+			},
+		]);
+		expect(
+			declaredGroups(
+				{ groups: { all: { daemons: ["clock"], groups: ["backend"] } } },
+				"pitchfork",
+				"/shop/pitchfork.toml",
+			),
+		).toEqual([
+			{
+				name: "all",
+				kind: "pitchfork",
+				members: ["clock", "backend"],
+				sources: ["/shop/pitchfork.toml"],
+				namespace: "shop",
+			},
+		]);
+		expect(declaredGroups({ groups: {} }, "mise", "/x")).toEqual([]);
+	});
+
+	it("expands the groups a group names, once", () => {
+		const groups = declaredGroups(
+			{
+				daemon_groups: {
+					default: ["web", "full"],
+					full: ["default", "api", "shop/db", "gone"],
+				},
+			},
+			"mise",
+			"/shop/mise.toml",
+		);
+		const [defaultGroup] = groups;
+		expect(
+			defaultGroup &&
+				groupDaemons(defaultGroup, groups, daemons).map((daemon) => daemon.id),
+		).toEqual(["shop/web", "shop/api", "shop/db"]);
+	});
+
+	it("keeps short names to their kind, and to their namespace for pitchfork", () => {
+		const [mise] = declaredGroups(
+			{ daemon_groups: { all: ["web", "clock"] } },
+			"mise",
+			"/shop/mise.toml",
+		);
+		expect(
+			mise && groupDaemons(mise, [mise], daemons).map((daemon) => daemon.id),
+		).toEqual(["shop/web"]);
+		// pitchfork qualifies `db` with the namespace of the file
+		const [pitchfork] = declaredGroups(
+			{ groups: { all: { daemons: ["db", "shop/web"] } } },
+			"pitchfork",
+			"/work/pitchfork.toml",
+		);
+		expect(
+			pitchfork &&
+				groupDaemons(pitchfork, [pitchfork], daemons).map(
+					(daemon) => daemon.id,
+				),
+		).toEqual(["work/db", "shop/web"]);
+	});
+
+	it("merges a mise group across projects, not within one", () => {
+		const parent = declaredGroups(
+			{ daemon_groups: { web: ["api"] } },
+			"mise",
+			"/repo/mise.toml",
+		);
+		const child = declaredGroups(
+			{ daemon_groups: { web: ["worker"] } },
+			"mise",
+			"/repo/child/mise.toml",
+		);
+		const childLocal = declaredGroups(
+			{ daemon_groups: { web: ["db"] } },
+			"mise",
+			"/repo/child/.config/mise.local.toml",
+		);
+		expect(mergeGroups([...childLocal, ...child, ...parent])).toEqual([
+			{
+				name: "web",
+				kind: "mise",
+				members: ["db", "api"],
+				sources: ["/repo/child/.config/mise.local.toml", "/repo/mise.toml"],
+			},
+		]);
+		const pitchfork = [
+			...declaredGroups(
+				{ groups: { web: { daemons: ["a"] } } },
+				"pitchfork",
+				"/repo/child/pitchfork.toml",
+			),
+			...declaredGroups(
+				{ groups: { web: { daemons: ["b"] } } },
+				"pitchfork",
+				"/repo/pitchfork.toml",
+			),
+		];
+		expect(mergeGroups(pitchfork).map((group) => group.members)).toEqual([
+			["a"],
+		]);
+	});
+
+	it("knows the project of a mise config", () => {
+		expect(miseConfigProjectDir("/repo/mise.toml")).toBe(path.resolve("/repo"));
+		expect(miseConfigProjectDir("/repo/.config/mise/config.toml")).toBe(
+			path.resolve("/repo"),
+		);
+		expect(miseConfigProjectDir("/repo/.mise/conf.d/a.toml")).toBe(
+			path.resolve("/repo"),
+		);
+	});
+});
+
+describe("preset data", () => {
+	it("comes from mise", () => {
+		const [db] = mergeDaemons(
+			[
+				{
+					id: "shop/db",
+					name: "db",
+					status: "available",
+					data_dir: "/state/db/data",
+				},
+			],
+			[],
+			undefined,
+		);
+		expect(db).toMatchObject({ dataDir: "/state/db/data" });
+	});
+
+	it("is only removed from a directory that holds nothing else", () => {
+		const home = path.join(path.sep, "home", "me");
+		const keep = [home, path.join(home, "shop")];
+		expect(
+			isResettableDataDir(
+				path.join(home, ".local", "state", "db"),
+				keep,
+				false,
+			),
+		).toBe(true);
+		expect(
+			isResettableDataDir(path.join(home, "shop", ".data", "db"), keep, false),
+		).toBe(true);
+		expect(isResettableDataDir(home, keep, false)).toBe(false);
+		expect(isResettableDataDir(path.join(home, "shop"), keep, false)).toBe(
+			false,
+		);
+		expect(isResettableDataDir(path.join(path.sep, "home"), keep, false)).toBe(
+			false,
+		);
+		expect(isResettableDataDir(path.sep, keep, false)).toBe(false);
+		expect(isResettableDataDir("relative/db", keep, false)).toBe(false);
+		expect(isResettableDataDir(path.join(home, "..data"), keep, false)).toBe(
+			true,
+		);
+	});
+
+	it("sees through the spellings of Windows paths", () => {
+		const keep = ["C:\\Users\\me"];
+		expect(isResettableDataDir("\\\\?\\C:\\Users\\me", keep, true)).toBe(false);
+		expect(isResettableDataDir("c:\\users", keep, true)).toBe(false);
+		expect(
+			isResettableDataDir("C:\\Users\\me\\AppData\\mise\\db", keep, true),
+		).toBe(true);
 	});
 });
