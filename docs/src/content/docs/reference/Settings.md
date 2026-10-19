@@ -327,6 +327,22 @@ Requires pitchfork 2.25.0 or later. Only your user settings can turn it on.
 
 ---
 
+##### `mise.notifyDaemonFailures`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show a notification when a running daemon fails (it exits with an error), with its logs a click away. The daemons are checked while the Daemons view is visible, and every 15 seconds while it is hidden and a daemon runs.
+
+---
+
+##### `mise.showDaemonsInStatusBar`
+- **Type:** `boolean`
+- **Default:** `true`
+
+Show how many daemons of the project run, and how many failed, in the status bar. Nothing is shown while none runs or failed.
+
+---
+
 ##### `mise.updateEnvAutomatically`
 - **Type:** `boolean`
 - **Default:** `true`

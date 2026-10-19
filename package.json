@@ -374,6 +374,20 @@
           "default": false,
           "markdownDescription": "Give each workspace folder a [pitchfork](https://pitchfork.jdx.dev/) session while it is open, as a shell gets one when it enters the folder: the daemons declared with `auto = [\"start\"]` start, and the ones with `auto = [\"stop\"]` stop once no session is left (see [Start and stop with your shell](https://mise.jdx.dev/daemons.html#automatic-start-and-stop)). The mise daemons that start this way are registered with pitchfork first, which installs their missing tools.\n\nRequires pitchfork 2.25.0 or later. Only your user settings can turn it on."
         },
+        "mise.notifyDaemonFailures": {
+          "order": 11.6,
+          "type": "boolean",
+          "title": "Notify daemon failures",
+          "default": true,
+          "markdownDescription": "Show a notification when a running daemon fails (it exits with an error), with its logs a click away. The daemons are checked while the Daemons view is visible, and every 15 seconds while it is hidden and a daemon runs."
+        },
+        "mise.showDaemonsInStatusBar": {
+          "order": 11.7,
+          "type": "boolean",
+          "title": "Show daemons in the status bar",
+          "default": true,
+          "markdownDescription": "Show how many daemons of the project run, and how many failed, in the status bar. Nothing is shown while none runs or failed."
+        },
         "mise.enableToolLinks": {
           "order": 10.5,
           "type": "boolean",

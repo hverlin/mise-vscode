@@ -69,10 +69,11 @@ import {
 import {
 	DAEMONS_VIEW_ID,
 	MiseDaemonsProvider,
-	pollWhileVisible,
+	pollDaemons,
 	registerDaemonsCommands,
 } from "./providers/daemonsProvider";
 import { DaemonsSession } from "./providers/daemonsSession";
+import { DaemonsStatus } from "./providers/daemonsStatus";
 import {
 	MiseEnvsProvider,
 	registerEnvsCommands,
@@ -360,7 +361,8 @@ export class MiseExtension {
 		}
 		context.subscriptions.push(
 			daemonsTreeView,
-			pollWhileVisible(daemonsTreeView, daemonsProvider),
+			pollDaemons(daemonsTreeView, daemonsProvider),
+			new DaemonsStatus(daemonsProvider),
 			daemonsSession,
 			...pitchforkConfigWatchers,
 			vscode.languages.registerCodeLensProvider(

@@ -43,6 +43,8 @@ export const DAEMONS_VIEW_ID = "miseDaemonsView";
 
 /** How often the view asks for the status of the daemons while it is visible */
 const POLL_INTERVAL_MS = 5_000;
+/** and while it is hidden, as long as a daemon runs */
+const HIDDEN_POLL_INTERVAL_MS = 15_000;
 
 export const PENDING_LABELS: Record<DaemonAction, string> = {
 	start: "starting…",
@@ -805,25 +807,41 @@ export function registerDaemonsCommands(
 	);
 }
 
-/** Poll the daemons while the view is visible, in a focused window */
-export function pollWhileVisible(
+/**
+ * Poll the daemons in a focused window: often while the view is visible, less
+ * so while it is hidden and a daemon runs, which the failure notifications
+ * and the status bar follow (see DaemonsStatus). Not at all otherwise.
+ */
+export function pollDaemons(
 	treeView: vscode.TreeView<unknown>,
 	provider: MiseDaemonsProvider,
 ): vscode.Disposable {
 	let timer: ReturnType<typeof setInterval> | undefined;
+	let interval: number | undefined;
 	const update = () => {
-		const shouldPoll = treeView.visible && vscode.window.state.focused;
-		if (shouldPoll && !timer) {
+		const running = provider.state?.daemons.some(isDaemonActive) ?? false;
+		const next = !vscode.window.state.focused
+			? undefined
+			: treeView.visible
+				? POLL_INTERVAL_MS
+				: running
+					? HIDDEN_POLL_INTERVAL_MS
+					: undefined;
+		if (next === interval) {
+			return;
+		}
+		clearInterval(timer);
+		timer = undefined;
+		interval = next;
+		if (next !== undefined) {
 			void provider.refresh();
-			timer = setInterval(() => void provider.refresh(), POLL_INTERVAL_MS);
-		} else if (!shouldPoll && timer) {
-			clearInterval(timer);
-			timer = undefined;
+			timer = setInterval(() => void provider.refresh(), next);
 		}
 	};
 	const listeners = [
 		treeView.onDidChangeVisibility(update),
 		vscode.window.onDidChangeWindowState(update),
+		provider.onDidChangeState(update),
 	];
 	update();
 	return {
