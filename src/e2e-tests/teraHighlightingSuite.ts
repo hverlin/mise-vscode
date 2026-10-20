@@ -313,6 +313,27 @@ export function teraHighlightingSuite(tomlGrammar: "mise-vscode" | "other") {
 			assertHeader("[tasks.after-usage]");
 		});
 
+		test("the other kind of triple quote does not close a script", () => {
+			assertHeader("[tasks.after-other-triple-quote]");
+			assertTeraAt("usage.after_other_triple");
+		});
+
+		test("a closer written as four quotes keeps its first quote", () => {
+			assertHeader("[tasks.after-four-quotes]");
+			assertTeraAt("usage.after_four_quotes");
+		});
+
+		test("a dotted run key is a shell script", () => {
+			assertScope('dotted.run = "echo', /support\.function\.builtin\.shell/);
+			assertTeraExpressions('dotted.run = "echo', 1);
+		});
+
+		test("a nested inline table in a run array closes in order", () => {
+			assertScope('nested = { run = ["ls"', /entity\.name\.command\.shell/);
+			assertHeader("[tasks.after-dotted]");
+			assertTeraAt("usage.after_dotted");
+		});
+
 		test("a TOML string that is not a script has Tera but no shell", () => {
 			assertNoScope("#plain[@]", /\.shell|comment\.block\.tera/);
 			assertTeraExpressions("{{ usage.plain }}", 1);

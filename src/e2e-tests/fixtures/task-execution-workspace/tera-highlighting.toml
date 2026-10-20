@@ -209,3 +209,25 @@ ${#plain[@]}
 
 [tasks.after-plain]
 run = "echo {{ usage.after_plain }}"
+
+# The other kind of triple quote inside a script is not its closer
+[tasks.other-triple-quote]
+run = """echo "'''" """
+
+[tasks.after-other-triple-quote]
+run = "echo {{ usage.after_other_triple }}"
+
+# A closer written as four quotes: the first one is content
+[tasks.four-quotes]
+run = """git commit -m "wip""""
+
+[tasks.after-four-quotes]
+run = "echo {{ usage.after_four_quotes }}"
+
+# Dotted keys and nested inline tables
+[tasks]
+dotted.run = "echo {{ usage.dotted }}"
+nested = { run = ["ls", { task = "x", env = { A = "1" } }], description = "x" }
+
+[tasks.after-dotted]
+run = "echo {{ usage.after_dotted }}"

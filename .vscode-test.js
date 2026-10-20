@@ -143,13 +143,15 @@ module.exports = defineConfig([
 	},
 	// The TOML grammar registered last wins: another extension's, such as
 	// Tombi's or Even Better TOML's, when it loads after ours (the marketplace
-	// order). Our extension's highlighting must not depend on our grammar.
+	// order, where hverlin.* sorts before tombi-toml.* and tamasfe.*). Our
+	// extension's highlighting must not depend on our grammar. VS Code orders
+	// development extensions by folder name, hence the zz- prefix.
 	{
 		label: "other-toml-grammar",
 		files: "src/e2e-tests/other-toml-grammar/*.e2e.ts",
 		extensionDevelopmentPath: [
 			__dirname,
-			path.join(fixturesPath, "other-toml-grammar-extension"),
+			path.join(fixturesPath, "zz-other-toml-grammar-extension"),
 		],
 		workspaceFolder: path.join(fixturesPath, "task-execution-workspace"),
 		env: {
