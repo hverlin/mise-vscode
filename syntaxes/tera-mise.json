@@ -9,7 +9,7 @@
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
 			},
-			"end": "(-?)(\\}\\})|(?=\"\"\"|''')",
+			"end": "(-?)(\\}\\})|(?=\"\"\"|''')|$",
 			"endCaptures": {
 				"1": { "name": "keyword.operator.whitespace.trim.tera" },
 				"2": { "name": "punctuation.section.embedded.end.tera" }
@@ -27,7 +27,7 @@
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
 			},
-			"end": "(-?)(\\%\\})|(?=\"\"\"|''')",
+			"end": "(-?)(\\%\\})|(?=\"\"\"|''')|$",
 			"endCaptures": {
 				"1": { "name": "keyword.operator.whitespace.trim.tera" },
 				"2": { "name": "punctuation.section.embedded.end.tera" }
@@ -41,46 +41,46 @@
 		{
 			"name": "comment.block.tera",
 			"begin": "(?<!\\$)\\{#(?=.*#\\})",
-			"end": "#\\}|(?=\"\"\"|''')"
+			"end": "#\\}|(?=\"\"\"|''')|$"
 		},
 		{
 			"name": "meta.embedded.block.scriptJS",
 			"contentName": "meta.embedded.block.scriptJS",
-			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:node|deno\\s+run|bun)[^\\n]*(?=\\n|$))",
+			"begin": "(^|\\G(?<='''|\"\"\"))\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:node|deno\\s+run|bun)[^\\n]*(?=\\n|$))",
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
+			"end": "(?=(?:'''|\"\"\")(?:$|[\\s,\\]}#]))",
 			"patterns": [{ "include": "source.ts" }]
 		},
 		{
 			"name": "meta.embedded.block.scriptPython",
 			"contentName": "meta.embedded.block.scriptPython",
-			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:python|uv)[^\\n]*(?=\\n|$))",
+			"begin": "(^|\\G(?<='''|\"\"\"))\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:python|uv)[^\\n]*(?=\\n|$))",
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
+			"end": "(?=(?:'''|\"\"\")(?:$|[\\s,\\]}#]))",
 			"patterns": [{ "include": "source.python" }]
 		},
 		{
 			"name": "meta.embedded.block.scriptRuby",
 			"contentName": "meta.embedded.block.scriptRuby",
-			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:ruby)[^\\n]*(?=\\n|$))",
+			"begin": "(^|\\G(?<='''|\"\"\"))\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:ruby)[^\\n]*(?=\\n|$))",
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
+			"end": "(?=(?:'''|\"\"\")(?:$|[\\s,\\]}#]))",
 			"patterns": [{ "include": "source.ruby" }]
 		},
 		{
 			"name": "meta.embedded.block.scriptShell",
 			"contentName": "meta.embedded.block.scriptShell",
-			"begin": "(^|\\G)\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:bash|sh|zsh)[^\\n]*(?=\\n|$))",
+			"begin": "(^|\\G(?<='''|\"\"\"))\\s*(#!\\/usr\\/bin\\/env\\s+(?:-S\\s+)?(?:bash|sh|zsh)[^\\n]*(?=\\n|$))",
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
+			"end": "(?=(?:'''|\"\"\")(?:$|[\\s,\\]}#]))",
 			"patterns": [{ "include": "source.mise.shell" }]
 		}
 	],
@@ -113,7 +113,7 @@
 						"1": { "name": "punctuation.section.pipe.tera" },
 						"2": { "name": "support.function.filter.tera" }
 					},
-					"end": "\\)",
+					"end": "\\)|$",
 					"patterns": [
 						{
 							"match": "\\b(value|name|var|from|to|sep|format|len|pat)\\s*(=)",
@@ -155,19 +155,19 @@
 				},
 				{
 					"begin": "'",
-					"end": "'",
+					"end": "'|$",
 					"name": "string.quoted.single.tera",
 					"patterns": [{ "include": "#string_content" }]
 				},
 				{
-					"begin": "\"",
-					"end": "\"",
+					"begin": "\\\\?\"",
+					"end": "\\\\?\"|$",
 					"name": "string.quoted.double.tera",
 					"patterns": [{ "include": "#string_content" }]
 				},
 				{
 					"begin": "`",
-					"end": "`",
+					"end": "`|$",
 					"name": "string.quoted.backtick.tera",
 					"patterns": [{ "include": "#string_content" }]
 				}

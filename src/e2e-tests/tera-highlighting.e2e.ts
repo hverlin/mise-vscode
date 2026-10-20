@@ -72,7 +72,10 @@ suite("Tera Highlighting Test Suite", function () {
 		assert.doesNotMatch(opening.t, /comment\.block\.tera/);
 	};
 
-	test("a raw block is not a Tera comment", () => {
+	// raw blocks are not modelled: their content is highlighted as the rest of
+	// the template, so a bash length expansion or an unclosed {{ must not start
+	// Tera on their own
+	test("a bash length expansion is not a Tera comment", () => {
 		for (const text of ["#branch[@]", "choose branch", "endraw"]) {
 			assert.deepStrictEqual(
 				tokensOf(text)
@@ -166,7 +169,7 @@ suite("Tera Highlighting Test Suite", function () {
 		assertTeraAt("usage.after_shell");
 	});
 
-	test("a brace expansion in a raw block is not Tera", () => {
+	test("an unclosed {{ is not Tera", () => {
 		for (const token of tokensOf("echo a{{b,c},d}")) {
 			assert.doesNotMatch(token.t, /meta\.embedded\.block\.tera/);
 		}
@@ -217,7 +220,9 @@ suite("Tera Highlighting Test Suite", function () {
 
 	test("a Ruby script is Ruby", () => {
 		assertScope("config = {a: {b: 1}}", /\.ruby/);
-		assertTeraExpressions("#{name} #{config}", 0);
+		for (const token of tokensOf("#{name} #{config}")) {
+			assert.doesNotMatch(token.t, /\.tera\b/);
+		}
 		assertHeader("[tasks.after-ruby]");
 	});
 
@@ -228,8 +233,42 @@ suite("Tera Highlighting Test Suite", function () {
 		assertHeader("[tasks.after-sh]");
 	});
 
+	/** Asserts that no token of the line containing `text` matches `scope` */
+	const assertNoScope = (text: string, scope: RegExp) => {
+		for (const token of tokensOf(text)) {
+			assert.doesNotMatch(token.t, scope, `"${token.c}" of "${text}"`);
+		}
+	};
+
+	test("a script ends at its closing quotes, before more TOML", () => {
+		assertTeraExpressions('print("{{ usage.array }}")', 1);
+		assertNoScope('"echo {{ usage.done }}"]', /\.python|script/);
+		assertTeraExpressions("usage.done", 1);
+		assertHeader("[tasks.after-array-script]");
+		assertNoScope('description = "x" }', /\.ts|script/);
+		assertNoScope("'''] }", /\.shell|script/);
+		assertHeader("[tasks.after-inline]");
+		assertTeraAt("usage.after_inline");
+	});
+
+	test("escaped quotes in a Tera string close it", () => {
+		assertTeraExpressions("git rev-parse HEAD", 1);
+		assertHeader("[tasks.after-escaped]");
+		assertTeraAt("usage.after_escaped");
+	});
+
+	test("a shebang in a shell comment or string does not start a script", () => {
+		assertNoScope(
+			"echo '#!/usr/bin/env bash'",
+			/meta\.embedded\.block\.script/,
+		);
+		assertNoScope("usage.after_shebang", /meta\.embedded\.block\.script/);
+		assertScope("usage.after_shebang", /\.shell/);
+		assertTeraExpressions("usage.after_shebang", 1);
+	});
+
 	test("an unclosed comment does not run over the file", () => {
 		assertHeader("[tasks.after]");
-		assertTeraAt("usage.after");
+		assertTeraAt("{{ usage.after }}");
 	});
 });

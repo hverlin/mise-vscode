@@ -130,3 +130,41 @@ echo "{{ usage.name }}" ${#HOME}
 
 [tasks.after-sh]
 run = "echo {{ usage.after_sh }}"
+
+# Scripts whose closing quotes are followed by more TOML on the same line
+[tasks.array-script]
+run = ['''
+#!/usr/bin/env python
+print("{{ usage.array }}")
+''', "echo {{ usage.done }}"]
+
+[tasks.after-array-script]
+run = "echo {{ usage.after_array }}"
+
+[tasks.inline]
+deploy = { run = """
+#!/usr/bin/env node
+console.log("{{ usage.inline }}")
+""", description = "x" }
+check = { run = ['''
+#!/usr/bin/env sh
+echo "{{ usage.nested }}"
+'''] }
+
+[tasks.after-inline]
+run = "echo {{ usage.after_inline }}"
+
+# Escaped quotes in a Tera string of a basic TOML string
+[tasks.escaped]
+run = "echo {{ exec(command=\"git rev-parse HEAD\") }}"
+
+[tasks.after-escaped]
+run = "echo {{ usage.after_escaped }}"
+
+# A shebang in a shell comment or string does not start a script
+[tasks.shebang-in-shell]
+run = """
+##!/usr/bin/env python
+echo '#!/usr/bin/env bash' > x.sh
+echo "{{ usage.after_shebang }}"
+"""
