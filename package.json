@@ -123,6 +123,13 @@
         "injectTo": [
           "source.toml"
         ],
+        "scopeName": "inline.mise-toml",
+        "path": "./syntaxes/mise-toml.json"
+      },
+      {
+        "injectTo": [
+          "source.toml"
+        ],
         "scopeName": "inline.tera-mise",
         "path": "./syntaxes/tera-mise.json",
         "embeddedLanguages": {

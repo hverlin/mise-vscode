@@ -141,6 +141,31 @@ module.exports = defineConfig([
 			timeout: 60_000,
 		},
 	},
+	// Simulates another TOML extension (Tombi, Even Better TOML) installed next
+	// to mise-vscode. Both contribute a TOML grammar and VS Code keeps the one
+	// it loads last, which on the marketplace is the other extension's. Our
+	// highlighting (scripts, usage, Tera) is injected into it, and this label
+	// checks that it still works. The fake extension in
+	// fixtures/zz-other-toml-grammar-extension contributes a copy of Tombi's
+	// grammar; its folder name sorts after ours so that VS Code loads it last
+	// (development extensions load in folder name order).
+	{
+		label: "other-toml-grammar",
+		files: "src/e2e-tests/other-toml-grammar/*.e2e.ts",
+		extensionDevelopmentPath: [
+			__dirname,
+			path.join(fixturesPath, "zz-other-toml-grammar-extension"),
+		],
+		workspaceFolder: path.join(fixturesPath, "task-execution-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_LOCKED: "0",
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
 	{
 		label: "tool-versions",
 		files: "src/e2e-tests/tool-versions/*.e2e.ts",

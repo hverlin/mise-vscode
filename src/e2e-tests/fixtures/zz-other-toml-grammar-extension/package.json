@@ -1,0 +1,28 @@
+{
+	"name": "other-toml-grammar",
+	"displayName": "Fake TOML extension (e2e tests)",
+	"description": "Simulates Tombi or Even Better TOML installed next to mise-vscode, for the e2e tests: contributes a copy of Tombi's TOML grammar",
+	"publisher": "mise-vscode-tests",
+	"version": "0.0.1",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"contributes": {
+		"languages": [
+			{
+				"id": "toml",
+				"extensions": [
+					".toml"
+				]
+			}
+		],
+		"grammars": [
+			{
+				"language": "toml",
+				"scopeName": "source.toml",
+				"path": "./toml.tmLanguage.json"
+			}
+		]
+	}
+}

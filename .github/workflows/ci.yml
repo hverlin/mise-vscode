@@ -73,7 +73,7 @@ jobs:
           # multi-root and go share their toolchain store, so the go
           # downloads happen once when they run on the same runner
           - group: go
-            labels: multi-root go
+            labels: multi-root go other-toml-grammar
           # every prebuilt-binary tool of the supported-extensions docs table;
           # its own group since the suite downloads over a dozen tools and
           # marketplace extensions

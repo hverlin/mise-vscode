@@ -168,3 +168,66 @@ run = """
 echo '#!/usr/bin/env bash' > x.sh
 echo "{{ usage.after_shebang }}"
 """
+
+# One-line run strings and run arrays are shell scripts too
+[tasks.single-line]
+run = "echo {{ usage.single }} && ls"
+
+[tasks.single-line-literal]
+run = 'ls -la'
+
+[tasks.run-array]
+run = [
+  { task = "build" },
+  # a comment between scripts
+  "echo {{ usage.array_entry }}",
+  """if [ -n "$X" ]; then echo x; fi""",
+  '''
+echo multi
+''',
+]
+
+[tasks.after-run-array]
+run = "echo {{ usage.after_run_array }}"
+
+[tasks.usage]
+usage = '''
+flag "--clean" help="Clean"
+'''
+
+[tasks.after-usage]
+run = "echo {{ usage.after_usage }}"
+
+# A string that is not a script: Tera, but no shell
+[env]
+DEPLOY_NOTE = """
+{% raw %}
+${#plain[@]}
+{% endraw %}
+{{ usage.plain }}
+"""
+
+[tasks.after-plain]
+run = "echo {{ usage.after_plain }}"
+
+# The other kind of triple quote inside a script is not its closer
+[tasks.other-triple-quote]
+run = """echo "'''" """
+
+[tasks.after-other-triple-quote]
+run = "echo {{ usage.after_other_triple }}"
+
+# A closer written as four quotes: the first one is content
+[tasks.four-quotes]
+run = """git commit -m "wip""""
+
+[tasks.after-four-quotes]
+run = "echo {{ usage.after_four_quotes }}"
+
+# Dotted keys and nested inline tables
+[tasks]
+dotted.run = "echo {{ usage.dotted }}"
+nested = { run = ["ls", { task = "x", env = { A = "1" } }], description = "x" }
+
+[tasks.after-dotted]
+run = "echo {{ usage.after_dotted }}"
