@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.0](https://github.com/hverlin/mise-vscode/compare/v1.29.1...v1.30.0) (2026-10-20)
+
+
+### Features
+
+* highlight run scripts as shell with any TOML grammar, and run arrays ([#361](https://github.com/hverlin/mise-vscode/issues/361)) ([e5272da](https://github.com/hverlin/mise-vscode/commit/e5272da5dc7cf2198361120cafc40f6a6fbbb1bc))
+
 ## [1.29.1](https://github.com/hverlin/mise-vscode/compare/v1.29.0...v1.29.1) (2026-10-20)
 
 
