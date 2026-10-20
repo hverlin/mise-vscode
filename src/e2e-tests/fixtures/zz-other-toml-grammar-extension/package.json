@@ -1,13 +1,22 @@
 {
 	"name": "other-toml-grammar",
-	"displayName": "Another TOML grammar (e2e tests)",
-	"description": "Contributes Tombi's TOML grammar after mise-vscode, as when Tombi or Even Better TOML wins the extension load order",
+	"displayName": "Fake TOML extension (e2e tests)",
+	"description": "Simulates Tombi or Even Better TOML installed next to mise-vscode, for the e2e tests: contributes a copy of Tombi's TOML grammar",
 	"publisher": "mise-vscode-tests",
 	"version": "0.0.1",
 	"license": "MIT",
-	"engines": { "vscode": "^1.85.0" },
+	"engines": {
+		"vscode": "^1.85.0"
+	},
 	"contributes": {
-		"languages": [{ "id": "toml", "extensions": [".toml"] }],
+		"languages": [
+			{
+				"id": "toml",
+				"extensions": [
+					".toml"
+				]
+			}
+		],
 		"grammars": [
 			{
 				"language": "toml",

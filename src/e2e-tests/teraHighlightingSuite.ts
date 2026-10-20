@@ -12,8 +12,10 @@ type SyntaxToken = { c: string; t: string };
  * runs over the rest of the file
  * (https://github.com/hverlin/mise-vscode/issues/358)
  */
-export function teraHighlightingSuite(tomlGrammar: "mise-vscode" | "other") {
-	suite(`Tera Highlighting Test Suite (${tomlGrammar} TOML grammar)`, function () {
+export function teraHighlightingSuite(
+	tomlGrammar: "mise-vscode" | "another extension",
+) {
+	suite(`Tera Highlighting Test Suite (TOML grammar of ${tomlGrammar})`, function () {
 		this.timeout(30_000);
 
 		let lines: { text: string; tokens: SyntaxToken[] }[];
@@ -282,7 +284,7 @@ export function teraHighlightingSuite(tomlGrammar: "mise-vscode" | "other") {
 			// Tombi's grammar scopes table headers, ours does not
 			const header = tokensOf("[tasks.since]");
 			const tombi = header.some((token) => token.t.includes("meta.table.toml"));
-			assert.strictEqual(tombi, tomlGrammar === "other");
+			assert.strictEqual(tombi, tomlGrammar === "another extension");
 		});
 
 		test("a one-line run string is a shell script", () => {

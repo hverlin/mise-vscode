@@ -1,4 +1,5 @@
 import { teraHighlightingSuite } from "../teraHighlightingSuite";
 
-// the label loads another extension's TOML grammar after ours, see .vscode-test.js
-teraHighlightingSuite("other");
+// simulates another TOML extension installed next to ours, whose grammar
+// wins over ours (see .vscode-test.js)
+teraHighlightingSuite("another extension");
