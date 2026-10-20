@@ -42,7 +42,7 @@
 			"arg \"<${4:file}>\" help=\"${5:File to use}\"",
 			"flag \"-v --verbose\" help=\"Enable verbose output\"",
 			"'''",
-			"run = 'echo \"\\${usage_$4?}\"'",
+			"run = 'echo \"\\${usage_${4:file}?}\"'",
 			"$0"
 		]
 	},
@@ -50,8 +50,8 @@
 		"prefix": "mise-task-template",
 		"description": "Create a reusable task template that tasks can extend",
 		"body": [
-			"[task_templates.${1:my:template}]",
-			"${2:description = '${3:Template description}'\n}${4:tools = { ${5:node} = \"${6:latest}\" }\n}run = \"echo 'running...'\"",
+			"[task_templates.\"${1:my:template}\"]",
+			"${2:description = '${3:Template description}'\n}${4:tools = { ${5:node} = \"${6:latest}\" \\}\n}run = \"echo 'running...'\"",
 			"$0"
 		]
 	},
@@ -142,7 +142,7 @@
 			"description = '${2:Task description}'",
 			"depends = [${3:'dependency'}]",
 			"alias = '${4:shortname}'",
-			"dir = '${5:{{cwd}}}'",
+			"dir = '${5:{{cwd\\}\\}}'",
 			"env = {${6:KEY = 'value'}}",
 			"hide = ${7|true,false|}",
 			"sources = [${8:'src/**/*'}]",
@@ -153,7 +153,7 @@
 			"'''",
 			"run = '''",
 			"echo 'running step 1...'",
-			"echo \"running step 2 with \\${usage_${11}?}\"",
+			"echo \"running step 2 with \\${usage_${11:file}?}\"",
 			"'''",
 			"$0"
 		]
