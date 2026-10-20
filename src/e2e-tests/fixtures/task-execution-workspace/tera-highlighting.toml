@@ -36,4 +36,32 @@ echo pre{{ usage.middle }}post
 sort < {{ usage.input }} > {{ usage.output }}
 cat notes >out-{{ usage.name }}.log
 {{ usage.command }} --version
+# Deploying on "{{ usage.stage }}"
+cat <<< {{ usage.herestring }}
+cat <<EOF > {{ usage.heredoc }}
+{{ usage.body }}
+EOF
 """
+
+# An unterminated comment in a run script highlighted as shell
+[tasks.shell-unterminated]
+run = """
+echo {# a Tera comment without its end
+"""
+
+[tasks.after-shell-unterminated]
+run = "echo {{ usage.after_shell }}"
+
+# A brace expansion in a raw block starts with {{ but is not Tera
+[tasks.brace-expansion]
+run = """
+{% raw %}
+echo a{{b,c},d}
+{% endraw %}
+"""
+
+[tasks.after-brace-expansion]
+run = "echo {{ usage.after_braces }}"
+
+[tasks.comment-with-braces]
+run = "echo {# {{ #} {{ usage.after_comment }}"

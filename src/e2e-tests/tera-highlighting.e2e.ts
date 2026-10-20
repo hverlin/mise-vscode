@@ -23,7 +23,6 @@ suite("Tera Highlighting Test Suite", function () {
 			path.join(workspaceRoot, "tera-highlighting.toml"),
 		);
 		const document = await vscode.workspace.openTextDocument(uri);
-		await vscode.window.showTextDocument(document);
 		const tokens = await vscode.commands.executeCommand<SyntaxToken[]>(
 			"_workbench.captureSyntaxTokens",
 			uri,
@@ -58,6 +57,13 @@ suite("Tera Highlighting Test Suite", function () {
 	const isComment = (token: SyntaxToken) =>
 		token.t.includes("comment.block.tera");
 
+	/** Asserts that a task's table header is not inside a string or Tera */
+	const assertHeader = (header: string) => {
+		for (const token of tokensOf(header)) {
+			assert.doesNotMatch(token.t, /string|shell|tera/, `${header} is a table`);
+		}
+	};
+
 	/** Asserts that the `{{` of the line containing `text` starts Tera */
 	const assertTeraAt = (text: string) => {
 		const opening = tokensOf(text).find((token) => token.c.includes("{{"));
@@ -83,7 +89,7 @@ suite("Tera Highlighting Test Suite", function () {
 	});
 
 	test("the next task is highlighted", () => {
-		assert.ok(!tokensOf("[tasks.since]").some(isComment));
+		assertHeader("[tasks.since]");
 		assertTeraAt("usage.since");
 	});
 
@@ -96,16 +102,22 @@ suite("Tera Highlighting Test Suite", function () {
 		assertTeraAt("usage.commented");
 	});
 
-	/**
-	 * Asserts that each `{{ ... }}` of the line containing `text` is Tera from
-	 * its `{{` to its `}}`, and that what follows it is not
-	 */
-	const assertTeraExpressions = (text: string, count: number) => {
+	/** The line containing `text`, with the scopes of each of its characters */
+	const scopesByCharacter = (text: string) => {
 		const line = lines.find((line) => line.text.includes(text));
 		assert.ok(line, `no line contains "${text}"`);
 		const scopes = line.tokens.flatMap((token) =>
 			Array.from(token.c, () => token.t),
 		);
+		return { line, scopes };
+	};
+
+	/**
+	 * Asserts that each `{{ ... }}` of the line containing `text` is Tera from
+	 * its `{{` to its `}}`, and that what follows it is not
+	 */
+	const assertTeraExpressions = (text: string, count: number) => {
+		const { line, scopes } = scopesByCharacter(text);
 		const expressions = [...line.text.matchAll(/\{\{.*?\}\}/g)];
 		assert.strictEqual(expressions.length, count, `expressions in "${text}"`);
 		for (const { 0: expression, index: start } of expressions) {
@@ -136,10 +148,44 @@ suite("Tera Highlighting Test Suite", function () {
 		assertTeraExpressions("sort <", 2);
 		assertTeraExpressions(">out-{{", 1);
 		assertTeraExpressions("{{ usage.command }}", 1);
+		assertTeraExpressions("# Deploying on", 1);
+		assertTeraExpressions("<<< {{", 1);
+		assertTeraExpressions("<<EOF > {{", 1);
+		assertTeraExpressions("{{ usage.body }}", 1);
+	});
+
+	test("the script is highlighted as shell", () => {
+		// our TOML grammar, not the one of another extension, is the one tested
+		for (const token of tokensOf("-f ref={{").slice(0, 3)) {
+			assert.match(token.t, /\.shell/);
+		}
+	});
+
+	test("an unterminated comment ends with its shell script", () => {
+		assertHeader("[tasks.after-shell-unterminated]");
+		assertTeraAt("usage.after_shell");
+	});
+
+	test("a brace expansion in a raw block ends with its script", () => {
+		assertHeader("[tasks.after-brace-expansion]");
+		assertTeraAt("usage.after_braces");
+	});
+
+	test("{{ in a Tera comment does not start an expression", () => {
+		const { line, scopes } = scopesByCharacter("{# {{ #}");
+		const comment = line.text.indexOf("{# {{ #}");
+		for (let i = comment; i < comment + "{# {{ #}".length; i++) {
+			assert.match(scopes[i] ?? "", /comment\.block\.tera/);
+			assert.doesNotMatch(scopes[i] ?? "", /meta\.embedded\.block\.tera/);
+		}
+		const expression = line.text.indexOf("{{ usage.after_comment }}");
+		for (let i = expression; i < line.text.lastIndexOf("}}") + 2; i++) {
+			assert.match(scopes[i] ?? "", /meta\.embedded\.block\.tera/);
+		}
 	});
 
 	test("an unterminated comment ends with its string", () => {
-		assert.ok(!tokensOf("[tasks.after]").some(isComment));
+		assertHeader("[tasks.after]");
 		assertTeraAt("usage.after");
 	});
 });

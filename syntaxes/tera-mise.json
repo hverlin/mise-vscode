@@ -1,6 +1,6 @@
 {
 	"scopeName": "inline.tera-mise",
-	"injectionSelector": "L:string.quoted, L:string.quoted.single, L:string.quoted.double, L:string.quoted.triple",
+	"injectionSelector": "L:string.quoted - comment.block.tera",
 	"patterns": [
 		{
 			"name": "meta.embedded.block.tera",
@@ -9,7 +9,7 @@
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
 			},
-			"end": "(-?)(\\}\\})",
+			"end": "(-?)(\\}\\})|(?=\"\"\"|''')",
 			"endCaptures": {
 				"1": { "name": "keyword.operator.whitespace.trim.tera" },
 				"2": { "name": "punctuation.section.embedded.end.tera" }
@@ -27,7 +27,7 @@
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
 			},
-			"end": "(-?)(\\%\\})",
+			"end": "(-?)(\\%\\})|(?=\"\"\"|''')",
 			"endCaptures": {
 				"1": { "name": "keyword.operator.whitespace.trim.tera" },
 				"2": { "name": "punctuation.section.embedded.end.tera" }
