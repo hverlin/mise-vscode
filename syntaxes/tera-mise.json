@@ -40,8 +40,8 @@
 		},
 		{
 			"name": "comment.block.tera",
-			"begin": "\\{#",
-			"end": "#\\}"
+			"begin": "(?<!\\$)\\{#",
+			"end": "#\\}|(?=\"\"\"|''')"
 		},
 		{
 			"name": "meta.embedded.block.scriptJS",
