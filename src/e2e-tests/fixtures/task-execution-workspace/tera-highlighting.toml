@@ -1,0 +1,28 @@
+# Tera inside TOML strings, see https://github.com/hverlin/mise-vscode/issues/358
+# The scripts of a run array are plain TOML strings, as every run script is with
+# the TOML grammar of another extension (Tombi, Even Better TOML)
+[tasks.deploy]
+usage = 'arg "<stage>"'
+run = ["""
+mise run stage-exists {{ usage.stage }}
+{% raw %}
+if [[ ${#branch[@]} -gt 1 ]]; then
+  b=$(choose branch)
+fi
+{% endraw %}
+gh workflow run {{ usage.stage }}.yml
+"""]
+
+[tasks.since]
+run = "git log {{ usage.since }}"
+
+[tasks.unterminated]
+run = ["""
+echo {# a Tera comment without its end
+"""]
+
+[tasks.after]
+run = "echo {{ usage.after }}"
+
+[tasks.commented]
+run = "echo {# a Tera comment #} {{ usage.commented }}"
