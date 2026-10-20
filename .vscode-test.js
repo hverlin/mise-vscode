@@ -141,11 +141,13 @@ module.exports = defineConfig([
 			timeout: 60_000,
 		},
 	},
-	// The TOML grammar registered last wins: another extension's, such as
-	// Tombi's or Even Better TOML's, when it loads after ours (the marketplace
-	// order, where hverlin.* sorts before tombi-toml.* and tamasfe.*). Our
-	// extension's highlighting must not depend on our grammar. VS Code orders
-	// development extensions by folder name, hence the zz- prefix.
+	// Our highlighting (scripts, usage, Tera) is injected into whichever TOML
+	// grammar is active. When several extensions contribute one, the last
+	// loaded wins: with the published extensions, that is Tombi's or Even
+	// Better TOML's, not ours. This label tests that case with a copy of
+	// Tombi's grammar; the default label tests ours. For the copy to load
+	// after our extension here, its folder name must sort after ours: VS Code
+	// loads development extensions in folder name order, hence zz-.
 	{
 		label: "other-toml-grammar",
 		files: "src/e2e-tests/other-toml-grammar/*.e2e.ts",
