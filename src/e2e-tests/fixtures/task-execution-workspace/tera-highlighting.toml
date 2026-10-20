@@ -26,3 +26,14 @@ run = "echo {{ usage.after }}"
 
 [tasks.commented]
 run = "echo {# a Tera comment #} {{ usage.commented }}"
+
+# Tera in the arguments of a run script highlighted as shell
+[tasks.shell-arguments]
+run = """
+gh workflow run deploy.yml -f ref={{ usage.ref }}
+deploy --stage={{ usage.stage }} --verbose
+echo pre{{ usage.middle }}post
+sort < {{ usage.input }} > {{ usage.output }}
+cat notes >out-{{ usage.name }}.log
+{{ usage.command }} --version
+"""

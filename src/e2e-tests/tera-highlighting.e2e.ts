@@ -96,6 +96,48 @@ suite("Tera Highlighting Test Suite", function () {
 		assertTeraAt("usage.commented");
 	});
 
+	/**
+	 * Asserts that each `{{ ... }}` of the line containing `text` is Tera from
+	 * its `{{` to its `}}`, and that what follows it is not
+	 */
+	const assertTeraExpressions = (text: string, count: number) => {
+		const line = lines.find((line) => line.text.includes(text));
+		assert.ok(line, `no line contains "${text}"`);
+		const scopes = line.tokens.flatMap((token) =>
+			Array.from(token.c, () => token.t),
+		);
+		const expressions = [...line.text.matchAll(/\{\{.*?\}\}/g)];
+		assert.strictEqual(expressions.length, count, `expressions in "${text}"`);
+		for (const { 0: expression, index: start } of expressions) {
+			const end = start + expression.length;
+			for (let i = start; i < end; i++) {
+				assert.match(
+					scopes[i] ?? "",
+					/meta\.embedded\.block\.tera/,
+					`"${line.text[i]}" at ${i} of "${line.text}" is Tera`,
+				);
+			}
+			assert.match(scopes[start] ?? "", /embedded\.begin\.tera/);
+			assert.match(scopes[end - 1] ?? "", /embedded\.end\.tera/);
+			if (end < line.text.length) {
+				assert.doesNotMatch(
+					scopes[end] ?? "",
+					/meta\.embedded\.block\.tera/,
+					`what follows ${expression} is not Tera`,
+				);
+			}
+		}
+	};
+
+	test("Tera is highlighted in the arguments of a shell script", () => {
+		assertTeraExpressions("-f ref={{", 1);
+		assertTeraExpressions("--stage={{", 1);
+		assertTeraExpressions("pre{{", 1);
+		assertTeraExpressions("sort <", 2);
+		assertTeraExpressions(">out-{{", 1);
+		assertTeraExpressions("{{ usage.command }}", 1);
+	});
+
 	test("an unterminated comment ends with its string", () => {
 		assert.ok(!tokensOf("[tasks.after]").some(isComment));
 		assertTeraAt("usage.after");

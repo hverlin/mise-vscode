@@ -92,7 +92,7 @@
 		"argument_context": {
 			"patterns": [
 				{
-					"match": "(?:[ \\t]*+)((?:[^ \t\n>&;<>\\(\\)\\$`\\\\\"'<\\|]+)(?!>))",
+					"match": "(?:[ \\t]*+)((?:(?!\\{[{%])[^ \t\n>&;<>\\(\\)\\$`\\\\\"'<\\|])+(?!>))",
 					"captures": {
 						"1": {
 							"name": "string.unquoted.argument.shell",
