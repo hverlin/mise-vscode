@@ -65,3 +65,68 @@ run = "echo {{ usage.after_braces }}"
 
 [tasks.comment-with-braces]
 run = "echo {# {{ #} {{ usage.after_comment }}"
+
+# Scripts in other languages, picked by their shebang
+[tasks.python]
+run = '''
+#!/usr/bin/env python
+"""Greets someone."""
+import json
+name = "{{ usage.name }}"
+{% raw %}
+counts = {k: len(v) for k, v in {"a": [1]}.items()}
+print(f"{{literal}} {counts}")
+{% endraw %}
+print(json.dumps({"name": name, "count": {{ usage.count }}}))
+'''
+
+[tasks.after-python]
+run = "echo {{ usage.after_python }}"
+
+[tasks.node]
+run = """
+#!/usr/bin/env node
+const stage = '{{ usage.stage }}';
+{% raw %}
+class Counter {#count = 0; next() { return ++this.#count; }}
+const label = `${stage}: ${new Counter().next()}`;
+{% endraw %}
+console.log(label, {{ usage.count }});
+"""
+
+[tasks.after-node]
+run = "echo {{ usage.after_node }}"
+
+[tasks.deno]
+run = '''
+#!/usr/bin/env -S deno run --allow-env
+console.log(Deno.env.get("{{ usage.var }}"));
+'''
+
+[tasks.bun]
+run = '''
+#!/usr/bin/env bun
+const { stdout } = Bun.spawnSync(["git", "log", "{{ usage.ref }}"]);
+'''
+
+[tasks.ruby]
+run = '''
+#!/usr/bin/env ruby
+name = "{{ usage.name }}"
+{% raw %}
+config = {a: {b: 1}}
+puts "Hello #{name} #{config}"
+{% endraw %}
+'''
+
+[tasks.after-ruby]
+run = "echo {{ usage.after_ruby }}"
+
+[tasks.sh]
+run = '''
+#!/usr/bin/env sh
+echo "{{ usage.name }}" ${#HOME}
+'''
+
+[tasks.after-sh]
+run = "echo {{ usage.after_sh }}"

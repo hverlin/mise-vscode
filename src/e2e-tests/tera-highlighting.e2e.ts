@@ -161,12 +161,15 @@ suite("Tera Highlighting Test Suite", function () {
 		}
 	});
 
-	test("an unterminated comment ends with its shell script", () => {
+	test("an unclosed comment in a shell script does not run over the file", () => {
 		assertHeader("[tasks.after-shell-unterminated]");
 		assertTeraAt("usage.after_shell");
 	});
 
-	test("a brace expansion in a raw block ends with its script", () => {
+	test("a brace expansion in a raw block is not Tera", () => {
+		for (const token of tokensOf("echo a{{b,c},d}")) {
+			assert.doesNotMatch(token.t, /meta\.embedded\.block\.tera/);
+		}
 		assertHeader("[tasks.after-brace-expansion]");
 		assertTeraAt("usage.after_braces");
 	});
@@ -184,7 +187,48 @@ suite("Tera Highlighting Test Suite", function () {
 		}
 	});
 
-	test("an unterminated comment ends with its string", () => {
+	/** Asserts that the line containing `text` has a scope matching `scope` */
+	const assertScope = (text: string, scope: RegExp) => {
+		assert.ok(
+			tokensOf(text).some((token) => scope.test(token.t)),
+			`the line of "${text}" has ${scope}`,
+		);
+	};
+
+	test("a Python script is Python, past its docstring", () => {
+		assertScope("import json", /keyword\.control\.import\.python/);
+		assertTeraExpressions('name = "{{ usage.name }}"', 1);
+		assertScope("print(json.dumps", /\.python/);
+		assertTeraExpressions("print(json.dumps", 1);
+		assertHeader("[tasks.after-python]");
+	});
+
+	test("node, deno and bun scripts are JavaScript", () => {
+		assertScope("class Counter {#count", /meta\.class\.ts/);
+		assert.ok(!tokensOf("class Counter {#count").some(isComment));
+		assertTeraExpressions("console.log(label", 1);
+		assertScope("console.log(label", /\.ts/);
+		assertHeader("[tasks.after-node]");
+		assertScope("Deno.env.get", /\.ts/);
+		assertTeraExpressions("Deno.env.get", 1);
+		assertScope("Bun.spawnSync", /\.ts/);
+		assertTeraExpressions("Bun.spawnSync", 1);
+	});
+
+	test("a Ruby script is Ruby", () => {
+		assertScope("config = {a: {b: 1}}", /\.ruby/);
+		assertTeraExpressions("#{name} #{config}", 0);
+		assertHeader("[tasks.after-ruby]");
+	});
+
+	test("a sh script is shell, with bash length expansions", () => {
+		assertScope('echo "{{ usage.name }}"', /\.shell/);
+		assertTeraExpressions('echo "{{ usage.name }}"', 1);
+		assert.ok(!tokensOf("#HOME}").some(isComment));
+		assertHeader("[tasks.after-sh]");
+	});
+
+	test("an unclosed comment does not run over the file", () => {
 		assertHeader("[tasks.after]");
 		assertTeraAt("usage.after");
 	});

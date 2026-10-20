@@ -4,7 +4,7 @@
 	"patterns": [
 		{
 			"name": "meta.embedded.block.tera",
-			"begin": "(\\{\\{)(-?)",
+			"begin": "(\\{\\{)(-?)(?=.*\\}\\})",
 			"beginCaptures": {
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
@@ -22,7 +22,7 @@
 		},
 		{
 			"name": "meta.embedded.block.tera",
-			"begin": "(\\{%)(-?)",
+			"begin": "(\\{%)(-?)(?=.*%\\})",
 			"beginCaptures": {
 				"1": { "name": "punctuation.section.embedded.begin.tera" },
 				"2": { "name": "keyword.operator.whitespace.trim.tera" }
@@ -40,7 +40,7 @@
 		},
 		{
 			"name": "comment.block.tera",
-			"begin": "(?<!\\$)\\{#",
+			"begin": "(?<!\\$)\\{#(?=.*#\\})",
 			"end": "#\\}|(?=\"\"\"|''')"
 		},
 		{
@@ -50,7 +50,7 @@
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?='''|\"\"\")",
+			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
 			"patterns": [{ "include": "source.ts" }]
 		},
 		{
@@ -60,7 +60,7 @@
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?='''|\"\"\")",
+			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
 			"patterns": [{ "include": "source.python" }]
 		},
 		{
@@ -70,7 +70,7 @@
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?='''|\"\"\")",
+			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
 			"patterns": [{ "include": "source.ruby" }]
 		},
 		{
@@ -80,7 +80,7 @@
 			"beginCaptures": {
 				"2": { "name": "comment.line.shebang.script" }
 			},
-			"end": "(?='''|\"\"\")",
+			"end": "(?=(?:'''|\"\"\")[ \\t]*[,\\]}]*[ \\t]*(?:#.*)?$)",
 			"patterns": [{ "include": "source.mise.shell" }]
 		}
 	],
