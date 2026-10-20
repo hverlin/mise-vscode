@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.29.1](https://github.com/hverlin/mise-vscode/compare/v1.29.0...v1.29.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* task snippets insert valid TOML with their defaults ([#357](https://github.com/hverlin/mise-vscode/issues/357)) ([4eff53d](https://github.com/hverlin/mise-vscode/commit/4eff53d3660d55e5d24d6a0c47940b52d834e6b1))
+* Tera highlighting no longer runs over the file in task scripts ([#360](https://github.com/hverlin/mise-vscode/issues/360)) ([f4df9c1](https://github.com/hverlin/mise-vscode/commit/f4df9c11a747da5bd74d0c56bf8717cef54d7a08))
+
 ## [1.29.0](https://github.com/hverlin/mise-vscode/compare/v1.28.0...v1.29.0) (2026-10-19)
 
 
