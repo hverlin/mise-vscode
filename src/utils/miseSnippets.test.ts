@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { parse } from "toml-v1";
 import type * as vscode from "vscode";
 import {
 	fileTaskSnippets,
@@ -6,6 +7,54 @@ import {
 	getTomlSnippetPosition,
 	tomlSnippets,
 } from "./miseSnippets";
+
+/**
+ * The text a snippet inserts when every placeholder keeps its default, and the
+ * default of each occurrence of each tab stop. It reads the TextMate grammar
+ * as VS Code and Zed do: `\` escapes `$`, `}` and `\`, a `}` outside of a
+ * placeholder is plain text, and a choice inserts its first option.
+ */
+function expandSnippet(body: string) {
+	const tabStops = new Map<number, string[]>();
+	let position = 0;
+	const addTabStop = (index: number, text: string) => {
+		tabStops.set(index, [...(tabStops.get(index) ?? []), text]);
+		return text;
+	};
+	const parseText = (inPlaceholder: boolean): string => {
+		let text = "";
+		while (position < body.length) {
+			const rest = body.slice(position);
+			const tabStop = rest.match(/^\$(\d+)|^\$\{(\d+)\}/);
+			const choice = rest.match(/^\$\{(\d+)\|([^,|]*)[^|]*\|\}/);
+			const placeholder = rest.match(/^\$\{(\d+):/);
+			if (rest[0] === "\\" && "$}\\".includes(rest[1] ?? "-")) {
+				text += rest[1];
+				position += 2;
+			} else if (rest[0] === "}" && inPlaceholder) {
+				position++;
+				return text;
+			} else if (tabStop) {
+				text += addTabStop(Number(tabStop[1] ?? tabStop[2]), "");
+				position += tabStop[0].length;
+			} else if (choice) {
+				text += addTabStop(Number(choice[1]), choice[2] ?? "");
+				position += choice[0].length;
+			} else if (placeholder) {
+				position += placeholder[0].length;
+				text += addTabStop(Number(placeholder[1]), parseText(true));
+			} else {
+				text += rest[0];
+				position++;
+			}
+		}
+		if (inPlaceholder) {
+			throw new Error(`a placeholder is not closed in:\n${body}`);
+		}
+		return text;
+	};
+	return { text: parseText(false), tabStops };
+}
 
 function fakeDocument(content: string): vscode.TextDocument {
 	const lines = content.split("\n");
@@ -65,6 +114,54 @@ describe("snippet definitions", () => {
 	it("are all under the mise- prefix", () => {
 		for (const snippet of [...tomlSnippets, ...fileTaskSnippets]) {
 			expect(snippet.prefix).toMatch(/^mise-(task|daemon)(-[a-z]+)*$/);
+		}
+	});
+
+	// mise-zed copies these snippets, and Zed does not copy a placeholder's
+	// default to the other occurrences of its tab stop as VS Code does
+	it("give the same default to every occurrence of a tab stop", () => {
+		for (const snippet of [...tomlSnippets, ...fileTaskSnippets]) {
+			for (const [index, defaults] of expandSnippet(snippet.body).tabStops) {
+				expect({ prefix: snippet.prefix, index, defaults }).toEqual({
+					prefix: snippet.prefix,
+					index,
+					defaults: defaults.map(() => defaults[0] ?? ""),
+				});
+			}
+		}
+	});
+
+	// an unescaped } in a default closes its placeholder early
+	it("have placeholder defaults with balanced braces", () => {
+		for (const snippet of [...tomlSnippets, ...fileTaskSnippets]) {
+			for (const [index, defaults] of expandSnippet(snippet.body).tabStops) {
+				for (const text of defaults) {
+					const opened = text.split("{").length;
+					const closed = text.split("}").length;
+					expect({ prefix: snippet.prefix, index, text, closed }).toEqual({
+						prefix: snippet.prefix,
+						index,
+						text,
+						closed: opened,
+					});
+				}
+			}
+		}
+	});
+
+	it("insert valid toml with their defaults", () => {
+		for (const snippet of tomlSnippets) {
+			const { text } = expandSnippet(snippet.body);
+			let error: string | undefined;
+			try {
+				parse(text);
+			} catch (e) {
+				error = `${e}\n${text}`;
+			}
+			expect({ prefix: snippet.prefix, error }).toEqual({
+				prefix: snippet.prefix,
+				error: undefined,
+			});
 		}
 	});
 
