@@ -1,0 +1,318 @@
+{
+	"version": "1.0.0",
+	"scopeName": "source.toml",
+	"information_for_contributors": [
+		"Originally was maintained by aster (galaster@foxmail.com). This notice is only kept here for the record, please don't send e-mails about bugs and other issues."
+	],
+	"patterns": [
+		{
+			"include": "#comment"
+		},
+		{
+			"include": "#arrayTable"
+		},
+		{
+			"include": "#table"
+		},
+		{
+			"include": "#keyValue"
+		}
+	],
+	"repository": {
+		"arrayTable": {
+			"name": "meta.table.array.toml",
+			"match": "^(\\s*)(\\[\\[)([^\\]]+)(\\]\\])(\\s*(?:#.*)?)$",
+			"captures": {
+				"2": {
+					"name": "punctuation.definition.table.array.begin.toml"
+				},
+				"3": {
+					"patterns": [
+						{
+							"include": "#dottedTableKey"
+						}
+					]
+				},
+				"4": {
+					"name": "punctuation.definition.table.array.end.toml"
+				},
+				"5": {
+					"patterns": [
+						{
+							"include": "#comment"
+						}
+					]
+				}
+			}
+		},
+		"comment": {
+			"captures": {
+				"1": {
+					"name": "comment.line.number-sign.toml"
+				},
+				"2": {
+					"name": "punctuation.definition.comment.toml"
+				}
+			},
+			"comment": "Comments",
+			"match": "\\s*((#).*)$"
+		},
+		"array": {
+			"name": "meta.sequence.toml",
+			"begin": "\\[",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.array.begin.toml"
+				}
+			},
+			"end": "\\]",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.array.end.toml"
+				}
+			},
+			"patterns": [
+				{
+					"name": "punctuation.separator.sequence.toml",
+					"match": ","
+				},
+				{
+					"include": "#comment"
+				},
+				{
+					"include": "#value"
+				}
+			]
+		},
+		"dottedTableKey": {
+			"patterns": [
+				{
+					"include": "#quotedTableKey"
+				},
+				{
+					"include": "#bareTableKey"
+				},
+				{
+					"name": "punctuation.separator.key.toml",
+					"match": "\\s*\\.\\s*"
+				}
+			]
+		},
+		"bareTableKey": {
+			"name": "entity.name.type.table.toml",
+			"match": "[A-Za-z0-9_-]+"
+		},
+		"keyValue": {
+			"name": "meta.mapping.key-value.toml",
+			"begin": "^(\\s*)(?=[A-Za-z0-9_\\-\"'])",
+			"end": "$",
+			"patterns": [
+				{
+					"name": "variable.other.key.toml",
+					"match": "(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+)(?:\\s*\\.\\s*(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+))*(?=\\s*=)"
+				},
+				{
+					"name": "keyword.operator.assignment.toml",
+					"match": "="
+				},
+				{
+					"include": "#comment"
+				},
+				{
+					"include": "#value"
+				}
+			]
+		},
+		"inlineKeyValue": {
+			"name": "meta.mapping.key-value.inline.toml",
+			"patterns": [
+				{
+					"name": "variable.other.key.toml",
+					"match": "(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+)(?:\\s*\\.\\s*(?:\"(?:\\\\.|[^\"])*\"|'[^']*'|[A-Za-z0-9_-]+))*(?=\\s*=)"
+				},
+				{
+					"name": "keyword.operator.assignment.toml",
+					"match": "="
+				},
+				{
+					"name": "punctuation.separator.sequence.toml",
+					"match": ","
+				},
+				{
+					"include": "#comment"
+				},
+				{
+					"include": "#value"
+				}
+			]
+		},
+		"inlineTable": {
+			"name": "meta.inline.table.toml",
+			"begin": "\\{",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.inline-table.begin.toml"
+				}
+			},
+			"end": "\\}",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.inline-table.end.toml"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#inlineKeyValue"
+				}
+			]
+		},
+		"quotedTableKey": {
+			"patterns": [
+				{
+					"name": "entity.name.type.table.toml string.quoted.double.toml",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						}
+					]
+				},
+				{
+					"name": "entity.name.type.table.toml string.quoted.single.toml",
+					"begin": "'",
+					"end": "'"
+				}
+			]
+		},
+		"table": {
+			"name": "meta.table.toml",
+			"match": "^(\\s*)(\\[)([^\\]]+)(\\])(\\s*(?:#.*)?)$",
+			"captures": {
+				"2": {
+					"name": "punctuation.definition.table.begin.toml"
+				},
+				"3": {
+					"patterns": [
+						{
+							"include": "#dottedTableKey"
+						}
+					]
+				},
+				"4": {
+					"name": "punctuation.definition.table.end.toml"
+				},
+				"5": {
+					"patterns": [
+						{
+							"include": "#comment"
+						}
+					]
+				}
+			}
+		},
+		"value": {
+			"patterns": [
+				{
+					"include": "#inlineTable"
+				},
+				{
+					"include": "#array"
+				},
+				{
+					"name": "string.quoted.triple.basic.block.toml",
+					"begin": "\"\"\"",
+					"end": "\"\"\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						}
+					]
+				},
+				{
+					"name": "string.quoted.single.basic.line.toml",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"match": "\\\\([btnfr\"\\\\\\n/ ]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+							"name": "constant.character.escape.toml"
+						},
+						{
+							"match": "\\\\[^btnfr/\"\\\\\\n]",
+							"name": "invalid.illegal.escape.toml"
+						}
+					]
+				},
+				{
+					"name": "string.quoted.triple.literal.block.toml",
+					"begin": "'''",
+					"end": "'''"
+				},
+				{
+					"name": "string.quoted.single.literal.line.toml",
+					"begin": "'",
+					"end": "'"
+				},
+				{
+					"name": "constant.regexp constant.other.datetime.offset.toml",
+					"match": "(?<!\\w)(\\d{4}\\-\\d{2}\\-\\d{2}[T ]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[\\+\\-]\\d{2}:\\d{2}))(?!\\w)"
+				},
+				{
+					"name": "constant.regexp constant.other.datetime.local.toml",
+					"match": "(\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?)"
+				},
+				{
+					"name": "constant.regexp constant.other.date.local.toml",
+					"match": "\\d{4}\\-\\d{2}\\-\\d{2}"
+				},
+				{
+					"name": "constant.regexp constant.other.time.local.toml",
+					"match": "\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
+				},
+				{
+					"name": "constant.language.boolean.toml",
+					"match": "(?<!\\w)(true|false)(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.float.toml",
+					"match": "(?<!\\w)([\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))(?:(?:\\.([0-9]+))?[eE][\\+\\-]?[1-9]_?[0-9]*|(?:\\.[0-9_]*)))(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.integer.dec.toml",
+					"match": "(?<!\\w)((?:[\\+\\-]?(0|([1-9](([0-9]|_[0-9])+)?))))(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.float.inf.toml",
+					"match": "(?<!\\w)([\\+\\-]?inf)(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.float.nan.toml",
+					"match": "(?<!\\w)([\\+\\-]?nan)(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.integer.hex.toml",
+					"match": "(?<!\\w)((?:0x(([0-9a-fA-F](([0-9a-fA-F]|_[0-9a-fA-F])+)?))))(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.integer.oct.toml",
+					"match": "(?<!\\w)(0o[0-7](_?[0-7])*)(?!\\w)"
+				},
+				{
+					"name": "constant.numeric.integer.bin.toml",
+					"match": "(?<!\\w)(0b[01](_?[01])*)(?!\\w)"
+				}
+			]
+		}
+	}
+}

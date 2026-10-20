@@ -168,3 +168,44 @@ run = """
 echo '#!/usr/bin/env bash' > x.sh
 echo "{{ usage.after_shebang }}"
 """
+
+# One-line run strings and run arrays are shell scripts too
+[tasks.single-line]
+run = "echo {{ usage.single }} && ls"
+
+[tasks.single-line-literal]
+run = 'ls -la'
+
+[tasks.run-array]
+run = [
+  { task = "build" },
+  # a comment between scripts
+  "echo {{ usage.array_entry }}",
+  """if [ -n "$X" ]; then echo x; fi""",
+  '''
+echo multi
+''',
+]
+
+[tasks.after-run-array]
+run = "echo {{ usage.after_run_array }}"
+
+[tasks.usage]
+usage = '''
+flag "--clean" help="Clean"
+'''
+
+[tasks.after-usage]
+run = "echo {{ usage.after_usage }}"
+
+# A string that is not a script: Tera, but no shell
+[env]
+DEPLOY_NOTE = """
+{% raw %}
+${#plain[@]}
+{% endraw %}
+{{ usage.plain }}
+"""
+
+[tasks.after-plain]
+run = "echo {{ usage.after_plain }}"

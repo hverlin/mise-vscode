@@ -23,7 +23,10 @@ ones such as `mise.local.toml`, `mise.linux.toml`, or `mise/config.macos-arm64.t
 autocompletion and validation work in all of them.
 
 `mise-vscode` provides syntax highlighting for `tera` used for
-[templating](https://mise.jdx.dev/templates.html) in `mise.toml` files
+[templating](https://mise.jdx.dev/templates.html) in `mise.toml` files.
+Task scripts are highlighted as shell, whether `run` is a string or an array
+of scripts, and `usage` specs as KDL. This works whichever TOML extension
+provides the TOML highlighting.
 
 ![mise-toml-language-support.png](../../../assets/mise-toml-language-support.png)
 
