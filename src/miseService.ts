@@ -220,6 +220,7 @@ export class MiseService {
 			configRootOverride: folderPath,
 		});
 		service._hasValidMiseBinPath = this._hasValidMiseBinPath;
+		service.resolvedMiseBinPath = this.resolvedMiseBinPath;
 		service.hasVerifiedMiseVersion = this.hasVerifiedMiseVersion;
 		return service;
 	}
@@ -299,6 +300,8 @@ export class MiseService {
 
 	private hasVerifiedMiseVersion = false;
 	private _hasValidMiseBinPath = false;
+	/** The binary initializeMisePath resolved, approved if in the workspace */
+	private resolvedMiseBinPath: string | undefined;
 	private invalidMisePathErrorShown = false;
 	get hasValidMiseBinPath(): boolean {
 		return this._hasValidMiseBinPath;
@@ -483,6 +486,7 @@ export class MiseService {
 		}
 
 		this._pendingBinaryApproval = undefined;
+		this.resolvedMiseBinPath = miseBinaryPath;
 		this._hasValidMiseBinPath = true;
 		if (!this.hasVerifiedMiseVersion) {
 			const version = await this.getVersion();
@@ -1153,7 +1157,9 @@ export class MiseService {
 			return;
 		}
 
-		return getConfiguredBinPath();
+		// not the setting: when mise.binPath changes, it names the new binary
+		// while its approval is still pending, and a reload would run it
+		return this.resolvedMiseBinPath;
 	}
 
 	/** Arguments of a mise invocation, with the configured environment applied */
