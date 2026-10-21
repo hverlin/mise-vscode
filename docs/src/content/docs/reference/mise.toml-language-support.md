@@ -8,14 +8,10 @@ sidebar:
 ### Syntax Highlighting for TOML
 
 This extension provides basic syntax highlighting for `mise.toml/mise.lock` files.
-For the best experience with syntax highlighting and autocompletion in `mise.toml` files, you should install one of these TOML extensions:
+For the best experience with autocompletion and validation in `mise.toml` files, you should install the
+[Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) extension.
 
-- [Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
-- [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml)
-
-The extension will notify you on startup if neither is installed.
-
-Both use the [JSON Schema Store](https://www.schemastore.org) catalog by default,
+Tombi uses the [JSON Schema Store](https://www.schemastore.org) catalog by default,
 which associates the [mise JSON schema](https://mise.jdx.dev/schema/mise.json)
 with all mise configuration files, including environment and platform-specific
 ones such as `mise.local.toml`, `mise.linux.toml`, or `mise/config.macos-arm64.toml`
@@ -43,7 +39,7 @@ for TOML files. Tombi's TOML highlighting stays:
 
 #### tasks_config.includes
 
-If you use [`tasks_config.includes`](https://mise.jdx.dev/tasks/task-configuration.html#task-config-includes) to include some additional tasks files, add the following at the top of your file to get auto-completion and validation from `tombi` or `even-better-toml`.
+If you use [`tasks_config.includes`](https://mise.jdx.dev/tasks/task-configuration.html#task-config-includes) to include some additional tasks files, add the following at the top of your file to get auto-completion and validation from Tombi.
 
 ```toml
 #:schema https://mise.jdx.dev/schema/mise-task.json

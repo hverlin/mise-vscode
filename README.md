@@ -40,12 +40,7 @@ to use tools provided by `mise` in your current project, including support for c
 - [Open VSX Registry](https://open-vsx.org/extension/hverlin/mise-vscode)
 
 This extension provides basic syntax highlighting for `mise.toml/mise.lock` files. 
-For the best experience with syntax highlighting and autocompletion in `mise.toml` files, install one of these TOML extensions:
-
-- [Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi)
-- [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) (works well but [not actively maintained anymore](https://github.com/tamasfe/taplo/issues/715))
-
-The extension will notify you if neither is installed.
+For the best experience with autocompletion and validation in `mise.toml` files, install the [Tombi TOML](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi) extension.
 
 ## Important Defaults
 
