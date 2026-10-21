@@ -395,4 +395,46 @@ suite("Workspace Binary Approval Test Suite", function () {
 		assert.ok(miseService.getMiseBinaryPath(), "mise should still be resolved");
 		assert.equal(await wasFakeMiseExecuted(), false);
 	});
+
+	test("keeps the resolved mise while a new binPath waits for approval", async () => {
+		const stub = sandbox.stub(vscode.window, "showWarningMessage");
+		await updateBinPath(undefined);
+		const miseService = new MiseService(createFakeContext());
+		await miseService.initializeMisePath();
+		const resolvedPath = miseService.getMiseBinaryPath();
+		assert.ok(resolvedPath, "a mise outside of the workspace should resolve");
+
+		// the dialog stays open until the test answers it, like a real one
+		let dismiss = () => {};
+		const dismissed = new Promise<void>((resolve) => {
+			dismiss = resolve;
+		});
+		stub.callsFake(async (...args: unknown[]) => {
+			if (isApprovalPrompt(args)) {
+				await dismissed;
+			}
+			return undefined as never;
+		});
+
+		await configureFakeBinary();
+		const initializing = miseService.initializeMisePath();
+		while (!stub.getCalls().some((call) => isApprovalPrompt(call.args))) {
+			await new Promise((resolve) => setTimeout(resolve, 20));
+		}
+
+		try {
+			// what a view refreshing during the reload does
+			assert.equal(miseService.getMiseBinaryPath(), resolvedPath);
+			await miseService.execMiseCommand(["version"]);
+		} finally {
+			dismiss();
+			await initializing;
+		}
+
+		assert.equal(
+			await wasFakeMiseExecuted(),
+			false,
+			"the binary waiting for approval must not run",
+		);
+	});
 });
