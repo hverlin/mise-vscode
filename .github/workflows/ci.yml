@@ -108,3 +108,6 @@ jobs:
           # the suites install tools with mise, which queries the GitHub API:
           # unauthenticated, a runner shares a limit of 60 requests an hour
           GITHUB_TOKEN: ${{ github.token }}
+          # node gives each address 250ms to connect by default, which the
+          # runners sometimes miss, failing the VS Code download with ETIMEDOUT
+          NODE_OPTIONS: --network-family-autoselection-attempt-timeout=1000
