@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.31.0](https://github.com/hverlin/mise-vscode/compare/v1.30.0...v1.31.0) (2026-10-22)
+
+
+### Features
+
+* offer to turn off Tombi's semantic tokens for strings ([#366](https://github.com/hverlin/mise-vscode/issues/366)) ([fbf3e7e](https://github.com/hverlin/mise-vscode/commit/fbf3e7eca46194632c9cd13c0a01704f24280e86))
+
+
+### Bug Fixes
+
+* never run a new mise.binPath before approval, recommend only Tombi ([#363](https://github.com/hverlin/mise-vscode/issues/363)) ([57724bf](https://github.com/hverlin/mise-vscode/commit/57724bffdb61d8caa0c8677242a12c855364ebf6))
+
 ## [1.30.0](https://github.com/hverlin/mise-vscode/compare/v1.29.1...v1.30.0) (2026-10-20)
 
 
