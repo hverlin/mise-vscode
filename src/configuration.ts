@@ -102,6 +102,20 @@ export const shouldUseSymLinks = () => {
 	);
 };
 
+/**
+ * Without automatic configuration, the symlinks are only kept for a workspace
+ * that enables them in its own settings: a user-level value alone would add a
+ * symlinks folder to every project opened.
+ */
+export const shouldKeepSymLinksForWorkspace = () => {
+	return (
+		shouldUseSymLinks() &&
+		getExtensionConfig().inspect<boolean>(
+			CONFIGURATION_FLAGS.configureExtensionsUseSymLinks,
+		)?.workspaceValue === true
+	);
+};
+
 export const DEFAULT_SYMLINKS_FOLDER = ".vscode/mise-tools";
 
 export const getConfiguredSymLinksFolder = (): string => {

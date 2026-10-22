@@ -1,12 +1,11 @@
 import * as assert from "node:assert";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readlink, rm } from "node:fs/promises";
+import { mkdir, readFile, readlink, rm, symlink } from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
-import { MISE_CONFIGURE_ALL_SDK_PATHS } from "../../commands";
-import type { ConfigureAllSdkPathsOptions } from "../../providers/toolsProvider";
+import { MISE_CONFIGURE_ALL_SDK_PATHS, MISE_RELOAD } from "../../commands";
 
 const execFileAsync = promisify(execFile);
 
@@ -366,13 +365,9 @@ suite("Supported extensions (docs table)", function () {
 		}
 	});
 
-	test("symlinks without automatic configuration only keep the links, pointing at the installed binaries", async () => {
+	test("a reload without automatic configuration only keeps the links, pointing at the installed binaries", async () => {
 		const miseConfiguration = vscode.workspace.getConfiguration("mise");
 		await clearAllSettings();
-		await rm(path.join(workspaceRoot, symLinksSegment), {
-			recursive: true,
-			force: true,
-		});
 		// in this order, so that the reload each update starts never sees
 		// symlinks to the shims
 		await miseConfiguration.update(
@@ -387,23 +382,41 @@ suite("Supported extensions (docs table)", function () {
 		);
 
 		try {
-			// what a reload runs when mise.configureExtensionsAutomatically is off
-			await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS, {
-				writeSettings: false,
-			} satisfies ConfigureAllSdkPathsOptions);
-
-			assert.equal(
-				workspaceValue<string>("shellcheck.executablePath"),
-				undefined,
-				"the settings are left to the user",
+			// a link left by a version that was upgraded and removed since
+			const linkPath = path.join(workspaceRoot, symLinksSegment, "shellcheck");
+			await mkdir(path.dirname(linkPath), { recursive: true });
+			await rm(linkPath, { force: true });
+			await symlink(
+				path.join(workspaceRoot, "removed-install"),
+				linkPath,
+			).catch(
+				// a reload started by the updates above got there first
+				(error) => assert.equal(error.code, "EEXIST"),
 			);
+			const settingsPath = path.join(workspaceRoot, ".vscode", "settings.json");
+			const settingsBefore = await readFile(settingsPath, "utf8");
+
 			const { stdout } = await execFileAsync("mise", ["which", "shellcheck"], {
 				cwd: workspaceRoot,
 			});
+			const binPath = stdout.trim();
+			// a reload started by an earlier test may still be running with the
+			// settings of that test: reload until it is done
+			let target: string | undefined;
+			for (let attempt = 0; attempt < 5 && target !== binPath; attempt++) {
+				await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+				target = await readlink(linkPath).catch(() => undefined);
+			}
+
 			assert.equal(
-				await readlink(path.join(workspaceRoot, symLinksSegment, "shellcheck")),
-				stdout.trim(),
-				"the link should point at the installed binary, not the shim",
+				target,
+				binPath,
+				"the link should be replaced, and point at the installed binary, not the shim",
+			);
+			assert.equal(
+				await readFile(settingsPath, "utf8"),
+				settingsBefore,
+				"the settings are left to the user",
 			);
 		} finally {
 			for (const key of [
