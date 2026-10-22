@@ -127,6 +127,7 @@ import {
 	isToolVersionsFile,
 	parseMiseError,
 } from "./utils/miseUtilts";
+import { recommendTombiStringTokensOff } from "./utils/tombiStringTokens";
 import WebViewPanel from "./webviewPanel";
 
 const MANAGE_WORKSPACE_TRUST = "workbench.trust.manage";
@@ -860,6 +861,11 @@ export class MiseExtension {
 					addToolInfoToEditor(editor.document, this.miseService, context);
 				}
 			}),
+			vscode.window.onDidChangeActiveTextEditor((editor) => {
+				if (editor) {
+					void recommendTombiStringTokensOff(context, editor.document);
+				}
+			}),
 			vscode.window.onDidChangeActiveColorTheme(() => {
 				const editor = vscode.window.activeTextEditor;
 				if (editor && isToolsDocument(editor.document)) {
@@ -1064,6 +1070,11 @@ export class MiseExtension {
 		}
 
 		await vscode.commands.executeCommand(MISE_RELOAD);
+
+		const activeEditor = vscode.window.activeTextEditor;
+		if (activeEditor) {
+			void recommendTombiStringTokensOff(context, activeEditor.document);
+		}
 
 		setTimeout(async () => {
 			void this.miseService.checkNewMiseVersion();
