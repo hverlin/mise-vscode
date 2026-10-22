@@ -319,8 +319,6 @@ function waitForShellIntegration(
 	if (
 		terminal.shellIntegration ||
 		terminalsWithoutShellIntegration.has(terminal) ||
-		// before VS Code 1.93
-		!vscode.window.onDidChangeTerminalShellIntegration ||
 		vscode.workspace
 			.getConfiguration("terminal.integrated.shellIntegration")
 			.get<boolean>("enabled") === false
