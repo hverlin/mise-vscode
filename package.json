@@ -1766,7 +1766,8 @@
     "lint": "biome ci",
     "test": "bun test",
     "e2e-tests": "vscode-test",
-    "fetch-pkl-vsix": "node scripts/fetch-pkl-vsix.mjs"
+    "fetch-pkl-vsix": "node scripts/fetch-pkl-vsix.mjs",
+    "screenshots": "node --run build && node scripts/screenshots/index.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
@@ -1784,6 +1785,7 @@
     "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
+    "playwright-core": "^1.64.1",
     "sinon": "^22.1.0",
     "tmp": "^0.2.7",
     "tsx": "^4.23.15",
