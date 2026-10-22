@@ -2865,7 +2865,8 @@ export class MiseService {
 			if (yes) {
 				return this.listRemoteVersions(toolName);
 			}
-			return stdout.trim().split("\n").reverse();
+			// no version: `"".split("\n")` is `[""]`
+			return stdout.trim().split("\n").filter(Boolean).reverse();
 		} catch (error) {
 			if (
 				error instanceof Error &&
