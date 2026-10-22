@@ -51,6 +51,15 @@ hk install --mise
 ```
 https://hk.jdx.dev/mise_integration.html#hk-install-mise
 
+## Screenshots
+The screenshots of the README and of the docs are taken by `scripts/screenshots` (macOS). It builds the extension and opens it in VS Code on a demo project, in `/tmp/mise-vscode-screenshots`, with a home, mise folders and VS Code profile of its own, so nothing of your machine shows. The images are saved in place:
+```shell
+mise run screenshots # all of them
+mise run screenshots hero tools-list # only some, with completion
+node --run screenshots -- hero # the same without mise run
+```
+The first run downloads VS Code to `.vscode-test`. Every run downloads node and jq to the temp folder. The VS Code window opens on your screen while it runs: keep the mouse away from it, or its hovers end up in the images. Look at the images before committing them. To add a screenshot, add an entry to `shots` in `scripts/screenshots/shots.mjs`.
+
 ## Other commands
 ```shell
 mise tasks # list all available tasks
