@@ -16,10 +16,22 @@ mock.module("vscode", () => {
 	}
 
 	class Range {
+		public start: Position;
+		public end: Position;
+		// like vscode, also `new Range(startLine, startCharacter, endLine, endCharacter)`
 		constructor(
-			public start: Position,
-			public end: Position,
-		) {}
+			start: Position | number,
+			end: Position | number,
+			endLine = 0,
+			endCharacter = 0,
+		) {
+			this.start =
+				typeof start === "number" ? new Position(start, end as number) : start;
+			this.end =
+				typeof start === "number"
+					? new Position(endLine, endCharacter)
+					: (end as Position);
+		}
 	}
 
 	class MarkdownString {
@@ -92,6 +104,15 @@ mock.module("vscode", () => {
 			createOutputChannel: () => {},
 		},
 		CodeLens,
+		ColorThemeKind: {
+			Light: 1,
+			Dark: 2,
+			HighContrast: 3,
+			HighContrastLight: 4,
+		},
+		commands: {
+			executeCommand: async () => undefined,
+		},
 		CompletionItem,
 		CompletionItemKind: {
 			Function: 2,
@@ -106,6 +127,7 @@ mock.module("vscode", () => {
 		Position,
 		Range: Range,
 		Uri: {
+			parse: (value: string) => ({ toString: () => value }),
 			file: (fsPath: string) => ({
 				fsPath,
 				path: fsPath,

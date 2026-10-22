@@ -79,7 +79,11 @@ import {
 	registerEnvsCommands,
 	updateEnv,
 } from "./providers/envProvider";
-import { addToolInfoToEditor } from "./providers/inlineToolDecorator";
+import {
+	addToolInfoToEditor,
+	isToolsDocument,
+	refreshToolInfoInVisibleEditors,
+} from "./providers/inlineToolDecorator";
 import { MiseTextDocumentContentProvider } from "./providers/MiseTextDocumentContentProvider";
 import { MiseTomlTaskSymbolProvider } from "./providers/MiseTomlTaskSymbolProvider";
 import { registerMcpServers } from "./providers/mcpServers";
@@ -453,6 +457,8 @@ export class MiseExtension {
 				bootstrapProvider.refresh();
 
 				this.checkForMissingMiseTools();
+				// the documents are not edited when tools are installed or upgraded
+				void refreshToolInfoInVisibleEditors(this.miseService, context);
 
 				const envUpdate = updateEnv(context, this.miseService).catch(
 					(error) => {
@@ -839,9 +845,6 @@ export class MiseExtension {
 				debouncedAddToolInfo.get(uri) ?? debounce(addToolInfoToEditor, 500)
 			);
 		};
-
-		const isToolsDocument = (document: vscode.TextDocument) =>
-			document.languageId === "toml" || isToolVersionsFile(document.fileName);
 
 		context.subscriptions.push(
 			vscode.workspace.onDidChangeTextDocument((event) => {
