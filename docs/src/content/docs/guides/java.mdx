@@ -19,3 +19,7 @@ Here is an example Java project setup with mise:
 ![java setup](./java-example.png)
 
 The `settings.json` file has been updated with the Java SDK path provided by `mise`.
+
+When the Java version comes from your global mise config (`mise use -g java@21`), the path is
+`~/.local/share/mise/installs/java/global` (mise 2026.10.8+). It follows the next `mise use -g java@...`
+or `mise upgrade`, so `settings.json` does not change. A version set in the project's `mise.toml` keeps its own folder.
