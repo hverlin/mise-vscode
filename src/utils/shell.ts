@@ -301,12 +301,81 @@ export const isTerminalClosed = (terminal: vscode.Terminal) => {
 	return vscode.window.terminals.indexOf(terminal) === -1;
 };
 
+/** Time a terminal gets to activate its shell integration, as VS Code suggests */
+const SHELL_INTEGRATION_TIMEOUT_MS = 3000;
+
+/** Terminals whose shell did not activate its integration in time */
+const terminalsWithoutShellIntegration = new WeakSet<vscode.Terminal>();
+
+/**
+ * The shell integration of a terminal once it activates, which is when the
+ * shell has drawn its prompt. Undefined when it does not come: disabled,
+ * unsupported shell (cmd), or too slow a start.
+ */
+function waitForShellIntegration(
+	terminal: vscode.Terminal,
+	timeoutMs: number,
+): Promise<vscode.TerminalShellIntegration | "closed" | undefined> {
+	if (
+		terminal.shellIntegration ||
+		terminalsWithoutShellIntegration.has(terminal) ||
+		// before VS Code 1.93
+		!vscode.window.onDidChangeTerminalShellIntegration ||
+		vscode.workspace
+			.getConfiguration("terminal.integrated.shellIntegration")
+			.get<boolean>("enabled") === false
+	) {
+		return Promise.resolve(terminal.shellIntegration);
+	}
+
+	return new Promise((resolve) => {
+		const done = (
+			result: vscode.TerminalShellIntegration | "closed" | undefined,
+		) => {
+			clearTimeout(timeout);
+			activated.dispose();
+			closed.dispose();
+			resolve(result);
+		};
+		const timeout = setTimeout(() => {
+			terminalsWithoutShellIntegration.add(terminal);
+			done(undefined);
+		}, timeoutMs);
+		const activated = vscode.window.onDidChangeTerminalShellIntegration(
+			(event) => {
+				if (event.terminal === terminal) {
+					done(event.shellIntegration);
+				}
+			},
+		);
+		const closed = vscode.window.onDidCloseTerminal((closedTerminal) => {
+			if (closedTerminal === terminal) {
+				done("closed");
+			}
+		});
+	});
+}
+
+/**
+ * Text sent to a new terminal before its shell is ready shows twice: echoed
+ * as typeahead, then again on the prompt line. So the command waits for the
+ * shell integration, and is typed in anyway when the shell has none.
+ */
 export const runInVscodeTerminal = async (
 	terminal: vscode.Terminal,
 	command: string,
+	shellIntegrationTimeoutMs = SHELL_INTEGRATION_TIMEOUT_MS,
 ) => {
-	if (terminal.shellIntegration) {
-		terminal.shellIntegration.executeCommand(command);
+	const shellIntegration = await waitForShellIntegration(
+		terminal,
+		shellIntegrationTimeoutMs,
+	);
+	if (shellIntegration === "closed") {
+		return;
+	}
+
+	if (shellIntegration) {
+		shellIntegration.executeCommand(command);
 	} else {
 		terminal.sendText(command);
 	}
