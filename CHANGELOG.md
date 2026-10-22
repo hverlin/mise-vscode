@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.31.2](https://github.com/hverlin/mise-vscode/compare/v1.31.1...v1.31.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* don't offer an empty version when a tool has no remote versions ([#374](https://github.com/hverlin/mise-vscode/issues/374)) ([6620f3d](https://github.com/hverlin/mise-vscode/commit/6620f3d4bebcb51f07e4e9106ac7362af8754635))
+* list tool version completions newest first ([#372](https://github.com/hverlin/mise-vscode/issues/372)) ([ba66be9](https://github.com/hverlin/mise-vscode/commit/ba66be92b7dcb3549028fb9b25275dda0896074d))
+* refresh the tool decorations after a reload ([#375](https://github.com/hverlin/mise-vscode/issues/375)) ([b0b5148](https://github.com/hverlin/mise-vscode/commit/b0b514867edb126546ae4e41abf87516c4eae2b9))
+* wait for the shell of a new terminal before running a task in it ([#377](https://github.com/hverlin/mise-vscode/issues/377)) ([f8b2070](https://github.com/hverlin/mise-vscode/commit/f8b207019b1a0f73cf3890f3231011469fdb6653))
+
 ## [1.31.1](https://github.com/hverlin/mise-vscode/compare/v1.31.0...v1.31.1) (2026-10-22)
 
 
