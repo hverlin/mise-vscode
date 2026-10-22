@@ -9,6 +9,9 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    ignore:
+      # pinned to the minimum VS Code of engines.vscode, bumped with it
+      - dependency-name: '@types/vscode'
 
   - package-ecosystem: github-actions
     directory: '/'
