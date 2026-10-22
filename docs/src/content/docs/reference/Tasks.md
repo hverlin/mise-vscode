@@ -5,6 +5,8 @@ sidebar:
   order: 301
 ---
 
+<video controls src="/mise-vscode/videos/tasks.mp4"></video>
+
 ## Finding tasks
 
 Here are a few ways to find tasks in your project:
@@ -257,6 +259,8 @@ Tasks are shown with their fully qualified names (`//projects/frontend:build`)
 and can be run from the activity bar, code lenses, the command palette, and the
 VS Code tasks API. In the activity bar, tasks are grouped by their config file,
 with each project's files listed together.
+
+<video controls src="/mise-vscode/videos/monorepo.mp4"></video>
 
 Navigation understands all the ways tasks can reference each other:
 

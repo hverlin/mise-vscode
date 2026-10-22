@@ -26,6 +26,8 @@ workspace folder, with their status and, while they run, their port. It only
 shows up when there are daemons. The daemons of the global pitchfork config
 are listed under `Global`, in every workspace.
 
+<video controls src="/mise-vscode/videos/daemons.mp4"></video>
+
 From each daemon, you can:
 
 - start, stop or restart it. A mise daemon is started with

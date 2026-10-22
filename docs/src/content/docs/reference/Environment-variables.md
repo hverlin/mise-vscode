@@ -5,6 +5,8 @@ sidebar:
   order: 303
 ---
 
+<video controls src="/mise-vscode/videos/env.mp4"></video>
+
 ## Environment variables list
 
 Environment variables are listed in the activity bar. Click on an environment

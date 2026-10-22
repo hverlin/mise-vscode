@@ -1,6 +1,7 @@
-// Regenerates the screenshots of the README and of the docs.
+// Regenerates the screenshots of the README and of the docs, and the videos
+// of the docs.
 //
-// VS Code runs with the built extension on a demo project, in folders of its
+// VS Code runs with the built extension on demo projects, in folders of its
 // own under /tmp: a fake home, mise data/config/state/cache dirs, VS Code user
 // data and extensions. Nothing of the machine shows in the screenshots (home
 // path, user name, host name, git author, accounts, other projects), and none
@@ -8,14 +9,16 @@
 // changed. The folder is deleted at the end.
 //
 // Usage: node scripts/screenshots/index.mjs [--keep] [shot...]
-// Without shots, every shot is taken. Set VSCODE_VERSION to pick another
-// VS Code version than the one below: the screenshots change with it.
+// Without shots, every screenshot is taken. The videos are only recorded when
+// named, or all of them with `videos`, and need ffmpeg in PATH; they are then
+// joined into the demo video. Set VSCODE_VERSION to pick another VS Code
+// version than the one below: the screenshots change with it.
 //   --list   print the shot names
 //   --keep   keep the folder under /tmp, as when a shot fails, with a
 //            screenshot and the HTML of each failing shot
 //
-// To add a shot, add an entry to `shots` in shots.mjs, and what it needs to
-// the demo project in demo-project.mjs.
+// To add a shot, add an entry to `shots` in shots.mjs, or to `videos` in
+// videos.mjs, and what it needs to a demo project in demo-projects.mjs.
 import { execFileSync } from "node:child_process";
 import {
 	accessSync,
@@ -34,9 +37,10 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { _electron } from "playwright-core";
-import { files } from "./demo-project.mjs";
+import { homeFiles, projects } from "./demo-projects.mjs";
 import { shots } from "./shots.mjs";
 import { helpers, miseStatusBarItem, windowSize } from "./ui.mjs";
+import { join } from "./video.mjs";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -47,7 +51,6 @@ const root = "/tmp/mise-vscode-screenshots";
 // it without risking to delete anything else
 const marker = path.join(root, ".mise-vscode-screenshots");
 const home = path.join(root, "home");
-const project = path.join(home, "my-project");
 const userDataDir = path.join(root, "user-data");
 const extensionsDir = path.join(root, "extensions");
 const binDir = path.join(root, "bin");
@@ -89,6 +92,8 @@ const settings = {
 	// no cursor in the screenshots
 	"workbench.colorCustomizations": { "editorCursor.foreground": "#0000" },
 	"files.autoSave": "off",
+	// its hint shows in new terminals
+	"terminal.integrated.suggest.enabled": false,
 	"mise.checkForNewMiseVersion": false,
 };
 
@@ -114,25 +119,35 @@ const env = {
 	MISE_SYSTEM_DATA_DIR: path.join(root, "usr/share/mise"),
 	MISE_CEILING_PATHS: home,
 	MISE_YES: "1",
+	MISE_DISABLE_HINTS: "*",
+	PITCHFORK_STATE_DIR: path.join(home, ".local/state/pitchfork"),
+	PITCHFORK_CONFIG_DIR: path.join(home, ".config/pitchfork"),
 };
 
+// the joined videos, in the order of `shots`
+const demoVideo = "docs/public/demo.mp4";
+
 const args = process.argv.slice(2);
+const available = [...shots.map((shot) => shot.name), "videos"];
 if (args.includes("--list")) {
-	console.log(shots.map((shot) => shot.name).join("\n"));
+	console.log(available.join("\n"));
 	process.exit(0);
 }
 const names = args.filter((arg) => !arg.startsWith("--"));
-const unknown = names.filter(
-	(name) => !shots.some((shot) => shot.name === name),
-);
+const unknown = names.filter((name) => !available.includes(name));
 if (unknown.length) {
 	console.error(`Unknown shots: ${unknown.join(", ")}`);
-	console.error(`Available: ${shots.map((shot) => shot.name).join(", ")}`);
+	console.error(`Available: ${available.join(", ")}`);
 	process.exit(1);
 }
+// the videos are only recorded when named: they take longer, and their files
+// change with every recording
 const selected = names.length
-	? shots.filter((shot) => names.includes(shot.name))
-	: shots;
+	? shots.filter(
+			(shot) =>
+				names.includes(shot.name) || (shot.video && names.includes("videos")),
+		)
+	: shots.filter((shot) => !shot.video);
 
 const findMise = () => {
 	for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
@@ -145,6 +160,26 @@ const findMise = () => {
 	throw new Error("mise not found in PATH");
 };
 
+/** writes `files`, by path relative to `dir`; scripts are executable */
+const writeFiles = (dir, files) => {
+	for (const [file, content] of Object.entries(files)) {
+		mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+		writeFileSync(path.join(dir, file), content);
+		if (content.startsWith("#!")) {
+			chmodSync(path.join(dir, file), 0o755);
+		}
+	}
+};
+
+/** runs the mise of the folder in `cwd` */
+const mise = (cwd, ...miseArgs) =>
+	execFileSync(path.join(binDir, "mise"), miseArgs, {
+		cwd,
+		env,
+		stdio: "inherit",
+	});
+
+/** the folder, with a home, VS Code settings and the extension */
 const prepare = () => {
 	rmSync(root, { recursive: true, force: true });
 	// fails if the folder was created again in between, e.g. by another user:
@@ -158,11 +193,7 @@ const prepare = () => {
 	]) {
 		mkdirSync(dir, { recursive: true });
 	}
-	for (const [file, content] of Object.entries(files)) {
-		mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
-		writeFileSync(path.join(root, file), content);
-	}
-	chmodSync(path.join(project, "mise-tasks/release"), 0o755);
+	writeFiles(home, homeFiles);
 	writeFileSync(
 		path.join(userDataDir, "User/settings.json"),
 		JSON.stringify(settings, null, 2),
@@ -192,19 +223,25 @@ const prepare = () => {
 
 	// a copy, so that no path of the machine shows
 	copyFileSync(findMise(), path.join(binDir, "mise"));
-	const mise = (...miseArgs) =>
-		execFileSync(path.join(binDir, "mise"), miseArgs, {
-			cwd: project,
-			env,
-			stdio: "inherit",
-		});
-	mise("trust", path.join(project, "mise.toml"));
-	// python is left missing on purpose, to show the missing tools, and jq
-	// outdated, to show its update
-	mise("install", "node", "jq@1.7.1");
 };
 
-const launch = async () => {
+/** writes the demo project `name`, trusts its configs and sets it up */
+const prepareProject = (name) => {
+	const dir = path.join(home, name);
+	const { files, setup } = projects[name];
+	writeFiles(dir, files);
+	for (const file of Object.keys(files)) {
+		if (path.basename(file) === "mise.toml") {
+			mise(dir, "trust", path.join(dir, file));
+		}
+	}
+	setup(
+		(...miseArgs) => mise(dir, ...miseArgs),
+		(file, content) => writeFiles(dir, { [file]: content }),
+	);
+};
+
+const launch = async (project) => {
 	const executablePath = await downloadAndUnzipVSCode({
 		cachePath: path.join(repo, ".vscode-test"),
 		version: vscodeVersion,
@@ -256,31 +293,61 @@ let app;
 let failed = 0;
 try {
 	prepare();
-	app = await launch();
-	const page = await app.firstWindow();
-	try {
-		await ready(app, page);
-	} catch (error) {
-		await page.screenshot({ path: path.join(root, "launch-failed.png") });
-		throw error;
-	}
-	for (const shot of selected) {
-		const ui = helpers(page, shot.out);
+	// VS Code opens each project in turn, for its shots
+	const byProject = Map.groupBy(
+		selected,
+		(shot) => shot.project ?? "my-project",
+	);
+	for (const [name, projectShots] of byProject) {
+		prepareProject(name);
 		try {
-			await ui.reset();
-			await shot.run(ui);
-			console.log(`✔ ${shot.name}: ${shot.out}`);
-		} catch (error) {
-			failed++;
-			console.error(`✘ ${shot.name}: ${error.message}`);
-			await page.screenshot({
-				path: path.join(root, `${shot.name}-failed.png`),
-			});
-			writeFileSync(
-				path.join(root, `${shot.name}-failed.html`),
-				await page.content(),
-			);
+			app = await launch(path.join(home, name));
+			const page = await app.firstWindow();
+			try {
+				await ready(app, page);
+			} catch (error) {
+				await page.screenshot({
+					path: path.join(root, `${name}-launch-failed.png`),
+				});
+				throw error;
+			}
+			for (const shot of projectShots) {
+				const ui = helpers(page, shot.out);
+				try {
+					await ui.reset();
+					await shot.run(ui);
+					console.log(`✔ ${shot.name}: ${shot.out}`);
+				} catch (error) {
+					failed++;
+					console.error(`✘ ${shot.name}: ${error.message}`);
+					await page.screenshot({
+						path: path.join(root, `${shot.name}-failed.png`),
+					});
+					writeFileSync(
+						path.join(root, `${shot.name}-failed.html`),
+						await page.content(),
+					);
+				}
+			}
+		} finally {
+			await app?.close();
+			app = undefined;
+			try {
+				projects[name].teardown?.((...miseArgs) =>
+					mise(path.join(home, name), ...miseArgs),
+				);
+			} catch (error) {
+				console.error(`Could not tear ${name} down: ${error.message}`);
+			}
 		}
+	}
+	if (!failed && selected.some((shot) => shot.video)) {
+		const videos = shots
+			.filter((shot) => shot.video)
+			.map((shot) => path.join(repo, shot.out))
+			.filter((file) => existsSync(file));
+		join(videos, path.join(repo, demoVideo));
+		console.log(`✔ ${videos.length} videos joined: ${demoVideo}`);
 	}
 } catch (error) {
 	failed++;

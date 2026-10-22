@@ -1,6 +1,7 @@
 // Drives VS Code for the shots, through the DOM of its window.
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { recorder } from "./video.mjs";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -24,10 +25,14 @@ export function helpers(page, out) {
 	const ui = {
 		page,
 
-		/** a shot starts with no open editor, menu or quick input */
+		/** a shot starts with no open editor, panel, menu or quick input */
 		async reset() {
 			await page.keyboard.press("Escape");
 			await page.keyboard.press("Escape");
+			// a task or an install opens the terminal
+			if (await page.locator("#workbench\\.parts\\.panel").isVisible()) {
+				await ui.command("View: Hide Panel");
+			}
 			if (await page.locator(".tab.dirty").count()) {
 				await ui.command("File: Revert File");
 			}
@@ -179,19 +184,20 @@ export function helpers(page, out) {
 				.first();
 		},
 
-		/** opens the mise views, each pane expanded or collapsed */
+		/** opens the mise views, the panes of `expanded` expanded or collapsed */
 		async showMiseViews(expanded) {
 			await ui.command("View: Show Mise");
-			const panes = {
+			const titles = {
 				tasks: "Tasks",
 				tools: "Tools",
 				env: "Environment Variables",
+				daemons: "Daemons",
 			};
-			for (const [key, title] of Object.entries(panes)) {
-				const header = ui.paneHeader(title);
+			for (const [key, isExpanded] of Object.entries(expanded)) {
+				const header = ui.paneHeader(titles[key]);
 				await header.waitFor();
 				if (
-					(await header.getAttribute("aria-expanded")) !== String(expanded[key])
+					(await header.getAttribute("aria-expanded")) !== String(isExpanded)
 				) {
 					// the middle of the header has its actions
 					await header.locator("h3.title").click();
@@ -200,6 +206,18 @@ export function helpers(page, out) {
 			await sidebar.locator(".monaco-list-row").first().waitFor();
 			await page.waitForTimeout(1000);
 			await page.mouse.move(windowSize.width - 1, windowSize.height / 2);
+		},
+
+		/**
+		 * the views of the hero: every pane expanded, with every task and
+		 * every variable, next to mise.toml
+		 */
+		async showOverview() {
+			await ui.showMiseViews({ tasks: true, tools: true, env: true });
+			await ui.showEnvValues();
+			await ui.resizePane("Tasks", 285);
+			await ui.resizePane("Tools", 166);
+			await ui.openFile("mise.toml");
 		},
 
 		/** the values are hidden by default */
@@ -215,13 +233,14 @@ export function helpers(page, out) {
 			}
 		},
 
-		/** moves the bottom edge of the pane `title` by `delta` pixels */
-		async resizePane(title, delta) {
+		/** makes the pane `title` `height` pixels high, by moving its bottom edge */
+		async resizePane(title, height) {
 			const pane = await sidebar
 				.locator(".pane")
 				.filter({ has: paneHeader(title) })
 				.boundingBox();
 			const bottom = pane.y + pane.height;
+			const delta = height - pane.height;
 			for (const sash of await sidebar
 				.locator(".monaco-sash.horizontal")
 				.all()) {
@@ -250,6 +269,9 @@ export function helpers(page, out) {
 				.frameLocator("iframe.webview.ready")
 				.frameLocator("#active-frame");
 		},
+
+		/** records the window to `out`, for a shot with `video: true` */
+		video: recorder(page, path.join(repo, out), windowSize),
 
 		/** saves the window, or the `clip` part of it */
 		async screenshot(clip) {
