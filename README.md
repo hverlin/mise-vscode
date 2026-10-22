@@ -62,6 +62,8 @@ To enable auto-configuration, set [`mise.configureExtensionsAutomatically`](http
 
 The mise-vscode extension integrates mise's core functionality into VS Code, helping you manage your development environment directly from the editor. You can handle task running, tool versions, and environment variables through a simple interface. Here's what's available:
 
+<video src="https://github.com/user-attachments/assets/243a9a13-61ca-4889-90b4-46a6f403e08f"></video>
+
 ### [mise.toml Language Support](https://hverlin.github.io/mise-vscode/reference/misetoml-language-support/)
 - 📝 Syntax highlighting for `mise.toml` files (and [tera templates](https://mise.jdx.dev/templates.html))
 - 📚 Autocompletion for `mise.toml` files, and for the variables, functions,
@@ -94,8 +96,6 @@ The mise-vscode extension integrates mise's core functionality into VS Code, hel
 - 📦 Install/Remove/Use tools directly from the sidebar
 - 🔧 Configure your other VSCode extensions to use tools provided by `mise`
   ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)). See the [set-up guide](https://hverlin.github.io/mise-vscode/tutorials/settinguptheextension/) for more information.
-
-<video src="https://github.com/user-attachments/assets/c2ad5e60-f011-46a4-8e1b-1da4264f0d09"></video>
 
 ### [Environment Variables](https://hverlin.github.io/mise-vscode/reference/environment-variables/)
 
