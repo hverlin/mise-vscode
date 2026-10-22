@@ -41,6 +41,6 @@ before an agent runs a tool, depending on your settings. See
 such as `MISE_SAFE=1`.
 :::
 
-This requires VS Code 1.101 or later, mise 2026.6.6 or later for `mise mcp`,
+This requires mise 2026.6.6 or later for `mise mcp`,
 and pitchfork 2.25.0 or later for `pitchfork mcp`. Only the user settings can set `mise.mcpServers`, not a
 project's.

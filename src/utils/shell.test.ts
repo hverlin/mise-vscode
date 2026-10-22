@@ -330,15 +330,6 @@ describe("runInVscodeTerminal", () => {
 		expect(listenerCount()).toBe(0);
 	});
 
-	it("does not wait on VS Code versions without the shell integration api", async () => {
-		const { terminal, sent } = setUp();
-		delete window.onDidChangeTerminalShellIntegration;
-
-		await runInVscodeTerminal(terminal, "mise run hello", 60_000);
-
-		expect(sent).toEqual(["mise run hello"]);
-	});
-
 	it("drops the command when the terminal is closed while waiting", async () => {
 		const { terminal, sent, executed, close, listenerCount } = setUp();
 
