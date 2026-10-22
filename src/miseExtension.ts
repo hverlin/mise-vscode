@@ -45,6 +45,7 @@ import {
 	shouldConfigureExtensionsAutomatically,
 	shouldShowNotificationIfMissingTools,
 	shouldTrustOwnEditsInParanoidMode,
+	shouldUseSymLinks,
 } from "./configuration";
 import { DaemonsService } from "./daemonsService";
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
@@ -118,6 +119,7 @@ import { TaskValidationDiagnostics } from "./providers/taskValidationDiagnostics
 import { createToolHoverProvider } from "./providers/toolHoverProvider";
 import { createToolLinkProvider } from "./providers/toolLinkProvider";
 import {
+	type ConfigureAllSdkPathsOptions,
 	MiseToolsProvider,
 	registerToolsCommands,
 } from "./providers/toolsProvider";
@@ -481,11 +483,16 @@ export class MiseExtension {
 					},
 				);
 
-				if (
-					shouldConfigureExtensionsAutomatically() &&
-					isMiseExtensionEnabled()
-				) {
-					await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
+				if (isMiseExtensionEnabled()) {
+					if (shouldConfigureExtensionsAutomatically()) {
+						await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
+					} else if (shouldUseSymLinks()) {
+						// the settings are written by hand: only keep the links they
+						// point at up to date
+						await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS, {
+							writeSettings: false,
+						} satisfies ConfigureAllSdkPathsOptions);
+					}
 				}
 
 				// activation awaits this reload: extensions activated after this one
