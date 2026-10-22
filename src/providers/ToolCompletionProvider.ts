@@ -318,7 +318,8 @@ export class ToolCompletionProvider implements vscode.CompletionItemProvider {
 					version,
 					vscode.CompletionItemKind.Value,
 				);
-				completionItem.sortText = i.toString();
+				// VS Code compares `sortText` as text: pad, or 10 comes before 2
+				completionItem.sortText = String(i).padStart(5, "0");
 				completionItem.insertText = wrapInQuotes ? `'${version}'` : version;
 				completionItem.range = replaceRange;
 				return completionItem;

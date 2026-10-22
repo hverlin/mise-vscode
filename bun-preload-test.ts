@@ -42,6 +42,16 @@ mock.module("vscode", () => {
 		}
 	}
 
+	class CompletionItem {
+		sortText?: string;
+		insertText?: string;
+		range?: Range;
+		constructor(
+			public label: string | { label: string; description?: string },
+			public kind?: number,
+		) {}
+	}
+
 	class CodeLens {
 		constructor(
 			public range: Range,
@@ -82,9 +92,12 @@ mock.module("vscode", () => {
 			createOutputChannel: () => {},
 		},
 		CodeLens,
+		CompletionItem,
 		CompletionItemKind: {
 			Function: 2,
 			Variable: 5,
+			Module: 8,
+			Value: 11,
 			Keyword: 13,
 		},
 		ConfigurationTarget: {},

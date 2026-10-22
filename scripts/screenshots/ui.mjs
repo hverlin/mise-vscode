@@ -82,6 +82,8 @@ export function helpers(page, out) {
 		async goToLine(line) {
 			await ui.quickInput(`:${line}`);
 			await page.keyboard.press("Enter");
+			// keys pressed before the editor has the focus back are lost
+			await quickInput.waitFor({ state: "hidden" });
 			await page.keyboard.press("End");
 		},
 
