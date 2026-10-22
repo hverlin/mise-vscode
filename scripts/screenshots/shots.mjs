@@ -1,20 +1,28 @@
-// The screenshots. Each shot starts with no open editor, then opens what it
-// needs, and saves the window or a part of it to `out`.
-import { lineOf } from "./demo-project.mjs";
+// The screenshots, then the videos. Each shot starts with no open editor,
+// then opens what it needs, and saves the window or a part of it to `out`, or
+// records a video of it. It runs in the demo project `project`, my-project by
+// default.
+import { lineOf } from "./demo-projects.mjs";
 import { miseStatusBarItem, windowSize } from "./ui.mjs";
+import { videos } from "./videos.mjs";
 
-/** @type {{name: string, out: string, run: (ui: import("./ui.mjs").Ui) => Promise<void>}[]} */
+/**
+ * @typedef {{
+ *   name: string,
+ *   out: string,
+ *   project?: string,
+ *   video?: boolean,
+ *   run: (ui: import("./ui.mjs").Ui) => Promise<void>,
+ * }} Shot
+ */
+
+/** @type {Shot[]} */
 export const shots = [
 	{
 		name: "hero",
 		out: "screenshots/mise-vscode-screenshot.png",
 		async run(ui) {
-			await ui.showMiseViews({ tasks: true, tools: true, env: true });
-			await ui.showEnvValues();
-			// every task and every variable shows
-			await ui.resizePane("Tasks", 110);
-			await ui.resizePane("Tools", -40);
-			await ui.openFile("mise.toml");
+			await ui.showOverview();
 			await ui.page
 				.locator(".statusbar-item", { hasText: "Missing tools" })
 				.waitFor();
@@ -264,4 +272,5 @@ export const shots = [
 			await ui.screenshot(await ui.clip([setting], { margin: 0 }));
 		},
 	},
+	...videos,
 ];

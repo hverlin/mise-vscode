@@ -5,6 +5,8 @@ sidebar:
     order: 302
 ---
 
+<video controls src="/mise-vscode/videos/tools.mp4"></video>
+
 ## Tools versions
 
 The extension will show the currently installed tool versions directly in the
@@ -87,6 +89,8 @@ Each lens asks for confirmation first, and shows the command it runs.
 Nothing is shown with `lockfile = false`. Requires mise 2026.9.16+. The
 lockfiles of an environment (`mise.test.lock`), of a monorepo subproject and
 the global one are not covered.
+
+<video controls src="/mise-vscode/videos/lockfile.mp4"></video>
 
 ## Tools list
 
