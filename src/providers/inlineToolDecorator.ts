@@ -37,21 +37,35 @@ function groupToolsByLine(
 export const isToolsDocument = (document: vscode.TextDocument) =>
 	document.languageId === "toml" || isToolVersionsFile(document.fileName);
 
-/** Every editor showing the file gets its decorations, not only the active one */
-function editorsShowing(filePath: string): vscode.TextEditor[] {
+/**
+ * Every editor showing the document gets its decorations, not only the active
+ * one. Matched by uri: both sides of a diff have the same path.
+ */
+function editorsShowing(document: vscode.TextDocument): vscode.TextEditor[] {
+	const uri = document.uri.toString();
 	return vscode.window.visibleTextEditors.filter(
-		(editor) => expandPath(editor.document.uri.fsPath) === filePath,
+		(editor) => editor.document.uri.toString() === uri,
 	);
 }
 
+/** Whether mise loads the document, checked before spawning mise for any TOML */
+async function isLoadedConfigFile(
+	document: vscode.TextDocument,
+	miseService: MiseService,
+): Promise<boolean> {
+	const files = await miseService.getCurrentConfigFiles();
+	return files.includes(expandPath(document.uri.fsPath));
+}
+
+// keyed by document uri
 const activeDecorationsPerFileAndTool: {
-	[filePath: string]: {
+	[documentUri: string]: {
 		[toolName: string]: vscode.TextEditorDecorationType;
 	};
 } = {};
 
 const activeGutterDecorationsPerFileAndTool: {
-	[filePath: string]: {
+	[documentUri: string]: {
 		[toolName: string]: vscode.TextEditorDecorationType;
 	};
 } = {};
@@ -60,9 +74,12 @@ export async function showToolVersionInline(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
+	if (!(await isLoadedConfigFile(document, miseService))) {
+		return;
+	}
+
 	const showEnvVars = shouldShowToolEnvVarsDecorations();
-	const [files, tools, envsWithInfo] = await Promise.all([
-		miseService.getCurrentConfigFiles(),
+	const [tools, envsWithInfo] = await Promise.all([
 		miseService.getCurrentTools({ useCache: false }),
 		showEnvVars
 			? miseService.getEnvWithInfo().catch(() => [])
@@ -81,13 +98,8 @@ export async function showToolVersionInline(
 			}
 		}
 	}
-	const currentFile = expandPath(document.uri.fsPath);
-	if (!files.includes(currentFile)) {
-		return;
-	}
-
-	activeDecorationsPerFileAndTool[currentFile] ??= {};
-	activeGutterDecorationsPerFileAndTool[currentFile] ??= {};
+	const documentKey = document.uri.toString();
+	activeDecorationsPerFileAndTool[documentKey] ??= {};
 
 	const updatedToolNames = new Set<string>();
 	// Collect all decoration ranges per tool key first, then apply once.
@@ -213,29 +225,29 @@ export async function showToolVersionInline(
 		}
 	}
 
-	const editors = editorsShowing(currentFile);
+	const editors = editorsShowing(document);
 	if (editors.length === 0) {
 		return;
 	}
 
 	for (const [joinedToolName, decorationOptions] of pendingDecorations) {
-		activeDecorationsPerFileAndTool[currentFile][joinedToolName] ??=
+		activeDecorationsPerFileAndTool[documentKey][joinedToolName] ??=
 			vscode.window.createTextEditorDecorationType({
 				after: { color: "rgba(136,136,136,0.63)" },
 			});
 
 		for (const editor of editors) {
 			editor.setDecorations(
-				activeDecorationsPerFileAndTool[currentFile][joinedToolName],
+				activeDecorationsPerFileAndTool[documentKey][joinedToolName],
 				decorationOptions,
 			);
 		}
 	}
 
-	for (const toolName in activeDecorationsPerFileAndTool[currentFile]) {
+	for (const toolName in activeDecorationsPerFileAndTool[documentKey]) {
 		if (!updatedToolNames.has(toolName)) {
-			activeDecorationsPerFileAndTool?.[currentFile]?.[toolName]?.dispose();
-			delete activeDecorationsPerFileAndTool?.[currentFile]?.[toolName];
+			activeDecorationsPerFileAndTool?.[documentKey]?.[toolName]?.dispose();
+			delete activeDecorationsPerFileAndTool?.[documentKey]?.[toolName];
 		}
 	}
 }
@@ -244,20 +256,19 @@ export async function showOutdatedToolsGutterIcons(
 	document: vscode.TextDocument,
 	miseService: MiseService,
 ): Promise<void> {
-	const [files, outdatedTools, tools] = await Promise.all([
-		miseService.getCurrentConfigFiles(),
+	if (!(await isLoadedConfigFile(document, miseService))) {
+		return;
+	}
+
+	const [outdatedTools, tools] = await Promise.all([
 		miseService.getOutdatedTools(),
 		miseService.getCurrentTools(),
 	]);
 	// `mise outdated` lists the lazy tools as not installed, like missing ones
 	const lazyToolNames = getLazyToolNames(tools);
 
-	const currentFile = expandPath(document.uri.fsPath);
-	if (!files.includes(currentFile)) {
-		return;
-	}
-
-	activeGutterDecorationsPerFileAndTool[currentFile] ??= {};
+	const documentKey = document.uri.toString();
+	activeGutterDecorationsPerFileAndTool[documentKey] ??= {};
 
 	// one decoration type per tool and icon: a missing tool that becomes
 	// outdated (or the reverse) gets the other icon. Ranges are collected first
@@ -321,13 +332,13 @@ export async function showOutdatedToolsGutterIcons(
 		}
 	}
 
-	const editors = editorsShowing(currentFile);
+	const editors = editorsShowing(document);
 	if (editors.length === 0) {
 		return;
 	}
 
 	for (const [key, { iconId, options }] of pendingDecorations) {
-		activeGutterDecorationsPerFileAndTool[currentFile][key] ??=
+		activeGutterDecorationsPerFileAndTool[documentKey][key] ??=
 			vscode.window.createTextEditorDecorationType({
 				gutterIconPath: vscode.Uri.parse(
 					getSvgIcon(vscode.window.activeColorTheme.kind, iconId),
@@ -337,7 +348,7 @@ export async function showOutdatedToolsGutterIcons(
 
 		for (const editor of editors) {
 			editor.setDecorations(
-				activeGutterDecorationsPerFileAndTool[currentFile][key],
+				activeGutterDecorationsPerFileAndTool[documentKey][key],
 				options,
 			);
 		}
@@ -345,10 +356,7 @@ export async function showOutdatedToolsGutterIcons(
 
 	// the lines of the line number menu of the active editor
 	const activeEditor = vscode.window.activeTextEditor;
-	if (
-		activeEditor &&
-		expandPath(activeEditor.document.uri.fsPath) === currentFile
-	) {
+	if (activeEditor?.document.uri.toString() === documentKey) {
 		vscode.commands.executeCommand(
 			"setContext",
 			"mise.linesWithOutdatedTools",
@@ -357,10 +365,10 @@ export async function showOutdatedToolsGutterIcons(
 	}
 
 	// disposing a type removes its icons, from the lines no longer outdated too
-	for (const key in activeGutterDecorationsPerFileAndTool[currentFile]) {
+	for (const key in activeGutterDecorationsPerFileAndTool[documentKey]) {
 		if (!pendingDecorations.has(key)) {
-			activeGutterDecorationsPerFileAndTool[currentFile][key]?.dispose();
-			delete activeGutterDecorationsPerFileAndTool[currentFile][key];
+			activeGutterDecorationsPerFileAndTool[documentKey][key]?.dispose();
+			delete activeGutterDecorationsPerFileAndTool[documentKey][key];
 		}
 	}
 }

@@ -21,18 +21,27 @@ afterEach(() => {
 	commands.executeCommand = originalExecuteCommand;
 });
 
-// the decorations are kept per file: one file per test
-let fileCount = 0;
+// the decorations are kept per document: one folder per test
+let folderCount = 0;
+const newPath = (fileName = "mise.toml") =>
+	`/repo/${folderCount++}/${fileName}`;
 
-function createDocument(text: string, fileName = `mise.${fileCount++}.toml`) {
-	const fsPath = `/repo/${fileName}`;
+function createDocument(
+	text: string,
+	{ fsPath = newPath(), scheme = "file" } = {},
+) {
 	const lines = text.split("\n");
 	return {
 		fileName: fsPath,
-		languageId: fileName.endsWith(".toml") ? "toml" : "typescript",
-		uri: vscode.Uri.file(fsPath),
+		languageId: fsPath.endsWith(".toml") ? "toml" : "plaintext",
+		// the left side of a diff has the path of the file, in another scheme
+		uri:
+			scheme === "file"
+				? vscode.Uri.file(fsPath)
+				: { fsPath, scheme, toString: () => `${scheme}:${fsPath}?HEAD` },
 		version: 1,
 		getText: () => text,
+		lineCount: lines.length,
 		lineAt: (line: number) => ({ text: lines[line] }),
 	} as unknown as vscode.TextDocument;
 }
@@ -121,6 +130,15 @@ const python = (version: string, installed: boolean): MiseTool => ({
 	install_path: "",
 });
 
+const node: MiseTool = {
+	name: "node",
+	version: "22.1.0",
+	requested_version: "22",
+	installed: true,
+	active: true,
+	install_path: "",
+};
+
 /** `mise outdated` lists a missing tool without a version */
 const pythonUpdate = (version: string): MiseToolUpdate => ({
 	name: "python",
@@ -135,7 +153,7 @@ describe("refreshToolInfoInVisibleEditors", () => {
 	it("redraws a tool installed since, without the document being edited", async () => {
 		const document = createDocument('[tools]\npython = "3.13"');
 		const toml = createEditor(document);
-		setUp({ visible: [toml.editor], active: toml.editor });
+		const { contexts } = setUp({ visible: [toml.editor], active: toml.editor });
 		const state = {
 			tools: [python("3.13", false)],
 			outdated: [pythonUpdate("")],
@@ -145,6 +163,12 @@ describe("refreshToolInfoInVisibleEditors", () => {
 		await refreshToolInfoInVisibleEditors(miseService, context);
 		expect(toml.inline()).toEqual(["1: \t\t# Not installed"]);
 		expect(toml.gutter().map((g) => g.line)).toEqual([1]);
+		// the line number menu offers to install it
+		expect(contexts.at(-1)).toEqual([
+			"setContext",
+			"mise.linesWithOutdatedTools",
+			[2],
+		]);
 
 		// `mise install`, then the reload
 		state.tools = [python("3.13.17", true)];
@@ -152,12 +176,17 @@ describe("refreshToolInfoInVisibleEditors", () => {
 		await refreshToolInfoInVisibleEditors(miseService, context);
 		expect(toml.inline()).toEqual(["1: \t\t# 3.13.17"]);
 		expect(toml.gutter()).toEqual([]);
+		expect(contexts.at(-1)).toEqual([
+			"setContext",
+			"mise.linesWithOutdatedTools",
+			[],
+		]);
 	});
 
 	it("draws on the visible editors that are not the active one", async () => {
 		const document = createDocument('[tools]\npython = "3.13"');
 		const toml = createEditor(document);
-		const other = createEditor(createDocument("", "other.ts"));
+		const other = createEditor(createDocument("", { fsPath: newPath("a.ts") }));
 		const { contexts } = setUp({
 			visible: [toml.editor, other.editor],
 			active: other.editor,
@@ -193,5 +222,40 @@ describe("refreshToolInfoInVisibleEditors", () => {
 		const outdated = toml.gutter();
 		expect(outdated.map((g) => g.line)).toEqual([1]);
 		expect(outdated[0]?.icon).not.toBe(missing[0]?.icon);
+	});
+
+	it("draws each side of a diff from its own document", async () => {
+		const fsPath = newPath();
+		const head = createEditor(
+			createDocument('[tools]\npython = "3.13"', { fsPath, scheme: "git" }),
+		);
+		const working = createEditor(
+			createDocument('[tools]\nnode = "22"\npython = "3.13"', { fsPath }),
+		);
+		setUp({ visible: [head.editor, working.editor], active: working.editor });
+		const miseService = createMiseService([fsPath], {
+			tools: [node, python("3.13.17", true)],
+			outdated: [],
+		});
+
+		await refreshToolInfoInVisibleEditors(miseService, context);
+		expect(head.inline()).toEqual(["1: \t\t# 3.13.17"]);
+		expect(working.inline()).toEqual(["1: \t\t# 22.1.0", "2: \t\t# 3.13.17"]);
+	});
+
+	it("redraws .tool-versions files", async () => {
+		const document = createDocument("python 3.13", {
+			fsPath: newPath(".tool-versions"),
+		});
+		const toolVersions = createEditor(document);
+		setUp({ visible: [toolVersions.editor], active: toolVersions.editor });
+		const miseService = createMiseService([document.fileName], {
+			tools: [python("3.13", false)],
+			outdated: [pythonUpdate("")],
+		});
+
+		await refreshToolInfoInVisibleEditors(miseService, context);
+		expect(toolVersions.inline()).toEqual(["0: \t\t# Not installed"]);
+		expect(toolVersions.gutter().map((g) => g.line)).toEqual([0]);
 	});
 });
