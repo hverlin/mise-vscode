@@ -4,6 +4,7 @@
 // They come after the screenshots: the tools clip installs python, which the
 // screenshots show missing. The edits of a clip are reverted by the next
 // reset.
+import { lineOf } from "./demo-projects.mjs";
 
 /** a line of the editor that starts with `text` */
 const editorLine = (page, text) => {
@@ -35,17 +36,8 @@ export const videos = [
 			await missingTools.waitFor();
 
 			await video.record(async () => {
-				await video.caption("Install the missing tools");
-				await pause(800);
-				await video.click(codeLens(page, "Install missing tools"));
-				// the download is cut short
-				await pause(1500);
-				await video.cut(() =>
-					missingTools.waitFor({ state: "hidden", timeout: 180_000 }),
-				);
-				await pause(1500);
-
 				await video.caption("Go to a tool, and see what is installed");
+				await pause(800);
 				await video.click(ui.treeRow("Tools", /^node /), {
 					offset: { x: 60, y: 11 },
 				});
@@ -56,7 +48,7 @@ export const videos = [
 				await ui.hover().waitFor();
 				await pause(2000);
 
-				await video.caption("Pick the version of a new tool");
+				await video.caption("Add a tool, and pick its version");
 				await video.click(editorLine(page, 'python = "3.13"'), {
 					offset: { x: 200, y: 9 },
 				});
@@ -74,8 +66,27 @@ export const videos = [
 				await page.keyboard.press("ArrowDown");
 				await pause(500);
 				await page.keyboard.press("Enter");
+				await pause(800);
+				await page.keyboard.press("Meta+s");
+				// once mise read the saved file
+				await missingTools.filter({ hasText: "deno" }).waitFor();
 				await pause(1500);
+
+				await video.caption("Install the missing tools");
+				await video.click(codeLens(page, "Install missing tools"));
+				// the downloads are cut short
+				await pause(1500);
+				await video.cut(() =>
+					missingTools.waitFor({ state: "hidden", timeout: 300_000 }),
+				);
+				await pause(2000);
 			});
+
+			// mise.toml as the next clips show it
+			await ui.goToLine(lineOf("python") + 1);
+			await page.keyboard.press("Meta+Shift+k");
+			await page.keyboard.press("Meta+s");
+			await page.locator(".tab.dirty").waitFor({ state: "detached" });
 		},
 	},
 	{
@@ -192,7 +203,8 @@ export const videos = [
 					.filter({ visible: true })
 					.first()
 					.waitFor();
-				await pause(3000);
+				// web asks api for its items every second
+				await pause(6000);
 			});
 		},
 	},
@@ -240,27 +252,55 @@ export const videos = [
 
 			await video.record(async () => {
 				await video.caption("The tasks of every project of a monorepo");
-				await pause(800);
+				await pause(1200);
 				for (const project of [/^\/\/packages\/api/, /^\/\/packages\/web/]) {
 					await video.moveTo(ui.treeRow("Tasks", project), {
 						offset: { x: 90, y: 11 },
 					});
-					await pause(900);
+					await pause(1300);
 				}
 
-				await video.caption("Run one, with the tasks it depends on");
-				const buildAll = ui.treeRow("Tasks", /^build-all/);
-				await video.moveTo(buildAll, { offset: { x: 60, y: 11 } });
+				await video.caption("Go to a task, and see what it depends on");
+				// the build of web, which depends on the build of api
+				const webBuild = page.locator(
+					"#workbench\\.parts\\.sidebar .monaco-list-row",
+					{ hasText: "Build the web app" },
+				);
+				await video.click(webBuild, { offset: { x: 40, y: 11 } });
+				await pause(1200);
+				await video.moveTo(
+					editorLine(page, 'depends = ["//packages/api:build"]'),
+					{ offset: { x: 180, y: 9 } },
+				);
+				await ui.hover().waitFor();
+				await pause(3000);
+
+				await video.caption(
+					"See how the tasks of the projects depend on each other",
+				);
+				await video.moveTo({ x: 900, y: 600 });
+				await page.keyboard.press("F1");
+				await video.type("visualize tasks");
 				await pause(500);
+				await page.keyboard.press("Enter");
+				await ui.webview().locator(".react-flow__node").first().waitFor();
+				await pause(3500);
+
+				await video.caption("Run one, with the tasks it depends on");
+				await video.moveTo(webBuild, { offset: { x: 60, y: 11 } });
+				await pause(700);
 				await video.click(
-					buildAll.getByRole("button", { name: "Mise: Run task", exact: true }),
+					webBuild.getByRole("button", {
+						name: "Mise: Run task",
+						exact: true,
+					}),
 				);
 				await page
 					.locator(".terminal-wrapper")
 					.filter({ visible: true })
 					.first()
 					.waitFor();
-				await pause(3000);
+				await pause(4000);
 			});
 		},
 	},

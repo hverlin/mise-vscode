@@ -120,23 +120,39 @@ port = 4517
 ready_port = 4517
 
 [daemons.web]
-run = "exec node server.js web 4518"
+run = "exec node server.js web 4518 http://localhost:4517"
 port = 4518
 ready_port = 4518
 depends = ["api"]
 `,
-			// on localhost only: macOS may ask to accept connections otherwise
+			// on localhost only: macOS may ask to accept connections otherwise.
+			// web asks api, its upstream, for items every second, for the logs
 			"server.js": `const http = require("node:http");
 
-const [name, port] = process.argv.slice(2);
+const [name, port, upstream] = process.argv.slice(2);
 http
 	.createServer((request, response) => {
-		console.log(\`\${name}: \${request.method} \${request.url}\`);
-		response.end(\`Hello from \${name}\\n\`);
+		console.log(\`\${request.method} \${request.url} 200\`);
+		response.end(JSON.stringify({ items: ["apples", "pears"] }));
 	})
 	.listen(Number(port), "127.0.0.1", () =>
 		console.log(\`\${name} listening on http://localhost:\${port}\`),
 	);
+
+if (upstream) {
+	setInterval(async () => {
+		const start = Date.now();
+		try {
+			const response = await fetch(\`\${upstream}/items\`);
+			const { items } = await response.json();
+			console.log(
+				\`GET \${upstream}/items \${response.status}: \${items.length} items in \${Date.now() - start}ms\`,
+			);
+		} catch (error) {
+			console.log(\`GET \${upstream}/items failed: \${error.message}\`);
+		}
+	}, 1000);
+}
 `,
 		},
 		setup: (mise) => mise("install"),
