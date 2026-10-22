@@ -14,7 +14,7 @@ import {
  */
 suite("Tombi String Tokens Test Suite", () => {
 	const sandbox = sinon.createSandbox();
-	const STRING_TOKENS_SETTING = "semanticTokens.strings.enable";
+	const STRING_TOKENS_SETTING = "semanticTokens.strings.enabled";
 	let workspaceRoot: string;
 
 	const createFakeContext = () => {
@@ -57,7 +57,7 @@ suite("Tombi String Tokens Test Suite", () => {
 		assert.equal(
 			tombiConfig().inspect<boolean>(STRING_TOKENS_SETTING)?.defaultValue,
 			true,
-			"Tombi 1.8.10 or later should be installed",
+			"Tombi 1.9.0 or later should be installed",
 		);
 	});
 

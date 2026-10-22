@@ -28,12 +28,12 @@ from Tombi.
 Tombi's semantic highlighting colors every TOML string, and VS Code draws it
 over the shell highlighting. With Tombi, one-line scripts (and the first line
 of multi-line ones) only get shell colors when Tombi does not send semantic
-tokens for strings. Turn them off in your settings (requires Tombi 1.8.10 or
+tokens for strings. Turn them off in your settings (requires Tombi 1.9.0 or
 later); strings keep their color, and the extension offers to do it the first
 time you open a mise config file:
 
 ```json
-"tombi.semanticTokens.strings.enable": false
+"tombi.semanticTokens.strings.enabled": false
 ```
 
 With older versions of Tombi, turn off semantic highlighting for TOML files.

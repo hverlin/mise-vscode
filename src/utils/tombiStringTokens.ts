@@ -3,14 +3,16 @@ import { isMiseExtensionEnabled } from "../configuration";
 import { isMiseConfigPath } from "./miseUtilts";
 
 const TOMBI_EXTENSION_ID = "tombi-toml.tombi";
-const STRING_TOKENS_SETTING = "semanticTokens.strings.enable";
+const STRING_TOKENS_SETTING = "semanticTokens.strings.enabled";
 
+// not the key of mise-vscode 1.31.0: it turned off the setting under its Tombi
+// 1.8.10 name, `semanticTokens.strings.enable`, which Tombi 1.9.0 ignores
 export const TOMBI_STRING_TOKENS_NOTIFICATION_SHOWN_KEY =
-	"mise.tombiStringTokensNotificationShown";
+	"mise.tombiStringTokensEnabledNotificationShown";
 
 /**
  * Tombi's semantic tokens for strings are drawn over the shell highlighting of
- * task scripts. Tombi 1.8.10 can stop sending them: this offers it once, the
+ * task scripts. Tombi 1.9.0 can stop sending them: this offers it once, the
  * first time a mise config file is opened while they are on.
  *
  * @returns whether the notification was shown
