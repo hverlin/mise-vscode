@@ -28,6 +28,8 @@ By default, [`mise.configureExtensionsIncludeGlobalTools`](/mise-vscode/referenc
 
 **If you enable this feature and are sharing the `.vscode/settings.json` file with others** (e.g., in a Git repository), you may want to configure the extension to create symlinks to tools so that the settings point to a relative path in your project. Use [`mise.configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks) for this. Note that I consider that sharing the `.vscode/settings.json` file is not a good idea in general (see details below).
 
+**If you write the settings yourself**, enable `mise.configureExtensionsUseSymLinks` and leave automatic configuration off: the extension keeps the symlinks of the tools up to date (`.vscode/mise-tools/shellcheck`, ...) and never writes a setting, so your settings can point at them.
+
 <details>
 <summary>About sharing `.vscode/settings.json`</summary>
 

@@ -1,10 +1,12 @@
 import * as assert from "node:assert";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
+import { readlink, rm } from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { MISE_CONFIGURE_ALL_SDK_PATHS } from "../../commands";
+import type { ConfigureAllSdkPathsOptions } from "../../providers/toolsProvider";
 
 const execFileAsync = promisify(execFile);
 
@@ -361,6 +363,59 @@ suite("Supported extensions (docs table)", function () {
 				undefined,
 				vscode.ConfigurationTarget.Workspace,
 			);
+		}
+	});
+
+	test("symlinks without automatic configuration only keep the links, pointing at the installed binaries", async () => {
+		const miseConfiguration = vscode.workspace.getConfiguration("mise");
+		await clearAllSettings();
+		await rm(path.join(workspaceRoot, symLinksSegment), {
+			recursive: true,
+			force: true,
+		});
+		// in this order, so that the reload each update starts never sees
+		// symlinks to the shims
+		await miseConfiguration.update(
+			"configureExtensionsUseShims",
+			false,
+			vscode.ConfigurationTarget.Workspace,
+		);
+		await miseConfiguration.update(
+			"configureExtensionsUseSymLinks",
+			true,
+			vscode.ConfigurationTarget.Workspace,
+		);
+
+		try {
+			// what a reload runs when mise.configureExtensionsAutomatically is off
+			await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS, {
+				writeSettings: false,
+			} satisfies ConfigureAllSdkPathsOptions);
+
+			assert.equal(
+				workspaceValue<string>("shellcheck.executablePath"),
+				undefined,
+				"the settings are left to the user",
+			);
+			const { stdout } = await execFileAsync("mise", ["which", "shellcheck"], {
+				cwd: workspaceRoot,
+			});
+			assert.equal(
+				await readlink(path.join(workspaceRoot, symLinksSegment, "shellcheck")),
+				stdout.trim(),
+				"the link should point at the installed binary, not the shim",
+			);
+		} finally {
+			for (const key of [
+				"configureExtensionsUseSymLinks",
+				"configureExtensionsUseShims",
+			]) {
+				await miseConfiguration.update(
+					key,
+					undefined,
+					vscode.ConfigurationTarget.Workspace,
+				);
+			}
 		}
 	});
 });
