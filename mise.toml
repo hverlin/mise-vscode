@@ -132,6 +132,14 @@ run = ["node --run fetch-pkl-vsix", "node --run e2e-tests"]
 tools = { act = "latest" }
 run = "act push -j e2e-tests"
 
+[tasks.screenshots]
+description = "Regenerate the screenshots of the README and of the docs"
+usage = '''
+arg "[shot]..." help="Shots to take, all of them by default"
+complete "shot" run="node \"$(git rev-parse --show-toplevel)/scripts/screenshots/index.mjs\" --list"
+'''
+run = 'node --run screenshots -- ${usage_shot:-}'
+
 [tasks.test-projects]
 description = "Copy the e2e fixtures to /tmp/mise-vs-code-tests to try the extension on them"
 run = "node scripts/copy-test-projects.mjs"
