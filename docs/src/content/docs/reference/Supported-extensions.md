@@ -17,8 +17,8 @@ List of extensions that can be automatically configured to use tools from
   enable [`configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks). This will create a folder in your
   `.vscode` directory with a symlink to the tools installed by `mise`. The symlinks target the shims, or the installed binaries when
   [`configureExtensionsUseShims`](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims) is disabled.
-  Without automatic configuration, the symlinks are still created and kept up to date, but no setting is written,
-  so the settings you write yourself can point at them (e.g. `${workspaceFolder}/.vscode/mise-tools/shellcheck`).
+  Without automatic configuration, enabling it in the workspace settings still creates the symlinks and keeps them up to date,
+  without writing settings, so the settings you write yourself can point at them (e.g. `${workspaceFolder}/.vscode/mise-tools/shellcheck`).
 
 | Extension                                                                                                    | Settings                                                                                                       | Comment                                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

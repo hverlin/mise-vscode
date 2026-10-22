@@ -44,9 +44,9 @@ import {
 	setCurrentWorkspaceFolder,
 	shouldAutomaticallyTrustMiseConfigFiles,
 	shouldConfigureExtensionsAutomatically,
+	shouldKeepSymLinksForWorkspace,
 	shouldShowNotificationIfMissingTools,
 	shouldTrustOwnEditsInParanoidMode,
-	shouldUseSymLinks,
 } from "./configuration";
 import { DaemonsService } from "./daemonsService";
 import { createMenu, createMissingToolsMenu } from "./extensionMenu";
@@ -467,7 +467,7 @@ export class MiseExtension {
 				if (isMiseExtensionEnabled()) {
 					if (shouldConfigureExtensionsAutomatically()) {
 						await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS);
-					} else if (shouldUseSymLinks()) {
+					} else if (shouldKeepSymLinksForWorkspace()) {
 						// the settings are written by hand: only keep the links they
 						// point at up to date
 						await vscode.commands.executeCommand(MISE_CONFIGURE_ALL_SDK_PATHS, {

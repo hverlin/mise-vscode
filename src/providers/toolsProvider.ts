@@ -824,7 +824,9 @@ export function registerToolsCommands(
 					);
 				}
 
-				if (shouldShowCustomExtensionConfigWarnings()) {
+				// these warnings are about the settings: keeping only the symlinks
+				// would show them on every reload
+				if (writeSettings && shouldShowCustomExtensionConfigWarnings()) {
 					const matchedCustomExtensions = new Set<ConfigurableExtension>();
 					for (const tool of allTools) {
 						for (const ext of forToolName(tool.name)) {
