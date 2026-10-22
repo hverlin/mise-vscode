@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.1](https://github.com/hverlin/mise-vscode/compare/v1.31.0...v1.31.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* use Tombi 1.9.0's semanticTokens.strings.enabled setting ([#367](https://github.com/hverlin/mise-vscode/issues/367)) ([bb3ea90](https://github.com/hverlin/mise-vscode/commit/bb3ea90c8a5cc13b99e889019ce5f18849805c1f))
+
 ## [1.31.0](https://github.com/hverlin/mise-vscode/compare/v1.30.0...v1.31.0) (2026-10-22)
 
 
