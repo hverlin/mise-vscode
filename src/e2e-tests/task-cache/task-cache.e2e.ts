@@ -46,7 +46,10 @@ suite("Task Cache Test Suite", function () {
 			show: () => {},
 			hide: () => {},
 			dispose: () => {},
-			shellIntegration: undefined,
+			// ready right away, the command would otherwise wait for it
+			shellIntegration: {
+				executeCommand: (text: string) => sentCommands.push(text),
+			},
 		} as unknown as vscode.Terminal);
 		return sentCommands;
 	};
