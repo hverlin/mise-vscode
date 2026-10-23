@@ -4,7 +4,7 @@
 	"patterns": [
 		{
 			"name": "meta.embedded.usage.mise",
-			"match": "^\\s*(#USAGE)\\s+(.*)$",
+			"match": "^\\s*(#\\s*(?:USAGE|\\[USAGE\\]))\\s+(.*)$",
 			"captures": {
 				"1": { "name": "keyword.control.directive.usage.mise" },
 				"2": {
@@ -15,7 +15,7 @@
 		},
 		{
 			"name": "meta.embedded.mise-config.mise",
-			"match": "^\\s*(#MISE)\\s+(.*)$",
+			"match": "^\\s*(#\\s*(?:MISE|\\[MISE\\]))\\s+(.*)$",
 			"captures": {
 				"1": { "name": "keyword.control.directive.mise" },
 				"2": {

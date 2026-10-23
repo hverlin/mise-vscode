@@ -177,8 +177,8 @@ export const flagBlockItems: UsageCompletionItem[] = [
 	flagValueArgItem,
 ];
 
-/** A `#MISE` task configuration line of a file task */
-export const MISE_COMMENT_RE = /^\s*#MISE\s/;
+/** A `#MISE` task configuration line of a file task (also matches `# [MISE]`) */
+export const MISE_COMMENT_RE = /^\s*#\s*(?:MISE|\[MISE\])\s/;
 
 /**
  * Task configuration keys valid in `#MISE` comments of file tasks.
