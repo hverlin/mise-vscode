@@ -11,6 +11,7 @@ import {
 	getConfiguredBinPath,
 } from "./configureExtensionUtil";
 import { mergeArrays } from "./fn";
+import { rebasePath } from "./globalInstallPath";
 
 type GenerateConfigProps = {
 	tool: MiseTool;
@@ -44,7 +45,10 @@ const generateJavaConfiguration =
 						"java",
 						config.tool.install_path,
 					)
-				: config.tool.install_path,
+				: await config.miseService.getStableInstallPath(
+						config.tool,
+						config.miseConfig,
+					),
 		};
 	};
 
@@ -194,17 +198,32 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			// `compile: version ... does not match go tool version ...` (#280).
 			// The go extension reads GOROOT off the binary when the setting is
 			// unset, which is what follows the shim.
-			const pinsGoRoot = !useShims && goBin !== undefined;
-			const goRoot = !pinsGoRoot
-				? REMOVE_SETTING
-				: useSymLinks
-					? await miseService.createMiseToolSymlink("goRoot", tool.install_path)
-					: tool.install_path;
+			let goRoot: string | typeof REMOVE_SETTING = REMOVE_SETTING;
+			let goPath = goBin;
+			if (!useShims && goBin !== undefined) {
+				if (useSymLinks) {
+					goRoot = await miseService.createMiseToolSymlink(
+						"goRoot",
+						tool.install_path,
+					);
+				} else {
+					// the `global` link moves on `mise use -g`: `go.goroot` and the
+					// `go` binary both go through it, or neither does, so they keep
+					// naming the same install
+					const stableRoot = await miseService.getStableInstallPath(
+						tool,
+						miseConfig,
+					);
+					const stableGoBin = rebasePath(goBin, tool.install_path, stableRoot);
+					goRoot = stableGoBin !== undefined ? stableRoot : tool.install_path;
+					goPath = stableGoBin ?? goBin;
+				}
+			}
 
 			return {
 				"go.goroot": goRoot,
 				"go.alternateTools": mergeArrays([
-					["go", goBin],
+					["go", goPath],
 					["dlv", dlvBin],
 					["gopls", goplsBin],
 				]),
@@ -359,8 +378,18 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["erlang"],
 		extensionId: "pgourlain.erlang",
-		generateConfiguration: async ({ tool, miseService, useSymLinks }) => {
-			const pathToBin = path.join(tool.install_path, "bin");
+		generateConfiguration: async ({
+			tool,
+			miseService,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			const pathToBin = path.join(
+				useSymLinks
+					? tool.install_path
+					: await miseService.getStableInstallPath(tool, miseConfig),
+				"bin",
+			);
 			return {
 				"erlang.erlangPath": useSymLinks
 					? await miseService.createMiseToolSymlink("erlang", pathToBin)
@@ -376,10 +405,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			"vfox:version-fox/vfox-dart",
 		],
 		extensionId: "Dart-Code.dart-code",
-		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
 			var folderPath = useSymLinks
 				? await miseService.createMiseToolSymlink("dart", tool.install_path)
-				: tool.install_path;
+				: await miseService.getStableInstallPath(tool, miseConfig);
 
 			return { "dart.sdkPath": removeUnsupportedWorkspace(folderPath) };
 		},
@@ -392,10 +426,15 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 			"vfox:version-fox/vfox-flutter",
 		],
 		extensionId: "dart-code.flutter",
-		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
 			var folderPath = useSymLinks
 				? await miseService.createMiseToolSymlink("flutter", tool.install_path)
-				: tool.install_path;
+				: await miseService.getStableInstallPath(tool, miseConfig);
 
 			return { "dart.flutterSdkPath": removeUnsupportedWorkspace(folderPath) };
 		},
@@ -608,8 +647,19 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["swift"],
 		extensionId: "swiftlang.swift-vscode",
-		generateConfiguration: async ({ miseService, tool, useSymLinks }) => {
-			const binPath = path.join(tool.install_path, "usr", "bin");
+		generateConfiguration: async ({
+			miseService,
+			tool,
+			miseConfig,
+			useSymLinks,
+		}) => {
+			const binPath = path.join(
+				useSymLinks
+					? tool.install_path
+					: await miseService.getStableInstallPath(tool, miseConfig),
+				"usr",
+				"bin",
+			);
 
 			return {
 				"swift.path": useSymLinks
@@ -760,9 +810,12 @@ export const SUPPORTED_EXTENSIONS: Array<ConfigurableExtension> = [
 	{
 		toolNames: ["java"],
 		extensionId: "SonarSource.sonarlint-vscode",
-		generateConfiguration: async ({ tool }) => {
+		generateConfiguration: async ({ tool, miseService, miseConfig }) => {
 			return {
-				"sonarlint.ls.javaHome": tool.install_path,
+				"sonarlint.ls.javaHome": await miseService.getStableInstallPath(
+					tool,
+					miseConfig,
+				),
 			};
 		},
 	},
@@ -904,12 +957,19 @@ export function createCustomFolderExtensionConfig(customConfig: {
 		extensionId: customConfig.extensionId,
 		toolNames: customConfig.toolSources,
 		isCustom: true,
-		generateConfiguration: async ({ tool, miseService, useSymLinks }) => {
+		generateConfiguration: async ({
+			tool,
+			miseService,
+			miseConfig,
+			useSymLinks,
+		}) => {
 			const shouldUseSymLinks =
 				customConfig.supportsSymlinks !== false && useSymLinks;
 
 			const sourcePath = appendSubdirs(
-				tool.install_path,
+				shouldUseSymLinks
+					? tool.install_path
+					: await miseService.getStableInstallPath(tool, miseConfig),
 				customConfig.sourceSubdirs,
 			);
 
