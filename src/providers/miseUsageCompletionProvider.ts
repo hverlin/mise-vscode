@@ -15,7 +15,7 @@ import {
 	type UsageCompletionItem,
 } from "../utils/usageSpec";
 
-const USAGE_COMMENT_RE = /^\s*#USAGE(?:\s(.*))?$/;
+const USAGE_COMMENT_RE = /^\s*#\s*(?:USAGE|\[USAGE\])(?:\s(.*))?$/;
 
 /**
  * The usage/config blocks are string (TOML) scopes where VS Code only shows
@@ -83,7 +83,7 @@ export class UsageCompletionProvider implements vscode.CompletionItemProvider {
 					),
 				);
 			}
-			if (/^\s*#MISE\s+[\w.]*$/.test(linePrefix)) {
+			if (/^\s*#\s*(?:MISE|\[MISE\])\s+[\w.]*$/.test(linePrefix)) {
 				return buildCompletionItems(fileTaskConfigItems);
 			}
 			// `$usage_*` variables in the script body, from the #USAGE lines

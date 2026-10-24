@@ -299,6 +299,12 @@ describe("MISE_COMMENT_RE", () => {
 		expect(MISE_COMMENT_RE.test('#USAGE arg "<x>"')).toBe(false);
 		expect(MISE_COMMENT_RE.test('extends="')).toBe(false);
 	});
+
+	test("matches the bracketed `# [MISE]` form", () => {
+		expect(MISE_COMMENT_RE.test('# [MISE] extends="')).toBe(true);
+		expect(MISE_COMMENT_RE.test('#[MISE] description="x"')).toBe(true);
+		expect(MISE_COMMENT_RE.test('# [USAGE] arg "<x>"')).toBe(false);
+	});
 });
 
 describe("getUsageVariableNames", () => {
