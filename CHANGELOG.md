@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.3](https://github.com/hverlin/mise-vscode/compare/v1.31.2...v1.31.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* highlight bracketed # [MISE] / # [USAGE] file task headers ([#383](https://github.com/hverlin/mise-vscode/issues/383)) ([5692d92](https://github.com/hverlin/mise-vscode/commit/5692d9240a32f55897e9aefc830083c301eea53a))
+
 ## [1.31.2](https://github.com/hverlin/mise-vscode/compare/v1.31.1...v1.31.2) (2026-10-22)
 
 
