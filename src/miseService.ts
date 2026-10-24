@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import {
+	lstat,
 	readdir,
 	readFile,
 	readlink,
@@ -3213,29 +3214,37 @@ export class MiseService {
 					sanitizedBinName,
 				);
 
-		if (existsSync(linkPath)) {
+		// lstat, not existsSync: a link whose target was removed (an upgrade
+		// deletes the previous version) is replaced too
+		if ((await lstat(linkPath).catch(() => undefined))?.isSymbolicLink()) {
+			const currentTarget = await readlink(linkPath);
 			logger.debug(
-				`Checking symlink for ${binName}: ${await readlink(linkPath)}: ${binPath}`,
+				`Checking symlink for ${binName}: ${currentTarget}: ${binPath}`,
 			);
-			if ((await readlink(linkPath)) === binPath) {
+			if (currentTarget === binPath) {
 				return configuredPath;
 			}
 
 			logger.info(
 				`${linkPath} was symlinked to a different version. Deleting the old symlink now.`,
 			);
-			await rm(linkPath);
+			await rm(linkPath, { force: true });
 		}
 
-		await symlink(binPath, linkPath, targetType).catch((err) => {
-			if (err.code === "EEXIST") {
-				logger.info(`Symlink already exists for ${binPath}`);
-				return;
-			}
+		const created = await symlink(binPath, linkPath, targetType).then(
+			() => true,
+			(err) => {
+				if (err.code === "EEXIST") {
+					logger.info(`Symlink already exists for ${binPath}`);
+					return false;
+				}
 
-			throw err;
-		});
-		logger.info(`New symlink created ${linkPath} -> ${binPath}`);
+				throw err;
+			},
+		);
+		if (created) {
+			logger.info(`New symlink created ${linkPath} -> ${binPath}`);
+		}
 		return configuredPath;
 	}
 
