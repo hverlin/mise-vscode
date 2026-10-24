@@ -219,6 +219,30 @@ suite("Usage Spec Test Suite", function () {
 		);
 	});
 
+	test("offers usage spec completions after bracketed # [USAGE] in a shell file", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "file-task.sh"),
+		);
+		await vscode.window.showTextDocument(document);
+		assert.equal(document.languageId, "shellscript");
+
+		const lines = document.getText().split("\n");
+		const usageLine = lines.findIndex((line) => line.trim() === "# [USAGE] f");
+		assert.ok(
+			usageLine > 0,
+			"fixture should contain the partial # [USAGE] line",
+		);
+
+		const labels = await getCompletionLabels(
+			document.uri,
+			new vscode.Position(usageLine, lines[usageLine]?.length ?? 0),
+		);
+		assert.ok(
+			labels.includes("arg") && labels.includes("flag"),
+			`Expected usage directives after # [USAGE], got: ${labels.join(", ")}`,
+		);
+	});
+
 	test("offers usage variables in the run block of a task", async () => {
 		const document = await vscode.workspace.openTextDocument(
 			path.join(workspaceRoot, "mise.toml"),
@@ -279,6 +303,29 @@ suite("Usage Spec Test Suite", function () {
 		assert.ok(
 			!labels.includes("arg"),
 			`Usage directives should not be offered after #MISE, got: ${labels.join(", ")}`,
+		);
+	});
+
+	test("offers task configuration completions after bracketed # [MISE] in a shell file", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "file-task.sh"),
+		);
+
+		const lines = document.getText().split("\n");
+		const miseLine = lines.findIndex((line) => line.startsWith("# [MISE]"));
+		assert.ok(miseLine > 0, "fixture should contain a # [MISE] line");
+
+		const labels = await getCompletionLabels(
+			document.uri,
+			new vscode.Position(miseLine, lines[miseLine]?.length ?? 0),
+		);
+		assert.ok(
+			labels.includes("description") && labels.includes("depends"),
+			`Expected task configuration keys after # [MISE], got: ${labels.join(", ")}`,
+		);
+		assert.ok(
+			!labels.includes("arg"),
+			`Usage directives should not be offered after # [MISE], got: ${labels.join(", ")}`,
 		);
 	});
 });
