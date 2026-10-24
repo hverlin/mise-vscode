@@ -1804,7 +1804,7 @@
     "async-cache-dedupe": "^3.4.0",
     "cheerio": "^1.2.0",
     "micromatch": "^4.0.8",
-    "react": "19.3.0",
+    "react": "19.3.1",
     "react-dom": "19.3.0",
     "react-error-boundary": "^6.1.6",
     "toml-v1": "^1.0.0",
