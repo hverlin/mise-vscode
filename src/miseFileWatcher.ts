@@ -10,7 +10,11 @@ import {
 	getMiseRcPaths,
 	readIncludeEntries,
 } from "./utils/configIncludes";
-import { expandPath, isWindows } from "./utils/fileUtils";
+import {
+	createFileChangeTracker,
+	expandPath,
+	isWindows,
+} from "./utils/fileUtils";
 import { logger } from "./utils/logger";
 import {
 	allowedFileTaskDirs,
@@ -118,6 +122,14 @@ export class MiseFileWatcher {
 
 	private lastWatchedHash = "";
 
+	/**
+	 * The reload reads the configs with mise, which a watcher can report as a
+	 * change. A file is first seen with its first event: two initializations
+	 * run at once on activation, and an await before the watchers exist would
+	 * let both create them.
+	 */
+	private readonly hasChanged = createFileChangeTracker();
+
 	private async initializeFileWatcher() {
 		const rootFolders = vscode.workspace.workspaceFolders;
 		if (!rootFolders?.length) {
@@ -214,9 +226,9 @@ export class MiseFileWatcher {
 
 		for (const watcher of this.fileWatchers) {
 			this.context.subscriptions.push(watcher);
-			watcher.onDidChange(this.handleFileChange.bind(this));
-			watcher.onDidCreate(this.handleFileChange.bind(this));
-			watcher.onDidDelete(this.handleFileChange.bind(this));
+			watcher.onDidChange((uri) => this.handleFileChange(uri, "change"));
+			watcher.onDidCreate((uri) => this.handleFileChange(uri, "create"));
+			watcher.onDidDelete((uri) => this.handleFileChange(uri, "delete"));
 		}
 
 		logger.info("File watchers initialized");
@@ -234,28 +246,42 @@ export class MiseFileWatcher {
 			return false;
 		}
 
+		let source: string;
 		try {
-			const document = await vscode.workspace.openTextDocument(uri);
-			parse(document.getText());
+			// what mise reads: an open editor only catches up with a write from
+			// outside (git, a terminal) after the watcher has reported it
+			source = await readFile(uri.fsPath, "utf8");
+		} catch {
+			// a deleted file is a real change, not an edit
+			return false;
+		}
+		try {
+			parse(source);
 			this.miseService.setConfigFileParses(uri, true);
 			return false;
-		} catch (error) {
-			// a deleted file cannot be opened: that is a real change, not an edit
-			if (error instanceof Error && error.message.includes("cannot open")) {
-				return false;
-			}
+		} catch {
 			this.miseService.setConfigFileParses(uri, false);
 			logger.debug(`Ignoring ${uri.fsPath} until it parses again`);
 			return true;
 		}
 	}
 
-	private async handleFileChange(uri: vscode.Uri) {
+	private async handleFileChange(
+		uri: vscode.Uri,
+		event: "change" | "create" | "delete",
+	) {
 		if (!isMiseExtensionEnabled()) {
 			return;
 		}
 
 		try {
+			// a root config matches two watchers, and the second event is skipped
+			// too. A created or deleted file is always handled.
+			const changed = await this.hasChanged(uri.fsPath);
+			if (!changed && event === "change") {
+				return;
+			}
+
 			// a save the user asked for is always handled: they want to see what
 			// their file does now, even when the answer is an error
 			const manual = this.miseService.consumeManualSave(uri);

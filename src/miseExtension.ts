@@ -121,7 +121,11 @@ import {
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import { pitchforkUserConfig } from "./utils/daemons";
-import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
+import {
+	createFileChangeTracker,
+	displayPathRelativeTo,
+	expandPath,
+} from "./utils/fileUtils";
 import { debounce, truncateStr } from "./utils/fn";
 import { getMissingTools } from "./utils/lazyTools";
 import { logger } from "./utils/logger";
@@ -364,8 +368,14 @@ export class MiseExtension {
 			void daemonsProvider.refresh();
 			void daemonsSession.sync();
 		};
+		// pitchfork reads its config on every refresh, see createFileChangeTracker
+		const pitchforkConfigChanged = createFileChangeTracker();
 		for (const watcher of pitchforkConfigWatchers) {
-			watcher.onDidChange(onPitchforkConfigChange);
+			watcher.onDidChange(async (uri) => {
+				if (await pitchforkConfigChanged(uri.fsPath)) {
+					onPitchforkConfigChange();
+				}
+			});
 			watcher.onDidCreate(onPitchforkConfigChange);
 			watcher.onDidDelete(onPitchforkConfigChange);
 		}
