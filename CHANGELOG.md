@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.4](https://github.com/hverlin/mise-vscode/compare/v1.31.3...v1.31.4) (2026-10-25)
+
+
+### Bug Fixes
+
+* ignore watcher events for config files that did not change ([#386](https://github.com/hverlin/mise-vscode/issues/386)) ([040e1a6](https://github.com/hverlin/mise-vscode/commit/040e1a6b604fb3314bdbc435ad35b4c4d264d2d3))
+
 ## [1.31.3](https://github.com/hverlin/mise-vscode/compare/v1.31.2...v1.31.3) (2026-10-24)
 
 
