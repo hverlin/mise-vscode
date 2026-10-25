@@ -36,6 +36,33 @@ export function debounce<T extends (...args: any[]) => void>(
 	};
 }
 
+/**
+ * Runs `run` once per request, coalescing: the requests made while it runs
+ * share one more run, started once it is done. Never the run in progress,
+ * which may have read the state from before the request.
+ */
+export function coalesceRuns(run: () => Promise<void>): () => Promise<void> {
+	let running: Promise<void> | undefined;
+	let next: Promise<void> | undefined;
+	const request = (): Promise<void> => {
+		if (!running) {
+			running = run().finally(() => {
+				running = undefined;
+			});
+			return running;
+		}
+		// a failed run must not take the next one down with it
+		next ??= running
+			.catch(() => undefined)
+			.then(() => {
+				next = undefined;
+				return request();
+			});
+		return next;
+	};
+	return request;
+}
+
 export const mergeArrays = (
 	arr: Array<[string, string | undefined]>,
 ): Record<string, string> => {
