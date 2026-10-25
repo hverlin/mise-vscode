@@ -264,14 +264,24 @@ suite("Broken Config Test Suite", function () {
 			await vscode.window.showTextDocument(
 				await vscode.workspace.openTextDocument(miseTomlPath),
 			);
+			// the tests before write the file too, and the reload its last write
+			// asks for can come late on a slow machine
+			const deadline = Date.now() + 10_000;
+			let count = -1;
+			while (reloads().length !== count && Date.now() < deadline) {
+				count = reloads().length;
+				await sleep(1_000);
+			}
+			executeCommand.resetHistory();
+
 			await withBrokenConfig(async () => {
 				await sleep(2_000);
 				assert.equal(reloads().length, 0, "the break should not reload");
 				executeCommand.resetHistory();
 			});
 
-			const deadline = Date.now() + 5_000;
-			while (!reloads().length && Date.now() < deadline) {
+			const fixDeadline = Date.now() + 5_000;
+			while (!reloads().length && Date.now() < fixDeadline) {
 				await sleep(250);
 			}
 			assert.ok(reloads().length > 0, "the fix should reload the views");
