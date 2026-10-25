@@ -240,7 +240,7 @@ suite("Multi-root Workspace Test Suite", function () {
 
 	test("applies the env of the selected folder before a reload resolves", async () => {
 		await selectFolder("wk2");
-		await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+		await vscode.commands.executeCommand(MISE_RELOAD);
 
 		assert.equal(process.env.WHICH_FOLDER, "wk2");
 		assert.equal(process.env.WK1_ONLY, undefined);

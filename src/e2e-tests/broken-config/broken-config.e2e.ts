@@ -247,6 +247,52 @@ suite("Broken Config Test Suite", function () {
 		});
 	});
 
+	test("tells a break from a fix written from outside while the file is open", async () => {
+		// git, a terminal or another tool writing the file: the open editor only
+		// catches up after the watcher has reported the write, so telling a fix
+		// from a break has to read the file on disk
+		const sandbox = sinon.createSandbox();
+		const executeCommand = sandbox.spy(vscode.commands, "executeCommand");
+		const reloads = () =>
+			executeCommand
+				.getCalls()
+				.filter((call) => call.args[0] === "mise.refreshEntry");
+		const sleep = (ms: number) =>
+			new Promise((resolve) => setTimeout(resolve, ms));
+
+		try {
+			await vscode.window.showTextDocument(
+				await vscode.workspace.openTextDocument(miseTomlPath),
+			);
+			// the tests before write the file too, and the reload its last write
+			// asks for can come late on a slow machine
+			const deadline = Date.now() + 10_000;
+			let count = -1;
+			while (reloads().length !== count && Date.now() < deadline) {
+				count = reloads().length;
+				await sleep(1_000);
+			}
+			executeCommand.resetHistory();
+
+			await withBrokenConfig(async () => {
+				await sleep(2_000);
+				assert.equal(reloads().length, 0, "the break should not reload");
+				executeCommand.resetHistory();
+			});
+
+			const fixDeadline = Date.now() + 5_000;
+			while (!reloads().length && Date.now() < fixDeadline) {
+				await sleep(250);
+			}
+			assert.ok(reloads().length > 0, "the fix should reload the views");
+		} finally {
+			sandbox.restore();
+			await vscode.commands.executeCommand(
+				"workbench.action.closeActiveEditor",
+			);
+		}
+	});
+
 	test("reports what mise said, not just that something failed", async () => {
 		// what the views put in front of the user instead of "Error loading tasks"
 		const miseService = await createMiseService();

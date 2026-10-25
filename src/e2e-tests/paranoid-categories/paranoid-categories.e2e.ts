@@ -65,9 +65,7 @@ suite("Paranoid Categories Test Suite", function () {
 		const deadline = Date.now() + 20_000;
 		let titles: (string | undefined)[] = [];
 		while (Date.now() < deadline) {
-			await vscode.commands.executeCommand("mise.refreshEntry", {
-				force: true,
-			});
+			await vscode.commands.executeCommand("mise.refreshEntry");
 			const lenses =
 				(await vscode.commands.executeCommand<vscode.CodeLens[]>(
 					"vscode.executeCodeLensProvider",

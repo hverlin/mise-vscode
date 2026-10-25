@@ -84,7 +84,7 @@ suite("Paranoid Trust Test Suite", function () {
 		await mise("trust", configPath);
 		await mise("trust", envFile);
 		// the extension knows the env file once it has read the env
-		await vscode.commands.executeCommand("mise.refreshEntry", { force: true });
+		await vscode.commands.executeCommand("mise.refreshEntry");
 		await waitFor(
 			() => process.env.ENV_FILE_VAR === "one",
 			"the extension should load the env file",

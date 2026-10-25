@@ -1,12 +1,21 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import {
+	chmod,
+	mkdtemp,
+	readFile,
+	rm,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import {
 	collapseHomePath,
 	compareSourcePaths,
+	createFileChangeTracker,
 	displayPathRelativeTo,
 	expandPath,
+	getFileFingerprint,
 	getShebangFileExtension,
 	getSourceProximityRank,
 	isBareCommand,
@@ -271,6 +280,101 @@ describe("setupTaskFile", () => {
 		await expect(
 			setupTaskFile("mise-tasks/build", "mise-tasks"),
 		).rejects.toThrow("Task directory must be an absolute path");
+	});
+});
+
+describe("getFileFingerprint", () => {
+	const withFile = async (run: (file: string) => Promise<void>) => {
+		const root = await mkdtemp(path.join(tmpdir(), "mise-fingerprint-"));
+		try {
+			const file = path.join(root, "mise.toml");
+			await writeFile(file, 'node = "22"\n');
+			await run(file);
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	};
+
+	it("is the same after the file is read", async () => {
+		await withFile(async (file) => {
+			const before = await getFileFingerprint(file);
+			await readFile(file);
+			expect(before).toBeDefined();
+			expect(await getFileFingerprint(file)).toBe(before);
+		});
+	});
+
+	it("changes when the file is written", async () => {
+		await withFile(async (file) => {
+			const before = await getFileFingerprint(file);
+			await writeFile(file, 'node = "24.1"\n');
+			expect(await getFileFingerprint(file)).not.toBe(before);
+		});
+	});
+
+	it.skipIf(process.platform === "win32")(
+		"changes when the file is made executable",
+		async () => {
+			await withFile(async (file) => {
+				const before = await getFileFingerprint(file);
+				await chmod(file, 0o755);
+				expect(await getFileFingerprint(file)).not.toBe(before);
+			});
+		},
+	);
+
+	it("is undefined for a missing file", async () => {
+		await withFile(async (file) => {
+			expect(
+				await getFileFingerprint(path.join(path.dirname(file), "missing")),
+			).toBeUndefined();
+		});
+	});
+
+	describe("createFileChangeTracker", () => {
+		it("counts a file not seen before as changed", async () => {
+			await withFile(async (file) => {
+				expect(await createFileChangeTracker()(file)).toBe(true);
+			});
+		});
+
+		it("does not count a read as a change", async () => {
+			await withFile(async (file) => {
+				const hasChanged = createFileChangeTracker();
+				await hasChanged(file);
+				await readFile(file);
+				expect(await hasChanged(file)).toBe(false);
+			});
+		});
+
+		it("counts a write as a change", async () => {
+			await withFile(async (file) => {
+				const hasChanged = createFileChangeTracker();
+				await hasChanged(file);
+				await writeFile(file, 'node = "24.1"\n');
+				expect(await hasChanged(file)).toBe(true);
+				expect(await hasChanged(file)).toBe(false);
+			});
+		});
+
+		it("sees one change reported by two watchers at once only once", async () => {
+			await withFile(async (file) => {
+				const hasChanged = createFileChangeTracker();
+				await hasChanged(file);
+				await writeFile(file, 'node = "24.1"\n');
+				const seen = await Promise.all([hasChanged(file), hasChanged(file)]);
+				expect(seen.filter(Boolean)).toHaveLength(1);
+			});
+		});
+
+		it("counts a missing file as changed every time", async () => {
+			await withFile(async (file) => {
+				const hasChanged = createFileChangeTracker();
+				const missing = path.join(path.dirname(file), "missing");
+				expect(await hasChanged(missing)).toBe(true);
+				expect(await hasChanged(missing)).toBe(true);
+			});
+		});
 	});
 });
 

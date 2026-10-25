@@ -143,7 +143,7 @@ suite("Paranoid Env Files Test Suite", function () {
 	test("trusts the env file saved in vscode with trustOwnEditsInParanoidMode", async () => {
 		await setTrustOwnEdits(true);
 		await mise("trust", envFile);
-		await vscode.commands.executeCommand("mise.refreshEntry", { force: true });
+		await vscode.commands.executeCommand("mise.refreshEntry");
 		await waitFor(
 			() => process.env.ENV_FILE_VAR === "one",
 			"the extension should load the env file",

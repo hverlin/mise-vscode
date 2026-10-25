@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { createCache } from "async-cache-dedupe";
 import vscode, { MarkdownString } from "vscode";
 import { version } from "../package.json";
 import {
@@ -121,8 +120,12 @@ import {
 import { VsCodeTaskProvider } from "./providers/vsCodeTaskProvider";
 import { WorkspaceDecorationProvider } from "./providers/WorkspaceDecorationProvider";
 import { pitchforkUserConfig } from "./utils/daemons";
-import { displayPathRelativeTo, expandPath } from "./utils/fileUtils";
-import { debounce, truncateStr } from "./utils/fn";
+import {
+	createFileChangeTracker,
+	displayPathRelativeTo,
+	expandPath,
+} from "./utils/fileUtils";
+import { coalesceRuns, debounce, truncateStr } from "./utils/fn";
 import { getMissingTools } from "./utils/lazyTools";
 import { logger } from "./utils/logger";
 import { escapeMarkdown, markdownCodeSpan } from "./utils/markdown";
@@ -364,8 +367,14 @@ export class MiseExtension {
 			void daemonsProvider.refresh();
 			void daemonsSession.sync();
 		};
+		// pitchfork reads its config on every refresh, see createFileChangeTracker
+		const pitchforkConfigChanged = createFileChangeTracker();
 		for (const watcher of pitchforkConfigWatchers) {
-			watcher.onDidChange(onPitchforkConfigChange);
+			watcher.onDidChange(async (uri) => {
+				if (await pitchforkConfigChanged(uri.fsPath)) {
+					onPitchforkConfigChange();
+				}
+			});
 			watcher.onDidCreate(onPitchforkConfigChange);
 			watcher.onDidDelete(onPitchforkConfigChange);
 		}
@@ -503,32 +512,20 @@ export class MiseExtension {
 		};
 
 		// internal triggers (file watcher, task end, config change) come in
-		// storms: close reloads are coalesced into one
-		const globalCmdCache = createCache({
-			ttl: 1,
-		}).define("reload", reloadConfiguration);
+		// storms: the ones made while a reload runs share the next run. Joining
+		// the running one would miss the change, read before it. A reload stuck
+		// on a mise command that never returns (an env script waiting for
+		// input) must not block the one the user asks for to get out of it.
+		const reload = coalesceRuns(reloadConfiguration, 10_000);
 
 		context.subscriptions.push(
-			vscode.commands.registerCommand(
-				MISE_RELOAD,
-				async (options?: { force?: boolean }) => {
-					if (options?.force) {
-						// a deliberate state change (folder switch, reload asked by
-						// the user) must not be coalesced into an already running
-						// reload, which read the state from before the change
-						await globalCmdCache.clear();
-						await reloadConfiguration();
-						return;
-					}
-					await globalCmdCache.reload();
-				},
-			),
+			vscode.commands.registerCommand(MISE_RELOAD, reload),
 			// only the reload the user asked for drops what was kept from before a
 			// config file broke: the internal reloads above must not empty the
 			// views while the file is still being typed
 			vscode.commands.registerCommand(MISE_RELOAD_FROM_USER, async () => {
 				this.miseService.forgetRetainedState();
-				await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+				await vscode.commands.executeCommand(MISE_RELOAD);
 			}),
 		);
 
@@ -550,7 +547,7 @@ export class MiseExtension {
 			}),
 			// the reload trusts the config files, now that the workspace is
 			vscode.workspace.onDidGrantWorkspaceTrust(() => {
-				vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+				vscode.commands.executeCommand(MISE_RELOAD);
 			}),
 		);
 
@@ -604,7 +601,7 @@ export class MiseExtension {
 
 						if (selectedFolder) {
 							await setCurrentWorkspaceFolder(context, selectedFolder);
-							vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+							vscode.commands.executeCommand(MISE_RELOAD);
 						}
 						return;
 					}
@@ -620,7 +617,7 @@ export class MiseExtension {
 					});
 					if (selectedFolder) {
 						await setCurrentWorkspaceFolder(context, selectedFolder);
-						vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+						vscode.commands.executeCommand(MISE_RELOAD);
 					}
 				},
 			),
@@ -630,7 +627,7 @@ export class MiseExtension {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
 			if (!workspaceFolders?.length) {
 				await clearCurrentWorkspaceFolder(context);
-				vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+				vscode.commands.executeCommand(MISE_RELOAD);
 				return;
 			}
 
@@ -641,7 +638,7 @@ export class MiseExtension {
 				await setCurrentWorkspaceFolder(context, currentFolder);
 			}
 
-			vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+			vscode.commands.executeCommand(MISE_RELOAD);
 		});
 
 		context.subscriptions.push(

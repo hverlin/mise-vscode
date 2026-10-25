@@ -53,6 +53,42 @@ export async function hashFile(filePath: string): Promise<string | undefined> {
 	}
 }
 
+/**
+ * What tells a change to a file apart: everything but its access time, which a
+ * mere read updates. Returns undefined when the file cannot be read.
+ */
+export async function getFileFingerprint(
+	filePath: string,
+): Promise<string | undefined> {
+	try {
+		// the mode covers a chmod, which makes a file task runnable, and the inode
+		// an atomic save landing within the same time tick. Not the change time:
+		// an extended attribute set on access would move it too.
+		const { mtimeMs, size, mode, ino } = await fs.stat(filePath);
+		return `${mtimeMs}:${size}:${mode}:${ino}`;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Tells whether a file changed since it was last seen, by its
+ * {@link getFileFingerprint}. A file watcher can report a read as a change: a
+ * handler that reads the file (running mise or pitchfork on it) would then
+ * trigger itself forever. A file not seen before, or gone, counts as changed.
+ */
+export function createFileChangeTracker() {
+	const fingerprints = new Map<string, string | undefined>();
+	return async (filePath: string): Promise<boolean> => {
+		const key = expandPath(filePath);
+		const fingerprint = await getFileFingerprint(filePath);
+		const previous = fingerprints.get(key);
+		// with no await in between: two events for one change see each other
+		fingerprints.set(key, fingerprint);
+		return fingerprint === undefined || fingerprint !== previous;
+	};
+}
+
 /** Whether `filePath` sits inside `directory` (the directory itself excluded) */
 export function isPathInside(directory: string, filePath: string): boolean {
 	const normalize = (value: string) =>

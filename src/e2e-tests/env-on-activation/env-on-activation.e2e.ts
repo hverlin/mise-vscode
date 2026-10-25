@@ -25,7 +25,7 @@ suite("Env on Activation Test Suite", function () {
 		// as on startup, before anything applied it
 		delete process.env.SLOW_ENV;
 
-		await vscode.commands.executeCommand(MISE_RELOAD, { force: true });
+		await vscode.commands.executeCommand(MISE_RELOAD);
 
 		assert.equal(process.env.SLOW_ENV, "applied");
 	});
