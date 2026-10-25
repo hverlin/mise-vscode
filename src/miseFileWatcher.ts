@@ -256,7 +256,8 @@ export class MiseFileWatcher {
 			return false;
 		}
 		try {
-			parse(source);
+			// mise reads a file starting with a byte order mark, the parser does not
+			parse(source.replace(/^﻿/, ""));
 			this.miseService.setConfigFileParses(uri, true);
 			return false;
 		} catch {

@@ -247,7 +247,7 @@ suite("Broken Config Test Suite", function () {
 		});
 	});
 
-	test("picks up a fix written from outside while the file is open", async () => {
+	test("tells a break from a fix written from outside while the file is open", async () => {
 		// git, a terminal or another tool writing the file: the open editor only
 		// catches up after the watcher has reported the write, so telling a fix
 		// from a break has to read the file on disk
@@ -266,6 +266,7 @@ suite("Broken Config Test Suite", function () {
 			);
 			await withBrokenConfig(async () => {
 				await sleep(2_000);
+				assert.equal(reloads().length, 0, "the break should not reload");
 				executeCommand.resetHistory();
 			});
 

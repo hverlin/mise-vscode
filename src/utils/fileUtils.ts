@@ -61,10 +61,11 @@ export async function getFileFingerprint(
 	filePath: string,
 ): Promise<string | undefined> {
 	try {
-		// the change time covers a chmod, which makes a file task runnable, and
-		// the inode an atomic save landing within the same time tick
-		const { mtimeMs, ctimeMs, size, mode, ino } = await fs.stat(filePath);
-		return `${mtimeMs}:${ctimeMs}:${size}:${mode}:${ino}`;
+		// the mode covers a chmod, which makes a file task runnable, and the inode
+		// an atomic save landing within the same time tick. Not the change time:
+		// an extended attribute set on access would move it too.
+		const { mtimeMs, size, mode, ino } = await fs.stat(filePath);
+		return `${mtimeMs}:${size}:${mode}:${ino}`;
 	} catch {
 		return undefined;
 	}
