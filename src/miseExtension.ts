@@ -516,7 +516,7 @@ export class MiseExtension {
 		// the running one would miss the change, read before it. A reload stuck
 		// on a mise command that never returns (an env script waiting for
 		// input) must not block the one the user asks for to get out of it.
-		const reload = coalesceRuns(reloadConfiguration, 30_000);
+		const reload = coalesceRuns(reloadConfiguration, 10_000);
 
 		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_RELOAD, reload),
