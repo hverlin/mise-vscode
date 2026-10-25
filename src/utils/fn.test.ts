@@ -19,7 +19,7 @@ describe("coalesceRuns", () => {
 
 	it("runs at once when nothing runs", async () => {
 		const { run, finish, started } = createRun();
-		const request = coalesceRuns(run);
+		const request = coalesceRuns(run, 60_000);
 
 		const done = request();
 		expect(started()).toBe(1);
@@ -29,7 +29,7 @@ describe("coalesceRuns", () => {
 
 	it("gives a request made while it runs a run of its own", async () => {
 		const { run, finish, started } = createRun();
-		const request = coalesceRuns(run);
+		const request = coalesceRuns(run, 60_000);
 		let askedDone = false;
 
 		const running = request();
@@ -48,7 +48,7 @@ describe("coalesceRuns", () => {
 
 	it("has the requests made while it runs share one more run", async () => {
 		const { run, finish, started } = createRun();
-		const request = coalesceRuns(run);
+		const request = coalesceRuns(run, 60_000);
 
 		const running = request();
 		const storm = [request(), request(), request()];
@@ -60,7 +60,7 @@ describe("coalesceRuns", () => {
 
 	it("starts a new run for a request made after the last one", async () => {
 		const { run, finish, started } = createRun();
-		const request = coalesceRuns(run);
+		const request = coalesceRuns(run, 60_000);
 
 		const first = request();
 		await finish();
@@ -73,7 +73,7 @@ describe("coalesceRuns", () => {
 
 	it("still runs the next one when a run fails", async () => {
 		const { run, finish, started } = createRun();
-		const request = coalesceRuns(run);
+		const request = coalesceRuns(run, 60_000);
 
 		const failing = request();
 		const asked = request();
@@ -87,5 +87,18 @@ describe("coalesceRuns", () => {
 		expect(started()).toBe(3);
 		await finish();
 		await after;
+	});
+
+	it("stops holding the next run back once a run hangs too long", async () => {
+		const { run, finish, started } = createRun();
+		const request = coalesceRuns(run, 20);
+
+		void request();
+		const asked = request();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		expect(started()).toBe(2);
+
+		await finish();
+		await asked;
 	});
 });

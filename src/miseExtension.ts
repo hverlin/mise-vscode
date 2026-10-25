@@ -513,8 +513,10 @@ export class MiseExtension {
 
 		// internal triggers (file watcher, task end, config change) come in
 		// storms: the ones made while a reload runs share the next run. Joining
-		// the running one would miss the change, read before it.
-		const reload = coalesceRuns(reloadConfiguration);
+		// the running one would miss the change, read before it. A reload stuck
+		// on a mise command that never returns (an env script waiting for
+		// input) must not block the one the user asks for to get out of it.
+		const reload = coalesceRuns(reloadConfiguration, 30_000);
 
 		context.subscriptions.push(
 			vscode.commands.registerCommand(MISE_RELOAD, reload),
