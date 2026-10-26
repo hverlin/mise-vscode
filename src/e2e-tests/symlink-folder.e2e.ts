@@ -1,5 +1,5 @@
 import * as assert from "node:assert";
-import { mkdir, readlink, rm } from "node:fs/promises";
+import { mkdir, readlink, rm, symlink } from "node:fs/promises";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { MiseService } from "../miseService";
@@ -75,5 +75,16 @@ suite("Tool Symlink Folder Test Suite", function () {
 			),
 			targetDir,
 		);
+	});
+
+	test("createMiseToolSymlink should replace a link whose target was removed", async () => {
+		const linkPath = path.join(workspaceRoot, ".vscode/mise-tools/my-tool");
+		await mkdir(path.dirname(linkPath), { recursive: true });
+		// an upgrade removed the version the link pointed at
+		await symlink(path.join(workspaceRoot, "removed-tool-install"), linkPath);
+
+		await miseService.createMiseToolSymlink("my-tool", targetDir);
+
+		assert.equal(await readlink(linkPath), targetDir);
 	});
 });

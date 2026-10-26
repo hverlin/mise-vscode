@@ -181,6 +181,8 @@ Create symlinks to the `mise` tools in your `.vscode` folder and point the exten
 
 Each symlink targets the mise shim when `mise.configureExtensionsUseShims` is enabled, and the installed binary otherwise.
 
+When `mise.configureExtensionsAutomatically` is disabled and this setting is enabled in the workspace settings, the extension still creates the symlinks automatic configuration would point the settings at, and keeps them up to date, but does not write settings on its own: point your own settings at them, e.g. `${workspaceFolder}/.vscode/mise-tools/shellcheck`.
+
 This is useful if you share the `.vscode/settings.json` file with others. When the project is version controlled:
 - every user must have the extension installed
 - the directory `.vscode/mise-tools` must be excluded from version control.

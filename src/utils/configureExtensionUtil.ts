@@ -164,6 +164,7 @@ export async function configureExtension({
 	miseService,
 	workspaceFolder,
 	isPrimaryFolder = true,
+	writeSettings = true,
 }: {
 	tool: MiseTool;
 	miseConfig: MiseConfig;
@@ -179,6 +180,11 @@ export async function configureExtension({
 	workspaceFolder?: vscode.WorkspaceFolder;
 	/** Whether this folder is the one picked with `Mise: select workspace folder` */
 	isPrimaryFolder?: boolean;
+	/**
+	 * false only creates the symlinks the settings would point at, for
+	 * settings written by hand (`useSymLinks` without automatic configuration)
+	 */
+	writeSettings?: boolean;
 }) {
 	const extension = vscode.extensions.getExtension(
 		configurableExtension.extensionId,
@@ -201,6 +207,9 @@ export async function configureExtension({
 		useShims,
 		useSymLinks,
 	});
+	if (!writeSettings) {
+		return { configurableExtension, updatedKeys: [] };
+	}
 
 	const settings = Object.entries(extConfig)
 		.map(([key, value]) => (value !== undefined ? { key, value } : undefined))
