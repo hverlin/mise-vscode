@@ -180,6 +180,14 @@ export const flagBlockItems: UsageCompletionItem[] = [
 /** A `#MISE` task configuration line of a file task (also matches `# [MISE]`) */
 export const MISE_COMMENT_RE = /^\s*#\s*(?:MISE|\[MISE\])\s/;
 
+/** The template named by a `#MISE extends="<name>"` line of a file task */
+export function parseFileTaskExtends(line: string): string | undefined {
+	const match = line.match(
+		/^\s*#\s*(?:MISE|\[MISE\])\s+extends\s*=\s*(?:"([^"]+)"|'([^']+)')/,
+	);
+	return match?.[1] ?? match?.[2];
+}
+
 /**
  * Task configuration keys valid in `#MISE` comments of file tasks.
  * Each `#MISE` line is TOML.

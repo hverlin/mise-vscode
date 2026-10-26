@@ -29,6 +29,11 @@ const checks = [
 		hint: "fix it",
 	}),
 	check({ name: "linux-only", status: "skipped" }),
+	check({
+		name: "after-fails",
+		status: "blocked",
+		message: "Blocked: dependency fails did not pass",
+	}),
 ];
 
 describe("sortProjectChecks", () => {
@@ -36,6 +41,7 @@ describe("sortProjectChecks", () => {
 		expect(sortProjectChecks(checks).map(({ name }) => name)).toEqual([
 			"fails",
 			"slow",
+			"after-fails",
 			"linux-only",
 			"node",
 		]);
@@ -45,7 +51,7 @@ describe("sortProjectChecks", () => {
 describe("formatProjectChecksSummary", () => {
 	it("counts the checks of each status", () => {
 		expect(formatProjectChecksSummary(checks)).toBe(
-			"1 failed, 1 could not run, 1 skipped, 1 passed",
+			"1 failed, 1 could not run, 1 blocked, 1 skipped, 1 passed",
 		);
 		expect(formatProjectChecksSummary([check({}), check({})])).toBe("2 passed");
 	});

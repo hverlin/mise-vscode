@@ -164,7 +164,8 @@ The same support is available in shell
   [task templates](https://mise.jdx.dev/tasks/templates.html) declared in the
   config files
 - Typing `$` in the script body suggests the `usage_*` variables from the
-  `#USAGE` lines
+  `#USAGE` lines, and from the `usage` of the template the task extends
+  (mise `2026.10.19` or later)
 
 ### Code lens features
 

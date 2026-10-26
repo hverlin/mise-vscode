@@ -50,6 +50,12 @@ export const teraVariables = [
 		kind: vscode.CompletionItemKind.Variable,
 	},
 	{
+		name: "mise_config_dir",
+		detail:
+			"Config directory of mise: MISE_CONFIG_DIR, or else xdg_config_home/mise. Needs mise 2026.10.19 or later",
+		kind: vscode.CompletionItemKind.Variable,
+	},
+	{
 		name: "tools",
 		detail:
 			"Access installed tool information (example: tools.node.version, tools.node.path)",

@@ -79,6 +79,7 @@ describe("getTeraHoverInformation", () => {
 		expect(hover("system_brew_prefix", "{{ ", " }}")).toContain(
 			"/opt/homebrew",
 		);
+		expect(hover("mise_config_dir", "{{ ", " }}")).toContain("MISE_CONFIG_DIR");
 		expect(hover("env", "{{ ", ".HOME }}")).toContain("environment");
 		expect(hover("HOME", "{{ env.", " }}")).toBeUndefined();
 		expect(hover("unknown", "{{ x | ")).toBeUndefined();

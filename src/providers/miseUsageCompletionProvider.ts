@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
+import { collectTaskTemplates } from "../utils/taskTemplates";
 import {
 	fileTaskConfigItems,
 	findUsageStringStart,
@@ -12,6 +13,7 @@ import {
 	getUsageVariableNames,
 	isInsideQuotedString,
 	MISE_COMMENT_RE,
+	parseFileTaskExtends,
 	type UsageCompletionItem,
 } from "../utils/usageSpec";
 
@@ -86,14 +88,23 @@ export class UsageCompletionProvider implements vscode.CompletionItemProvider {
 			if (/^\s*#\s*(?:MISE|\[MISE\])\s+[\w.]*$/.test(linePrefix)) {
 				return buildCompletionItems(fileTaskConfigItems);
 			}
-			// `$usage_*` variables in the script body, from the #USAGE lines
+			// `$usage_*` variables in the script body, from the #USAGE lines and,
+			// with mise 2026.10.19+, the usage of the template the task extends
 			if (VARIABLE_PREFIX_RE.test(linePrefix)) {
 				const specLines: string[] = [];
+				let templateName: string | undefined;
 				for (let lineNum = 0; lineNum < document.lineCount; lineNum++) {
-					const match = document.lineAt(lineNum).text.match(USAGE_COMMENT_RE);
+					const text = document.lineAt(lineNum).text;
+					const match = text.match(USAGE_COMMENT_RE);
 					if (match) {
 						specLines.push(match[1] ?? "");
 					}
+					templateName ??= parseFileTaskExtends(text);
+				}
+				if (templateName) {
+					specLines.unshift(
+						...(await this.getTemplateUsageLines(document, templateName)),
+					);
 				}
 				return buildVariableItems(getUsageVariableNames(specLines));
 			}
@@ -131,6 +142,26 @@ export class UsageCompletionProvider implements vscode.CompletionItemProvider {
 				),
 			),
 		);
+	}
+
+	/** The `usage` lines of a template declared in the config files */
+	private async getTemplateUsageLines(
+		document: vscode.TextDocument,
+		templateName: string,
+	): Promise<string[]> {
+		try {
+			const configPaths = (await this.miseService.getMiseConfigFiles()).map(
+				(file) => file.path,
+			);
+			const template = (await collectTaskTemplates(document, configPaths)).find(
+				({ name }) => name === templateName,
+			);
+			const usage = template?.fields.usage;
+			return typeof usage === "string" ? usage.split("\n") : [];
+		} catch {
+			// e.g. a config that does not parse: the #USAGE lines still complete
+			return [];
+		}
 	}
 }
 

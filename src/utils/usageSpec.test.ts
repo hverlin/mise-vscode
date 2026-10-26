@@ -9,6 +9,7 @@ import {
 	getUsageVariableNames,
 	isInsideUsageString,
 	MISE_COMMENT_RE,
+	parseFileTaskExtends,
 	type UsageCursorContext,
 } from "./usageSpec";
 
@@ -304,6 +305,16 @@ describe("MISE_COMMENT_RE", () => {
 		expect(MISE_COMMENT_RE.test('# [MISE] extends="')).toBe(true);
 		expect(MISE_COMMENT_RE.test('#[MISE] description="x"')).toBe(true);
 		expect(MISE_COMMENT_RE.test('# [USAGE] arg "<x>"')).toBe(false);
+	});
+});
+
+describe("parseFileTaskExtends", () => {
+	test("reads the template name of an extends line", () => {
+		expect(parseFileTaskExtends('#MISE extends="tmpl"')).toBe("tmpl");
+		expect(parseFileTaskExtends("# [MISE] extends = 'a:b'")).toBe("a:b");
+		expect(parseFileTaskExtends('#MISE description="x"')).toBeUndefined();
+		expect(parseFileTaskExtends('#MISE extends="')).toBeUndefined();
+		expect(parseFileTaskExtends('# extends="tmpl"')).toBeUndefined();
 	});
 });
 

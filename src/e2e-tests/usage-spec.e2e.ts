@@ -283,6 +283,25 @@ suite("Usage Spec Test Suite", function () {
 		);
 	});
 
+	test("offers the usage variables of the template a shell file task extends", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "templated-file-task.sh"),
+		);
+
+		const lines = document.getText().split("\n");
+		const varLine = lines.findIndex((line) => line.startsWith("echo $usage_"));
+		assert.ok(varLine > 0, "fixture should contain the echo $usage_ line");
+
+		const labels = await getCompletionLabels(
+			document.uri,
+			new vscode.Position(varLine, "echo $usage_".length),
+		);
+		assert.ok(
+			labels.includes("usage_profile") && labels.includes("usage_own"),
+			`Expected usage variables from the template and #USAGE lines, got: ${labels.join(", ")}`,
+		);
+	});
+
 	test("offers task configuration completions after #MISE in a shell file", async () => {
 		const document = await vscode.workspace.openTextDocument(
 			path.join(workspaceRoot, "file-task.sh"),
