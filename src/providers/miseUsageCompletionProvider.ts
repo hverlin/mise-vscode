@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
 import { collectFileTaskTemplates } from "../utils/taskTemplates";
@@ -6,14 +7,18 @@ import {
 	fileTaskConfigItems,
 	findUsageStringStart,
 	getEnclosingTaskUsageLines,
+	getEnclosingTaskUsageSpec,
 	getFileTaskConfigHoverInfo,
+	getSectionUsageSpec,
 	getUsageCompletionItems,
 	getUsageCursorContext,
 	getUsageHoverInfo,
+	getUsageVariableAt,
 	getUsageVariableNames,
 	isInsideQuotedString,
 	MISE_COMMENT_RE,
 	parseFileTaskExtends,
+	parseUsageDeclaration,
 	type UsageCompletionItem,
 } from "../utils/usageSpec";
 
@@ -202,6 +207,240 @@ export class UsageHoverProvider implements vscode.HoverProvider {
 		}
 		return toHover(getUsageHoverInfo(word));
 	}
+}
+
+/** Where a `$usage_*` variable is declared */
+type UsageVariableDeclaration = {
+	targetUri: vscode.Uri;
+	targetRange: vscode.Range;
+	targetSelectionRange: vscode.Range;
+	/** the `arg` or `flag` line, unknown when only the template is found */
+	spec?: string;
+	/** the template whose usage declares the variable */
+	templateName?: string;
+};
+
+/**
+ * Go to definition and hover for a `$usage_*` variable, from the `arg` or
+ * `flag` declaring it: in a file task, its `#USAGE` lines, then the usage of
+ * the template it extends; in a TOML task, its `usage` field.
+ */
+export class UsageVariableProvider
+	implements vscode.DefinitionProvider, vscode.HoverProvider
+{
+	constructor(private miseService: MiseService) {}
+
+	async provideDefinition(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<vscode.LocationLink[] | undefined> {
+		const resolved = await this.resolve(document, position);
+		if (!resolved) {
+			return undefined;
+		}
+		const { targetUri, targetRange, targetSelectionRange } =
+			resolved.declaration;
+		return [
+			{
+				originSelectionRange: resolved.range,
+				targetUri,
+				targetRange,
+				targetSelectionRange,
+			},
+		];
+	}
+
+	async provideHover(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<vscode.Hover | undefined> {
+		const resolved = await this.resolve(document, position);
+		if (!resolved) {
+			return undefined;
+		}
+		const { declaration, name } = resolved;
+
+		const source = declaration.templateName
+			? `the usage of the \`${declaration.templateName}\` template`
+			: document.languageId === "shellscript"
+				? "the `#USAGE` lines"
+				: "the `usage` of the task";
+		const markdown = new vscode.MarkdownString();
+		if (declaration.spec) {
+			const kind = declaration.spec.startsWith("arg") ? "argument" : "flag";
+			markdown.appendMarkdown(
+				`\`usage_${name}\`: value of this ${kind}, from ${source}`,
+			);
+			markdown.appendCodeblock(declaration.spec, "kdl");
+		} else {
+			markdown.appendMarkdown(`\`usage_${name}\`: from ${source}`);
+		}
+		if (declaration.targetUri.fsPath !== document.uri.fsPath) {
+			markdown.appendMarkdown(
+				`\n\nDeclared in [${vscode.workspace.asRelativePath(declaration.targetUri)}](${declaration.targetUri}#L${declaration.targetSelectionRange.start.line + 1})`,
+			);
+		}
+		return new vscode.Hover(markdown, resolved.range);
+	}
+
+	/** The variable at the position, and its declaration */
+	private async resolve(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<
+		| {
+				name: string;
+				range: vscode.Range;
+				declaration: UsageVariableDeclaration;
+		  }
+		| undefined
+	> {
+		if (!isMiseExtensionEnabled()) {
+			return undefined;
+		}
+
+		const variable = getUsageVariableAt(
+			document.lineAt(position).text,
+			position.character,
+		);
+		if (!variable) {
+			return undefined;
+		}
+		const range = new vscode.Range(
+			position.line,
+			variable.start,
+			position.line,
+			variable.end,
+		);
+		const declaration = await this.findDeclaration(
+			document,
+			position,
+			variable.name,
+		);
+		return declaration && { name: variable.name, range, declaration };
+	}
+
+	private async findDeclaration(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		name: string,
+	): Promise<UsageVariableDeclaration | undefined> {
+		if (document.languageId === "shellscript") {
+			let templateName: string | undefined;
+			for (let lineNum = 0; lineNum < document.lineCount; lineNum++) {
+				const text = document.lineAt(lineNum).text;
+				const spec = text.match(USAGE_COMMENT_RE)?.[1];
+				const declaration =
+					spec === undefined
+						? undefined
+						: findDeclarationOnLine(document, lineNum, spec, name);
+				if (declaration) {
+					return declaration;
+				}
+				templateName ??= parseFileTaskExtends(text);
+			}
+			return templateName
+				? this.findTemplateDeclaration(document, templateName, name)
+				: undefined;
+		}
+
+		const lines = document.getText().split("\n");
+		const specLines = getEnclosingTaskUsageSpec(lines, position);
+		if (!specLines || !(await isMiseTomlFile(this.miseService, document))) {
+			return undefined;
+		}
+		for (const { line, text } of specLines) {
+			const declaration = findDeclarationOnLine(document, line, text, name);
+			if (declaration) {
+				return declaration;
+			}
+		}
+		return undefined;
+	}
+
+	/**
+	 * The declaration in the `usage` of a template, or the template itself
+	 * when the usage is not in a `[task_templates.<name>]` table of its own
+	 */
+	private async findTemplateDeclaration(
+		document: vscode.TextDocument,
+		templateName: string,
+		name: string,
+	): Promise<UsageVariableDeclaration | undefined> {
+		try {
+			const template = (
+				await collectFileTaskTemplates(this.miseService, document)
+			).find((candidate) => candidate.name === templateName);
+			if (typeof template?.fields.usage !== "string") {
+				return undefined;
+			}
+
+			const templateDocument = await vscode.workspace.openTextDocument(
+				vscode.Uri.file(template.source),
+			);
+			const headerLine = template.bodyRange.start.line;
+			if (/^\s*\[/.test(templateDocument.lineAt(headerLine).text)) {
+				const lines = templateDocument.getText().split("\n");
+				for (const { line, text } of getSectionUsageSpec(
+					lines,
+					headerLine + 1,
+				)) {
+					const declaration = findDeclarationOnLine(
+						templateDocument,
+						line,
+						text,
+						name,
+					);
+					if (declaration) {
+						return { ...declaration, templateName };
+					}
+				}
+			}
+			if (
+				!getUsageVariableNames(template.fields.usage.split("\n")).includes(name)
+			) {
+				return undefined;
+			}
+			return {
+				targetUri: templateDocument.uri,
+				targetRange: template.bodyRange,
+				targetSelectionRange: template.nameRange,
+				templateName,
+			};
+		} catch {
+			// e.g. a config that does not parse
+			return undefined;
+		}
+	}
+}
+
+/** The `arg` or `flag` of `name`, when the spec line on `line` declares it */
+function findDeclarationOnLine(
+	document: vscode.TextDocument,
+	line: number,
+	spec: string,
+	name: string,
+): UsageVariableDeclaration | undefined {
+	const declaration = parseUsageDeclaration(spec);
+	if (declaration?.name !== name) {
+		return undefined;
+	}
+	const lineRange = document.lineAt(line).range;
+	const start = document.lineAt(line).text.indexOf(declaration.declaration);
+	return {
+		targetUri: document.uri,
+		targetRange: lineRange,
+		targetSelectionRange:
+			start === -1
+				? lineRange
+				: new vscode.Range(
+						line,
+						start,
+						line,
+						start + declaration.declaration.length,
+					),
+		spec: spec.trim(),
+	};
 }
 
 function toHover(info: string | undefined): vscode.Hover | undefined {

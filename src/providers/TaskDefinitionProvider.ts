@@ -15,16 +15,20 @@ import {
 	TASK_PATTERN_REGEX,
 } from "../utils/taskNames";
 import {
+	collectFileTaskTemplates,
 	collectTaskTemplates,
+	formatTaskTemplateMarkdown,
 	isMiseConfigFile,
 	isTaskExtendsKeyPath,
 	isTaskTemplateKeyPath,
+	type TaskTemplate,
 } from "../utils/taskTemplates";
 import {
 	getTaskNameValueContext,
 	isDaemonsKeyPath,
 	isTaskOfDaemonKeyPath,
 } from "../utils/tomlParsing";
+import { parseFileTaskExtends } from "../utils/usageSpec";
 
 export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 	private miseService: MiseService;
@@ -219,5 +223,81 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 				targetSelectionRange: template.nameRange,
 			},
 		];
+	}
+}
+
+/**
+ * Go to definition and hover for the template of a `#MISE extends="<name>"`
+ * header of a file task
+ */
+export class FileTaskTemplateProvider
+	implements vscode.DefinitionProvider, vscode.HoverProvider
+{
+	constructor(private miseService: MiseService) {}
+
+	async provideDefinition(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<vscode.LocationLink[] | null> {
+		const resolved = await this.resolve(document, position);
+		if (!resolved) {
+			return null;
+		}
+		const { range, template } = resolved;
+		return [
+			{
+				originSelectionRange: range,
+				targetUri: vscode.Uri.file(template.source),
+				targetRange: template.bodyRange,
+				targetSelectionRange: template.nameRange,
+			},
+		];
+	}
+
+	async provideHover(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<vscode.Hover | null> {
+		const resolved = await this.resolve(document, position);
+		if (!resolved) {
+			return null;
+		}
+		const { range, template } = resolved;
+		const markdown = formatTaskTemplateMarkdown(template);
+		markdown.appendMarkdown(
+			`\n\nDeclared in [${vscode.workspace.asRelativePath(template.source)}](${vscode.Uri.file(template.source)}#L${template.nameRange.start.line + 1})`,
+		);
+		return new vscode.Hover(markdown, range);
+	}
+
+	/** The template name at the position, and the template it resolves to */
+	private async resolve(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	): Promise<{ range: vscode.Range; template: TaskTemplate } | null> {
+		if (!isMiseExtensionEnabled()) {
+			return null;
+		}
+
+		const line = document.lineAt(position).text;
+		const templateName = parseFileTaskExtends(line);
+		if (!templateName) {
+			return null;
+		}
+		const start = line.indexOf(templateName, line.indexOf("=") + 1);
+		const end = start + templateName.length;
+		if (position.character < start || position.character > end) {
+			return null;
+		}
+
+		const template = (
+			await collectFileTaskTemplates(this.miseService, document)
+		).find((candidate) => candidate.name === templateName);
+		return template
+			? {
+					range: new vscode.Range(position.line, start, position.line, end),
+					template,
+				}
+			: null;
 	}
 }

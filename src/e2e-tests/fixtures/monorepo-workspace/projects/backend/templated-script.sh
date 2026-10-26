@@ -3,3 +3,4 @@
 # the configs above the script, here the subproject's own
 #MISE extends="backend-script"
 echo $usage_
+echo "$usage_target"

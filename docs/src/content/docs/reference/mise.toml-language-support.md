@@ -135,7 +135,8 @@ using the [usage spec](https://usage.jdx.dev/spec/). The extension provides:
 - **Hover documentation** for directives and attributes
 - **`$usage_*` variable completion**: typing `$` in a multiline `run` block
   suggests the `usage_*` environment variables derived from the args and
-  flags of that task
+  flags of that task. `cmd|ctrl+click` on a `$usage_*` variable goes to the
+  arg or flag declaring it, and hovering it shows the declaration
 
 ```toml
 [tasks.deploy]
@@ -162,10 +163,12 @@ The same support is available in shell
   `deny_*`/`allow_*` sandbox keys, ...)
 - `#MISE extends="template_name"` completes the
   [task templates](https://mise.jdx.dev/tasks/templates.html) declared in the
-  config files
+  config files above the script. `cmd|ctrl+click` on the name goes to the
+  template, and hovering it shows the template
 - Typing `$` in the script body suggests the `usage_*` variables from the
   `#USAGE` lines, and from the `usage` of the template the task extends
-  (mise `2026.10.19` or later)
+  (mise `2026.10.19` or later). `cmd|ctrl+click` and hover work on these
+  variables as in TOML tasks
 
 ### Code lens features
 

@@ -702,25 +702,53 @@ export function findUsageStringStart(
  * the `usage_*` environment variables.
  */
 export function getUsageVariableNames(specLines: string[]): string[] {
-	const names: string[] = [];
-	for (const line of specLines) {
-		const trimmed = line.trim();
-		const argMatch = trimmed.match(/^arg\s+"[<[]([^>\]]+)[>\]]"/);
-		if (argMatch?.[1]) {
-			names.push(argMatch[1]);
-			continue;
-		}
-		const flagMatch = trimmed.match(/^flag\s+"([^"]+)"/);
-		if (flagMatch?.[1]) {
-			const long = flagMatch[1].match(/--([A-Za-z0-9][\w-]*)/);
-			const short = flagMatch[1].match(/(?:^|\s)-([A-Za-z0-9])(?:\s|$)/);
-			const name = long?.[1] ?? short?.[1];
-			if (name) {
-				names.push(name);
-			}
+	const names = specLines
+		.map((line) => parseUsageDeclaration(line)?.name)
+		.filter((name) => name !== undefined);
+	return [...new Set(names)];
+}
+
+/**
+ * The variable an `arg` or `flag` line of a usage spec sets (without the
+ * `usage_` prefix), and its quoted declaration, e.g. `"--target <target>"`
+ */
+export function parseUsageDeclaration(
+	specLine: string,
+): { name: string; declaration: string } | undefined {
+	const trimmed = specLine.trim();
+	const argMatch = trimmed.match(/^arg\s+("[<[]([^>\]]+)[>\]]")/);
+	if (argMatch?.[1] && argMatch[2]) {
+		return { name: argMatch[2].replace(/-/g, "_"), declaration: argMatch[1] };
+	}
+	const flagMatch = trimmed.match(/^flag\s+("([^"]+)")/);
+	if (flagMatch?.[1] && flagMatch[2]) {
+		const long = flagMatch[2].match(/--([A-Za-z0-9][\w-]*)/);
+		const short = flagMatch[2].match(/(?:^|\s)-([A-Za-z0-9])(?:\s|$)/);
+		const name = long?.[1] ?? short?.[1];
+		if (name) {
+			return { name: name.replace(/-/g, "_"), declaration: flagMatch[1] };
 		}
 	}
-	return [...new Set(names)].map((name) => name.replace(/-/g, "_"));
+	return undefined;
+}
+
+/**
+ * The `$usage_<name>` or `${usage_<name>}` variable at a character of a line:
+ * its name without the prefix and the range of `usage_<name>`
+ */
+export function getUsageVariableAt(
+	line: string,
+	character: number,
+): { name: string; start: number; end: number } | undefined {
+	for (const match of line.matchAll(/\$\{?usage_(\w+)/g)) {
+		const name = match[1] ?? "";
+		const end = match.index + match[0].length;
+		const start = end - name.length - "usage_".length;
+		if (name && character >= match.index && character <= end) {
+			return { name, start, end };
+		}
+	}
+	return undefined;
 }
 
 /**
@@ -732,6 +760,19 @@ export function getEnclosingTaskUsageLines(
 	lines: string[],
 	position: { line: number; character: number },
 ): string[] | null {
+	return (
+		getEnclosingTaskUsageSpec(lines, position)?.map(({ text }) => text) ?? null
+	);
+}
+
+/** A line of a usage spec, and the document line it is on */
+export type UsageSpecLine = { line: number; text: string };
+
+/** Same as {@link getEnclosingTaskUsageLines}, with the line of each spec line */
+export function getEnclosingTaskUsageSpec(
+	lines: string[],
+	position: { line: number; character: number },
+): UsageSpecLine[] | null {
 	const runStart = findKeyStringStart(lines, position, "run");
 	if (runStart === null) {
 		return null;
@@ -746,7 +787,19 @@ export function getEnclosingTaskUsageLines(
 		}
 	}
 
-	const specLines: string[] = [];
+	const specLines = getSectionUsageSpec(lines, sectionStart);
+	return specLines.length > 0 ? specLines : null;
+}
+
+/**
+ * The lines of the `usage` field of a table, from `sectionStart`, the line
+ * after its header, to the next header
+ */
+export function getSectionUsageSpec(
+	lines: string[],
+	sectionStart: number,
+): UsageSpecLine[] {
+	const specLines: UsageSpecLine[] = [];
 	let stringDelimiter: string | null = null;
 	let collecting = false;
 	for (let lineNum = sectionStart; lineNum < lines.length; lineNum++) {
@@ -757,7 +810,7 @@ export function getEnclosingTaskUsageLines(
 				stringDelimiter = null;
 				collecting = false;
 			} else if (collecting) {
-				specLines.push(line);
+				specLines.push({ line: lineNum, text: line });
 			}
 			continue;
 		}
@@ -771,7 +824,10 @@ export function getEnclosingTaskUsageLines(
 			const [, key, delimiter = "", rest = ""] = multiline;
 			if (rest.includes(delimiter)) {
 				if (key === "usage") {
-					specLines.push(rest.slice(0, rest.indexOf(delimiter)));
+					specLines.push({
+						line: lineNum,
+						text: rest.slice(0, rest.indexOf(delimiter)),
+					});
 				}
 			} else {
 				stringDelimiter = delimiter;
@@ -782,11 +838,11 @@ export function getEnclosingTaskUsageLines(
 
 		const singleLine = line.match(/^\s*usage\s*=\s*(["'])(.*)\1\s*$/);
 		if (singleLine?.[2]) {
-			specLines.push(singleLine[2]);
+			specLines.push({ line: lineNum, text: singleLine[2] });
 		}
 	}
 
-	return specLines.length > 0 ? specLines : null;
+	return specLines;
 }
 
 /**

@@ -97,10 +97,14 @@ import { MiseTomlCodeLensProvider } from "./providers/miseTomlCodeLensProvider";
 import {
 	UsageCompletionProvider,
 	UsageHoverProvider,
+	UsageVariableProvider,
 	usageTriggerCharacters,
 } from "./providers/miseUsageCompletionProvider";
 import { runProjectChecks } from "./providers/projectChecks";
-import { TaskDefinitionProvider } from "./providers/TaskDefinitionProvider";
+import {
+	FileTaskTemplateProvider,
+	TaskDefinitionProvider,
+} from "./providers/TaskDefinitionProvider";
 import { TaskHoverProvider } from "./providers/TaskHoverProvider";
 import { TaskReferenceProvider } from "./providers/TaskReferenceProvider";
 import { TaskTemplateCompletionProvider } from "./providers/TaskTemplateCompletionProvider";
@@ -756,6 +760,9 @@ export class MiseExtension {
 			pattern: "**/.tool-versions",
 		};
 		const toolFilesSelector = [allTomlFilesSelector, toolVersionsSelector];
+		const fileTaskTemplateProvider = new FileTaskTemplateProvider(
+			this.miseService,
+		);
 
 		context.subscriptions.push(
 			vscode.languages.registerCompletionItemProvider(
@@ -777,6 +784,14 @@ export class MiseExtension {
 			vscode.languages.registerDefinitionProvider(
 				allTomlFilesSelector,
 				new TaskDefinitionProvider(this.miseService),
+			),
+			vscode.languages.registerDefinitionProvider(
+				{ scheme: "file", language: "shellscript" },
+				fileTaskTemplateProvider,
+			),
+			vscode.languages.registerHoverProvider(
+				{ scheme: "file", language: "shellscript" },
+				fileTaskTemplateProvider,
 			),
 			vscode.languages.registerReferenceProvider(
 				allTomlFilesSelector,
@@ -936,6 +951,17 @@ export class MiseExtension {
 			vscode.languages.registerHoverProvider(
 				{ scheme: "file", language: "shellscript" },
 				new UsageHoverProvider(this.miseService),
+			),
+		);
+		const usageVariableProvider = new UsageVariableProvider(this.miseService);
+		context.subscriptions.push(
+			vscode.languages.registerDefinitionProvider(
+				[allTomlFilesSelector, { scheme: "file", language: "shellscript" }],
+				usageVariableProvider,
+			),
+			vscode.languages.registerHoverProvider(
+				[allTomlFilesSelector, { scheme: "file", language: "shellscript" }],
+				usageVariableProvider,
 			),
 		);
 

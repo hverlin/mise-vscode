@@ -2,14 +2,18 @@ import { describe, expect, test } from "bun:test";
 import {
 	fileTaskConfigItems,
 	getEnclosingTaskUsageLines,
+	getEnclosingTaskUsageSpec,
 	getFileTaskConfigHoverInfo,
+	getSectionUsageSpec,
 	getUsageCompletionItems,
 	getUsageCursorContext,
 	getUsageHoverInfo,
+	getUsageVariableAt,
 	getUsageVariableNames,
 	isInsideUsageString,
 	MISE_COMMENT_RE,
 	parseFileTaskExtends,
+	parseUsageDeclaration,
 	type UsageCursorContext,
 } from "./usageSpec";
 
@@ -343,6 +347,62 @@ describe("getUsageVariableNames", () => {
 	test("dedupes repeated names", () => {
 		expect(getUsageVariableNames(['arg "<file>"', 'flag "--file"'])).toEqual([
 			"file",
+		]);
+	});
+});
+
+describe("parseUsageDeclaration", () => {
+	test("returns the variable and the quoted declaration", () => {
+		expect(parseUsageDeclaration('  arg "<file>" help="File"')).toEqual({
+			name: "file",
+			declaration: '"<file>"',
+		});
+		expect(parseUsageDeclaration('flag "-n --dry-run"')).toEqual({
+			name: "dry_run",
+			declaration: '"-n --dry-run"',
+		});
+		expect(parseUsageDeclaration('choices "a" "b"')).toBeUndefined();
+	});
+});
+
+describe("getUsageVariableAt", () => {
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion
+	const line = 'echo "${usage_dry_run?}" $usage_file';
+
+	test("finds the variable under the cursor, braces or not", () => {
+		const braced = getUsageVariableAt(line, line.indexOf("dry_run"));
+		expect(braced?.name).toBe("dry_run");
+		expect(line.slice(braced?.start, braced?.end)).toBe("usage_dry_run");
+		expect(getUsageVariableAt(line, line.indexOf("$usage_file"))?.name).toBe(
+			"file",
+		);
+		expect(getUsageVariableAt(line, line.length)?.name).toBe("file");
+	});
+
+	test("is undefined elsewhere", () => {
+		expect(getUsageVariableAt(line, 0)).toBeUndefined();
+		expect(getUsageVariableAt("echo $usage_", 8)).toBeUndefined();
+		expect(getUsageVariableAt("echo $other", 7)).toBeUndefined();
+	});
+});
+
+describe("getEnclosingTaskUsageSpec", () => {
+	test("gives the document line of each usage line", () => {
+		const lines = `[tasks.deploy]
+usage = 'arg "<env>"'
+run = '''
+echo $usage_env
+'''
+
+[tasks.other]
+usage = '''
+flag "--force"
+'''`.split("\n");
+		expect(getEnclosingTaskUsageSpec(lines, { line: 3, character: 8 })).toEqual(
+			[{ line: 1, text: 'arg "<env>"' }],
+		);
+		expect(getSectionUsageSpec(lines, 7)).toEqual([
+			{ line: 8, text: 'flag "--force"' },
 		]);
 	});
 });
