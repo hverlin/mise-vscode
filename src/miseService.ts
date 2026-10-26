@@ -44,6 +44,10 @@ import {
 } from "./utils/fileUtils";
 import { uniqBy } from "./utils/fn";
 import {
+	getGlobalInstallPath,
+	getInstallsDir,
+} from "./utils/globalInstallPath";
+import {
 	findToolDeclaration,
 	getMissingTools,
 	isLazyToolDeclaration,
@@ -3197,6 +3201,31 @@ export class MiseService {
 			]);
 		} finally {
 			await this.trustOwnEdit(filePath);
+		}
+	}
+
+	/**
+	 * The install folder of `tool` to write in a setting: its `global` link when
+	 * global or system config selects the version (see getGlobalInstallPath), so
+	 * the setting follows `mise use -g` and upgrades. The install path otherwise.
+	 */
+	async getStableInstallPath(
+		tool: MiseTool,
+		miseConfig: MiseConfig,
+	): Promise<string> {
+		try {
+			const { stdout } = await this.cache.execCmd({
+				args: ["ls", "--global", "--offline", "--json"],
+			});
+			const globalPath = await getGlobalInstallPath(
+				tool,
+				JSON.parse(stdout),
+				getInstallsDir(miseConfig),
+			);
+			return globalPath ?? tool.install_path;
+		} catch (error) {
+			logger.debug(`Could not read the global tools: ${error}`);
+			return tool.install_path;
 		}
 	}
 

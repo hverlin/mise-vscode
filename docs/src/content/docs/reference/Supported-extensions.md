@@ -17,6 +17,11 @@ List of extensions that can be automatically configured to use tools from
   enable [`configureExtensionsUseSymLinks`](/mise-vscode/reference/settings/#miseconfigureextensionsusesymlinks). This will create a folder in your
   `.vscode` directory with a symlink to the tools installed by `mise`. The symlinks target the shims, or the installed binaries when
   [`configureExtensionsUseShims`](/mise-vscode/reference/settings/#miseconfigureextensionsuseshims) is disabled.
+- Settings that take an install folder (a JDK or SDK home, `go.goroot` when shims are disabled) point at the folder of one version.
+  When the version comes from your global or system mise config, they point at mise's
+  [`global` link](https://mise.jdx.dev/ide-integration.html#global-version-link) instead
+  (e.g. `~/.local/share/mise/installs/java/global`, mise 2026.10.8+), which follows `mise use -g` and `mise upgrade`.
+  A version set in a project config keeps its own folder, and symlinks, when enabled, are used first.
 
 | Extension                                                                                                    | Settings                                                                                                       | Comment                                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
