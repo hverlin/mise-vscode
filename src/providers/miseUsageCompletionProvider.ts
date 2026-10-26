@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import type { MiseService } from "../miseService";
 import { expandPath } from "../utils/fileUtils";
-import { collectTaskTemplates } from "../utils/taskTemplates";
+import { collectFileTaskTemplates } from "../utils/taskTemplates";
 import {
 	fileTaskConfigItems,
 	findUsageStringStart,
@@ -144,18 +144,15 @@ export class UsageCompletionProvider implements vscode.CompletionItemProvider {
 		);
 	}
 
-	/** The `usage` lines of a template declared in the config files */
+	/** The `usage` lines of the template a file task extends */
 	private async getTemplateUsageLines(
 		document: vscode.TextDocument,
 		templateName: string,
 	): Promise<string[]> {
 		try {
-			const configPaths = (await this.miseService.getMiseConfigFiles()).map(
-				(file) => file.path,
-			);
-			const template = (await collectTaskTemplates(document, configPaths)).find(
-				({ name }) => name === templateName,
-			);
+			const template = (
+				await collectFileTaskTemplates(this.miseService, document)
+			).find(({ name }) => name === templateName);
 			const usage = template?.fields.usage;
 			return typeof usage === "string" ? usage.split("\n") : [];
 		} catch {

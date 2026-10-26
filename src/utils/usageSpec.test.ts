@@ -315,6 +315,12 @@ describe("parseFileTaskExtends", () => {
 		expect(parseFileTaskExtends('#MISE description="x"')).toBeUndefined();
 		expect(parseFileTaskExtends('#MISE extends="')).toBeUndefined();
 		expect(parseFileTaskExtends('# extends="tmpl"')).toBeUndefined();
+		expect(parseFileTaskExtends('#MISE extends="tmpl" # note')).toBe("tmpl");
+	});
+
+	test("ignores the lines mise does not read as a header", () => {
+		expect(parseFileTaskExtends('  #MISE extends="tmpl"')).toBeUndefined();
+		expect(parseFileTaskExtends('#MISE\textends="tmpl"')).toBeUndefined();
 	});
 });
 

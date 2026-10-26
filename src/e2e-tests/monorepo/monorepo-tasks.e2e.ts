@@ -494,6 +494,48 @@ suite("Monorepo Tasks Test Suite", function () {
 		}
 	});
 
+	test("A file task of a subproject resolves the templates of its own config", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "backend", "templated-script.sh"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+		const lines = document.getText().split("\n");
+		const labelsAt = async (line: number, character: number) => {
+			const completions =
+				await vscode.commands.executeCommand<vscode.CompletionList>(
+					"vscode.executeCompletionItemProvider",
+					uri,
+					new vscode.Position(line, character),
+				);
+			return completions.items.map((item) =>
+				typeof item.label === "string" ? item.label : item.label.label,
+			);
+		};
+
+		const extendsLine = lines.findIndex((line) =>
+			line.startsWith("#MISE extends="),
+		);
+		assert.ok(extendsLine >= 0, "#MISE extends line should be in the fixture");
+		const names = await labelsAt(
+			extendsLine,
+			(lines[extendsLine] ?? "").indexOf('"') + 1,
+		);
+		for (const expected of ["backend-script", "project-info"]) {
+			assert.ok(
+				names.includes(expected),
+				`expected ${expected} in ${JSON.stringify(names)}`,
+			);
+		}
+
+		const varLine = lines.findIndex((line) => line.startsWith("echo $usage_"));
+		assert.ok(varLine >= 0, "echo $usage_ line should be in the fixture");
+		const variables = await labelsAt(varLine, "echo $usage_".length);
+		assert.ok(
+			variables.includes("usage_target"),
+			`expected the usage of the subproject template in ${JSON.stringify(variables)}`,
+		);
+	});
+
 	test("Should show the resolved template when hovering extends", async () => {
 		const uri = vscode.Uri.file(
 			path.join(workspaceRoot, "crates", "protocol", "mise.toml"),

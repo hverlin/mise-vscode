@@ -96,7 +96,7 @@
 					"name": "constant.language.tera"
 				},
 				{
-					"match": "\\b(loop|super|self|varargs|kwargs|env|vars|cwd|config_root|mise_bin|mise_pid|xdg_cache_home|xdg_config_home|xdg_data_home|xdg_state_home)\\b",
+					"match": "\\b(loop|super|self|varargs|kwargs|env|vars|cwd|config_root|mise_bin|mise_pid|mise_config_dir|xdg_cache_home|xdg_config_home|xdg_data_home|xdg_state_home)\\b",
 					"name": "support.variable.language.tera"
 				},
 				{

@@ -6,6 +6,7 @@
  * (https://mise.jdx.dev/tasks/monorepo.html#task-templates).
  */
 
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { expandPath } from "./fileUtils";
 import { getCachedTomlParser } from "./miseFileParser";
@@ -204,7 +205,9 @@ export function findTaskTemplateUsagesInDocument(
 
 /** Structural type of `MiseService`, which cannot be imported here (cycle) */
 type ConfigFileLister = {
-	getMiseConfigFiles(): Promise<Array<{ path: string }>>;
+	getMiseConfigFiles(options?: {
+		configRootPath?: string;
+	}): Promise<Array<{ path: string }>>;
 };
 
 /**
@@ -283,6 +286,23 @@ export async function collectTaskTemplates(
 	}
 
 	return [...byName.values()];
+}
+
+/**
+ * Templates a file task can extend: the ones of the config files above the
+ * script, which are not the configs of the workspace root when the task
+ * belongs to a monorepo subproject.
+ */
+export async function collectFileTaskTemplates(
+	miseService: ConfigFileLister,
+	document: vscode.TextDocument,
+): Promise<TaskTemplate[]> {
+	const configPaths = (
+		await miseService.getMiseConfigFiles({
+			configRootPath: path.dirname(document.uri.fsPath),
+		})
+	).map((file) => file.path);
+	return collectTaskTemplates(document, configPaths);
 }
 
 /**

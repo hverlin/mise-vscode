@@ -180,10 +180,14 @@ export const flagBlockItems: UsageCompletionItem[] = [
 /** A `#MISE` task configuration line of a file task (also matches `# [MISE]`) */
 export const MISE_COMMENT_RE = /^\s*#\s*(?:MISE|\[MISE\])\s/;
 
-/** The template named by a `#MISE extends="<name>"` line of a file task */
+/**
+ * The template named by a `#MISE extends="<name>"` line of a file task. Only
+ * the header form mise applies: `#` at the start of the line, a space after
+ * `MISE`.
+ */
 export function parseFileTaskExtends(line: string): string | undefined {
 	const match = line.match(
-		/^\s*#\s*(?:MISE|\[MISE\])\s+extends\s*=\s*(?:"([^"]+)"|'([^']+)')/,
+		/^#\s*(?:MISE|\[MISE\]) +extends\s*=\s*(?:"([^"]+)"|'([^']+)')/,
 	);
 	return match?.[1] ?? match?.[2];
 }
