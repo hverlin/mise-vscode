@@ -708,17 +708,33 @@ export function getUsageVariableNames(specLines: string[]): string[] {
 	return [...new Set(names)];
 }
 
-/**
- * The variable an `arg` or `flag` line of a usage spec sets (without the
- * `usage_` prefix), and its quoted declaration, e.g. `"--target <target>"`
- */
+/** An `arg` or `flag` of a usage spec */
+export type UsageDeclaration = {
+	/** the variable it sets, without the `usage_` prefix */
+	name: string;
+	kind: "arg" | "flag";
+	/** quoted, as written, e.g. `"--target <target>"` */
+	declaration: string;
+	/** its `help` attribute */
+	help?: string;
+};
+
+/** The `arg` or `flag` a line of a usage spec declares */
 export function parseUsageDeclaration(
 	specLine: string,
-): { name: string; declaration: string } | undefined {
+): UsageDeclaration | undefined {
 	const trimmed = specLine.trim();
+	const help = trimmed
+		.match(/\shelp="((?:[^"\\]|\\.)*)"/)?.[1]
+		?.replace(/\\(.)/g, "$1");
 	const argMatch = trimmed.match(/^arg\s+("[<[]([^>\]]+)[>\]]")/);
 	if (argMatch?.[1] && argMatch[2]) {
-		return { name: argMatch[2].replace(/-/g, "_"), declaration: argMatch[1] };
+		return {
+			name: argMatch[2].replace(/-/g, "_"),
+			kind: "arg",
+			declaration: argMatch[1],
+			help,
+		};
 	}
 	const flagMatch = trimmed.match(/^flag\s+("([^"]+)")/);
 	if (flagMatch?.[1] && flagMatch[2]) {
@@ -726,7 +742,12 @@ export function parseUsageDeclaration(
 		const short = flagMatch[2].match(/(?:^|\s)-([A-Za-z0-9])(?:\s|$)/);
 		const name = long?.[1] ?? short?.[1];
 		if (name) {
-			return { name: name.replace(/-/g, "_"), declaration: flagMatch[1] };
+			return {
+				name: name.replace(/-/g, "_"),
+				kind: "flag",
+				declaration: flagMatch[1],
+				help,
+			};
 		}
 	}
 	return undefined;

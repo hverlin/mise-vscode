@@ -352,14 +352,20 @@ describe("getUsageVariableNames", () => {
 });
 
 describe("parseUsageDeclaration", () => {
-	test("returns the variable and the quoted declaration", () => {
-		expect(parseUsageDeclaration('  arg "<file>" help="File"')).toEqual({
+	test("returns the variable, the quoted declaration and the help", () => {
+		expect(
+			parseUsageDeclaration('  arg "<file>" help="The \\"main\\" file"'),
+		).toEqual({
 			name: "file",
+			kind: "arg",
 			declaration: '"<file>"',
+			help: 'The "main" file',
 		});
 		expect(parseUsageDeclaration('flag "-n --dry-run"')).toEqual({
 			name: "dry_run",
+			kind: "flag",
 			declaration: '"-n --dry-run"',
+			help: undefined,
 		});
 		expect(parseUsageDeclaration('choices "a" "b"')).toBeUndefined();
 	});

@@ -20,6 +20,7 @@ import {
 	parseFileTaskExtends,
 	parseUsageDeclaration,
 	type UsageCompletionItem,
+	type UsageDeclaration,
 } from "../utils/usageSpec";
 
 const USAGE_COMMENT_RE = /^\s*#\s*(?:USAGE|\[USAGE\])(?:\s(.*))?$/;
@@ -214,8 +215,8 @@ type UsageVariableDeclaration = {
 	targetUri: vscode.Uri;
 	targetRange: vscode.Range;
 	targetSelectionRange: vscode.Range;
-	/** the `arg` or `flag` line, unknown when only the template is found */
-	spec?: string;
+	/** the `arg` or `flag`, unknown when only the template is found */
+	usage?: UsageDeclaration;
 	/** the template whose usage declares the variable */
 	templateName?: string;
 };
@@ -266,12 +267,15 @@ export class UsageVariableProvider
 				? "the `#USAGE` lines"
 				: "the `usage` of the task";
 		const markdown = new vscode.MarkdownString();
-		if (declaration.spec) {
-			const kind = declaration.spec.startsWith("arg") ? "argument" : "flag";
+		if (declaration.usage) {
+			const { kind, help } = declaration.usage;
 			markdown.appendMarkdown(
-				`\`usage_${name}\`: value of this ${kind}, from ${source}`,
+				`\`usage_${name}\`: value of the \`${declaration.usage.declaration.slice(1, -1)}\` ${kind === "arg" ? "argument" : "flag"}, from ${source}`,
 			);
-			markdown.appendCodeblock(declaration.spec, "kdl");
+			if (help) {
+				markdown.appendMarkdown("\n\n");
+				markdown.appendText(help);
+			}
 		} else {
 			markdown.appendMarkdown(`\`usage_${name}\`: from ${source}`);
 		}
@@ -378,7 +382,7 @@ export class UsageVariableProvider
 			const templateDocument = await vscode.workspace.openTextDocument(
 				vscode.Uri.file(template.source),
 			);
-			const headerLine = template.bodyRange.start.line;
+			const headerLine = template.headerRange.start.line;
 			if (/^\s*\[/.test(templateDocument.lineAt(headerLine).text)) {
 				const lines = templateDocument.getText().split("\n");
 				for (const { line, text } of getSectionUsageSpec(
@@ -403,7 +407,7 @@ export class UsageVariableProvider
 			}
 			return {
 				targetUri: templateDocument.uri,
-				targetRange: template.bodyRange,
+				targetRange: template.headerRange,
 				targetSelectionRange: template.nameRange,
 				templateName,
 			};
@@ -439,7 +443,7 @@ function findDeclarationOnLine(
 						line,
 						start + declaration.declaration.length,
 					),
-		spec: spec.trim(),
+		usage: declaration,
 	};
 }
 

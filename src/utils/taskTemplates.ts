@@ -24,8 +24,16 @@ export type TaskTemplate = {
 	fields: Record<string, unknown>;
 	/** the declared name, without the quotes of `[task_templates."a:b"]` */
 	nameRange: vscode.Range;
-	/** the whole entry, so that peeking the definition shows its body */
-	bodyRange: vscode.Range;
+	/**
+	 * the line declaring the name, which go to definition targets: holding cmd
+	 * previews this line, not the body the hover already shows
+	 */
+	headerRange: vscode.Range;
+	/**
+	 * the entry as written: the lines below a `[task_templates.<name>]` header,
+	 * or the `<name> = ...` of the inline and shorthand forms
+	 */
+	text: string;
 };
 
 /** An `extends = "<name>"` reference of a task to a template */
@@ -87,28 +95,22 @@ function narrowToName(
 }
 
 /**
- * A `[task_templates.<name>]` section spans until the next table header. The
- * parser only reports the header line, which would make peeking a definition
- * show a template without its body.
+ * The lines below a `[task_templates.<name>]` header, until the next table
+ * header. The parser only reports the header line.
  */
-function sectionBodyRange(
+function sectionBodyText(
 	document: vscode.TextDocument,
 	headerLine: number,
-): vscode.Range {
-	let lastLine = headerLine;
+): string {
+	const lines: string[] = [];
 	for (let line = headerLine + 1; line < document.lineCount; line++) {
 		const text = document.lineAt(line).text;
 		if (/^\s*\[/.test(text)) {
 			break;
 		}
-		if (text.trim() !== "") {
-			lastLine = line;
-		}
+		lines.push(text);
 	}
-	return new vscode.Range(
-		new vscode.Position(headerLine, 0),
-		document.lineAt(lastLine).range.end,
-	);
+	return lines.join("\n").trim();
 }
 
 /** Templates declared by a single config file */
@@ -140,11 +142,14 @@ export function findTaskTemplatesInDocument(
 			source: document.uri.fsPath,
 			fields: toTemplateFields(entry.value),
 			nameRange: narrowToName(document, entry.keyStart, entry.keyEnd, name),
-			bodyRange: isSectionHeader
-				? sectionBodyRange(document, entry.keyStart.line)
-				: new vscode.Range(
-						toPosition(entry.keyStart),
-						toPosition(entry.valueEnd),
+			headerRange: document.lineAt(entry.keyStart.line).range,
+			text: isSectionHeader
+				? sectionBodyText(document, entry.keyStart.line)
+				: document.getText(
+						new vscode.Range(
+							toPosition(entry.keyStart),
+							toPosition(entry.valueEnd),
+						),
 					),
 		});
 	}
@@ -336,61 +341,21 @@ export async function collectTaskTemplateUsages(
 	return usages;
 }
 
-function formatTomlValue(value: unknown): string {
-	if (typeof value === "string") {
-		return JSON.stringify(value);
-	}
-	if (typeof value === "number" || typeof value === "boolean") {
-		return String(value);
-	}
-	if (Array.isArray(value)) {
-		return `[${value.map(formatTomlValue).join(", ")}]`;
-	}
-	if (value && typeof value === "object") {
-		const entries = Object.entries(value).map(
-			([key, entryValue]) => `${key} = ${formatTomlValue(entryValue)}`,
-		);
-		return `{ ${entries.join(", ")} }`;
-	}
-	return String(value);
-}
-
 /**
- * The template as it is declared, for hovers and completion documentation:
- * the description as text, `run` as a shell block, the rest as TOML.
+ * The template as it is written in its config file, for hovers and
+ * completion documentation
  */
 export function formatTaskTemplateMarkdown(
 	template: TaskTemplate,
 	{ header = true }: { header?: boolean } = {},
 ): vscode.MarkdownString {
 	const markdown = new vscode.MarkdownString();
-	markdown.supportHtml = true;
-
 	if (header) {
 		markdown.appendMarkdown(`**${template.name}** (task template)`);
 	}
-
-	const { description, run, ...rest } = template.fields;
-	if (typeof description === "string" && description) {
-		markdown.appendMarkdown(`${header ? "<br />" : ""}${description}`);
+	if (template.text) {
+		markdown.appendCodeblock(template.text, "toml");
 	}
-
-	if (typeof run === "string") {
-		markdown.appendCodeblock(run, "shell");
-	} else if (Array.isArray(run)) {
-		markdown.appendCodeblock(run.map(String).join("\n"), "shell");
-	}
-
-	const remaining = Object.entries(rest);
-	if (remaining.length) {
-		markdown.appendCodeblock(
-			remaining
-				.map(([key, value]) => `${key} = ${formatTomlValue(value)}`)
-				.join("\n"),
-			"toml",
-		);
-	}
-
 	return markdown;
 }
 

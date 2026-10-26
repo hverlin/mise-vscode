@@ -219,7 +219,7 @@ export class TaskDefinitionProvider implements vscode.DefinitionProvider {
 			{
 				originSelectionRange: templateNameRange,
 				targetUri: vscode.Uri.file(template.source),
-				targetRange: template.bodyRange,
+				targetRange: template.headerRange,
 				targetSelectionRange: template.nameRange,
 			},
 		];
@@ -248,7 +248,7 @@ export class FileTaskTemplateProvider
 			{
 				originSelectionRange: range,
 				targetUri: vscode.Uri.file(template.source),
-				targetRange: template.bodyRange,
+				targetRange: template.headerRange,
 				targetSelectionRange: template.nameRange,
 			},
 		];

@@ -113,9 +113,15 @@ describe("findTaskTemplatesInDocument", () => {
 		// the quotes of the section header are not part of the name
 		expect(positionOf(template?.nameRange.start)).toEqual([0, 17]);
 		expect(positionOf(template?.nameRange.end)).toEqual([0, 29]);
-		// the body stops before the next section
-		expect(template?.bodyRange.start.line).toBe(0);
-		expect(template?.bodyRange.end.line).toBe(3);
+		expect(template?.headerRange.start.line).toBe(0);
+		// the text stops before the next section
+		expect(template?.text).toBe(
+			[
+				'description = "Build a python package"',
+				'run = "uv build"',
+				'tools = { python = "3.12" }',
+			].join("\n"),
+		);
 	});
 
 	it("supports the inline and shorthand forms", () => {
@@ -133,8 +139,10 @@ describe("findTaskTemplatesInDocument", () => {
 			"greet",
 		]);
 		expect(templates[0]?.fields).toEqual({ run: "eslint ." });
+		expect(templates[0]?.text).toBe('lint = { run = "eslint ." }');
 		// a bare string template only declares a command
 		expect(templates[1]?.fields).toEqual({ run: "echo hello" });
+		expect(templates[1]?.headerRange.start.line).toBe(2);
 	});
 
 	it("returns nothing without a task_templates section", () => {
@@ -196,17 +204,18 @@ describe("findTaskTemplateUsagesInDocument", () => {
 });
 
 describe("formatTaskTemplateMarkdown", () => {
-	it("renders the description, the command and the remaining fields", () => {
-		const document = fakeDocument(
-			[
-				"[task_templates.build]",
-				'description = "Build it"',
-				'run = "uv build"',
-				'depends = ["setup"]',
-				'tools = { python = "3.12" }',
-			].join("\n"),
-		);
-		const template = findTaskTemplatesInDocument(document)[0];
+	it("renders the template as written", () => {
+		const body = [
+			'description = "Build it"',
+			'run = "uv build"',
+			"usage = '''",
+			'flag "--target <target>" help="Where to build"',
+			"'''",
+			'tools = { python = "3.12" }',
+		].join("\n");
+		const template = findTaskTemplatesInDocument(
+			fakeDocument(`[task_templates.build]\n${body}`),
+		)[0];
 		expect(template).toBeDefined();
 		if (!template) {
 			return;
@@ -214,10 +223,11 @@ describe("formatTaskTemplateMarkdown", () => {
 
 		const markdown = formatTaskTemplateMarkdown(template).value;
 		expect(markdown).toContain("**build** (task template)");
-		expect(markdown).toContain("Build it");
-		expect(markdown).toContain("uv build");
-		expect(markdown).toContain('depends = ["setup"]');
-		expect(markdown).toContain('tools = { python = "3.12" }');
+		// no escaped quotes or newlines, as when the fields were serialized again
+		expect(markdown).toContain(body);
+		expect(
+			formatTaskTemplateMarkdown(template, { header: false }).value,
+		).not.toContain("task template");
 	});
 
 	it("summarises a template in one line", () => {

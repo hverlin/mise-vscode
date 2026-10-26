@@ -427,6 +427,10 @@ suite("Monorepo Tasks Test Suite", function () {
 				? location.range
 				: (location.targetSelectionRange ?? location.targetRange);
 		assert.equal(targetRange.start.line, expectedLine);
+		// holding cmd previews the header line only: the hover shows the body
+		if ("targetRange" in location) {
+			assert.equal(location.targetRange.end.line, expectedLine);
+		}
 	});
 
 	test("Should complete task template names in extends", async () => {
@@ -602,12 +606,16 @@ suite("Monorepo Tasks Test Suite", function () {
 				uri,
 				new vscode.Position(line, character),
 			);
-			return hovers
-				.flatMap((hover) => hover.contents)
-				.map((content) =>
-					typeof content === "string" ? content : content.value,
-				)
-				.join("\n");
+			return (
+				hovers
+					.flatMap((hover) => hover.contents)
+					.map((content) =>
+						typeof content === "string" ? content : content.value,
+					)
+					.join("\n")
+					// appendText writes spaces as &nbsp;
+					.replace(/&nbsp;/g, " ")
+			);
 		};
 
 		const extendsLine = lines.findIndex((line) =>
@@ -619,8 +627,12 @@ suite("Monorepo Tasks Test Suite", function () {
 		);
 		assert.ok(
 			template.includes("**backend-script** (task template)") &&
+				// as written, not serialized again with escaped quotes
+				template.includes(
+					`usage = 'flag "--target <target>" help="Database to use"'`,
+				) &&
 				template.includes("projects/backend/mise.toml"),
-			`expected the template and its config, got ${template}`,
+			`expected the template as written and its config, got ${template}`,
 		);
 
 		const varLine = lines.findIndex((line) => line.includes("$usage_target"));
@@ -629,9 +641,10 @@ suite("Monorepo Tasks Test Suite", function () {
 			(lines[varLine] ?? "").indexOf("usage_target") + 1,
 		);
 		assert.ok(
-			variable.includes('flag "--target <target>"') &&
+			variable.includes("value of the `--target <target>` flag") &&
+				variable.includes("Database to use") &&
 				variable.includes("`backend-script` template"),
-			`expected the flag and its template, got ${variable}`,
+			`expected the flag, its help and its template, got ${variable}`,
 		);
 	});
 

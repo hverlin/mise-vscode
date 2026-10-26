@@ -324,9 +324,12 @@ suite("Usage Spec Test Suite", function () {
 		const hover = hovers
 			.flatMap(({ contents }) => contents)
 			.map((content) => (typeof content === "string" ? content : content.value))
-			.join("\n");
+			.join("\n")
+			// appendText writes spaces as &nbsp;
+			.replace(/&nbsp;/g, " ");
 		assert.ok(
-			hover.includes('flag "--force" help="Force the run"') &&
+			hover.includes("value of the `--force` flag") &&
+				hover.includes("Force the run") &&
 				hover.includes("`#USAGE` lines"),
 			`expected the declaration in the hover, got ${hover}`,
 		);
