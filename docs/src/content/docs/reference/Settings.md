@@ -66,7 +66,7 @@ Mise environment to use. (https://mise.jdx.dev/configuration/environments.html)
 - **Type:** `boolean`
 - **Default:** `false`
 
-Automatically configure extensions for the current workspace. ([list of supported extensions](https://github.com/hverlin/mise-vscode/wiki/Supported-extensions)).
+Automatically configure extensions for the current workspace. ([list of supported extensions](https://hverlin.github.io/mise-vscode/reference/supported-extensions/)).
 
 This will modify your workspace settings (`.vscode/settings.json`). You can use the ignore/include lists settings to customize which extensions are configured.
 
