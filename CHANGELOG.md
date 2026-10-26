@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.32.0](https://github.com/hverlin/mise-vscode/compare/v1.31.4...v1.32.0) (2026-10-26)
+
+
+### Features
+
+* keep tool symlinks up to date without writing settings ([#369](https://github.com/hverlin/mise-vscode/issues/369)) ([15285ff](https://github.com/hverlin/mise-vscode/commit/15285ff9b36e4af4342f614be3bad689e9e76bce))
+* point SDK folder settings at mise's global link ([#370](https://github.com/hverlin/mise-vscode/issues/370)) ([607b24c](https://github.com/hverlin/mise-vscode/commit/607b24ca9c4ea758b7da5e07cc83c3833a7d0783))
+* support the mise 2026.10.18-19 additions, go to definition for file task templates and usage variables ([#389](https://github.com/hverlin/mise-vscode/issues/389)) ([d380fe6](https://github.com/hverlin/mise-vscode/commit/d380fe6d2715ff16e6c4730ba216f67d0a3f8d58))
+
 ## [1.31.4](https://github.com/hverlin/mise-vscode/compare/v1.31.3...v1.31.4) (2026-10-25)
 
 
