@@ -2422,13 +2422,23 @@ export class MiseService {
 		return `${stdout}\n${stderr}`;
 	}
 
-	async getMiseConfigFiles() {
+	async getMiseConfigFiles({
+		configRootPath = undefined,
+	}: {
+		/** List the configs of this directory instead of the workspace root (monorepo project) */
+		configRootPath?: string;
+	} = {}) {
 		if (!this.getMiseBinaryPath()) {
 			return [];
 		}
 
 		const { stdout } = await this.cache.execCmd({
-			args: ["config", "ls", "--json"],
+			args: [
+				...(configRootPath ? ["-C", configRootPath] : []),
+				"config",
+				"ls",
+				"--json",
+			],
 			retainOnParseError: true,
 		});
 		return JSON.parse(stdout) as Array<{

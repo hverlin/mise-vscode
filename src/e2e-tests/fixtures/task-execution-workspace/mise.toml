@@ -18,3 +18,8 @@ run = '''
 echo "${usage_greeting?} ${usage_name?}"
 echo $usage_
 '''
+
+[task_templates.file-task-template]
+usage = '''
+flag "--profile <profile>" help="Profile to use"
+'''

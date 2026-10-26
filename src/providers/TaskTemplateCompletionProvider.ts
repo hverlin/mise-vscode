@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { isMiseExtensionEnabled } from "../configuration";
 import type { MiseService } from "../miseService";
 import {
+	collectFileTaskTemplates,
 	collectTaskTemplates,
 	formatTaskTemplateDetail,
 	formatTaskTemplateMarkdown,
@@ -50,10 +51,14 @@ export class TaskTemplateCompletionProvider
 			return [];
 		}
 
-		const configPaths = (await this.miseService.getMiseConfigFiles()).map(
-			(file) => file.path,
-		);
-		const templates = await collectTaskTemplates(document, configPaths);
+		const templates = isFileTask
+			? await collectFileTaskTemplates(this.miseService, document)
+			: await collectTaskTemplates(
+					document,
+					(await this.miseService.getMiseConfigFiles()).map(
+						(file) => file.path,
+					),
+				);
 
 		// the name may hold `:` and `/`, which are not word characters: replacing
 		// an explicit range keeps what was already typed from being duplicated

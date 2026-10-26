@@ -39,6 +39,25 @@ suite("Usage Spec Test Suite", function () {
 		);
 	};
 
+	/** The text of the line the definition at a position leads to, in the same file */
+	const getDefinitionLineText = async (
+		document: vscode.TextDocument,
+		position: vscode.Position,
+	) => {
+		const locations = await vscode.commands.executeCommand<
+			(vscode.Location | vscode.LocationLink)[]
+		>("vscode.executeDefinitionProvider", document.uri, position);
+		assert.equal(locations.length, 1, "one definition should resolve");
+		const location = locations[0] as vscode.Location | vscode.LocationLink;
+		if (!("targetUri" in location)) {
+			return document.lineAt(location.range.start.line).text;
+		}
+		assert.equal(location.targetUri.fsPath, document.uri.fsPath);
+		return document.lineAt(
+			(location.targetSelectionRange ?? location.targetRange).start.line,
+		).text;
+	};
+
 	test("getTaskInfo parses args and flags from the usage spec", async () => {
 		const miseService = new MiseService(fakeContext);
 		await miseService.initializeMisePath();
@@ -280,6 +299,79 @@ suite("Usage Spec Test Suite", function () {
 		assert.ok(
 			labels.includes("usage_force"),
 			`Expected usage variables from #USAGE lines, got: ${labels.join(", ")}`,
+		);
+	});
+
+	test("goes to the #USAGE line declaring a variable of a shell file task", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "file-task.sh"),
+		);
+		const lines = document.getText().split("\n");
+		const line = lines.findIndex((text) => text.includes("$usage_force"));
+		assert.ok(line > 0, "fixture should reference $usage_force");
+
+		const target = await getDefinitionLineText(
+			document,
+			new vscode.Position(line, (lines[line] ?? "").indexOf("usage_force") + 2),
+		);
+		assert.equal(target, '#USAGE flag "--force" help="Force the run"');
+
+		const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
+			"vscode.executeHoverProvider",
+			document.uri,
+			new vscode.Position(line, (lines[line] ?? "").indexOf("usage_force") + 2),
+		);
+		const hover = hovers
+			.flatMap(({ contents }) => contents)
+			.map((content) => (typeof content === "string" ? content : content.value))
+			.join("\n")
+			// appendText writes spaces as &nbsp;
+			.replace(/&nbsp;/g, " ");
+		assert.ok(
+			hover.includes("value of the `--force` flag") &&
+				hover.includes("Force the run") &&
+				hover.includes("`#USAGE` lines"),
+			`expected the declaration in the hover, got ${hover}`,
+		);
+	});
+
+	test("goes to the usage field declaring a variable of a TOML task", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "mise.toml"),
+		);
+		const lines = document.getText().split("\n");
+		const line = lines.findIndex((text) => text.includes("usage_greeting?}"));
+		assert.ok(line > 0, "fixture should reference usage_greeting");
+
+		const target = await getDefinitionLineText(
+			document,
+			new vscode.Position(
+				line,
+				(lines[line] ?? "").indexOf("usage_greeting") + 2,
+			),
+		);
+		assert.ok(
+			target.includes('flag "--greeting <greeting>"'),
+			`expected the --greeting flag, got ${target}`,
+		);
+	});
+
+	test("offers the usage variables of the template a shell file task extends", async () => {
+		const document = await vscode.workspace.openTextDocument(
+			path.join(workspaceRoot, "templated-file-task.sh"),
+		);
+
+		const lines = document.getText().split("\n");
+		const varLine = lines.findIndex((line) => line.startsWith("echo $usage_"));
+		assert.ok(varLine > 0, "fixture should contain the echo $usage_ line");
+
+		const labels = await getCompletionLabels(
+			document.uri,
+			new vscode.Position(varLine, "echo $usage_".length),
+		);
+		assert.ok(
+			labels.includes("usage_profile") && labels.includes("usage_own"),
+			`Expected usage variables from the template and #USAGE lines, got: ${labels.join(", ")}`,
 		);
 	});
 

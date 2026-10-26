@@ -86,6 +86,7 @@ suite("Tera Completion Test Suite", function () {
 			"libc",
 			"avx2",
 			"system_brew_prefix",
+			"mise_config_dir",
 			"config_source",
 			"set_global",
 		]) {

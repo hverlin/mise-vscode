@@ -20,3 +20,7 @@ depends = ["build --quick", "fmt"]
 
 [tasks.info]
 extends = "project-info"
+
+# only declared in this subproject, see templated-script.sh
+[task_templates.backend-script]
+usage = 'flag "--target <target>" help="Database to use"'

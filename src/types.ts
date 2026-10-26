@@ -83,7 +83,8 @@ type MiseProjectCheck = {
 	description: string | null;
 	/** config file declaring the check */
 	source: string;
-	status: "pass" | "fail" | "error" | "skipped";
+	/** `blocked`: a check it `depends` on did not pass (mise 2026.10.18+) */
+	status: "pass" | "fail" | "error" | "blocked" | "skipped";
 	message: string | null;
 	hint: string | null;
 };

@@ -427,6 +427,10 @@ suite("Monorepo Tasks Test Suite", function () {
 				? location.range
 				: (location.targetSelectionRange ?? location.targetRange);
 		assert.equal(targetRange.start.line, expectedLine);
+		// holding cmd previews the header line only: the hover shows the body
+		if ("targetRange" in location) {
+			assert.equal(location.targetRange.end.line, expectedLine);
+		}
 	});
 
 	test("Should complete task template names in extends", async () => {
@@ -492,6 +496,156 @@ suite("Monorepo Tasks Test Suite", function () {
 				`expected ${expected} in ${JSON.stringify(labels)}`,
 			);
 		}
+	});
+
+	test("A file task of a subproject resolves the templates of its own config", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "backend", "templated-script.sh"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+		const lines = document.getText().split("\n");
+		const labelsAt = async (line: number, character: number) => {
+			const completions =
+				await vscode.commands.executeCommand<vscode.CompletionList>(
+					"vscode.executeCompletionItemProvider",
+					uri,
+					new vscode.Position(line, character),
+				);
+			return completions.items.map((item) =>
+				typeof item.label === "string" ? item.label : item.label.label,
+			);
+		};
+
+		const extendsLine = lines.findIndex((line) =>
+			line.startsWith("#MISE extends="),
+		);
+		assert.ok(extendsLine >= 0, "#MISE extends line should be in the fixture");
+		const names = await labelsAt(
+			extendsLine,
+			(lines[extendsLine] ?? "").indexOf('"') + 1,
+		);
+		for (const expected of ["backend-script", "project-info"]) {
+			assert.ok(
+				names.includes(expected),
+				`expected ${expected} in ${JSON.stringify(names)}`,
+			);
+		}
+
+		const varLine = lines.findIndex((line) => line.startsWith("echo $usage_"));
+		assert.ok(varLine >= 0, "echo $usage_ line should be in the fixture");
+		const variables = await labelsAt(varLine, "echo $usage_".length);
+		assert.ok(
+			variables.includes("usage_target"),
+			`expected the usage of the subproject template in ${JSON.stringify(variables)}`,
+		);
+	});
+
+	test("Go to definition in a file task leads to its template and usage", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "backend", "templated-script.sh"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+		const lines = document.getText().split("\n");
+		const definitionAt = async (line: number, character: number) => {
+			const locations = await vscode.commands.executeCommand<
+				(vscode.Location | vscode.LocationLink)[]
+			>(
+				"vscode.executeDefinitionProvider",
+				uri,
+				new vscode.Position(line, character),
+			);
+			assert.equal(locations.length, 1, "one definition should resolve");
+			const location = locations[0] as vscode.Location | vscode.LocationLink;
+			const targetUri =
+				"targetUri" in location ? location.targetUri : location.uri;
+			const targetLine =
+				"targetUri" in location
+					? (location.targetSelectionRange ?? location.targetRange).start.line
+					: location.range.start.line;
+			const target = await vscode.workspace.openTextDocument(targetUri);
+			return { path: targetUri.fsPath, text: target.lineAt(targetLine).text };
+		};
+		const backendConfig = path.join(
+			workspaceRoot,
+			"projects",
+			"backend",
+			"mise.toml",
+		);
+
+		const extendsLine = lines.findIndex((line) =>
+			line.startsWith("#MISE extends="),
+		);
+		const template = await definitionAt(
+			extendsLine,
+			(lines[extendsLine] ?? "").indexOf("backend-script") + 1,
+		);
+		assert.equal(template.path, backendConfig);
+		assert.equal(template.text, "[task_templates.backend-script]");
+
+		const varLine = lines.findIndex((line) => line.includes("$usage_target"));
+		const flag = await definitionAt(
+			varLine,
+			(lines[varLine] ?? "").indexOf("usage_target") + 1,
+		);
+		assert.equal(flag.path, backendConfig);
+		assert.ok(
+			flag.text.includes('flag "--target <target>"'),
+			`expected the flag declaration, got ${flag.text}`,
+		);
+	});
+
+	test("Hovering a file task's template and usage variable explains them", async () => {
+		const uri = vscode.Uri.file(
+			path.join(workspaceRoot, "projects", "backend", "templated-script.sh"),
+		);
+		const document = await vscode.workspace.openTextDocument(uri);
+		const lines = document.getText().split("\n");
+		const hoverAt = async (line: number, character: number) => {
+			const hovers = await vscode.commands.executeCommand<vscode.Hover[]>(
+				"vscode.executeHoverProvider",
+				uri,
+				new vscode.Position(line, character),
+			);
+			return (
+				hovers
+					.flatMap((hover) => hover.contents)
+					.map((content) =>
+						typeof content === "string" ? content : content.value,
+					)
+					.join("\n")
+					// appendText writes spaces as &nbsp;
+					.replace(/&nbsp;/g, " ")
+			);
+		};
+
+		const extendsLine = lines.findIndex((line) =>
+			line.startsWith("#MISE extends="),
+		);
+		const template = await hoverAt(
+			extendsLine,
+			(lines[extendsLine] ?? "").indexOf("backend-script") + 1,
+		);
+		assert.ok(
+			template.includes("**backend-script** (task template)") &&
+				// as written, not serialized again with escaped quotes
+				template.includes(
+					`usage = 'flag "--target <target>" help="Database to use"'`,
+				) &&
+				template.includes("projects/backend/mise.toml"),
+			`expected the template as written and its config, got ${template}`,
+		);
+
+		const varLine = lines.findIndex((line) => line.includes("$usage_target"));
+		const variable = await hoverAt(
+			varLine,
+			(lines[varLine] ?? "").indexOf("usage_target") + 1,
+		);
+		assert.ok(
+			variable.includes("value of the `--target <target>` flag") &&
+				variable.includes("Database to use") &&
+				variable.includes("`backend-script` template"),
+			`expected the flag, its help and its template, got ${variable}`,
+		);
 	});
 
 	test("Should show the resolved template when hovering extends", async () => {

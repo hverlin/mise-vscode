@@ -3,11 +3,18 @@ import type { KeyPosition, SourcePosition } from "./miseFileParser";
 type CheckStatus = MiseProjectCheck["status"];
 
 /** The checks needing attention first */
-const STATUS_ORDER: CheckStatus[] = ["fail", "error", "skipped", "pass"];
+const STATUS_ORDER: CheckStatus[] = [
+	"fail",
+	"error",
+	"blocked",
+	"skipped",
+	"pass",
+];
 
 const STATUS_LABELS: Record<CheckStatus, string> = {
 	fail: "failed",
 	error: "could not run",
+	blocked: "blocked",
 	skipped: "skipped",
 	pass: "passed",
 };
@@ -16,6 +23,7 @@ const STATUS_LABELS: Record<CheckStatus, string> = {
 export const PROJECT_CHECK_ICONS: Record<CheckStatus, string> = {
 	fail: "error",
 	error: "warning",
+	blocked: "debug-pause",
 	skipped: "circle-slash",
 	pass: "pass",
 };

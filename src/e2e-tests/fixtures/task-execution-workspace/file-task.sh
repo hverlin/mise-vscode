@@ -5,4 +5,5 @@
 # [USAGE] f
 # [MISE] d
 echo "file task fixture for usage completions"
+echo "$usage_force"
 echo $usage_
