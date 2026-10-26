@@ -89,6 +89,7 @@ import { MiseTomlTaskSymbolProvider } from "./providers/MiseTomlTaskSymbolProvid
 import { registerMcpServers } from "./providers/mcpServers";
 import { MiseCompletionProvider } from "./providers/miseCompletionProvider";
 import { MiseFileTaskCodeLensProvider } from "./providers/miseFileTaskCodeLensProvider";
+import { MiseLanguageServer } from "./providers/miseLanguageServer";
 import { MiseSnippetProvider } from "./providers/miseSnippetProvider";
 import {
 	createTeraHoverProvider,
@@ -402,8 +403,13 @@ export class MiseExtension {
 			this.miseService,
 		);
 		context.subscriptions.push(taskValidationDiagnostics);
-		const configKeyDiagnostics = new ConfigKeyDiagnostics(this.miseService);
+		const languageServer = new MiseLanguageServer(this.miseService);
+		const configKeyDiagnostics = new ConfigKeyDiagnostics(
+			this.miseService,
+			() => languageServer.isRunning,
+		);
 		context.subscriptions.push(
+			languageServer,
 			configKeyDiagnostics,
 			vscode.languages.registerCodeActionsProvider(
 				{ language: "toml" },
@@ -511,7 +517,10 @@ export class MiseExtension {
 				// once the configs are trusted, and also when the reload stopped early
 				// (extension disabled, binary not approved) to clear them
 				taskValidationDiagnostics.scheduleRefresh();
-				configKeyDiagnostics.scheduleRefresh();
+				// `mise lsp` replaces the config diagnostics while it runs
+				void languageServer
+					.sync()
+					.finally(() => configKeyDiagnostics.scheduleRefresh());
 				daemonsService.forgetPitchfork();
 				void daemonsProvider.refresh();
 				void daemonsSession.sync();

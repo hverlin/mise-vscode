@@ -436,6 +436,16 @@
           "default": true,
           "markdownDescription": "Show in the Problems panel the keys of mise config files that mise does not read (e.g. a typo, with the key it most likely meant and a quick fix) or that are deprecated, from [`mise config explain`](https://mise.jdx.dev/cli/config/explain.html). A key that Tombi or Even Better TOML already reports only gets the quick fix. Requires mise `2026.10.14` or later."
         },
+        "mise.enableLanguageServer": {
+          "order": 10.67,
+          "type": "boolean",
+          "title": "Enable the mise language server (experimental)",
+          "default": false,
+          "tags": [
+            "experimental"
+          ],
+          "markdownDescription": "Experimental: run [`mise lsp`](https://mise.jdx.dev/cli/lsp.html) for the mise config files, as you type: diagnostics (TOML syntax, unknown keys, wrong types, deprecated keys, unknown tasks) with quick fixes, completion and hover of the keys, formatting as `mise fmt` does, and rename of tasks. Replaces the config diagnostics (`#mise.enableConfigDiagnostics#`) while it runs. Task and tool names, go to definition and references still come from this extension. When Tombi or Even Better TOML is installed, they keep key completion, hover and formatting, and problems they already report are not shown twice. Requires mise `2026.10.18` or later."
+        },
         "mise.enableTaskDiagnostics": {
           "order": 10.65,
           "type": "boolean",
@@ -1808,6 +1818,7 @@
     "react-dom": "19.3.1",
     "react-error-boundary": "^6.1.6",
     "toml-v1": "^1.0.0",
+    "vscode-languageclient": "^10.1.2",
     "zustand": "^5.0.16"
   }
 }

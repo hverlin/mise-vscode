@@ -663,6 +663,19 @@ module.exports = defineConfig([
 		},
 	},
 	{
+		label: "language-server",
+		files: "src/e2e-tests/language-server/*.e2e.ts",
+		workspaceFolder: path.join(fixturesPath, "language-server-workspace"),
+		env: {
+			MISE_CEILING_PATHS: fixturesPath,
+			MISE_TRUSTED_CONFIG_PATHS: fixturesPath,
+		},
+		mocha: {
+			require: ["tsx/cjs"],
+			timeout: 60_000,
+		},
+	},
+	{
 		label: "daemons",
 		files: "src/e2e-tests/daemons/*.e2e.ts",
 		workspaceFolder: path.join(fixturesPath, "daemons-workspace"),

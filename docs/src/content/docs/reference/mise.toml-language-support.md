@@ -222,6 +222,27 @@ Task files included with `task_config.includes` are left out. Turn it off with
 Tombi and Even Better TOML check the same schema, and report some of these keys
 themselves: a key one of them already reports only gets the quick fix.
 
+### mise language server (experimental)
+
+With `mise.enableLanguageServer`, the extension runs
+[`mise lsp`](https://mise.jdx.dev/cli/lsp.html) (mise 2026.10.18+) for the
+config files. It checks them as you type, before they are saved: TOML syntax,
+unknown and deprecated keys, values of the wrong type and unknown tasks, with
+quick fixes. It also completes and documents the keys, formats the file as
+`mise fmt` does, and renames a task with its references in the file. It
+replaces the checks of `mise config explain` above.
+
+The extension keeps its own task and tool names, go to definition and
+references: it gets them from the tasks and tools mise resolves (file tasks,
+monorepos, installed versions). While `mise.enableTaskDiagnostics` is on,
+unknown tasks and cycles are reported by `mise tasks validate`, once the file
+is saved. With Tombi or Even Better TOML installed, they keep completing,
+documenting and formatting the keys, and a problem one of them already reports
+only gets the quick fix.
+
+The server only parses the files: it never renders templates or runs
+anything. Its logs are in the "mise language server" output channel.
+
 ### When a config file changes
 
 The extension reloads when a file mise reads changes: the config files, the
