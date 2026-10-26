@@ -168,6 +168,8 @@ using your package manager.
 
 - See [intellij-mise](https://github.com/134130/intellij-mise) if you are
   looking for a similar plugin for IntelliJ IDEA
+- See [mise-zed](https://github.com/hverlin/mise-zed) if you are looking for a
+  similar extension for Zed
 - [Mise documentation](https://mise.jdx.dev/)
 
 ## License
