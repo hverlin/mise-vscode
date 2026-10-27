@@ -15,7 +15,7 @@ env:
   # the mise release the extension was last reviewed against: bump it after
   # going through the releases since (https://github.com/jdx/mise/releases).
   # Set in ci.yml and publish.yml
-  REVIEWED_MISE_VERSION: "2026.10.14"
+  REVIEWED_MISE_VERSION: "2026.10.20"
 
 jobs:
   build:
