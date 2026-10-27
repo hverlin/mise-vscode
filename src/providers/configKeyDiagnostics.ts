@@ -19,6 +19,7 @@ import {
 	isTaskInclude,
 } from "../utils/configFilesToExplain";
 import { expandPath } from "../utils/fileUtils";
+import { SCHEMA_DIAGNOSTIC_SOURCE } from "../utils/languageServer";
 import { logger } from "../utils/logger";
 import { isMiseConfigPath } from "../utils/miseUtilts";
 import { getConfigRootPaths } from "../utils/taskNames";
@@ -28,13 +29,6 @@ const REFRESH_DELAY_MS = 500;
 
 export const UNKNOWN_KEY = "unknown-key";
 export const DEPRECATED_KEY = "deprecated-key";
-
-/**
- * How Tombi and Even Better TOML name their diagnostics. They check mise
- * config files against the mise schema, associated by the JSON Schema Store
- * catalog they use, the schema `mise config explain` uses too.
- */
-const SCHEMA_DIAGNOSTIC_SOURCE = /tombi|even better toml|taplo/i;
 
 /** a mise config file of the disk */
 const isMiseConfigUri = (uri: vscode.Uri) =>
@@ -175,7 +169,14 @@ export class ConfigKeyDiagnostics implements vscode.Disposable {
 			}
 		});
 
-	constructor(private readonly miseService: MiseService) {}
+	/**
+	 * @param servedByLanguageServer whether `mise lsp` reports the problems of
+	 * the config files instead
+	 */
+	constructor(
+		private readonly miseService: MiseService,
+		private readonly servedByLanguageServer: () => boolean = () => false,
+	) {}
 
 	/** The unknown keys of a file with a key to change them to */
 	getSuggestions(filePath: string): ConfigKeyProblem[] {
@@ -205,6 +206,7 @@ export class ConfigKeyDiagnostics implements vscode.Disposable {
 		return (
 			isMiseExtensionEnabled() &&
 			areConfigDiagnosticsEnabled() &&
+			!this.servedByLanguageServer() &&
 			!this.miseService.pendingBinaryApproval
 		);
 	}

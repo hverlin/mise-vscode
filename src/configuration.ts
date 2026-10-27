@@ -43,6 +43,7 @@ export const CONFIGURATION_FLAGS = {
 	enableTaskSymbolProvider: "enableTaskSymbolProvider",
 	enableTaskDiagnostics: "enableTaskDiagnostics",
 	enableConfigDiagnostics: "enableConfigDiagnostics",
+	enableLanguageServer: "enableLanguageServer",
 	autoStartStopDaemons: "autoStartStopDaemons",
 	notifyDaemonFailures: "notifyDaemonFailures",
 	mcpServers: "mcpServers",
@@ -347,6 +348,10 @@ export const areTaskDiagnosticsEnabled = () => {
 
 export const areConfigDiagnosticsEnabled = () => {
 	return getConfOrElse(CONFIGURATION_FLAGS.enableConfigDiagnostics, true);
+};
+
+export const isLanguageServerEnabled = () => {
+	return getConfOrElse(CONFIGURATION_FLAGS.enableLanguageServer, false);
 };
 
 export const shouldResolveMonorepoProjectConfigs = () => {

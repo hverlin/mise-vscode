@@ -285,6 +285,14 @@ Show in the Problems panel the keys of mise config files that mise does not read
 
 ---
 
+##### `mise.enableLanguageServer`
+- **Type:** `boolean`
+- **Default:** `false`
+
+Experimental: run [`mise lsp`](https://mise.jdx.dev/cli/lsp.html) for the mise config files, as you type: diagnostics (TOML syntax, unknown keys, wrong types, deprecated keys, unknown tasks) with quick fixes, completion and hover of the keys, formatting as `mise fmt` does, and rename of tasks. Replaces the config diagnostics (`mise.enableConfigDiagnostics`) while it runs, so config files that are not open are no longer checked. Task and tool names, go to definition and references still come from this extension. When Tombi or Even Better TOML is installed, they keep key completion, hover and formatting, and problems they already report are not shown twice. Requires mise `2026.10.18` or later.
+
+---
+
 ##### `mise.resolveMonorepoProjectConfigs`
 - **Type:** `boolean`
 - **Default:** `true`

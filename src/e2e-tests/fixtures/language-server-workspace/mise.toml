@@ -1,0 +1,12 @@
+# the language server e2e suite reads this file, and changes nothing in it
+[settings]
+experimantal = true
+
+[tasks.build]
+description = "Build it"
+run = "echo build"
+depends = ["lint"]
+
+[tasks.lint]
+description = "Lint it"
+run   =  "echo lint"

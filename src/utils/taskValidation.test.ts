@@ -237,6 +237,28 @@ lint = "eslint ."`;
 		expect(find("elsewhere", { keys: [] })).toBeUndefined();
 	});
 
+	it("points at the name of a dependency that has arguments", () => {
+		const withArgs = `# tasks
+[tasks.check]
+depends = ["lintx", "lint --fix", 'test -v']`;
+		const findIn = (value: string) =>
+			findTomlTaskIssueRange(
+				new TomlParser<object>(withArgs).getAllPositions(),
+				withArgs.split("\n"),
+				[["tasks", "check"]],
+				{ keys: ["depends"], value },
+			);
+		// not `"lintx"`
+		expect(findIn("lint")).toEqual({
+			start: { line: 2, character: 21 },
+			end: { line: 2, character: 25 },
+		});
+		expect(findIn("test")).toEqual({
+			start: { line: 2, character: 35 },
+			end: { line: 2, character: 39 },
+		});
+	});
+
 	it("finds the value in any of the keys of the category", () => {
 		const withPost = `# tasks
 [tasks.deploy]
