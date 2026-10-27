@@ -411,6 +411,8 @@ export class MiseExtension {
 		context.subscriptions.push(
 			languageServer,
 			configKeyDiagnostics,
+			// the config diagnostics come back when the server gives up
+			languageServer.onDidStop(() => configKeyDiagnostics.scheduleRefresh()),
 			vscode.languages.registerCodeActionsProvider(
 				{ language: "toml" },
 				new ConfigKeyQuickFixProvider(configKeyDiagnostics),

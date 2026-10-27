@@ -2,12 +2,15 @@ import { stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as vscode from "vscode";
 import {
+	CloseAction,
 	type DocumentSelector,
+	ErrorAction,
+	type ErrorHandler,
 	LanguageClient,
 	RevealOutputChannelOn,
+	State,
 } from "vscode-languageclient/node";
 import {
-	areTaskDiagnosticsEnabled,
 	isLanguageServerEnabled,
 	isMiseExtensionEnabled,
 } from "../configuration";
@@ -41,7 +44,7 @@ export const MISE_CONFIG_SELECTOR = [
  * Whether this mise has `mise lsp` (2026.10.18+). A mise without it takes
  * `lsp` for a task name, and `mise lsp --help` shows the help of a task named
  * `lsp`, whose description can look like the command's: `mise help lsp` shows
- * mise's own.
+ * mise's own. False also when mise could not answer, e.g. in time.
  */
 async function hasLanguageServer(binPath: string): Promise<boolean> {
 	try {
@@ -72,9 +75,20 @@ export class MiseLanguageServer implements vscode.Disposable {
 	private client: LanguageClient | undefined;
 	/** what the client runs with, see ServerOptions */
 	private running: string | undefined;
-	/** whether each binary has `mise lsp`, by path and mtime: mise updates itself in place */
-	private readonly supported = new Map<string, Promise<boolean>>();
+	/** a client that gave up restarting the server, disposed on the next stop */
+	private stopped: LanguageClient | undefined;
+	private disposed = false;
+	/** the binaries that have `mise lsp`, by path and mtime: mise updates itself in place */
+	private readonly supported = new Set<string>();
 	private syncing: Promise<void> = Promise.resolve();
+	/** shared by the clients, so that the logs of a crash stay after a restart */
+	private readonly outputChannel = vscode.window.createOutputChannel(
+		"mise language server",
+		{ log: true },
+	);
+	private readonly stopEmitter = new vscode.EventEmitter<void>();
+	/** The server stopped on its own, after crashing too often */
+	readonly onDidStop = this.stopEmitter.event;
 	/** the diagnostics of the server, by document, see publish */
 	private readonly reported = new Map<string, vscode.Diagnostic[]>();
 	/** the diagnostics of the server not shown, kept for their quick fixes */
@@ -112,6 +126,9 @@ export class MiseLanguageServer implements vscode.Disposable {
 	sync(): Promise<void> {
 		this.syncing = this.syncing
 			.then(async () => {
+				if (this.disposed) {
+					return;
+				}
 				const options = await this.wantedOptions();
 				const key = options && JSON.stringify(options);
 				if (key === this.running) {
@@ -145,14 +162,14 @@ export class MiseLanguageServer implements vscode.Disposable {
 			() => undefined,
 		);
 		const key = `${binPath}:${modified}`;
-		let supported = this.supported.get(key);
-		if (!supported) {
-			supported = hasLanguageServer(binPath);
-			this.supported.set(key, supported);
-		}
-		if (!(await supported)) {
-			logger.info(`${binPath} has no \`mise lsp\` (mise 2026.10.18+)`);
-			return undefined;
+		// only a binary that has it is remembered: a check that timed out is
+		// done again on the next reload
+		if (!this.supported.has(key)) {
+			if (!(await hasLanguageServer(binPath))) {
+				logger.info(`${binPath} has no \`mise lsp\` (mise 2026.10.18+)`);
+				return undefined;
+			}
+			this.supported.add(key);
 		}
 		const hasTomlExtension = TOML_EXTENSION_IDS.some(
 			(id) => vscode.extensions.getExtension(id) !== undefined,
@@ -164,7 +181,12 @@ export class MiseLanguageServer implements vscode.Disposable {
 	}
 
 	private async start({ binPath, initializationOptions }: ServerOptions) {
-		const client = new LanguageClient(
+		let defaultErrorHandler: ErrorHandler | undefined;
+		const errorHandler = (): ErrorHandler => {
+			defaultErrorHandler ??= client.createDefaultErrorHandler();
+			return defaultErrorHandler;
+		};
+		const client: LanguageClient = new LanguageClient(
 			"mise",
 			"mise language server",
 			{
@@ -178,7 +200,25 @@ export class MiseLanguageServer implements vscode.Disposable {
 			{
 				documentSelector: MISE_CONFIG_SELECTOR as DocumentSelector,
 				initializationOptions,
+				outputChannel: this.outputChannel,
 				revealOutputChannelOn: RevealOutputChannelOn.Never,
+				// restarts the server like the default, but notices when it gives up
+				errorHandler: {
+					error: async (error, message, count) => {
+						const result = await errorHandler().error(error, message, count);
+						if (result.action === ErrorAction.Shutdown) {
+							this.gaveUp(client);
+						}
+						return result;
+					},
+					closed: async () => {
+						const result = await errorHandler().closed();
+						if (result.action === CloseAction.DoNotRestart) {
+							this.gaveUp(client);
+						}
+						return result;
+					},
+				},
 				middleware: {
 					handleDiagnostics: (uri, diagnostics, next) => {
 						this.reported.set(uri.toString(), diagnostics);
@@ -244,6 +284,23 @@ export class MiseLanguageServer implements vscode.Disposable {
 	}
 
 	/**
+	 * The server crashed too often and is not restarted: what it replaces comes
+	 * back, and it starts again on the next reload
+	 */
+	private gaveUp(client: LanguageClient) {
+		if (this.client !== client) {
+			return;
+		}
+		logger.warn("mise lsp stopped, it starts again on the next reload");
+		this.client = undefined;
+		this.running = undefined;
+		this.stopped = client;
+		this.reported.clear();
+		this.hidden.clear();
+		this.stopEmitter.fire();
+	}
+
+	/**
 	 * The diagnostics of the server to show, but those another extension
 	 * already reports, see splitDiagnostics
 	 */
@@ -251,27 +308,37 @@ export class MiseLanguageServer implements vscode.Disposable {
 		const { shown, hidden } = splitDiagnostics(
 			diagnostics,
 			vscode.languages.getDiagnostics(uri),
-			areTaskDiagnosticsEnabled(),
 		);
 		this.hidden.set(uri.toString(), hidden);
 		return shown;
 	}
 
 	private async stop() {
-		const client = this.client;
+		const clients = [this.client, this.stopped].filter(
+			(client) => client !== undefined,
+		);
 		this.client = undefined;
+		this.stopped = undefined;
 		this.running = undefined;
 		this.reported.clear();
 		this.hidden.clear();
-		if (client) {
+		for (const client of clients) {
 			logger.info("Stopping mise lsp");
-			await client.stop(2000).catch(() => {});
-			await client.dispose();
+			// a client restarting the server can only stop once it is running
+			if (client.state === State.Starting) {
+				await client.start().catch(() => {});
+			}
+			await client.dispose(2000).catch(() => {});
 		}
 	}
 
 	dispose() {
+		this.disposed = true;
 		this.diagnosticsListener.dispose();
-		void this.stop();
+		this.stopEmitter.dispose();
+		// after a start in progress
+		this.syncing = this.syncing
+			.then(() => this.stop())
+			.finally(() => this.outputChannel.dispose());
 	}
 }

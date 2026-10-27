@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { MiseService } from "../../miseService";
+import { TOML_EXTENSION_IDS } from "../../utils/languageServer";
 import { isMiseAtLeast } from "../test-utils";
 
 const DEADLINE_MS = 20_000;
@@ -34,8 +35,9 @@ suite("Language Server Test Suite", function () {
 		}
 	};
 
-	/** Tombi reports the unknown keys itself, from the same schema */
-	const hasTombi = () => !!vscode.extensions.getExtension("tombi-toml.tombi");
+	/** the server leaves the keys to Tombi or Even Better TOML */
+	const hasTomlExtension = () =>
+		TOML_EXTENSION_IDS.some((id) => vscode.extensions.getExtension(id));
 
 	suiteSetup(async function () {
 		const workspaceRoot =
@@ -48,7 +50,10 @@ suite("Language Server Test Suite", function () {
 		const miseBinaryPath = miseService.getMiseBinaryPath() ?? "";
 		assert.ok(miseBinaryPath, "mise binary should be resolved");
 		// `mise lsp` comes with mise 2026.10.18
-		if (!(await isMiseAtLeast(miseBinaryPath, [2026, 10, 18])) || hasTombi()) {
+		if (
+			!(await isMiseAtLeast(miseBinaryPath, [2026, 10, 18])) ||
+			hasTomlExtension()
+		) {
 			this.skip();
 		}
 
@@ -122,6 +127,7 @@ suite("Language Server Test Suite", function () {
 		);
 	});
 
+	// `lint` has a description, which mise lsp gives as the detail
 	test("completes a task name once", async () => {
 		const list = await vscode.commands.executeCommand<vscode.CompletionList>(
 			"vscode.executeCompletionItemProvider",
@@ -152,7 +158,7 @@ suite("Language Server Test Suite", function () {
 				document.getText(),
 			);
 		assert.ok(
-			formatted.includes('[tasks.lint]\nrun = "echo lint"'),
+			formatted.includes('\nrun = "echo lint"\n'),
 			`Expected formatting edits, got: ${formatted}`,
 		);
 	});

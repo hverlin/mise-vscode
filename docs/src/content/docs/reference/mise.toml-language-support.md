@@ -234,9 +234,9 @@ replaces the checks of `mise config explain` above.
 
 The extension keeps its own task and tool names, go to definition and
 references: it gets them from the tasks and tools mise resolves (file tasks,
-monorepos, installed versions). While `mise.enableTaskDiagnostics` is on,
-unknown tasks and cycles are reported by `mise tasks validate`, once the file
-is saved. With Tombi or Even Better TOML installed, they keep completing,
+monorepos, installed versions). An unknown task or a dependency cycle that
+`mise tasks validate` also reports, once the file is saved, is only shown
+once. With Tombi or Even Better TOML installed, they keep completing,
 documenting and formatting the keys, and a problem one of them already reports
 only gets the quick fix.
 

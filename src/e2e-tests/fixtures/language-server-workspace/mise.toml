@@ -8,4 +8,5 @@ run = "echo build"
 depends = ["lint"]
 
 [tasks.lint]
+description = "Lint it"
 run   =  "echo lint"

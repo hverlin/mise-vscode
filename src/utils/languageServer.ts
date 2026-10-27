@@ -1,4 +1,4 @@
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 
 /**
  * How Tombi and Even Better TOML name their diagnostics. They check mise
@@ -32,7 +32,7 @@ export function getInitializationOptions(hasTomlExtension: boolean) {
 	};
 }
 
-/** a hover or completion documentation of `mise lsp` for one of these */
+/** the header of a hover of `mise lsp` for one of these, and of a tool completion */
 const TASK_OR_TOOL_DOCUMENTATION =
 	/^\*\*[^*\n]+\*\* _(?:task|task template|tool)_/;
 
@@ -53,17 +53,28 @@ export function isTaskOrToolHover(hover: vscode.Hover): boolean {
 /**
  * Whether a completion of `mise lsp` is a task, a task template or a tool
  * name. This extension has its own, from the tasks and tools mise resolves.
+ * Tasks and templates are functions, whose detail is their description when
+ * they have one; tools are properties, like keys.
  */
 export function isTaskOrToolCompletion(item: vscode.CompletionItem): boolean {
 	return (
-		item.detail === "task" ||
-		item.detail === "task template" ||
+		item.kind === vscode.CompletionItemKind.Function ||
 		TASK_OR_TOOL_DOCUMENTATION.test(markdownOf(item.documentation))
 	);
 }
 
-/** the problems of tasks `mise tasks validate` reports too */
-const TASK_DIAGNOSTIC_CODES = new Set(["unknown-task", "task-cycle"]);
+/**
+ * The problems `mise tasks validate` reports (see TaskValidationDiagnostics)
+ * for each problem of tasks of `mise lsp`. A cycle is reported on one of its
+ * tasks, and by `mise lsp` on each of their `depends`.
+ */
+const VALIDATED_AS: Record<string, { codes: Set<string>; onRange: boolean }> = {
+	"unknown-task": {
+		codes: new Set(["missing-dependency", "missing-task-reference"]),
+		onRange: true,
+	},
+	"task-cycle": { codes: new Set(["circular-dependency"]), onRange: false },
+};
 
 const codeOf = (diagnostic: vscode.Diagnostic) =>
 	typeof diagnostic.code === "object" ? diagnostic.code.value : diagnostic.code;
@@ -86,25 +97,36 @@ function overlaps(a: vscode.Range, b: vscode.Range): boolean {
 /**
  * The diagnostics of `mise lsp` to show, and those to hide but keep for their
  * quick fixes: the problems Tombi or Even Better TOML already report on the
- * same range, and the problems of tasks while `mise tasks validate` reports
- * them.
+ * same range, and the problems of tasks `mise tasks validate` already
+ * reports. `mise tasks validate` runs on save, and reports nothing for a
+ * config it cannot load (e.g. an unknown template in `extends`).
  *
  * @param others the diagnostics of the other extensions for the document
  */
 export function splitDiagnostics(
 	diagnostics: readonly vscode.Diagnostic[],
 	others: readonly vscode.Diagnostic[],
-	taskDiagnosticsEnabled: boolean,
 ): { shown: vscode.Diagnostic[]; hidden: vscode.Diagnostic[] } {
 	const reported = others.filter((diagnostic) =>
 		SCHEMA_DIAGNOSTIC_SOURCE.test(String(diagnostic.source ?? "")),
 	);
+	const isValidated = (diagnostic: vscode.Diagnostic) => {
+		const validatedAs = VALIDATED_AS[String(codeOf(diagnostic))];
+		return (
+			validatedAs !== undefined &&
+			others.some(
+				(other) =>
+					other.source === "mise" &&
+					validatedAs.codes.has(String(codeOf(other))) &&
+					(!validatedAs.onRange || overlaps(other.range, diagnostic.range)),
+			)
+		);
+	};
 	const shown: vscode.Diagnostic[] = [];
 	const hidden: vscode.Diagnostic[] = [];
 	for (const diagnostic of diagnostics) {
 		const isHidden =
-			(taskDiagnosticsEnabled &&
-				TASK_DIAGNOSTIC_CODES.has(String(codeOf(diagnostic)))) ||
+			isValidated(diagnostic) ||
 			reported.some((other) => overlaps(other.range, diagnostic.range));
 		(isHidden ? hidden : shown).push(diagnostic);
 	}

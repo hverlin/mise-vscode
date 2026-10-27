@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 import {
 	getInitializationOptions,
 	isOn,
@@ -77,9 +77,24 @@ describe("isTaskOrToolHover", () => {
 
 describe("isTaskOrToolCompletion", () => {
 	it("matches task, template and tool names", () => {
+		// the detail of a task or template is its description when it has one
 		const items = [
-			{ label: "lint", detail: "task" },
-			{ label: "base", detail: "task template" },
+			{
+				label: "lint",
+				kind: vscode.CompletionItemKind.Function,
+				detail: "task",
+			},
+			{
+				label: "build",
+				kind: vscode.CompletionItemKind.Function,
+				detail: "Build it",
+				documentation: markdown("Build it\n\n```sh\necho build\n```"),
+			},
+			{
+				label: "base",
+				kind: vscode.CompletionItemKind.Function,
+				detail: "task template",
+			},
 			{
 				label: "1password",
 				detail: "Password manager developed by AgileBits Inc",
@@ -88,7 +103,7 @@ describe("isTaskOrToolCompletion", () => {
 				),
 			},
 		] as vscode.CompletionItem[];
-		expect(items.map(isTaskOrToolCompletion)).toEqual([true, true, true]);
+		expect(items.map(isTaskOrToolCompletion)).toEqual([true, true, true, true]);
 	});
 
 	it("keeps keys", () => {
@@ -114,9 +129,10 @@ describe("splitDiagnostics", () => {
 	const syntax = diagnostic({ range: range(5, 2, 5, 2), code: "syntax" });
 
 	it("shows everything when nothing else reports it", () => {
-		expect(
-			splitDiagnostics([unknownKey, unknownTask, syntax], [], false),
-		).toEqual({ shown: [unknownKey, unknownTask, syntax], hidden: [] });
+		expect(splitDiagnostics([unknownKey, unknownTask, syntax], [])).toEqual({
+			shown: [unknownKey, unknownTask, syntax],
+			hidden: [],
+		});
 	});
 
 	it("hides what Tombi or Even Better TOML report on the same range", () => {
@@ -126,28 +142,55 @@ describe("splitDiagnostics", () => {
 			// another source on the same range, e.g. this extension
 			diagnostic({ range: range(2, 12, 2, 16), source: "mise" }),
 		];
-		expect(
-			splitDiagnostics([unknownKey, unknownTask, syntax], others, false),
-		).toEqual({ shown: [unknownTask], hidden: [unknownKey, syntax] });
+		expect(splitDiagnostics([unknownKey, unknownTask, syntax], others)).toEqual(
+			{ shown: [unknownTask], hidden: [unknownKey, syntax] },
+		);
 	});
 
 	it("does not hide a problem next to another one", () => {
 		const others = [
 			diagnostic({ range: range(3, 10, 3, 12), source: "Tombi" }),
 		];
-		expect(splitDiagnostics([unknownKey], others, false).shown).toEqual([
-			unknownKey,
+		expect(splitDiagnostics([unknownKey], others).shown).toEqual([unknownKey]);
+	});
+
+	// as TaskValidationDiagnostics reports them, from `mise tasks validate`
+	const validated = (code: string, at: vscode.Range) =>
+		diagnostic({ range: at, code, source: "mise" });
+	const cycle = diagnostic({
+		range: range(7, 11, 7, 12),
+		code: { value: "task-cycle", target: {} as vscode.Uri },
+	});
+
+	it("hides an unknown task mise tasks validate reports on the same range", () => {
+		// the quoted name
+		const others = [validated("missing-dependency", range(2, 11, 2, 17))];
+		expect(splitDiagnostics([unknownKey, unknownTask], others)).toEqual({
+			shown: [unknownKey],
+			hidden: [unknownTask],
+		});
+	});
+
+	it("shows an unknown task mise tasks validate does not report", () => {
+		// e.g. a template of `extends`: mise tasks validate cannot load the config
+		const others = [validated("missing-dependency", range(9, 11, 9, 17))];
+		expect(splitDiagnostics([unknownTask], others).shown).toEqual([
+			unknownTask,
 		]);
 	});
 
-	it("hides the task problems while mise tasks validate reports them", () => {
-		const cycle = diagnostic({
-			range: range(4, 0, 4, 5),
-			code: { value: "task-cycle", target: {} as vscode.Uri },
-		});
+	it("hides a cycle mise tasks validate reports on one of its tasks", () => {
+		const header = range(4, 0, 4, 9);
 		expect(
-			splitDiagnostics([unknownKey, unknownTask, cycle], [], true),
-		).toEqual({ shown: [unknownKey], hidden: [unknownTask, cycle] });
+			splitDiagnostics([cycle], [validated("circular-dependency", header)]),
+		).toEqual({ shown: [], hidden: [cycle] });
+		expect(splitDiagnostics([cycle], []).shown).toEqual([cycle]);
+	});
+
+	it("does not take its own diagnostics for those of mise tasks validate", () => {
+		expect(
+			splitDiagnostics([unknownTask, cycle], [unknownTask, cycle]),
+		).toEqual({ shown: [unknownTask, cycle], hidden: [] });
 	});
 });
 
