@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.0](https://github.com/hverlin/mise-vscode/compare/v1.32.0...v1.33.0) (2026-10-27)
+
+
+### Features
+
+* run mise lsp for the mise config files (experimental) ([#391](https://github.com/hverlin/mise-vscode/issues/391)) ([adc0f29](https://github.com/hverlin/mise-vscode/commit/adc0f292488561b737ccb7c056d42a116053f52c))
+
 ## [1.32.0](https://github.com/hverlin/mise-vscode/compare/v1.31.4...v1.32.0) (2026-10-26)
 
 
