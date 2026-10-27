@@ -132,24 +132,32 @@ const sameKey = (key: string[], expected: string[]) =>
 	key.length === expected.length &&
 	key.every((part, index) => part === expected[index]);
 
-/** Range of the content of `"value"` or `'value'` between two positions */
+const escapeRegExp = (text: string) =>
+	text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Range of `value` in `"value"` or `'value'` between two positions, also when
+ * arguments follow it, as in `depends = ["lint --fix"]`
+ */
 function findQuotedValue(
 	lines: string[],
 	{ start, end }: SourceRange,
 	value: string,
 ): SourceRange | undefined {
+	const quoted = new RegExp(
+		`(["'])${escapeRegExp(value)}(?:\\s[^"']*)?\\1`,
+		"g",
+	);
 	for (let line = start.line; line <= end.line; line++) {
 		const text = lines[line] ?? "";
-		const from = line === start.line ? start.character : 0;
+		quoted.lastIndex = line === start.line ? start.character : 0;
 		const to = line === end.line ? end.character : text.length;
-		for (const quote of ['"', "'"]) {
-			const index = text.indexOf(`${quote}${value}${quote}`, from);
-			if (index !== -1 && index + value.length + 2 <= to) {
-				return {
-					start: { line, character: index + 1 },
-					end: { line, character: index + 1 + value.length },
-				};
-			}
+		const match = quoted.exec(text);
+		if (match && match.index + match[0].length <= to) {
+			return {
+				start: { line, character: match.index + 1 },
+				end: { line, character: match.index + 1 + value.length },
+			};
 		}
 	}
 	return undefined;

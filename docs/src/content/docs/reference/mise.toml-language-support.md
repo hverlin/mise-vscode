@@ -230,7 +230,8 @@ config files. It checks them as you type, before they are saved: TOML syntax,
 unknown and deprecated keys, values of the wrong type and unknown tasks, with
 quick fixes. It also completes and documents the keys, formats the file as
 `mise fmt` does, and renames a task with its references in the file. It
-replaces the checks of `mise config explain` above.
+replaces the checks of `mise config explain` above, so the config files that
+are not open in an editor are no longer checked.
 
 The extension keeps its own task and tool names, go to definition and
 references: it gets them from the tasks and tools mise resolves (file tasks,

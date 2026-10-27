@@ -58,6 +58,17 @@ async function hasLanguageServer(binPath: string): Promise<boolean> {
 	}
 }
 
+/**
+ * Stops the server for good. A server that crashed while starting is
+ * restarted by the library, which can only stop it once it runs.
+ */
+async function disposeClient(client: LanguageClient) {
+	if (client.state === State.Starting) {
+		await client.start().catch(() => {});
+	}
+	await client.dispose(2000).catch(() => {});
+}
+
 type ServerOptions = {
 	binPath: string;
 	initializationOptions: ReturnType<typeof getInitializationOptions>;
@@ -221,6 +232,10 @@ export class MiseLanguageServer implements vscode.Disposable {
 				},
 				middleware: {
 					handleDiagnostics: (uri, diagnostics, next) => {
+						// the library still hands over what a stopped server sent
+						if (this.client !== client) {
+							return;
+						}
 						this.reported.set(uri.toString(), diagnostics);
 						next(uri, this.filter(uri, diagnostics));
 					},
@@ -277,7 +292,7 @@ export class MiseLanguageServer implements vscode.Disposable {
 			await client.start();
 		} catch (error) {
 			this.client = undefined;
-			await client.dispose().catch(() => {});
+			await disposeClient(client);
 			throw error;
 		}
 		logger.info(`Started ${binPath} lsp`);
@@ -324,11 +339,7 @@ export class MiseLanguageServer implements vscode.Disposable {
 		this.hidden.clear();
 		for (const client of clients) {
 			logger.info("Stopping mise lsp");
-			// a client restarting the server can only stop once it is running
-			if (client.state === State.Starting) {
-				await client.start().catch(() => {});
-			}
-			await client.dispose(2000).catch(() => {});
+			await disposeClient(client);
 		}
 	}
 
