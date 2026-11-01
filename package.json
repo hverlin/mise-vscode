@@ -1818,7 +1818,7 @@
     "react-dom": "19.3.1",
     "react-error-boundary": "^6.1.6",
     "toml-v1": "^1.0.0",
-    "vscode-languageclient": "^10.1.2",
+    "vscode-languageclient": "^11.0.0",
     "zustand": "^5.0.16"
   }
 }
