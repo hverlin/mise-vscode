@@ -1780,7 +1780,7 @@
     "screenshots": "node --run build && node scripts/screenshots/index.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.4",
     "@rsbuild/core": "^2.2.14",
     "@rsbuild/plugin-react": "^2.1.1",
     "@rslib/core": "^1.0.3",
